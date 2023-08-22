@@ -1,27 +1,64 @@
-# Project Template
+# mantra
 
-Repository template for software projects.
+**M**anuel's **AN**forderungs-**TRA**cing
 
-## Wiki Template
+*mantra* is a tool for easier tracing between requirements, implementation, and tests.
 
-This project template works best in combination with the [wiki-repo-template](https://github.com/mhatzl/wiki-repo-template).
-The wiki should be used to document development decisions and requirements.
+## Core Concepts
 
-## Template Placeholders
+To use *mantra*, a system/project must document requirements in a way that allows automatic edits at a textual level.
+Wikis are a good way to achieve this, and most project management tools offer at least a lightweight wiki.
+*mantra* is primarily built to work together with the structure of the [wiki-repo-template](https://github.com/mhatzl/wiki-repo-template) for GitHub wikis,
+but it should be relatively simple to adapt other wikis to use *mantra*. 
 
-In this template, many sections include placeholder text to provide some guidance of what the section should be about.
-These placeholders are inside `{{ }}` blocks.
+Human-readable IDs are used to identify requirements, and reference them in the implementation and/or tests.
+These requirement IDs must be set manually on the implementation and test side.
+*mantra* then adds the number of references a requirement has on the implementation and test side to the wiki.
+Since systems/projects may have different branches, these numbers are linked to the branch *mantra* is run against.
 
-Some sections also include example content that is given inside `[[ ]]` blocks.
+**Example:**
 
-## GitHub Actions
+```
+# my_req_id: Some requirement title
 
-This template already contains the following GitHub actions:
+**References:**
 
-- `auto-lock-prs` ... Used to lock PRs once they are closed
-- `release-please` ... Uses Google's [release please](https://github.com/google-github-actions/release-please-action) action to generate releases automatically
+- in branch main: 3
+- in branch stable: 1
+```
 
-  **Note:** You should adapt this action according to your needs.
+### Requirement Structure
+
+Every requirement must have a heading or title starting with a unique requirement ID followed by `:`.
+A requirement hierarchy may be used to create a structure of high and low-level requirements.
+
+**Example:**
+
+```
+# my_req_id: Some requirement title
+
+A high-level requirement.
+
+## my_req_id.sub_req_id: Some sub-requirement title
+
+A low-level requirement of `my_req_id`.
+```
+
+## Referencing
+
+Requirement IDs may be referenced in the implementation and/or tests of your system/project using the syntax `[req:your_req_id]`.
+This syntax should be independent enough in most programming languages that *mantra* could confuse an expression with a requirement reference.
+
+**Example:**
+
+```rust
+/// This function does something.
+///
+/// [req:my_req_id]
+fn my_function() {
+  //...
+}
+```
 
 # License
 
