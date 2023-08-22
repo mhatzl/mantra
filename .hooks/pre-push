@@ -1,0 +1,6 @@
+#!/bin/bash 
+
+# Use this hook to run linting and check code formatting.
+# Abort if linting or formatting return any errors or warnings.
+
+

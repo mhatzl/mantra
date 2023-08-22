@@ -1,0 +1,49 @@
+#!/bin/bash 
+
+# first (and only) argument is whether we abort commit or not
+print_help() {
+    if $1; then
+        echo -e "Aborting commit! Your commit message does not follow the Conventional Commits Specification.\n" >&2
+    fi
+
+    echo -e "Commit message structure: \n" >&2
+
+    echo -e "\t<type>: <head description>" >&2
+
+    echo -e "\n\t[<optional body>]" >&2
+
+    echo -e "\n\t[<optional footer>]" >&2
+
+    echo -e "\nWhere '<type>: <head description>' is not longer than 50 characters and <type> is one of:\n" >&2
+
+    echo -e "- feat \t\t... Use if commit adds a new feature" >&2
+    echo -e "- fix \t\t... Use if commit fixes a bug of any kind" >&2
+    echo -e "- arch \t\t... Use if commit neither adds features nor fixes bugs (e.g. renaming or restructuring)" >&2
+    echo -e "- chore \t... Miscellaneous (should only be used for automatically generated commits)" >&2
+
+    echo -e "\nNOTE: If your commit fits to types 'feat' and 'fix', try to split your commit." >&2
+
+    echo -e "NOTE: <type> may be immediately followed by a '!' to indicate breaking changes." >&2 
+    echo -e "NOTE: Use '!' instead of writing 'BREAKING CHANGE: <decsription>' in the '[<optional footer>]'.\n" >&2
+
+    echo -e "Examples: \n" >&2
+    echo -e "feat: improve log message on bad request" >&2
+    echo -e "feat!: indicate a breaking change" >&2
+    echo -e "fix: fix some bug" >&2
+    echo -e "\nFor more information, see: \nhttps://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines \nhttps://www.conventionalcommits.org/en/v1.0.0/" >&2
+}
+
+RED="\033[31m"
+YELLOW="\033[33m"
+CLEAR="\033[0m"
+
+if ! head -1 "$1" | grep -qE "^(feat|fix|arch|chore)[!]?: .{1,}$"; then
+    echo -e "${RED}\nERROR: Given commit type is wrong!${CLEAR}\n" >&2
+    print_help true
+
+    exit 1
+fi
+if ! head -1 "$1" | grep -qE "^.{1,50}$"; then
+    echo -e "${YELLOW}\nWARNING: '<type>: <head description>' should not have more than 50 characters!${CLEAR}\n" >&2
+    print_help false
+fi

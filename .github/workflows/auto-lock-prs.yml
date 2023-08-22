@@ -1,0 +1,22 @@
+# Action to automatically lock PRs after they are merged or closed.
+name: "auto-lock PRs"
+on:
+  pull_request_target:
+    types: [closed]
+
+jobs:
+  lock-closed-PRs:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.lock({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              lock_reason: "resolved"
+            })

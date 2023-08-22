@@ -1,0 +1,32 @@
+on:
+  push:
+    branches:
+      - main
+
+# See: https://github.com/google-github-actions/release-please-action
+name: Release Please
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: GoogleCloudPlatform/release-please-action@v3
+        with:
+          # Change type and name depending on your repository
+          # See: https://github.com/google-github-actions/release-please-action#release-types-supported
+          release-type: simple
+          package-name: project-repo-template
+          pull-request-title-pattern: "chore: release${component} ${version}"
+          # Breaking changes might happen frequently before 1.0.0 => only bump minor
+          bump-minor-pre-major: true
+          changelog-types: >
+            [
+            {"type":"feat","section":"Features","hidden":false},
+            {"type":"fix","section":"Bug Fixes","hidden":false},
+            {"type":"arch","section":"Architectur/Refactor","hidden":false},
+            {"type":"chore","section":"Miscellaneous","hidden":true}
+            ]
