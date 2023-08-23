@@ -5,7 +5,7 @@
 *mantra* is a tool for easier tracing between requirements, implementation, and tests.
 
 Checkout the [requirements](https://github.com/mhatzl/mantra/wiki/5-Requirements) section in [mantra's wiki](https://github.com/mhatzl/mantra/wiki)
-to see how requirements tracing with *mantra* looks.
+to see how requirement tracing with *mantra* looks.
 
 ## Core Concepts
 
