@@ -47,7 +47,7 @@ A low-level requirement of `my_req_id`.
 ## Referencing
 
 Requirement IDs may be referenced in the implementation and/or tests of your system/project using the syntax `[req:your_req_id]`.
-This syntax should be independent enough in most programming languages that *mantra* could confuse an expression with a requirement reference.
+This syntax should be independent enough in most programming languages that *mantra* can distinguish an expression from a requirement reference.
 
 **Example:**
 
