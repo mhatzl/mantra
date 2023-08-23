@@ -1,0 +1,11 @@
+[package]
+name = "mantra"
+version = "0.1.0"
+edition = "2021"
+description = "Tool to trace requirements down to implementation and tests."
+repository = "https://github.com/mhatzl/mantra"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

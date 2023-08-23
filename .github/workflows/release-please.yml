@@ -18,7 +18,7 @@ jobs:
         with:
           # Change type and name depending on your repository
           # See: https://github.com/google-github-actions/release-please-action#release-types-supported
-          release-type: simple
+          release-type: rust
           package-name: project-repo-template
           pull-request-title-pattern: "chore: release${component} ${version}"
           # Breaking changes might happen frequently before 1.0.0 => only bump minor
