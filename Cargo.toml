@@ -9,3 +9,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+logid = "0.12.1"
+thiserror = "1.0.47"
+clap = "4.3.24"
+regex = "1.9.3"
