@@ -1,11 +1,12 @@
 //! Contains the structure to represent requirements and the *references* list.
-use std::{cell::OnceCell, sync::atomic::AtomicUsize};
+use std::cell::OnceCell;
 
 use regex::Regex;
+use thiserror::Error;
 
-use self::ref_list::{RefCntKind, RefList};
+use self::ref_list::RefList;
 
-mod ref_list;
+pub mod ref_list;
 
 /// Type for a requirement ID.
 ///
@@ -17,7 +18,7 @@ pub type ReqId = String;
 /// Stores information for a requirement found in the wiki.
 ///
 /// [req:wiki.ref_list]
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Req {
     /// The heading of the requirement in the wiki.
     ///
@@ -29,31 +30,11 @@ pub struct Req {
     /// [req:wiki.ref_list]
     pub ref_list: RefList,
 
-    /// List of sub-requirements that are one level *deeper* that this requirement might have.
-    ///
-    /// **Note:** This list is empty if this requirement has no sub-requirements.
-    ///
-    /// [req:req_id.sub_req_id]
-    pub sub_reqs: Vec<ReqId>,
-
     /// The filename this requirement is defined in.
     pub filename: String,
 
     /// The line number the requirement heading starts in the file.
     pub line_nr: usize,
-
-    /// The current reference counter for direct references to this requirement.
-    /// This counter is used to update/validate the existing reference count.
-    ///
-    /// **Note:** Atomic to be updated concurrently.
-    ///
-    /// [req:ref_req]
-    pub curr_direct_refs: AtomicUsize,
-
-    /// The new reference counter for this requirement, or `None` if references are not being updated.
-    ///
-    /// [req:ref_req]
-    pub new_cnt_kind: Option<RefCntKind>,
 
     /// An optional link to this requirement inside the wiki.
     ///
@@ -61,7 +42,7 @@ pub struct Req {
     pub wiki_link: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct ReqHeading {
     /// Requirement ID of this requirement.
     ///
@@ -79,6 +60,17 @@ pub struct ReqHeading {
 
 const REQ_HEADING_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
 
+/// Tries to extract a requirement heading from the given content.
+///  
+/// # Arguments
+///
+/// - `possible_heading` ... Content that may contain a requirement heading
+///
+/// # Possible Errors
+///
+/// - [`ReqMatchingError::NoMatchFound`]
+///
+/// [req:req_id], [req:wiki]
 pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatchingError> {
     let binding = REQ_HEADING_MATCHER;
     let regex = binding.get_or_init(|| {
@@ -87,7 +79,7 @@ pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatching
         // => iterate through files line by line
         //
         // Regex to match full req-structure: (?:^|\n)(?<heading_lvl>#+) (?<id>[^:]+):(?<heading>(?:.|\n)+)\*\*References:\*\*\n\n*(?<entries>(?:[-\+\*][^\n]*\n?){1,})
-        Regex::new(r"(?:^|\n)(?<lvl>#+)\s(?<id>[^:]+):(?<title>.+)")
+        Regex::new(r"^(?<lvl>#+)\s(?<id>[^:]+):(?<title>.+)")
             .expect("Regex to match the requirement heading could **not** be created.")
     });
 
@@ -114,10 +106,39 @@ pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatching
 }
 
 /// Errors that may occure when trying to match regex patterns against given inputs.
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ReqMatchingError {
     /// No match was found in the given input.
+    #[error("No match was found in the given input.")]
     NoMatchFound,
+
+    /// Entry in the *references* list is marked as *deprecated*, but has reference counters.
+    #[error(
+        "Entry in the *references* list is marked as *deprecated*, but has reference counters."
+    )]
+    DeprecatedHasCnt,
+
+    /// Optional count after `manual` flag is not separated by `+`.
+    ///
+    /// Correct would be `manual + <counter>`
+    #[error("Optional count after `manual` flag is not separated by `+`.")]
+    ManualCntFailingPlus,
+
+    /// A direct references counter was set without the general counter before.
+    ///
+    /// Correct would be `<general counter> (<direct counter> direct)`.
+    #[error("A direct references counter was set without the general counter before.")]
+    DirectCntWithoutGeneralCnt,
+
+    /// The matched counter could not be converted to a number.
+    #[error("The matched counter could not be converted to a number.")]
+    CntIsNoNumber,
+
+    /// The matched direct counter is higher than the general counter.
+    ///
+    /// **Note:** The general counter must be the sum of the direct counter and all sub-requirement counter.
+    #[error("The matched direct counter is higher than the general counter.")]
+    DirectCntAboveGeneralCnt,
 }
 
 #[cfg(test)]
@@ -135,12 +156,52 @@ mod test {
         );
         assert_eq!(
             act_heading.lvl, 1,
-            "Requirement ID was not retrieved correctly."
+            "Heading level was not retrieved correctly."
         );
         assert_eq!(
             act_heading.title.as_str(),
             "Some Title",
+            "Heading title was not retrieved correctly."
+        );
+    }
+
+    #[test]
+    pub fn get_low_lvl_req() {
+        let act_heading = get_req_heading("# req_id.sub_req: Some Title").unwrap();
+
+        assert_eq!(
+            act_heading.id.as_str(),
+            "req_id.sub_req",
             "Requirement ID was not retrieved correctly."
+        );
+        assert_eq!(
+            act_heading.lvl, 1,
+            "Heading level was not retrieved correctly."
+        );
+        assert_eq!(
+            act_heading.title.as_str(),
+            "Some Title",
+            "Heading title was not retrieved correctly."
+        );
+    }
+
+    #[test]
+    pub fn get_req_in_sub_heading() {
+        let act_heading = get_req_heading("## req_id.sub_req: Some Title").unwrap();
+
+        assert_eq!(
+            act_heading.id.as_str(),
+            "req_id.sub_req",
+            "Requirement ID was not retrieved correctly."
+        );
+        assert_eq!(
+            act_heading.lvl, 2,
+            "Heading level was not retrieved correctly."
+        );
+        assert_eq!(
+            act_heading.title.as_str(),
+            "Some Title",
+            "Heading title was not retrieved correctly."
         );
     }
 }
