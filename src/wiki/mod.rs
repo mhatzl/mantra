@@ -44,6 +44,7 @@ impl Wiki {
 
         let mut added_reqs = 0;
         let mut added_refs = 0;
+        let mut has_references_list = false;
         let mut curr_req = None;
 
         while let Some(line) = lines.next() {
@@ -65,6 +66,8 @@ impl Wiki {
                     line_nr,
                     wiki_link: None,
                 })
+            } else if line.starts_with("**References:**") {
+                has_references_list = true;
             } else if line.starts_with("#") || (added_refs > 0 && line.is_empty()) {
                 if let Some(req) = curr_req.as_mut() {
                     let req_id = req.head.id.clone();
@@ -78,19 +81,22 @@ impl Wiki {
 
                 added_refs = 0;
                 curr_req = None;
-            } else if let Some(req) = curr_req.as_mut() {
-                match get_ref_entry(line) {
-                    Ok(entry) => {
-                        req.ref_list.push(entry);
-                        added_refs += 1;
-                    }
-                    Err(ReqMatchingError::NoMatchFound) => continue,
-                    Err(err) => {
-                        return Err(WikiError::InvalidRefListEntry {
-                            filename,
-                            line_nr,
-                            cause: err.to_string(),
-                        })
+                has_references_list = false;
+            } else if has_references_list {
+                if let Some(req) = curr_req.as_mut() {
+                    match get_ref_entry(line) {
+                        Ok(entry) => {
+                            req.ref_list.push(entry);
+                            added_refs += 1;
+                        }
+                        Err(ReqMatchingError::NoMatchFound) => continue,
+                        Err(err) => {
+                            return Err(WikiError::InvalidRefListEntry {
+                                filename,
+                                line_nr,
+                                cause: err.to_string(),
+                            })
+                        }
                     }
                 }
             }
@@ -136,7 +142,7 @@ mod test {
     use super::Wiki;
 
     #[test]
-    pub fn low_lvl_req_with_1_ref_entry() {
+    pub fn high_lvl_req_with_1_ref_entry() {
         let filename = "test_file";
         // Note: String moved to the most left to get correct new line behavior.
         let content = r#"
@@ -160,6 +166,80 @@ mod test {
         );
 
         let req = wiki.req_map.get("req_id").unwrap();
+        assert_eq!(
+            req.ref_list.len(),
+            1,
+            "Wrong number of *references* list entries added."
+        );
+    }
+
+    #[test]
+    pub fn req_missing_ref_list_start() {
+        let filename = "test_file";
+        // Note: String moved to the most left to get correct new line behavior.
+        let content = r#"
+# req_id: Some Title
+
+- in branch main: 2
+        "#;
+
+        let mut wiki = Wiki::new();
+        wiki.add(filename.to_string(), content).unwrap();
+
+        assert!(
+            wiki.req_map.contains_key("req_id"),
+            "Requirement was not added to the wiki."
+        );
+        assert!(
+            wiki.high_lvl_reqs.contains(&"req_id".to_string()),
+            "Requirement not added to list of high-level requirements"
+        );
+
+        let req = wiki.req_map.get("req_id").unwrap();
+        assert_eq!(
+            req.ref_list.len(),
+            0,
+            "References added with missing **References:**."
+        );
+    }
+
+    #[test]
+    pub fn low_lvl_req_with_1_ref_entry() {
+        let filename = "test_file";
+        // Note: String moved to the most left to get correct new line behavior.
+        let content = r#"
+# req_id.sub_req: Some Title
+
+**References:**
+
+- in branch main: 2
+        "#;
+
+        let mut wiki = Wiki::new();
+        wiki.add(filename.to_string(), content).unwrap();
+
+        assert!(
+            wiki.req_map.contains_key("req_id.sub_req"),
+            "Requirement was not added to the wiki."
+        );
+        assert!(
+            wiki.sub_map.contains_key("req_id"),
+            "Parent requirement was not added to sub-map for high-level requirement."
+        );
+        assert!(
+            wiki.sub_map
+                .get("req_id")
+                .unwrap()
+                .contains("req_id.sub_req"),
+            "Sub-requirement was not added to parent in sub-map."
+        );
+        assert_eq!(
+            wiki.high_lvl_reqs.len(),
+            0,
+            "Low-level requirement added to list of high-level requirements"
+        );
+
+        let req = wiki.req_map.get("req_id.sub_req").unwrap();
         assert_eq!(
             req.ref_list.len(),
             1,
