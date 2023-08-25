@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{hash_map::Keys, HashMap},
+    path::PathBuf,
+};
 
 use walkdir::WalkDir;
 
@@ -47,13 +50,42 @@ impl TryFrom<PathBuf> for Wiki {
                     wiki.add(filename, &content)?;
                 }
             }
+        } else {
+            let filename = req_path.to_string_lossy().to_string();
+            let content = std::fs::read_to_string(req_path)
+                .map_err(|_| WikiError::CouldNotAccessFile(filename.clone()))?;
+            wiki.add(filename, &content)?;
         }
 
         Ok(wiki)
     }
 }
 
+impl TryFrom<(String, &str)> for Wiki {
+    type Error = WikiError;
+
+    /// Tries to create a wiki given (filename, content).
+    fn try_from(value: (String, &str)) -> Result<Self, Self::Error> {
+        let filename = value.0;
+        let content = value.1;
+
+        let mut wiki = Wiki::new();
+        wiki.add(filename, content)?;
+        Ok(wiki)
+    }
+}
+
 impl Wiki {
+    /// Returns the number of requirements that were found in the wiki.
+    pub fn req_cnt(&self) -> usize {
+        self.req_map.len()
+    }
+
+    /// Returns an iterator over the IDs of found requirements in the wiki.
+    pub fn requirements(&self) -> Keys<ReqId, Req> {
+        self.req_map.keys()
+    }
+
     fn new() -> Self {
         Wiki {
             req_map: HashMap::new(),
