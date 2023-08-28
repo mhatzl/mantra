@@ -168,7 +168,7 @@ mod test {
     use super::get_ref_entry;
 
     #[test]
-    pub fn basic_ref_entry() {
+    fn basic_ref_entry() {
         let ref_entry = get_ref_entry("- in branch main: 10").unwrap();
 
         assert_eq!(
@@ -194,7 +194,7 @@ mod test {
     }
 
     #[test]
-    pub fn high_lvl_ref_entry() {
+    fn high_lvl_ref_entry() {
         let ref_entry = get_ref_entry("- in branch stable: 10 (2 direct)").unwrap();
 
         assert_eq!(
@@ -223,7 +223,7 @@ mod test {
     }
 
     #[test]
-    pub fn ref_entry_with_branch_link() {
+    fn ref_entry_with_branch_link() {
         let ref_entry = get_ref_entry("- in branch [main](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id): 10 (2 direct)").unwrap();
 
         assert_eq!(

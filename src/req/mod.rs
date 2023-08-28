@@ -146,7 +146,7 @@ mod test {
     use super::get_req_heading;
 
     #[test]
-    pub fn get_high_lvl_req() {
+    fn get_high_lvl_req() {
         let act_heading = get_req_heading("# req_id: Some Title").unwrap();
 
         assert_eq!(
@@ -166,7 +166,7 @@ mod test {
     }
 
     #[test]
-    pub fn get_low_lvl_req() {
+    fn get_low_lvl_req() {
         let act_heading = get_req_heading("# req_id.sub_req: Some Title").unwrap();
 
         assert_eq!(
@@ -186,7 +186,7 @@ mod test {
     }
 
     #[test]
-    pub fn get_req_in_sub_heading() {
+    fn get_req_in_sub_heading() {
         let act_heading = get_req_heading("## req_id.sub_req: Some Title").unwrap();
 
         assert_eq!(

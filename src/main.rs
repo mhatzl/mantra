@@ -17,8 +17,8 @@ fn main() {
 
     let end = std::time::Instant::now();
 
-    dbg!(wiki);
-    dbg!(ref_map);
+    // dbg!(wiki);
+    // dbg!(ref_map);
 
     println!(
         "Took: {}ms",

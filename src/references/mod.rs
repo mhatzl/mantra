@@ -8,7 +8,12 @@ use std::{
 use regex::Regex;
 use walkdir::WalkDir;
 
-use crate::{req::ReqId, wiki::Wiki};
+use crate::{
+    req::{ref_list::RefCntKind, ReqId},
+    wiki::Wiki,
+};
+
+pub mod changes;
 
 /// Map to store the current reference counter for direct references to requirements.
 /// This counter may be used to update/validate the existing reference counts inside the wiki.
@@ -45,6 +50,8 @@ impl TryFrom<(&Wiki, PathBuf)> for ReferencesMap {
                 .filter_entry(|entry| {
                     entry.file_name().to_string_lossy() != "target"
                         && entry.file_name().to_string_lossy() != ".git"
+                        && entry.file_name().to_string_lossy() != "Cargo.lock"
+                        && entry.file_name().to_string_lossy() != ".vscode"
                 });
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
@@ -107,6 +114,8 @@ impl ReferencesMap {
 
                 match self.map.get(&req_id) {
                     Some(cnt) => {
+                        // Only increment counter, so `Relaxed` is ok
+                        // Overflow is also highly unlikely (Who has 4Mrd. requirements?)
                         cnt.fetch_add(1, Ordering::Relaxed);
                         added_refs += 1;
                     }
@@ -122,6 +131,19 @@ impl ReferencesMap {
         }
 
         Ok(added_refs)
+    }
+
+    pub fn cnt_changes(&self, wiki: &Wiki, branch_name: String) -> HashMap<ReqId, RefCntKind> {
+        // let mut new_cnts_map = HashMap::new();
+
+        // von high-level reqs aus beginnen mit "tiefen suche"
+        // sub-reqs von high-level durchgehen, bis bei leaf-req
+        // leaf-req cnt vergleichen und in new_cnt map eintragen, falls sich cnt verändert hat
+        // wieder ein level höher und nächstes leaf-req
+        // wenn alle sub-reqs durch, req selbst updaten (cnt map enthält jetzt ggf neue cnts für sub-reqs. Sonst cnt in wiki noch korrekt)
+
+        // iterator prinzip versuchen der per next() den req-tree abläuft
+        todo!()
     }
 }
 
