@@ -5,7 +5,11 @@ use std::{
 
 use walkdir::WalkDir;
 
-use crate::req::{get_req_heading, ref_list::get_ref_entry, Req, ReqId, ReqMatchingError};
+use crate::req::{
+    get_req_heading,
+    ref_list::{get_ref_entry, RefListEntry},
+    Req, ReqId, ReqMatchingError,
+};
 
 /// Struct representing a wiki that stores requirements.
 ///
@@ -51,33 +55,33 @@ impl TryFrom<PathBuf> for Wiki {
             });
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
-                    let filename = dir_entry.file_name().to_string_lossy().to_string();
-                    let content = std::fs::read_to_string(dir_entry.path())
-                        .map_err(|_| WikiError::CouldNotAccessFile(filename.clone()))?;
-                    wiki.add(filename, &content)?;
+                    let filepath = dir_entry.into_path();
+                    let content = std::fs::read_to_string(filepath.clone())
+                        .map_err(|_| WikiError::CouldNotAccessFile(filepath.clone()))?;
+                    wiki.add(filepath, &content)?;
                 }
             }
         } else {
-            let filename = req_path.to_string_lossy().to_string();
+            let filepath = req_path.to_path_buf();
             let content = std::fs::read_to_string(req_path)
-                .map_err(|_| WikiError::CouldNotAccessFile(filename.clone()))?;
-            wiki.add(filename, &content)?;
+                .map_err(|_| WikiError::CouldNotAccessFile(filepath.clone()))?;
+            wiki.add(filepath, &content)?;
         }
 
         Ok(wiki)
     }
 }
 
-impl TryFrom<(String, &str)> for Wiki {
+impl TryFrom<(PathBuf, &str)> for Wiki {
     type Error = WikiError;
 
-    /// Tries to create a wiki given (filename, content).
-    fn try_from(value: (String, &str)) -> Result<Self, Self::Error> {
-        let filename = value.0;
+    /// Tries to create a wiki given (filepath, content).
+    fn try_from(value: (PathBuf, &str)) -> Result<Self, Self::Error> {
+        let filepath = value.0;
         let content = value.1;
 
         let mut wiki = Wiki::new();
-        wiki.add(filename, content)?;
+        wiki.add(filepath, content)?;
         Ok(wiki)
     }
 }
@@ -105,6 +109,16 @@ impl Wiki {
         self.req_map.get(req_id)
     }
 
+    pub fn req_ref_entry(&self, req_id: &ReqId, branch_name: &str) -> Option<&RefListEntry> {
+        match self.req(req_id) {
+            Some(wiki_req) => wiki_req
+                .ref_list
+                .iter()
+                .find(|entry| entry.branch_name == branch_name),
+            None => None,
+        }
+    }
+
     fn new() -> Self {
         Wiki {
             req_map: HashMap::new(),
@@ -115,7 +129,7 @@ impl Wiki {
     }
 
     /// Iterate through the given content, and add found requirements.
-    fn add(&mut self, filename: String, content: &str) -> Result<usize, WikiError> {
+    fn add(&mut self, filepath: PathBuf, content: &str) -> Result<usize, WikiError> {
         let mut lines = content.lines();
         let mut line_nr = 0;
 
@@ -160,7 +174,7 @@ impl Wiki {
                     curr_req = Some(Req {
                         head: req_heading,
                         ref_list: Vec::new(),
-                        filename: filename.clone(),
+                        filepath: filepath.clone(),
                         line_nr,
                         wiki_link: None,
                     })
@@ -172,7 +186,7 @@ impl Wiki {
                         let prev_req = self.req_map.insert(req_id, std::mem::take(req));
                         if let Some(prev) = prev_req {
                             return Err(WikiError::DuplicateReqId {
-                                filename: prev.filename,
+                                filepath: prev.filepath,
                                 line_nr: prev.line_nr,
                             });
                         }
@@ -191,7 +205,7 @@ impl Wiki {
                             Err(ReqMatchingError::NoMatchFound) => continue,
                             Err(err) => {
                                 return Err(WikiError::InvalidRefListEntry {
-                                    filename,
+                                    filepath,
                                     line_nr,
                                     cause: err.to_string(),
                                 })
@@ -209,7 +223,7 @@ impl Wiki {
             let prev_req = self.req_map.insert(req_id, req);
             if let Some(prev) = prev_req {
                 return Err(WikiError::DuplicateReqId {
-                    filename: prev.filename,
+                    filepath: prev.filepath,
                     line_nr: prev.line_nr,
                 });
             }
@@ -246,12 +260,12 @@ impl Wiki {
 
 #[derive(Debug)]
 pub enum WikiError {
-    CouldNotAccessFile(String),
+    CouldNotAccessFile(PathBuf),
 
     /// Duplicate requirement ID found.
     DuplicateReqId {
         /// Name of the file the ID is already specified.
-        filename: String,
+        filepath: PathBuf,
         /// Line number in the file the ID is already specified.
         line_nr: usize,
     },
@@ -263,7 +277,7 @@ pub enum WikiError {
     },
 
     InvalidRefListEntry {
-        filename: String,
+        filepath: PathBuf,
         line_nr: usize,
         cause: String,
     },
@@ -271,6 +285,8 @@ pub enum WikiError {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use super::Wiki;
 
     #[test]
@@ -286,7 +302,7 @@ mod test {
         "#;
 
         let mut wiki = Wiki::new();
-        wiki.add(filename.to_string(), content).unwrap();
+        wiki.add(PathBuf::from(filename), content).unwrap();
 
         assert!(
             wiki.req_map.contains_key("req_id"),
@@ -316,7 +332,7 @@ mod test {
         "#;
 
         let mut wiki = Wiki::new();
-        wiki.add(filename.to_string(), content).unwrap();
+        wiki.add(PathBuf::from(filename), content).unwrap();
 
         assert!(
             wiki.req_map.contains_key("req_id"),
@@ -348,7 +364,7 @@ mod test {
         "#;
 
         let mut wiki = Wiki::new();
-        wiki.add(filename.to_string(), content).unwrap();
+        wiki.add(PathBuf::from(filename), content).unwrap();
 
         assert!(
             wiki.req_map.contains_key("req_id.sub_req"),
@@ -398,7 +414,7 @@ mod test {
         "#;
 
         let mut wiki = Wiki::new();
-        wiki.add(filename.to_string(), content).unwrap();
+        wiki.add(PathBuf::from(filename), content).unwrap();
 
         let flattened = wiki.flatten();
 

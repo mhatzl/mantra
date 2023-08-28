@@ -1,5 +1,5 @@
 //! Contains the structure to represent requirements and the *references* list.
-use std::cell::OnceCell;
+use std::{cell::OnceCell, path::PathBuf};
 
 use regex::Regex;
 use thiserror::Error;
@@ -30,8 +30,8 @@ pub struct Req {
     /// [req:wiki.ref_list]
     pub ref_list: RefList,
 
-    /// The filename this requirement is defined in.
-    pub filename: String,
+    /// The filepath this requirement is defined in.
+    pub filepath: PathBuf,
 
     /// The line number the requirement heading starts in the file.
     pub line_nr: usize,

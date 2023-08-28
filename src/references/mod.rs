@@ -162,6 +162,8 @@ pub enum ReferencesMapError {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use crate::wiki::Wiki;
 
     use super::ReferencesMap;
@@ -176,7 +178,7 @@ mod test {
 - in branch main: 2
         "#;
 
-        Wiki::try_from((filename.to_string(), content)).unwrap()
+        Wiki::try_from((PathBuf::from(filename), content)).unwrap()
     }
 
     #[test]

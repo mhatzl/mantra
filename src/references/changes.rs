@@ -16,10 +16,11 @@ pub struct ReferenceChanges {
 impl ReferenceChanges {
     pub fn new(branch_name: String, wiki: &Wiki, ref_map: &ReferencesMap) -> Self {
         let mut new_cnt_map = HashMap::new();
+        let mut file_changes = HashMap::new();
         let flat_wiki = wiki.flatten();
 
         for req in flat_wiki {
-            let req_id = req.head.id;
+            let req_id = req.head.id.clone();
 
             let new_direct_cnt = ref_map
                 .map
@@ -28,58 +29,16 @@ impl ReferenceChanges {
                 .unwrap_or_default();
 
             let new_cnt_kind = match wiki.sub_reqs(&req_id) {
-                Some(sub_reqs) => {
-                    let mut sub_cnt = 0;
-                    for sub_req in sub_reqs {
-                        let sub_cnt_kind =
-                            new_cnt_map
-                                .get(sub_req)
-                                .unwrap_or_else(|| match wiki.req(&sub_req) {
-                                    Some(wiki_sub_req) => match wiki_sub_req
-                                        .ref_list
-                                        .iter()
-                                        .find(|entry| entry.branch_name == branch_name)
-                                    {
-                                        Some(req_entry) => match &req_entry.ref_cnt {
-                                            Some(cnt_kind) => cnt_kind,
-                                            None => &RefCntKind::LowLvl { cnt: 0 },
-                                        },
-                                        None => &RefCntKind::LowLvl { cnt: 0 },
-                                    },
-                                    None => &RefCntKind::LowLvl { cnt: 0 },
-                                });
-
-                        sub_cnt += match sub_cnt_kind {
-                            RefCntKind::HighLvl {
-                                direct_cnt,
-                                sub_cnt,
-                            } => direct_cnt + sub_cnt,
-                            RefCntKind::LowLvl { cnt } => *cnt,
-                        }
-                    }
-
-                    RefCntKind::HighLvl {
-                        direct_cnt: new_direct_cnt,
-                        sub_cnt,
-                    }
-                }
+                Some(sub_reqs) => RefCntKind::HighLvl {
+                    direct_cnt: new_direct_cnt,
+                    sub_cnt: sub_ref_cnts(sub_reqs, &branch_name, wiki, &new_cnt_map),
+                },
                 None => RefCntKind::LowLvl {
                     cnt: new_direct_cnt,
                 },
             };
 
-            let wiki_req = wiki.req(&req_id).expect(
-                format!(
-                    "Requirement with ID '{}' in flattened wiki was not in wiki tree.",
-                    &req_id
-                )
-                .as_str(),
-            );
-            let kind_changed = match wiki_req
-                .ref_list
-                .iter()
-                .find(|entry| entry.branch_name == branch_name)
-            {
+            let kind_changed = match wiki.req_ref_entry(&req_id, &branch_name) {
                 Some(req_entry) => match &req_entry.ref_cnt {
                     Some(req_entry_cnt) => req_entry_cnt != &new_cnt_kind,
                     None => true,
@@ -89,19 +48,57 @@ impl ReferenceChanges {
 
             if kind_changed {
                 new_cnt_map.insert(req_id, new_cnt_kind);
+                file_changes
+                    .entry(req.filepath.clone())
+                    .or_insert(Vec::new())
+                    .push(req);
             }
         }
 
         ReferenceChanges {
             new_cnt_map,
-            file_changes: HashMap::new(),
+            file_changes,
             branch_name,
         }
     }
 }
 
+/// Calculates the sum of all updated reference counters of the given sub requirements.
+///
+/// **Note:** This function assumes that the counter for all sub-requirements was already updated.
+fn sub_ref_cnts(
+    sub_reqs: &Vec<ReqId>,
+    branch_name: &str,
+    wiki: &Wiki,
+    new_cnt_map: &HashMap<ReqId, RefCntKind>,
+) -> usize {
+    let mut sub_cnt = 0;
+    for sub_req in sub_reqs {
+        let sub_cnt_kind = new_cnt_map.get(sub_req).unwrap_or_else(|| {
+            match wiki.req_ref_entry(sub_req, &branch_name) {
+                Some(req_entry) => match &req_entry.ref_cnt {
+                    Some(cnt_kind) => cnt_kind,
+                    None => &RefCntKind::LowLvl { cnt: 0 },
+                },
+                None => &RefCntKind::LowLvl { cnt: 0 },
+            }
+        });
+
+        sub_cnt += match sub_cnt_kind {
+            RefCntKind::HighLvl {
+                direct_cnt,
+                sub_cnt,
+            } => direct_cnt + sub_cnt,
+            RefCntKind::LowLvl { cnt } => *cnt,
+        }
+    }
+    sub_cnt
+}
+
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use crate::{references::ReferencesMap, req::ref_list::RefCntKind, wiki::Wiki};
 
     use super::ReferenceChanges;
@@ -122,7 +119,7 @@ mod test {
 - in branch main: 1
         "#;
 
-        Wiki::try_from((filename.to_string(), content)).unwrap()
+        Wiki::try_from((PathBuf::from(filename), content)).unwrap()
     }
 
     fn setup_references(wiki: &Wiki) -> ReferencesMap {

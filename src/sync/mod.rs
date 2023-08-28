@@ -4,6 +4,9 @@ use std::path::PathBuf;
 ///
 /// [req:sync]
 pub struct SyncParameter {
+    /// The name of the branch the project currently is in.
+    pub branch_name: String,
+
     /// The folder that is searched recursively for requirement references.
     ///
     /// [req:sync]
