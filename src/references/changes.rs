@@ -5,7 +5,10 @@ use std::{
 };
 
 use crate::{
-    req::{ref_list::RefCntKind, Req, ReqId},
+    req::{
+        ref_list::{RefCntKind, RefListEntry},
+        Req, ReqId,
+    },
     wiki::{Wiki, WikiReq},
 };
 
@@ -33,6 +36,50 @@ impl ReferenceChanges {
 
         changes.calculate_cnts(wiki, ref_map);
         changes
+    }
+
+    /// Returns filepaths and updated requirements if their reference counters changed.
+    /// Requirements are ordered by line number in ascending order.
+    /// This order helps to apply changes in one step.
+    ///
+    /// **Note:** Only files and requirements that changed are returned.
+    ///
+    /// [req:sync]
+    pub fn ordered_file_changes(&self) -> Vec<(&PathBuf, Vec<Req>)> {
+        let mut ordered_file_changes = Vec::with_capacity(self.file_changes.len());
+        for (filepath, changes) in self.file_changes.iter() {
+            let mut ordered_changes = changes.clone();
+            ordered_changes.sort_by(|a, b| a.line_nr.cmp(&b.line_nr));
+
+            for req in ordered_changes.iter_mut() {
+                let req_id = &req.head.id;
+
+                let new_cnt_kind = self
+                    .new_cnt_map
+                    .get(req_id)
+                    .expect("Changed requirement had no new counter in `new_cnt_map`.")
+                    .to_owned();
+
+                match req
+                    .ref_list
+                    .iter_mut()
+                    .find(|entry| entry.branch_name == self.branch_name)
+                {
+                    Some(entry) => entry.ref_cnt = new_cnt_kind,
+                    None => req.ref_list.push(RefListEntry {
+                        branch_name: self.branch_name.clone(),
+                        branch_link: None,
+                        ref_cnt: new_cnt_kind,
+                        is_manual: false,
+                        is_deprecated: false,
+                    }),
+                }
+            }
+
+            ordered_file_changes.push((filepath, ordered_changes));
+        }
+
+        ordered_file_changes
     }
 
     fn calculate_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) {

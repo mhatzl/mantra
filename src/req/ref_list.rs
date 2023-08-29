@@ -37,6 +37,19 @@ pub struct RefListEntry {
     pub is_deprecated: bool,
 }
 
+impl std::fmt::Display for RefListEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.branch_link {
+            Some(link) => write!(
+                f,
+                "- in branch [{}]({}): {}",
+                self.branch_name, link, self.ref_cnt
+            ),
+            None => write!(f, "- in branch {}: {}", self.branch_name, self.ref_cnt),
+        }
+    }
+}
+
 /// Reference counter kind for a requirement.
 ///
 /// [req:req_id.sub_req_id], [req:wiki.ref_list]
@@ -54,6 +67,19 @@ pub enum RefCntKind {
 
     /// Special variant that marks a requirement as having no references.
     Untraced,
+}
+
+impl std::fmt::Display for RefCntKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RefCntKind::HighLvl {
+                direct_cnt,
+                sub_cnt,
+            } => write!(f, "{} ({} direct)", direct_cnt + sub_cnt, direct_cnt),
+            RefCntKind::LowLvl { cnt } => write!(f, "{}", cnt),
+            RefCntKind::Untraced => write!(f, "0"),
+        }
+    }
 }
 
 /// Holds the regex matcher for entries.

@@ -34,25 +34,88 @@ pub fn sync(params: SyncParameter) -> Result<(), SyncError> {
 
     let changes = ReferenceChanges::new(params.branch_name, &wiki, &ref_map);
 
-    dbg!(changes);
+    for (filepath, changed_req) in changes.ordered_file_changes() {
+        let mut lines: Vec<String> = std::fs::read_to_string(filepath)
+            .map_err(|_| SyncError::AccessingWikiFile(filepath.clone()))?
+            .lines()
+            .map(|s| s.to_string())
+            .collect();
+
+        // Note: We assume that the requirement is still at the correct line as retrieved by the Wiki struct.
+        for req in changed_req {
+            let mut ref_list_line_nr = req.line_nr + 1; // Note: +1 to start looking for *reference* list entries after heading and blank line.
+
+            // Had no *references* list before
+            if wiki
+                .req(&req.head.id)
+                .unwrap_or_else(|| panic!("Changed requirement '{}' not in wiki.", &req.head.id))
+                .ref_list
+                .is_empty()
+            {
+                lines.insert(ref_list_line_nr, "**References:**".to_string());
+                ref_list_line_nr += 1;
+                lines.insert(ref_list_line_nr, "".to_string());
+                ref_list_line_nr += 1;
+            } else {
+                // Jump to first entry
+                while !lines
+                    .get(ref_list_line_nr)
+                    .unwrap_or(&String::from(""))
+                    .starts_with('-')
+                {
+                    ref_list_line_nr += 1;
+                }
+            }
+
+            for entry in req.ref_list {
+                let mut extend_list = false;
+
+                match lines.get_mut(ref_list_line_nr) {
+                    Some(entry_line) if entry_line.starts_with('-') => {
+                        let _ = std::mem::replace(entry_line, entry.to_string());
+                        ref_list_line_nr += 1;
+                    }
+                    Some(_) | None => {
+                        extend_list = true;
+                    }
+                }
+
+                if extend_list {
+                    if ref_list_line_nr >= lines.len() {
+                        lines.push(entry.to_string());
+                    } else {
+                        lines.insert(ref_list_line_nr, entry.to_string());
+                    }
+
+                    ref_list_line_nr += 1;
+                }
+            }
+        }
+
+        let mut content = lines.join("\n");
+        content.push('\n');
+        std::fs::write(filepath, content)
+            .map_err(|_| SyncError::AccessingWikiFile(filepath.clone()))?;
+    }
 
     Ok(())
 }
 
 /// Possible errors that may occure during synchronisation.
 pub enum SyncError {
-    CouldNotSetupWiki,
-    CouldNotCountReferences,
+    WikiSetup,
+    ReferenceCounting,
+    AccessingWikiFile(PathBuf),
 }
 
 impl From<WikiError> for SyncError {
     fn from(_value: WikiError) -> Self {
-        SyncError::CouldNotSetupWiki
+        SyncError::WikiSetup
     }
 }
 
 impl From<ReferencesMapError> for SyncError {
     fn from(_value: ReferencesMapError) -> Self {
-        SyncError::CouldNotCountReferences
+        SyncError::ReferenceCounting
     }
 }
