@@ -8,10 +8,7 @@ use std::{
 use regex::Regex;
 use walkdir::WalkDir;
 
-use crate::{
-    req::{ref_list::RefCntKind, ReqId},
-    wiki::Wiki,
-};
+use crate::{req::ReqId, wiki::Wiki};
 
 pub mod changes;
 
@@ -131,19 +128,6 @@ impl ReferencesMap {
         }
 
         Ok(added_refs)
-    }
-
-    pub fn cnt_changes(&self, wiki: &Wiki, branch_name: String) -> HashMap<ReqId, RefCntKind> {
-        // let mut new_cnts_map = HashMap::new();
-
-        // von high-level reqs aus beginnen mit "tiefen suche"
-        // sub-reqs von high-level durchgehen, bis bei leaf-req
-        // leaf-req cnt vergleichen und in new_cnt map eintragen, falls sich cnt verändert hat
-        // wieder ein level höher und nächstes leaf-req
-        // wenn alle sub-reqs durch, req selbst updaten (cnt map enthält jetzt ggf neue cnts für sub-reqs. Sonst cnt in wiki noch korrekt)
-
-        // iterator prinzip versuchen der per next() den req-tree abläuft
-        todo!()
     }
 }
 

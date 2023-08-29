@@ -1,27 +1,47 @@
-use std::{collections::HashMap, path::PathBuf, sync::atomic::Ordering};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+    sync::atomic::Ordering,
+};
 
 use crate::{
     req::{ref_list::RefCntKind, Req, ReqId},
-    wiki::Wiki,
+    wiki::{Wiki, WikiReq},
 };
 
 use super::ReferencesMap;
 
+/// Keeps track of changes to requirement references.
+///
+/// [req:sync]
+#[derive(Debug)]
 pub struct ReferenceChanges {
     new_cnt_map: HashMap<ReqId, RefCntKind>,
+    implicits_cnt_map: HashMap<ReqId, RefCntKind>,
     file_changes: HashMap<PathBuf, Vec<Req>>,
     branch_name: String,
 }
 
 impl ReferenceChanges {
     pub fn new(branch_name: String, wiki: &Wiki, ref_map: &ReferencesMap) -> Self {
-        let mut new_cnt_map = HashMap::new();
-        let mut file_changes = HashMap::new();
+        let mut changes = ReferenceChanges {
+            new_cnt_map: HashMap::new(),
+            implicits_cnt_map: HashMap::new(),
+            file_changes: HashMap::new(),
+            branch_name,
+        };
+
+        changes.calculate_cnts(wiki, ref_map);
+        changes
+    }
+
+    fn calculate_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) {
         let flat_wiki = wiki.flatten();
 
         for req in flat_wiki {
-            let req_id = req.head.id.clone();
+            let req_id = req.req_id().clone();
 
+            // TODO: Check for *manual* flag
             let new_direct_cnt = ref_map
                 .map
                 .get(&req_id)
@@ -29,70 +49,89 @@ impl ReferenceChanges {
                 .unwrap_or_default();
 
             let new_cnt_kind = match wiki.sub_reqs(&req_id) {
-                Some(sub_reqs) => RefCntKind::HighLvl {
-                    direct_cnt: new_direct_cnt,
-                    sub_cnt: sub_ref_cnts(sub_reqs, &branch_name, wiki, &new_cnt_map),
-                },
-                None => RefCntKind::LowLvl {
-                    cnt: new_direct_cnt,
-                },
+                Some(sub_reqs) => {
+                    let sub_cnt = self.sub_ref_cnts(sub_reqs, wiki);
+                    if new_direct_cnt == 0 && sub_cnt == 0 {
+                        RefCntKind::Untraced
+                    } else {
+                        RefCntKind::HighLvl {
+                            direct_cnt: new_direct_cnt,
+                            sub_cnt,
+                        }
+                    }
+                }
+                None => {
+                    if new_direct_cnt == 0 {
+                        RefCntKind::Untraced
+                    } else {
+                        RefCntKind::LowLvl {
+                            cnt: new_direct_cnt,
+                        }
+                    }
+                }
             };
 
-            let kind_changed = match wiki.req_ref_entry(&req_id, &branch_name) {
-                Some(req_entry) => match &req_entry.ref_cnt {
-                    Some(req_entry_cnt) => req_entry_cnt != &new_cnt_kind,
-                    None => true,
-                },
-                None => true,
-            };
+            match req {
+                WikiReq::Explicit { req: explicit_req } => {
+                    let kind_changed = match wiki.req_ref_entry(&req_id, &self.branch_name) {
+                        Some(req_entry) => req_entry.ref_cnt != new_cnt_kind,
+                        // Note: Might happen if the requirement had no references in this branch before.
+                        None => new_cnt_kind != RefCntKind::Untraced,
+                    };
 
-            if kind_changed {
-                new_cnt_map.insert(req_id, new_cnt_kind);
-                file_changes
-                    .entry(req.filepath.clone())
-                    .or_insert(Vec::new())
-                    .push(req);
+                    if kind_changed {
+                        self.new_cnt_map.insert(req_id, new_cnt_kind);
+                        self.file_changes
+                            .entry(explicit_req.filepath.clone())
+                            .or_insert(Vec::new())
+                            .push(explicit_req);
+                    }
+                }
+                WikiReq::Implicit {
+                    req_id: implicit_req_id,
+                } => {
+                    self.implicits_cnt_map.insert(implicit_req_id, new_cnt_kind);
+                }
             }
         }
-
-        ReferenceChanges {
-            new_cnt_map,
-            file_changes,
-            branch_name,
-        }
     }
-}
 
-/// Calculates the sum of all updated reference counters of the given sub requirements.
-///
-/// **Note:** This function assumes that the counter for all sub-requirements was already updated.
-fn sub_ref_cnts(
-    sub_reqs: &Vec<ReqId>,
-    branch_name: &str,
-    wiki: &Wiki,
-    new_cnt_map: &HashMap<ReqId, RefCntKind>,
-) -> usize {
-    let mut sub_cnt = 0;
-    for sub_req in sub_reqs {
-        let sub_cnt_kind = new_cnt_map.get(sub_req).unwrap_or_else(|| {
-            match wiki.req_ref_entry(sub_req, &branch_name) {
-                Some(req_entry) => match &req_entry.ref_cnt {
-                    Some(cnt_kind) => cnt_kind,
-                    None => &RefCntKind::LowLvl { cnt: 0 },
-                },
-                None => &RefCntKind::LowLvl { cnt: 0 },
+    /// Calculates the sum of all updated reference counters of the given sub requirements.
+    ///
+    /// **Note:** This function assumes that the counter for all sub-requirements was already updated.
+    fn sub_ref_cnts(&mut self, sub_reqs: &HashSet<ReqId>, wiki: &Wiki) -> usize {
+        let mut sub_cnt = 0;
+        for sub_req in sub_reqs {
+            let sub_cnt_kind = self.new_cnt_map.get(sub_req).unwrap_or_else(|| {
+                match wiki.req_ref_entry(sub_req, &self.branch_name) {
+                    Some(req_entry) => &req_entry.ref_cnt,
+                    None => {
+                        if wiki.is_implicit(sub_req) {
+                            // Note: Counter for implicit requirements are already up-to-date,
+                            // because like sub-requirements, they appear in the flattened wiki before the high-level requirement.
+                            self.implicits_cnt_map
+                                .get(sub_req)
+                                .expect("Implicit requirement not in implicit cnt-map.")
+                        } else {
+                            // Note: Might be `None` for sub-requirements that are **not** *active* in this branch.
+                            &RefCntKind::Untraced
+                        }
+                    }
+                }
+            });
+
+            sub_cnt += match sub_cnt_kind {
+                RefCntKind::HighLvl {
+                    direct_cnt,
+                    sub_cnt,
+                } => direct_cnt + sub_cnt,
+                RefCntKind::LowLvl { cnt } => *cnt,
+                // TODO: Check for *manual* flag here
+                RefCntKind::Untraced => 0,
             }
-        });
-
-        sub_cnt += match sub_cnt_kind {
-            RefCntKind::HighLvl {
-                direct_cnt,
-                sub_cnt,
-            } => direct_cnt + sub_cnt,
-            RefCntKind::LowLvl { cnt } => *cnt,
         }
+        sub_cnt
     }
-    sub_cnt
 }
 
 #[cfg(test)]

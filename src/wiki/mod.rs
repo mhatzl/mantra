@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::Keys, HashMap},
+    collections::{hash_map::Keys, HashMap, HashSet},
     path::PathBuf,
 };
 
@@ -22,18 +22,13 @@ pub struct Wiki {
     /// Map to store sub-requirement IDs of high-level requirements.
     /// Only sub-requirements one level *deeper* are stored.
     ///
-    /// [req:req_id.sub_req_id]
-    sub_map: HashMap<ReqId, Vec<ReqId>>,
-
-    /// Map to store the requirement ID of the direct parent requirement.
-    ///
-    /// **Note:** High-level requirements are not added to this map.
+    /// **Note:** This may include IDs for non-existing requirements if a sub-requirement is created at a *deeper* level, without creating the *implicit* IDs between.
+    /// e.g. Creating `high_lvl.test.test_sub_req`, but not `high_lvl.test`.
     ///
     /// [req:req_id.sub_req_id]
-    parent_map: HashMap<ReqId, ReqId>,
+    sub_map: HashMap<ReqId, HashSet<ReqId>>,
 
-    /// List of high-level requirements of this wiki.
-    /// May be used as starting point to travers the wiki like a tree.
+    /// List of high-level requirements found in this wiki.
     ///
     /// [req:wiki]
     high_lvl_reqs: Vec<ReqId>,
@@ -101,12 +96,21 @@ impl Wiki {
         &self.high_lvl_reqs
     }
 
-    pub fn sub_reqs(&self, req_id: &ReqId) -> Option<&Vec<ReqId>> {
+    pub fn sub_reqs(&self, req_id: &ReqId) -> Option<&HashSet<ReqId>> {
         self.sub_map.get(req_id)
     }
 
     pub fn req(&self, req_id: &ReqId) -> Option<&Req> {
         self.req_map.get(req_id)
+    }
+
+    /// Checks if the given requirement ID is only implicitly created in the Wiki,
+    /// but has no wiki-section on its own.
+    ///
+    /// Returns `true` if the given requirement is implicit,
+    /// or `false` if it is explicit, or does not exist in the wiki.
+    pub fn is_implicit(&self, req_id: &ReqId) -> bool {
+        self.req_map.get(req_id).is_none() && self.sub_map.get(req_id).is_some()
     }
 
     pub fn req_ref_entry(&self, req_id: &ReqId, branch_name: &str) -> Option<&RefListEntry> {
@@ -123,7 +127,6 @@ impl Wiki {
         Wiki {
             req_map: HashMap::new(),
             sub_map: HashMap::new(),
-            parent_map: HashMap::new(),
             high_lvl_reqs: Vec::new(),
         }
     }
@@ -134,9 +137,8 @@ impl Wiki {
         let mut line_nr = 0;
 
         let mut added_reqs = 0;
-        let mut added_refs = 0;
         let mut has_references_list = false;
-        let mut curr_req = None;
+        let mut curr_req: Option<Req> = None;
 
         let mut in_verbatim_context = false;
 
@@ -148,24 +150,43 @@ impl Wiki {
             }
 
             if !in_verbatim_context {
-                if let Ok(req_heading) = get_req_heading(line) {
-                    let req_id = req_heading.id.clone();
+                if line.starts_with("**References:**") {
+                    has_references_list = true;
+                } else if let Ok(req_heading) = get_req_heading(line) {
+                    // Add previous found requirement to wiki, before starting this one.
+                    if let Some(req) = curr_req.as_mut() {
+                        let req_id = req.head.id.clone();
+                        added_reqs += 1;
+                        let prev_req = self.req_map.insert(req_id, std::mem::take(req));
 
-                    if let Some((parent_req_id, _)) = req_id.rsplit_once('.') {
-                        self.sub_map
-                            .entry(parent_req_id.to_string())
-                            .or_insert(Vec::new())
-                            .push(req_id.clone());
-
-                        let prev_parent_id = self
-                            .parent_map
-                            .insert(req_id.clone(), parent_req_id.to_string());
-                        if let Some(prev_parent) = prev_parent_id {
-                            return Err(WikiError::MoreThanOneParent {
-                                req_id: req_id.clone(),
-                                parent_1: prev_parent,
-                                parent_2: parent_req_id.to_string(),
+                        if let Some(prev) = prev_req {
+                            return Err(WikiError::DuplicateReqId {
+                                filepath: prev.filepath,
+                                line_nr: prev.line_nr,
                             });
+                        }
+                    }
+
+                    has_references_list = false;
+
+                    let req_id = req_heading.id.clone();
+                    let split_id = req_id.clone();
+                    let mut req_id_parts = split_id.split('.');
+                    let id_part_len = req_id_parts.clone().count();
+                    if id_part_len > 1 {
+                        let mut parent_req_id = req_id_parts
+                            .next()
+                            .expect("More than one ID part, but first `next()` failed.")
+                            .to_string();
+
+                        for part in req_id_parts {
+                            let curr_id = format!("{}.{}", parent_req_id, part);
+                            let entry = self.sub_map.entry(parent_req_id).or_insert(HashSet::new());
+
+                            // Note: HashSet is used to prevent duplicate entries for the same ID.
+                            entry.insert(curr_id.clone());
+
+                            parent_req_id = curr_id;
                         }
                     } else {
                         self.high_lvl_reqs.push(req_id);
@@ -177,30 +198,12 @@ impl Wiki {
                         filepath: filepath.clone(),
                         line_nr,
                         wiki_link: None,
-                    })
-                } else if line.starts_with("**References:**") {
-                    has_references_list = true;
-                } else if line.starts_with("#") || (added_refs > 0 && line.is_empty()) {
-                    if let Some(req) = curr_req.as_mut() {
-                        let req_id = req.head.id.clone();
-                        let prev_req = self.req_map.insert(req_id, std::mem::take(req));
-                        if let Some(prev) = prev_req {
-                            return Err(WikiError::DuplicateReqId {
-                                filepath: prev.filepath,
-                                line_nr: prev.line_nr,
-                            });
-                        }
-                    }
-
-                    added_refs = 0;
-                    curr_req = None;
-                    has_references_list = false;
+                    });
                 } else if has_references_list {
                     if let Some(req) = curr_req.as_mut() {
                         match get_ref_entry(line) {
                             Ok(entry) => {
                                 req.ref_list.push(entry);
-                                added_refs += 1;
                             }
                             Err(ReqMatchingError::NoMatchFound) => continue,
                             Err(err) => {
@@ -210,6 +213,11 @@ impl Wiki {
                                     cause: err.to_string(),
                                 })
                             }
+                        }
+
+                        // Reset flag after the *references* list entries to accept new requirement headings.
+                        if !req.ref_list.is_empty() && line.trim().is_empty() {
+                            has_references_list = false;
                         }
                     }
                 }
@@ -221,6 +229,7 @@ impl Wiki {
             added_reqs += 1;
             let req_id = req.head.id.clone();
             let prev_req = self.req_map.insert(req_id, req);
+
             if let Some(prev) = prev_req {
                 return Err(WikiError::DuplicateReqId {
                     filepath: prev.filepath,
@@ -234,7 +243,8 @@ impl Wiki {
 
     /// Flattens this wiki, starting at the first *leaf* requirement of the first high-level requirement.
     /// Resulting in a depth-first flat representation of the requirement hierarchy of the wiki.
-    pub(crate) fn flatten(&self) -> Vec<Req> {
+    pub(crate) fn flatten(&self) -> Vec<WikiReq> {
+        // Note: Due to possible implicit requirements, this capacity may not be enough, but it is the closest we can get without increasing complexity.
         let mut flat_wiki = Vec::with_capacity(self.req_cnt());
 
         for req in &self.high_lvl_reqs {
@@ -244,17 +254,35 @@ impl Wiki {
         flat_wiki
     }
 
-    fn flatten_req(&self, req_id: &ReqId, flat_wiki: &mut Vec<Req>) {
+    fn flatten_req(&self, req_id: &ReqId, flat_wiki: &mut Vec<WikiReq>) {
         if let Some(sub_reqs) = self.sub_map.get(req_id) {
             for sub_req_id in sub_reqs {
                 self.flatten_req(sub_req_id, flat_wiki);
             }
         }
 
-        let req = self
-            .req(req_id)
-            .expect(format!("Requirement with ID '{}' not in wiki, but ID is.", req_id).as_str());
-        flat_wiki.push(req.clone());
+        let wiki_req = match self.req(req_id) {
+            Some(req) => WikiReq::Explicit { req: req.clone() },
+            None => WikiReq::Implicit {
+                req_id: req_id.clone(),
+            },
+        };
+
+        flat_wiki.push(wiki_req);
+    }
+}
+
+pub enum WikiReq {
+    Explicit { req: Req },
+    Implicit { req_id: ReqId },
+}
+
+impl WikiReq {
+    pub fn req_id(&self) -> &ReqId {
+        match self {
+            WikiReq::Explicit { req } => &req.head.id,
+            WikiReq::Implicit { req_id } => req_id,
+        }
     }
 }
 
@@ -268,12 +296,6 @@ pub enum WikiError {
         filepath: PathBuf,
         /// Line number in the file the ID is already specified.
         line_nr: usize,
-    },
-
-    MoreThanOneParent {
-        req_id: String,
-        parent_1: String,
-        parent_2: String,
     },
 
     InvalidRefListEntry {
@@ -324,7 +346,6 @@ mod test {
     #[test]
     fn req_missing_ref_list_start() {
         let filename = "test_file";
-        // Note: String moved to the most left to get correct new line behavior.
         let content = r#"
 # req_id: Some Title
 
@@ -354,7 +375,6 @@ mod test {
     #[test]
     fn low_lvl_req_with_1_ref_entry() {
         let filename = "test_file";
-        // Note: String moved to the most left to get correct new line behavior.
         let content = r#"
 # req_id.sub_req: Some Title
 
@@ -398,7 +418,6 @@ mod test {
     #[test]
     fn flattend_wiki_one_sub() {
         let filename = "test_file";
-        // Note: String moved to the most left to get correct new line behavior.
         let content = r#"
 # req_id: Some Title
 
@@ -426,14 +445,99 @@ mod test {
 
         let req_0 = &flattened[0];
         assert_eq!(
-            req_0.head.id, "req_id.sub_req",
+            req_0.req_id(),
+            "req_id.sub_req",
             "First entry in flattened wiki was not sub-requirement."
         );
 
         let req_1 = &flattened[1];
         assert_eq!(
-            req_1.head.id, "req_id",
+            req_1.req_id(),
+            "req_id",
             "Second entry in flattened wiki was not high-level requirement."
+        );
+    }
+
+    #[test]
+    fn low_lvl_req_skipped_one_lvl() {
+        let filename = "test_file";
+        let content = r#"
+# req_id: Some Title
+
+**References:**
+
+- in branch main: 2 (1 direct)
+
+## req_id.test.some_test: Some Test
+
+**References:**
+
+- in branch main: 1
+        "#;
+
+        let mut wiki = Wiki::new();
+        wiki.add(PathBuf::from(filename), content).unwrap();
+
+        assert!(
+            wiki.req_map.contains_key("req_id.test.some_test"),
+            "Requirement was not added to the wiki."
+        );
+        assert!(
+            wiki.sub_map.contains_key("req_id.test"),
+            "Parent requirement was not added to sub-map for mid-level requirement."
+        );
+        assert!(
+            wiki.sub_map
+                .get("req_id.test")
+                .unwrap()
+                .contains(&"req_id.test.some_test".to_string()),
+            "Sub-requirement was not added to test requirement in sub-map."
+        );
+
+        assert!(
+            wiki.sub_map.contains_key("req_id"),
+            "Parent requirement was not added to sub-map for high-level requirement."
+        );
+        assert!(
+            wiki.sub_map
+                .get("req_id")
+                .unwrap()
+                .contains(&"req_id.test".to_string()),
+            "Sub-requirement was not added to parent in sub-map."
+        );
+    }
+
+    #[test]
+    fn one_implicit_req() {
+        let filename = "test_file";
+        let content = r#"
+# req_id: Some Title
+
+**References:**
+
+- in branch main: 2 (1 direct)
+
+## req_id.test.some_test: Some Test
+
+**References:**
+
+- in branch main: 1
+        "#;
+
+        let mut wiki = Wiki::new();
+        wiki.add(PathBuf::from(filename), content).unwrap();
+
+        assert!(
+            wiki.is_implicit(&format!("req_id.test")),
+            "`req_id.test` not identified as implicit requirement."
+        );
+
+        let flat_wiki = wiki.flatten();
+
+        assert_eq!(
+            flat_wiki.len(),
+            3,
+            "Implicit requirement not added to flattened wiki list."
         );
     }
 }

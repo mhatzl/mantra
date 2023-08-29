@@ -30,7 +30,7 @@ pub struct RefListEntry {
     /// The reference counter for this entry.
     ///
     /// [req:wiki.ref_list]
-    pub ref_cnt: Option<RefCntKind>,
+    pub ref_cnt: RefCntKind,
 
     pub is_manual: bool,
 
@@ -51,6 +51,9 @@ pub enum RefCntKind {
     ///
     /// [req:req_id.sub_req_id]
     LowLvl { cnt: usize },
+
+    /// Special variant that marks a requirement as having no references.
+    Untraced,
 }
 
 /// Holds the regex matcher for entries.
@@ -137,15 +140,15 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
                                 return Err(ReqMatchingError::DirectCntAboveGeneralCnt);
                             }
 
-                            Some(RefCntKind::HighLvl {
+                            RefCntKind::HighLvl {
                                 direct_cnt,
                                 sub_cnt: cnt - direct_cnt,
-                            })
+                            }
                         }
-                        None => Some(RefCntKind::LowLvl { cnt }),
+                        None => RefCntKind::LowLvl { cnt },
                     }
                 }
-                None => None,
+                None => RefCntKind::Untraced,
             };
 
             Ok(RefListEntry {
@@ -181,7 +184,7 @@ mod test {
             "Branch link was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.ref_cnt.unwrap(),
+            ref_entry.ref_cnt,
             RefCntKind::LowLvl { cnt: 10 },
             "Reference counter was not retrieved correctly."
         );
@@ -207,7 +210,7 @@ mod test {
             "Branch link was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.ref_cnt.unwrap(),
+            ref_entry.ref_cnt,
             RefCntKind::HighLvl {
                 direct_cnt: 2,
                 sub_cnt: 8
@@ -240,7 +243,7 @@ mod test {
             "Branch link was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.ref_cnt.unwrap(),
+            ref_entry.ref_cnt,
             RefCntKind::HighLvl {
                 direct_cnt: 2,
                 sub_cnt: 8
