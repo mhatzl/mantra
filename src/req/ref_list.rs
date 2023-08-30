@@ -2,8 +2,6 @@
 //!
 //! [req:wiki.ref_list]
 
-use std::cell::OnceCell;
-
 use regex::Regex;
 
 use super::ReqMatchingError;
@@ -83,9 +81,9 @@ impl std::fmt::Display for RefCntKind {
 }
 
 /// Holds the regex matcher for entries.
-const REF_ENTRY_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
+static REF_ENTRY_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 /// Holds the regex matcher for optional branch links.
-const BRANCH_LINK_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
+static BRANCH_LINK_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
 /// Tries to extract a *references* list entry from the given string.
 ///  
@@ -104,8 +102,7 @@ const BRANCH_LINK_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
 ///
 /// [req:wiki.ref_list]
 pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingError> {
-    let entry_matcher = REF_ENTRY_MATCHER;
-    let entry_regex = entry_matcher.get_or_init(|| {
+    let entry_regex = REF_ENTRY_MATCHER.get_or_init(|| {
         Regex::new(r"^[-\+\*]\sin\sbranch\s(?<branch>[^\s]+):\s(?:(?<depr>deprecated)|(?<manual>manual(?<plus>\s\+)?)\s*)?(?<cnt>\d+)?(?:\s\((?<direct_cnt>\d+)\sdirect\))?")
             .expect("Regex to match a *references* list entry could **not** be created.")
     });
@@ -116,8 +113,7 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
                 .name("branch")
                 .expect("`branch` capture group was not in *references* list entry match.")
                 .as_str();
-            let branch_matcher = BRANCH_LINK_MATCHER;
-            let branch_regex = branch_matcher.get_or_init(|| {
+            let branch_regex = BRANCH_LINK_MATCHER.get_or_init(|| {
                 Regex::new(r"^\[(?<name>[^\]]+)\]\((?<link>[^\)]+)\)")
                     .expect("Regex to match an optional branch link could **not** be created.")
             });
@@ -155,11 +151,15 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
 
             let ref_cnt = match opt_cnt {
                 Some(cnt_match) => {
-                    let cnt = usize::from_str_radix(cnt_match.as_str(), 10)
+                    let cnt = cnt_match
+                        .as_str()
+                        .parse::<usize>()
                         .map_err(|_| ReqMatchingError::CntIsNoNumber)?;
                     match opt_direct_cnt {
                         Some(direct_cnt_match) => {
-                            let direct_cnt = usize::from_str_radix(direct_cnt_match.as_str(), 10)
+                            let direct_cnt = direct_cnt_match
+                                .as_str()
+                                .parse::<usize>()
                                 .map_err(|_| ReqMatchingError::CntIsNoNumber)?;
 
                             if direct_cnt > cnt {

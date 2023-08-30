@@ -1,8 +1,7 @@
 use std::path::PathBuf;
 
+use references::ReferencesMap;
 use wiki::Wiki;
-
-use crate::references::ReferencesMap;
 
 mod references;
 mod req;

@@ -133,8 +133,7 @@ impl Wiki {
 
     /// Iterate through the given content, and add found requirements.
     fn add(&mut self, filepath: PathBuf, content: &str) -> Result<usize, WikiError> {
-        let mut lines = content.lines();
-        let mut line_nr = 0;
+        let lines = content.lines();
 
         let mut added_reqs = 0;
         let mut has_references_list = false;
@@ -142,9 +141,7 @@ impl Wiki {
 
         let mut in_verbatim_context = false;
 
-        while let Some(line) = lines.next() {
-            line_nr += 1;
-
+        for (line_nr, line) in lines.enumerate() {
             if line.trim_start().starts_with("```") || line.trim_start().starts_with("~~~") {
                 in_verbatim_context = !in_verbatim_context;
             }
@@ -528,7 +525,7 @@ mod test {
         wiki.add(PathBuf::from(filename), content).unwrap();
 
         assert!(
-            wiki.is_implicit(&format!("req_id.test")),
+            wiki.is_implicit(&"req_id.test".to_string()),
             "`req_id.test` not identified as implicit requirement."
         );
 

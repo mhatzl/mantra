@@ -1,5 +1,5 @@
 //! Contains the structure to represent requirements and the *references* list.
-use std::{cell::OnceCell, path::PathBuf};
+use std::path::PathBuf;
 
 use regex::Regex;
 use thiserror::Error;
@@ -58,7 +58,7 @@ pub struct ReqHeading {
     pub title: String,
 }
 
-const REQ_HEADING_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
+static REQ_HEADING_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
 /// Tries to extract a requirement heading from the given content.
 ///  
@@ -72,8 +72,7 @@ const REQ_HEADING_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
 ///
 /// [req:req_id], [req:wiki]
 pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatchingError> {
-    let binding = REQ_HEADING_MATCHER;
-    let regex = binding.get_or_init(|| {
+    let regex = REQ_HEADING_MATCHER.get_or_init(|| {
         // Note: This pattern may only be used to match the first line of a requirement heading.
         // Creating a pattern to match multiple lines until the *references* list is found would be too complicated.
         // => iterate through files line by line

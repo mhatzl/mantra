@@ -1,5 +1,4 @@
 use std::{
-    cell::OnceCell,
     collections::HashMap,
     path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
@@ -72,7 +71,7 @@ impl TryFrom<(&Wiki, PathBuf)> for ReferencesMap {
 }
 
 /// Holds the regex matcher for requirement references.
-const REFERENCES_MATCHER: OnceCell<Regex> = std::cell::OnceCell::new();
+static REFERENCES_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
 impl ReferencesMap {
     fn with<'a>(requirements: &'a mut (impl Iterator<Item = &'a ReqId> + Clone)) -> Self {
@@ -89,19 +88,15 @@ impl ReferencesMap {
     ///
     /// **Note:** Not required for `self` to be mutable, because counts are stored as [`AtomicUsize`].
     fn trace(&self, filename: String, content: &str) -> Result<usize, ReferencesMapError> {
-        let references_matcher = REFERENCES_MATCHER;
-        let references_regex = references_matcher.get_or_init(|| {
+        let references_regex = REFERENCES_MATCHER.get_or_init(|| {
             Regex::new(r"\[req:(?<req_id>[^\]\s]+)\]")
                 .expect("Regex to match requirement references could **not** be created.")
         });
 
-        let mut lines = content.lines();
-        let mut line_nr = 0;
+        let lines = content.lines();
         let mut added_refs = 0;
 
-        while let Some(line) = lines.next() {
-            line_nr += 1;
-
+        for (line_nr, line) in lines.enumerate() {
             for captures in references_regex.captures_iter(line) {
                 let req_id = captures
                     .name("req_id")
