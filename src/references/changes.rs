@@ -1,3 +1,7 @@
+//! Contains the [`ReferenceChanges`] struct to get the reference differences between wiki and project.
+//!
+//! [req:sync]
+
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -26,6 +30,8 @@ pub struct ReferenceChanges {
 }
 
 impl ReferenceChanges {
+    /// Creates [`ReferenceChanges`] from the given wiki and reference map.
+    /// Found references are compared against the references entry in the wiki for the given branch name.
     pub fn new(branch_name: Arc<String>, wiki: &Wiki, ref_map: &ReferencesMap) -> Self {
         let mut changes = ReferenceChanges {
             new_cnt_map: HashMap::new(),
@@ -34,7 +40,7 @@ impl ReferenceChanges {
             branch_name,
         };
 
-        changes.calculate_cnts(wiki, ref_map);
+        changes.update_cnts(wiki, ref_map);
         changes
     }
 
@@ -82,7 +88,10 @@ impl ReferenceChanges {
         ordered_file_changes
     }
 
-    fn calculate_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) {
+    /// Updates the reference counters for all requirements, starting from the first leaf requirement of the first high-level requirement.
+    ///
+    /// **Note:** Only changed counters are added to `self.new_cnt_map`.
+    fn update_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) {
         let flat_wiki = wiki.flatten();
 
         for req in flat_wiki {

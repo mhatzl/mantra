@@ -2,6 +2,7 @@
 name = "mantra"
 version = "0.1.0"
 edition = "2021"
+authors = ["Manuel Hatzl"]
 description = "Tool to trace requirements down to implementation and tests."
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"

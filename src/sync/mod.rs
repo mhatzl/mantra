@@ -5,7 +5,6 @@
 use std::path::PathBuf;
 
 use clap::Args;
-use logid::log_id::LogLevel;
 
 use crate::{
     references::{changes::ReferenceChanges, ReferencesMap, ReferencesMapError},
@@ -56,10 +55,7 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
     let ordered_file_changes = changes.ordered_file_changes();
 
     if ordered_file_changes.is_empty() {
-        logid::log!(
-            logid::new_log_id!("SyncInfo", LogLevel::Info),
-            "Wiki and project already in-sync."
-        );
+        logid::log!(SyncInfo::Unchanged, "Wiki and project already in-sync.");
         return Ok(());
     }
 
@@ -134,6 +130,11 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
             .map_err(|_| logid::pipe!(SyncError::AccessingWikiFile(filepath.clone())))?;
     }
 
+    logid::log!(
+        SyncInfo::Changed,
+        "Wiki and project successfully synchronized."
+    );
+
     Ok(())
 }
 
@@ -158,4 +159,13 @@ impl From<ReferencesMapError> for SyncError {
     fn from(_value: ReferencesMapError) -> Self {
         SyncError::ReferenceCounting
     }
+}
+
+/// Informations that may set during synchronisation.
+#[derive(Debug, logid::InfoLogId)]
+enum SyncInfo {
+    /// Wiki and project already synchronized.
+    Unchanged,
+    /// Wiki and project successfully synchronized.
+    Changed,
 }

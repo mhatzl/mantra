@@ -78,6 +78,9 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
 static REFERENCES_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
 impl ReferencesMap {
+    /// Create a [`ReferencesMap`] for the given requirements.
+    ///
+    /// **Note:** Only references to the given requirements are allowed.
     fn with<'a>(requirements: &'a mut (impl Iterator<Item = &'a ReqId> + Clone)) -> Self {
         let capacity = requirements.clone().count();
         let mut map = HashMap::with_capacity(capacity);

@@ -4,8 +4,15 @@ use clap::{Parser, Subcommand};
 
 use crate::sync::SyncParameter;
 
+const HELP_TEMPLATE: &str = r#"
+{before-help}{name} {version} - {about-with-newline}
+Created by: {author-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}"#;
+
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(help_template = HELP_TEMPLATE, author, version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     command: Option<Command>,

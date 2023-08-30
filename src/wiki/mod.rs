@@ -1,3 +1,7 @@
+//! Contains the [`Wiki`] struct, representing found requirements of a wiki.
+//!
+//! [req:wiki]
+
 use std::{
     collections::{hash_map::Keys, HashMap, HashSet},
     path::PathBuf,
@@ -97,10 +101,12 @@ impl Wiki {
         &self.high_lvl_reqs
     }
 
+    /// Returns the sub-requirements of a given requirement, or `None` if it is a *leaf* requirement.
     pub fn sub_reqs(&self, req_id: &ReqId) -> Option<&HashSet<ReqId>> {
         self.sub_map.get(req_id)
     }
 
+    /// Gets the requirement associated with the given requirement ID, or `None` if the ID does not exist in this wiki.
     pub fn req(&self, req_id: &ReqId) -> Option<&Req> {
         self.req_map.get(req_id)
     }
@@ -124,6 +130,7 @@ impl Wiki {
         }
     }
 
+    /// Creates a new wiki.
     fn new() -> Self {
         Wiki {
             req_map: HashMap::new(),
@@ -254,6 +261,9 @@ impl Wiki {
         flat_wiki
     }
 
+    /// Recursively flattens requirements of the wiki.
+    ///
+    /// **Note:** All sub-requirements are added **before** the requirement identified by the given `req_id`.
     fn flatten_req(&self, req_id: &ReqId, flat_wiki: &mut Vec<WikiReq>) {
         if let Some(sub_reqs) = self.sub_map.get(req_id) {
             for sub_req_id in sub_reqs {
@@ -272,8 +282,24 @@ impl Wiki {
     }
 }
 
+/// Represents different requirement representations in the wiki.
 pub enum WikiReq {
+    /// Explicit requirements have a heading in the wiki.
     Explicit { req: Req },
+    /// Implicit requireemnts have no distinct heading in the wiki.
+    /// They are implicitly created, when a sub-requirement would refer to a parent requirement that does not exist in the wiki.
+    ///
+    /// **Example:**
+    ///
+    /// ```text
+    /// # req_id: Some high-level requirement
+    ///
+    /// Explicit requirement.
+    ///
+    /// ## req_id.test.sub_req: Some low-level requirement
+    ///
+    /// This automatically creates `req_id.test` as an implicit requirement.
+    /// ```
     Implicit { req_id: ReqId },
 }
 

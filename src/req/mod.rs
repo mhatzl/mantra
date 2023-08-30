@@ -1,4 +1,6 @@
 //! Contains the structure to represent requirements and the *references* list.
+//!
+//! [req:req_id], [req:wiki.ref_list]
 use std::path::PathBuf;
 
 use regex::Regex;
@@ -44,6 +46,9 @@ pub struct Req {
     pub wiki_link: Option<String>,
 }
 
+/// Represents a requirement heading in the wiki.
+///
+/// [req:wiki]
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct ReqHeading {
     /// Requirement ID of this requirement.
@@ -60,6 +65,7 @@ pub struct ReqHeading {
     pub title: String,
 }
 
+/// Holds the regex matcher for requirement headings.
 static REQ_HEADING_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
 /// Tries to extract a requirement heading from the given content.
