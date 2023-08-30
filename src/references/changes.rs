@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
-    sync::atomic::Ordering,
+    sync::{atomic::Ordering, Arc},
 };
 
 use crate::{
@@ -22,11 +22,11 @@ pub struct ReferenceChanges {
     new_cnt_map: HashMap<ReqId, RefCntKind>,
     implicits_cnt_map: HashMap<ReqId, RefCntKind>,
     file_changes: HashMap<PathBuf, Vec<Req>>,
-    branch_name: String,
+    branch_name: Arc<String>,
 }
 
 impl ReferenceChanges {
-    pub fn new(branch_name: String, wiki: &Wiki, ref_map: &ReferencesMap) -> Self {
+    pub fn new(branch_name: Arc<String>, wiki: &Wiki, ref_map: &ReferencesMap) -> Self {
         let mut changes = ReferenceChanges {
             new_cnt_map: HashMap::new(),
             implicits_cnt_map: HashMap::new(),
@@ -192,13 +192,13 @@ mod test {
     fn setup_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# req_id: Some Title
+# ref_req: Some Title
 
 **References:**
 
 - in branch main: 2
 
-## req_id.sub_req: Some Title
+## ref_req.test: Some Title
 
 **References:**
 
@@ -211,10 +211,10 @@ mod test {
     fn setup_references(wiki: &Wiki) -> ReferencesMap {
         let filename = "test_file";
         // Note: IDs must be identical to the one in `setup_wiki()`.
-        let content = "[req:req_id][req:req_id.sub_req]";
+        let content = "[req:ref_req][req:ref_req.test]";
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
-        ref_map.trace(filename.to_string(), content).unwrap();
+        ref_map.trace(&PathBuf::from(filename), content).unwrap();
         ref_map
     }
 
@@ -224,7 +224,7 @@ mod test {
         let ref_map = setup_references(&wiki);
         let branch_name = String::from("main");
 
-        let changes = ReferenceChanges::new(branch_name, &wiki, &ref_map);
+        let changes = ReferenceChanges::new(branch_name.into(), &wiki, &ref_map);
 
         assert_eq!(
             changes.new_cnt_map.len(),

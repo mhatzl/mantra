@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::atomic::{AtomicUsize, Ordering},
 };
 
@@ -23,17 +23,17 @@ pub struct ReferencesMap {
     map: HashMap<ReqId, AtomicUsize>,
 }
 
-impl TryFrom<(&Wiki, PathBuf)> for ReferencesMap {
+impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
     type Error = ReferencesMapError;
 
     /// Creates a [`ReferencesMap`] for the given wiki, using references from the given project folder.
-    fn try_from(value: (&Wiki, PathBuf)) -> Result<Self, Self::Error> {
+    fn try_from(value: (&Wiki, &PathBuf)) -> Result<Self, Self::Error> {
         let wiki = value.0;
         let project_folder = value.1;
 
         if !project_folder.exists() {
-            return Err(ReferencesMapError::CouldNotFindProjectFolder(
-                project_folder.to_string_lossy().to_string(),
+            return logid::err!(ReferencesMapError::CouldNotFindProjectFolder(
+                project_folder.clone(),
             ));
         }
 
@@ -51,19 +51,23 @@ impl TryFrom<(&Wiki, PathBuf)> for ReferencesMap {
                 });
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
-                    let filename = dir_entry.file_name().to_string_lossy().to_string();
-                    let content = std::fs::read_to_string(dir_entry.path())
-                        .map_err(|_| ReferencesMapError::CouldNotAccessFile(filename.clone()))?;
+                    let content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
+                        logid::pipe!(ReferencesMapError::CouldNotAccessFile(
+                            dir_entry.path().to_path_buf()
+                        ))
+                    })?;
 
-                    ref_map.trace(filename, &content)?;
+                    ref_map.trace(dir_entry.path(), &content)?;
                 }
             }
         } else {
-            let filename = project_folder.to_string_lossy().to_string();
-            let content = std::fs::read_to_string(project_folder)
-                .map_err(|_| ReferencesMapError::CouldNotAccessFile(filename.clone()))?;
+            let content = std::fs::read_to_string(project_folder).map_err(|_| {
+                logid::pipe!(ReferencesMapError::CouldNotAccessFile(
+                    project_folder.clone()
+                ))
+            })?;
 
-            ref_map.trace(filename, &content)?;
+            ref_map.trace(project_folder, &content)?;
         }
 
         Ok(ref_map)
@@ -87,17 +91,27 @@ impl ReferencesMap {
     /// Goes through the given content and increases the reference counter for referenced requirements.
     ///
     /// **Note:** Not required for `self` to be mutable, because counts are stored as [`AtomicUsize`].
-    fn trace(&self, filename: String, content: &str) -> Result<usize, ReferencesMapError> {
+    fn trace(&self, filepath: &Path, content: &str) -> Result<usize, ReferencesMapError> {
         let references_regex = REFERENCES_MATCHER.get_or_init(|| {
+            // [mantra:ignore_next]
             Regex::new(r"\[req:(?<req_id>[^\]\s]+)\]")
                 .expect("Regex to match requirement references could **not** be created.")
         });
 
         let lines = content.lines();
         let mut added_refs = 0;
+        let mut ignore_match = false;
 
         for (line_nr, line) in lines.enumerate() {
+            if line.contains("[mantra:ignore_next]") {
+                ignore_match = true;
+            }
             for captures in references_regex.captures_iter(line) {
+                if ignore_match {
+                    ignore_match = false;
+                    continue;
+                }
+
                 let req_id = captures
                     .name("req_id")
                     .expect("`req_id` capture group was not in reference match.")
@@ -112,9 +126,9 @@ impl ReferencesMap {
                         added_refs += 1;
                     }
                     None => {
-                        return Err(ReferencesMapError::ReqNotInWiki {
-                            req_id,
-                            filename: filename.clone(),
+                        return logid::err!(ReferencesMapError::ReqNotInWiki {
+                            req_id: req_id.clone(),
+                            filepath: filepath.to_path_buf(),
                             line_nr,
                         })
                     }
@@ -126,15 +140,20 @@ impl ReferencesMap {
     }
 }
 
-#[derive(Debug)]
+/// Enum representing possible errors that may occur, when using functions for [`ReferencesMap`].
+#[derive(Debug, thiserror::Error, logid::ErrLogId)]
 pub enum ReferencesMapError {
-    CouldNotAccessFile(String),
+    #[error("Could not access file '{}' in the project folder.", .0.to_string_lossy())]
+    CouldNotAccessFile(PathBuf),
 
-    CouldNotFindProjectFolder(String),
+    #[error("Could not find project folder '{}'.", .0.to_string_lossy())]
+    CouldNotFindProjectFolder(PathBuf),
 
+    // Note: +1 for line number, because internally, lines start at index 0.
+    #[error("Requirement ID '{}' referenced in file '{}' at line '{}' not found in the wiki.", .req_id, .filepath.to_string_lossy(), .line_nr + 1)]
     ReqNotInWiki {
         req_id: String,
-        filename: String,
+        filepath: PathBuf,
         line_nr: usize,
     },
 }
@@ -169,7 +188,7 @@ mod test {
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
         let added_refs = ref_map
-            .trace(filename.to_string(), content)
+            .trace(&PathBuf::from(filename), content)
             .expect("Failed to create references map.");
 
         assert_eq!(added_refs, 1, "Counter for added references is wrong.");
@@ -188,7 +207,7 @@ mod test {
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
         let added_refs = ref_map
-            .trace(filename.to_string(), content)
+            .trace(&PathBuf::from(filename), content)
             .expect("Failed to create references map.");
 
         assert_eq!(added_refs, 2, "Counter for added references is wrong.");
@@ -207,7 +226,7 @@ mod test {
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
         let added_refs = ref_map
-            .trace(filename.to_string(), content)
+            .trace(&PathBuf::from(filename), content)
             .expect("Failed to create references map.");
 
         assert_eq!(added_refs, 2, "Counter for added references is wrong.");

@@ -2,6 +2,8 @@
 //!
 //! [req:wiki.ref_list]
 
+use std::sync::Arc;
+
 use regex::Regex;
 
 use super::ReqMatchingError;
@@ -19,11 +21,11 @@ pub struct RefListEntry {
     /// The name of the branch for this entry.
     ///
     /// [req:wiki.ref_list]
-    pub branch_name: String,
+    pub branch_name: Arc<String>,
     /// The link to the branch for this entry.
     ///
     /// [req:wiki.ref_list.branch_link]
-    pub branch_link: Option<String>,
+    pub branch_link: Option<Arc<String>>,
 
     /// The reference counter for this entry.
     ///
@@ -130,9 +132,9 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
                         .expect("`link` capture group was not in branch match.")
                         .as_str()
                         .to_string();
-                    (name, Some(link))
+                    (Arc::new(name), Some(Arc::new(link)))
                 }
-                None => (branch.to_string(), None),
+                None => (Arc::new(branch.to_string()), None),
             };
 
             let is_deprecated = captures.name("depr").is_some();
@@ -261,11 +263,8 @@ mod test {
             "Branch name was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.branch_link,
-            Some(
-                "https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id"
-                    .to_string()
-            ),
+            ref_entry.branch_link.unwrap().as_ref(),
+            &"https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id".to_string(),
             "Branch link was not retrieved correctly."
         );
         assert_eq!(

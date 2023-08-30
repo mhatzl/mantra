@@ -34,10 +34,10 @@ pub struct Wiki {
     high_lvl_reqs: Vec<ReqId>,
 }
 
-impl TryFrom<PathBuf> for Wiki {
+impl TryFrom<&PathBuf> for Wiki {
     type Error = WikiError;
 
-    fn try_from(req_path: PathBuf) -> Result<Self, Self::Error> {
+    fn try_from(req_path: &PathBuf) -> Result<Self, Self::Error> {
         let mut wiki = Wiki::new();
 
         if req_path.is_dir() {
@@ -51,15 +51,16 @@ impl TryFrom<PathBuf> for Wiki {
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
                     let filepath = dir_entry.into_path();
-                    let content = std::fs::read_to_string(filepath.clone())
-                        .map_err(|_| WikiError::CouldNotAccessFile(filepath.clone()))?;
+                    let content = std::fs::read_to_string(filepath.clone()).map_err(|_| {
+                        logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone()))
+                    })?;
                     wiki.add(filepath, &content)?;
                 }
             }
         } else {
             let filepath = req_path.to_path_buf();
             let content = std::fs::read_to_string(req_path)
-                .map_err(|_| WikiError::CouldNotAccessFile(filepath.clone()))?;
+                .map_err(|_| logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone())))?;
             wiki.add(filepath, &content)?;
         }
 
@@ -118,7 +119,7 @@ impl Wiki {
             Some(wiki_req) => wiki_req
                 .ref_list
                 .iter()
-                .find(|entry| entry.branch_name == branch_name),
+                .find(|entry| entry.branch_name.as_ref() == branch_name),
             None => None,
         }
     }
@@ -154,11 +155,12 @@ impl Wiki {
                     if let Some(req) = curr_req.as_mut() {
                         let req_id = req.head.id.clone();
                         added_reqs += 1;
-                        let prev_req = self.req_map.insert(req_id, std::mem::take(req));
+                        let prev_req = self.req_map.insert(req_id.clone(), std::mem::take(req));
 
                         if let Some(prev) = prev_req {
-                            return Err(WikiError::DuplicateReqId {
-                                filepath: prev.filepath,
+                            return logid::err!(WikiError::DuplicateReqId {
+                                req_id: req_id.clone(),
+                                filepath: prev.filepath.clone(),
                                 line_nr: prev.line_nr,
                             });
                         }
@@ -204,8 +206,8 @@ impl Wiki {
                             }
                             Err(ReqMatchingError::NoMatchFound) => continue,
                             Err(err) => {
-                                return Err(WikiError::InvalidRefListEntry {
-                                    filepath,
+                                return logid::err!(WikiError::InvalidRefListEntry {
+                                    filepath: filepath.clone(),
                                     line_nr,
                                     cause: err.to_string(),
                                 })
@@ -225,11 +227,12 @@ impl Wiki {
         if let Some(req) = curr_req {
             added_reqs += 1;
             let req_id = req.head.id.clone();
-            let prev_req = self.req_map.insert(req_id, req);
+            let prev_req = self.req_map.insert(req_id.clone(), req);
 
             if let Some(prev) = prev_req {
-                return Err(WikiError::DuplicateReqId {
-                    filepath: prev.filepath,
+                return logid::err!(WikiError::DuplicateReqId {
+                    req_id: req_id.clone(),
+                    filepath: prev.filepath.clone(),
                     line_nr: prev.line_nr,
                 });
             }
@@ -283,21 +286,31 @@ impl WikiReq {
     }
 }
 
-#[derive(Debug)]
+/// Enum representing possible errors that may occur, when using functions for [`Wiki`].
+#[derive(Debug, thiserror::Error, logid::ErrLogId)]
 pub enum WikiError {
+    #[error("Could not access file '{}' in wiki.", .0.to_string_lossy())]
     CouldNotAccessFile(PathBuf),
 
-    /// Duplicate requirement ID found.
+    // Note: +1 for line number, because internally, lines start at index 0.
+    #[error("Duplicate requirement ID '{}' found in file '{}' at line '{}'.", .req_id, .filepath.to_string_lossy(), .line_nr + 1)]
     DuplicateReqId {
+        /// The requirement ID
+        req_id: String,
         /// Name of the file the ID is already specified.
         filepath: PathBuf,
         /// Line number in the file the ID is already specified.
         line_nr: usize,
     },
 
+    // Note: +1 for line number, because internally, lines start at index 0.
+    #[error("Found an invalid entry in the references list in file '{}' at line '{}'. Cause: {}", .filepath.to_string_lossy(), .line_nr + 1, .cause)]
     InvalidRefListEntry {
+        /// Name of the file the invalid entry was found in.
         filepath: PathBuf,
+        /// Line number in the file the invalid entry was found at.
         line_nr: usize,
+        /// The reason why this entry is invalid.
         cause: String,
     },
 }

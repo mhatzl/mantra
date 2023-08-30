@@ -34,6 +34,8 @@ pub struct Req {
     pub filepath: PathBuf,
 
     /// The line number the requirement heading starts in the file.
+    ///
+    /// **Note:** Starts at `0`.
     pub line_nr: usize,
 
     /// An optional link to this requirement inside the wiki.
