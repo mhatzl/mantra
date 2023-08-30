@@ -44,6 +44,6 @@ pub enum CmdError {
     #[error("Synchronization between wiki and project failed.")]
     SyncError,
 
-    #[error("No command was given.")]
+    #[error("No command was given. Use '-h' or '--help' for help.")]
     MissingCmd,
 }
