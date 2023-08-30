@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 
 use clap::Args;
+use logid::log_id::LogLevel;
 
 use crate::{
     references::{changes::ReferenceChanges, ReferencesMap, ReferencesMapError},
@@ -52,8 +53,17 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
     let ref_map = ReferencesMap::try_from((&wiki, &params.proj_folder))?;
 
     let changes = ReferenceChanges::new(params.branch_name.clone().into(), &wiki, &ref_map);
+    let ordered_file_changes = changes.ordered_file_changes();
 
-    for (filepath, changed_req) in changes.ordered_file_changes() {
+    if ordered_file_changes.is_empty() {
+        logid::log!(
+            logid::new_log_id!("SyncInfo", LogLevel::Info),
+            "Wiki and project already in-sync."
+        );
+        return Ok(());
+    }
+
+    for (filepath, changed_req) in ordered_file_changes {
         let orig_content = std::fs::read_to_string(filepath)
             .map_err(|_| logid::pipe!(SyncError::AccessingWikiFile(filepath.clone())))?;
         let orig_lines: Vec<&str> = orig_content.lines().collect();

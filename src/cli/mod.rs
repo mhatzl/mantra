@@ -34,7 +34,7 @@ enum Command {
 impl Command {
     fn run(&self) -> Result<(), CmdError> {
         match self {
-            Command::Sync { param } => crate::sync::sync(param).map_err(|err| CmdError::SyncError),
+            Command::Sync { param } => crate::sync::sync(param).map_err(|_| CmdError::SyncError),
         }
     }
 }
