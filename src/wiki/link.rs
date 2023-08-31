@@ -118,7 +118,7 @@ pub enum WikiLinkError {
 
 #[cfg(test)]
 mod test {
-    use super::github_wiki_link;
+    use super::*;
 
     #[test]
     fn create_github_link_simple_title() {
@@ -132,6 +132,24 @@ mod test {
         assert_eq!(
             wiki_link, "https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id",
             "Wiki-link with simple title was not correctly created."
+        );
+    }
+
+    #[test]
+    fn check_github_link_simple_title() {
+        let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
+        let filepath =
+            std::path::PathBuf::from(r".\\mantra-wiki\5-Requirements\5-REQ-req_id\5-REQ-req_id.md");
+        let heading = "req_id: Requirement ID";
+
+        assert!(
+            is_valid_github_link(
+                url_prefix,
+                &filepath,
+                heading,
+                "https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id"
+            ),
+            "Wiki-link with simple title not detected as correct."
         );
     }
 
