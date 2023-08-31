@@ -243,7 +243,7 @@ mod test {
 
         let new_cnt = changes
             .new_cnt_map
-            .get("req_id")
+            .get("ref_req")
             .expect("High-level requirement did not change.");
         assert_eq!(
             new_cnt,
