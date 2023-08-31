@@ -15,6 +15,9 @@ use crate::req::{
     Req, ReqId, ReqMatchingError,
 };
 
+mod link;
+pub use link::*;
+
 /// Struct representing a wiki that stores requirements.
 ///
 /// [req:wiki]
@@ -36,6 +39,14 @@ pub struct Wiki {
     ///
     /// [req:wiki]
     high_lvl_reqs: Vec<ReqId>,
+
+    /// The prefix every wiki-link must have to correctly point to the requirement inside the wiki.
+    /// This option is required to validate wiki-links that may be set for references.
+    ///
+    /// [req:wiki.link]
+    wiki_url_prefix: Option<String>,
+
+    kind: WikiKind,
 }
 
 impl TryFrom<&PathBuf> for Wiki {
@@ -136,6 +147,8 @@ impl Wiki {
             req_map: HashMap::new(),
             sub_map: HashMap::new(),
             high_lvl_reqs: Vec::new(),
+            wiki_url_prefix: None,
+            kind: WikiKind::GitHub,
         }
     }
 
@@ -280,6 +293,14 @@ impl Wiki {
 
         flat_wiki.push(wiki_req);
     }
+}
+
+/// Marks the kind of the wiki.
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum WikiKind {
+    /// The wiki is based on the GitHub wiki.
+    GitHub,
 }
 
 /// Represents different requirement representations in the wiki.
