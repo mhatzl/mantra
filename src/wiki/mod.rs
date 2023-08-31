@@ -296,8 +296,8 @@ impl Wiki {
 }
 
 /// Marks the kind of the wiki.
-#[non_exhaustive]
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum WikiKind {
     /// The wiki is based on the GitHub wiki.
     GitHub,

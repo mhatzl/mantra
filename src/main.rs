@@ -11,6 +11,8 @@ use wiki::Wiki;
 use crate::cli::Cli;
 
 mod cli;
+mod global_param;
+mod link;
 mod references;
 mod req;
 mod sync;

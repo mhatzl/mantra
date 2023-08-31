@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use clap::Args;
 
 use crate::{
+    global_param::GlobalParameter,
     references::{changes::ReferenceChanges, ReferencesMap, ReferencesMapError},
     wiki::{Wiki, WikiError},
 };
@@ -16,18 +17,9 @@ use crate::{
 /// [req:sync]
 #[derive(Args, Debug, Clone)]
 pub struct SyncParameter {
-    /// The folder that is searched recursively for defined requirements.
-    ///
-    /// [req:sync], [req:wiki]
-    #[arg(index = 1, required = true)]
-    pub req_folder: PathBuf,
-
-    /// The folder that is searched recursively for requirement references.
-    /// If not set, the current folder is used.
-    ///
-    /// [req:sync]
-    #[arg(index = 2, required = false, default_value = "./")]
-    pub proj_folder: PathBuf,
+    /// Global parameter needed for all commands.
+    #[command(flatten)]
+    pub global: GlobalParameter,
 
     /// The name of the branch project references should be synchronized to in the wiki.
     /// If not set, 'main' is used as default branch.
@@ -35,21 +27,14 @@ pub struct SyncParameter {
     /// [req:wiki.ref_list]
     #[arg(long, required = false, default_value = "main")]
     pub branch_name: String,
-
-    /// The prefix every wiki-link must have to correctly point to the requirement inside the wiki.
-    /// This option is required to validate wiki-links that may be set for references.
-    ///
-    /// [req:sync], [req:wiki]
-    #[arg(long = "wiki-url-prefix")]
-    pub wiki_url_prefix: Option<String>,
 }
 
 /// Synchronizes requirement references between requirements in a wiki, and references to them in a project.
 ///
 /// [req:sync]
 pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
-    let wiki = Wiki::try_from(&params.req_folder)?;
-    let ref_map = ReferencesMap::try_from((&wiki, &params.proj_folder))?;
+    let wiki = Wiki::try_from(&params.global.req_folder)?;
+    let ref_map = ReferencesMap::try_from((&wiki, &params.global.proj_folder))?;
 
     let changes = ReferenceChanges::new(params.branch_name.clone().into(), &wiki, &ref_map);
     let ordered_file_changes = changes.ordered_file_changes();

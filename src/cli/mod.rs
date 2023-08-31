@@ -2,7 +2,7 @@
 
 use clap::{Parser, Subcommand};
 
-use crate::sync::SyncParameter;
+use crate::{global_param::GlobalParameter, sync::SyncParameter};
 
 const HELP_TEMPLATE: &str = r#"
 {before-help}{name} {version} - {about-with-newline}
@@ -36,12 +36,21 @@ enum Command {
         #[command(flatten)]
         param: SyncParameter,
     },
+
+    /// Updates wiki-links for requirement references in the project.
+    #[command(name = "link")]
+    Link {
+        /// Parameters for updating wiki-links.
+        #[command(flatten)]
+        param: GlobalParameter,
+    },
 }
 
 impl Command {
     fn run(&self) -> Result<(), CmdError> {
         match self {
             Command::Sync { param } => crate::sync::sync(param).map_err(|_| CmdError::SyncError),
+            Command::Link { param } => crate::link::link(param).map_err(|_| CmdError::LinkError),
         }
     }
 }
@@ -50,6 +59,9 @@ impl Command {
 pub enum CmdError {
     #[error("Synchronization between wiki and project failed.")]
     SyncError,
+
+    #[error("Updating wiki-links in the project failed.")]
+    LinkError,
 
     #[error("No command was given. Use '-h' or '--help' for help.")]
     MissingCmd,
