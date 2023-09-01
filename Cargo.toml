@@ -2,10 +2,3 @@
 members = [
     "mantra",
 ]
-
-[workspace.package]
-version = "0.1.0"
-edition = "2021"
-authors = ["Manuel Hatzl"]
-repository = "https://github.com/mhatzl/mantra"
-license = "MIT"
