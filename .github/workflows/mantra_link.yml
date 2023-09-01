@@ -1,8 +1,7 @@
 name: mantra-link
 on: workflow_dispatch
 
-permissions:
-    contents: write
+permissions: write-all
 
 jobs:
     mantra-link:
