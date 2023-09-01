@@ -23,3 +23,7 @@ jobs:
             - uses: actions/checkout@v3
               with:
                 path: './proj_folder'
+
+            - name: update-links
+              run: mantra link --wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/ /req_folder /proj_folder
+              
