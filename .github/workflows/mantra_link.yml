@@ -1,0 +1,29 @@
+name: mantry_link
+on: workflow_dispatch
+
+jobs:
+    mantra-link:
+        runs-on: ubuntu-latest
+        container:
+            image: manuelhatzl/mantra:latest
+            env:
+                MANTRA_CMD: link
+                MANTRA_ARGS: "--wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/"
+            volumes:
+                - ./req_folder:/req_folder
+                - ./proj_folder:/proj_folder
+
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                repository: 'mhatzl/mantra-wiki'
+                path: './req_folder'
+                sparse-checkout: 5-Requirements
+
+            - uses: actions/checkout@v3
+              with:
+                path: './proj_folder'
+                
+            - name: wiki-changes
+              run: git status
+              working-directory: /req_folder
