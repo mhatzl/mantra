@@ -7,6 +7,4 @@ assignees: ''
 
 ---
 
-# Describe your problem
 
-Add a clear and concise description about your problem.

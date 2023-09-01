@@ -8,10 +8,10 @@ assignees: ''
 ---
 
 # Describe the spelling mistake
-## Describe the location(s) of the spelling mistake 
+## Where is the spelling mistake located? 
 
-Link to or add a screenshot of the location of the spelling mistake.
+
 
 ## Describe the mistake
 
-Add a clear and concise description about what the correct way would be and why?
+
