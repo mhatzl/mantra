@@ -122,7 +122,7 @@ mod test {
     fn create_github_link_simple_title() {
         let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
         let filepath =
-            std::path::PathBuf::from(r".\\mantra-wiki\5-Requirements\5-REQ-req_id\5-REQ-req_id.md");
+            std::path::PathBuf::from("./mantra-wiki/5-Requirements/5-REQ-req_id/5-REQ-req_id.md");
         let heading = "req_id: Requirement ID";
 
         let wiki_link = github_wiki_link(url_prefix, &filepath, heading);
@@ -137,7 +137,7 @@ mod test {
     fn check_github_link_simple_title() {
         let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
         let filepath =
-            std::path::PathBuf::from(r".\\mantra-wiki\5-Requirements\5-REQ-req_id\5-REQ-req_id.md");
+            std::path::PathBuf::from("./mantra-wiki/5-Requirements/5-REQ-req_id/5-REQ-req_id.md");
         let heading = "req_id: Requirement ID";
 
         assert!(
@@ -155,7 +155,7 @@ mod test {
     fn check_invalid_github_link_wrong_anchor() {
         let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
         let filepath =
-            std::path::PathBuf::from(r".\\mantra-wiki\5-Requirements\5-REQ-req_id\5-REQ-req_id.md");
+            std::path::PathBuf::from("./mantra-wiki/5-Requirements/5-REQ-req_id/5-REQ-req_id.md");
         let heading = "req_id: Requirement ID";
 
         assert!(
@@ -173,7 +173,7 @@ mod test {
     fn create_github_link_for_sub_requirement() {
         let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
         let filepath = std::path::PathBuf::from(
-            r".\mantra-wiki\5-Requirements\5-REQ-req_id\5-REQ-req_id.sub_req_id.md",
+            "./mantra-wiki/5-Requirements/5-REQ-req_id/5-REQ-req_id.sub_req_id.md",
         );
         let heading = "req_id.sub_req_id: Sub-requirements for high-level requirements";
 
