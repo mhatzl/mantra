@@ -1,6 +1,6 @@
 //! Contains the *references* list
 //!
-//! [req:wiki.ref_list]
+//! [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
 
 use std::sync::Arc;
 
@@ -10,26 +10,26 @@ use super::ReqMatchingError;
 
 /// Type representing the *references* list.
 ///
-/// [req:wiki.ref_list]
+/// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
 pub type RefList = Vec<RefListEntry>;
 
 /// Represents one entry inside the *references* list.
 ///
-/// [req:wiki.ref_list]
+/// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RefListEntry {
     /// The name of the branch for this entry.
     ///
-    /// [req:wiki.ref_list]
+    /// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
     pub branch_name: Arc<String>,
     /// The link to the branch for this entry.
     ///
-    /// [req:wiki.ref_list.branch_link]
+    /// [req:wiki.ref_list.branch_link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list.branch_link#wikiref_listbranch_link-link-to-branches)
     pub branch_link: Option<Arc<String>>,
 
     /// The reference counter for this entry.
     ///
-    /// [req:wiki.ref_list]
+    /// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
     pub ref_cnt: RefCntKind,
 
     pub is_manual: bool,
@@ -52,17 +52,17 @@ impl std::fmt::Display for RefListEntry {
 
 /// Reference counter kind for a requirement.
 ///
-/// [req:req_id.sub_req_id], [req:wiki.ref_list]
+/// [req:req_id.sub_req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id.sub_req_id#req_idsub_req_id-sub-requirements-for-high-level-requirements), [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RefCntKind {
     /// Counter for a high-level requirement.
     ///
-    /// [req:req_id.sub_req_id]
+    /// [req:req_id.sub_req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id.sub_req_id#req_idsub_req_id-sub-requirements-for-high-level-requirements)
     HighLvl { direct_cnt: usize, sub_cnt: usize },
 
     /// Counter for a low-level requirement.
     ///
-    /// [req:req_id.sub_req_id]
+    /// [req:req_id.sub_req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id.sub_req_id#req_idsub_req_id-sub-requirements-for-high-level-requirements)
     LowLvl { cnt: usize },
 
     /// Special variant that marks a requirement as having no references.
@@ -102,7 +102,7 @@ static BRANCH_LINK_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::ne
 /// - [`ReqMatchingError::CntIsNoNumber]
 /// - [`ReqMatchingError::DirectCntAboveGeneralCnt]
 ///
-/// [req:wiki.ref_list]
+/// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
 pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingError> {
     let entry_regex = REF_ENTRY_MATCHER.get_or_init(|| {
         Regex::new(r"^[-\+\*]\sin\sbranch\s(?<branch>[^\s]+):\s(?:(?<depr>deprecated)|(?<manual>manual(?<plus>\s\+)?)\s*)?(?<cnt>\d+)?(?:\s\((?<direct_cnt>\d+)\sdirect\))?")
@@ -191,7 +191,7 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
     }
 }
 
-/// [req:wiki.ref_list]
+/// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
 #[cfg(test)]
 mod test {
     use crate::req::ref_list::RefCntKind;

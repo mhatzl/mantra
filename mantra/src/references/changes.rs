@@ -1,6 +1,6 @@
 //! Contains the [`ReferenceChanges`] struct to get the reference differences between wiki and project.
 //!
-//! [req:sync]
+//! [req:sync](https://github.com/mhatzl/mantra/wiki/5-REQ-sync#sync-synchronize-wiki-implementation-and-tests)
 
 use std::{
     collections::{HashMap, HashSet},
@@ -20,7 +20,7 @@ use super::ReferencesMap;
 
 /// Keeps track of changes to requirement references.
 ///
-/// [req:sync]
+/// [req:sync](https://github.com/mhatzl/mantra/wiki/5-REQ-sync#sync-synchronize-wiki-implementation-and-tests)
 #[derive(Debug)]
 pub struct ReferenceChanges {
     new_cnt_map: HashMap<ReqId, RefCntKind>,
@@ -50,7 +50,7 @@ impl ReferenceChanges {
     ///
     /// **Note:** Only files and requirements that changed are returned.
     ///
-    /// [req:sync]
+    /// [req:sync](https://github.com/mhatzl/mantra/wiki/5-REQ-sync#sync-synchronize-wiki-implementation-and-tests)
     pub fn ordered_file_changes(&self) -> Vec<(&PathBuf, Vec<Req>)> {
         let mut ordered_file_changes = Vec::with_capacity(self.file_changes.len());
         for (filepath, changes) in self.file_changes.iter() {
@@ -220,7 +220,7 @@ mod test {
     fn setup_references(wiki: &Wiki) -> ReferencesMap {
         let filename = "test_file";
         // Note: IDs must be identical to the one in `setup_wiki()`.
-        let content = "[req:ref_req][req:ref_req.test]";
+        let content = "[req:ref_req](https://github.com/mhatzl/mantra/wiki/5-REQ-ref_req#ref_req-reference-requirements)[req:ref_req.test](https://github.com/mhatzl/mantra/wiki/5-REQ-ref_req#ref_reqtest-test-requirement-referencing)";
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
         ref_map.trace(&PathBuf::from(filename), content).unwrap();

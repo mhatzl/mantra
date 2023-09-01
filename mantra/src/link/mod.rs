@@ -12,7 +12,7 @@ use crate::{
 ///
 /// **Note:** The wiki itself may be given as project folder to update internal links to requirements.
 ///
-/// [req:wiki.link.update]
+/// [req:wiki.link.update](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link.update#wikilinkupdate-automatically-update-wiki-links)
 pub fn link(params: &GlobalParameter) -> Result<(), LinkError> {
     let project_folder = &params.proj_folder;
     let mut wiki = Wiki::try_from(&params.req_folder)?;
@@ -210,13 +210,13 @@ mod test {
     fn update_invalid_link_bad_anchor() {
         let wiki = setup_wiki();
         let filename = "references_wiki_link.rs";
-        let content = "[req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#documentation-for-requirements)";
+        let content = "[req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#wikilink-manage-links-to-requirements)";
 
         let new_content = update_links(&wiki, &PathBuf::from(filename), content).unwrap();
 
         assert_eq!(
             new_content,
-            "[req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#wikilink-some-title)",
+            "[req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#wikilink-manage-links-to-requirements)",
             "Invalid link not updated correctly."
         );
     }

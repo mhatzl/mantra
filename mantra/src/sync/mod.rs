@@ -1,6 +1,6 @@
 //! Contains functionality to synchronize the requirements found in a wiki, with references to those requirements in a project.
 //!
-//! [req:sync]
+//! [req:sync](https://github.com/mhatzl/mantra/wiki/5-REQ-sync#sync-synchronize-wiki-implementation-and-tests)
 
 use std::path::PathBuf;
 
@@ -14,7 +14,7 @@ use crate::{
 
 /// Parameters for the `sync` command.
 ///
-/// [req:sync]
+/// [req:sync](https://github.com/mhatzl/mantra/wiki/5-REQ-sync#sync-synchronize-wiki-implementation-and-tests)
 #[derive(Args, Debug, Clone)]
 pub struct SyncParameter {
     /// Global parameter needed for all commands.
@@ -24,14 +24,14 @@ pub struct SyncParameter {
     /// The name of the branch project references should be synchronized to in the wiki.
     /// If not set, 'main' is used as default branch.
     ///
-    /// [req:wiki.ref_list]
+    /// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
     #[arg(long, required = false, default_value = "main")]
     pub branch_name: String,
 }
 
 /// Synchronizes requirement references between requirements in a wiki, and references to them in a project.
 ///
-/// [req:sync]
+/// [req:sync](https://github.com/mhatzl/mantra/wiki/5-REQ-sync#sync-synchronize-wiki-implementation-and-tests)
 pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
     let wiki = Wiki::try_from(&params.global.req_folder)?;
     let ref_map = ReferencesMap::try_from((&wiki, &params.global.proj_folder))?;
