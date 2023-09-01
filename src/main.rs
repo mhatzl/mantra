@@ -1,14 +1,9 @@
-use std::path::PathBuf;
-
+use crate::cli::Cli;
 use clap::Parser;
 use logid::{
     log_id::LogLevel,
     logging::filter::{AddonFilter, FilterConfigBuilder},
 };
-use references::ReferencesMap;
-use wiki::Wiki;
-
-use crate::cli::Cli;
 
 mod cli;
 mod global_param;

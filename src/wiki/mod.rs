@@ -108,10 +108,6 @@ impl Wiki {
         self.req_map.keys()
     }
 
-    pub fn high_lvl_reqs(&self) -> &Vec<ReqId> {
-        &self.high_lvl_reqs
-    }
-
     /// Returns the sub-requirements of a given requirement, or `None` if it is a *leaf* requirement.
     pub fn sub_reqs(&self, req_id: &ReqId) -> Option<&HashSet<ReqId>> {
         self.sub_map.get(req_id)
