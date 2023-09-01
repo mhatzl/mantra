@@ -109,7 +109,9 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
         }
 
         // Add one more line, because `join()` consumes last line break.
-        new_lines.push("".to_string());
+        if orig_content.ends_with('\n') {
+            new_lines.push("".to_string());
+        }
 
         std::fs::write(filepath, new_lines.join("\n"))
             .map_err(|_| logid::pipe!(SyncError::AccessingWikiFile(filepath.clone())))?;

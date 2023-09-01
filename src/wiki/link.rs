@@ -152,6 +152,24 @@ mod test {
     }
 
     #[test]
+    fn check_invalid_github_link_wrong_anchor() {
+        let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
+        let filepath =
+            std::path::PathBuf::from(r".\\mantra-wiki\5-Requirements\5-REQ-req_id\5-REQ-req_id.md");
+        let heading = "req_id: Requirement ID";
+
+        assert!(
+            !is_valid_github_link(
+                url_prefix,
+                &filepath,
+                heading,
+                "https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requ"
+            ),
+            "Wiki-link with wrong anchor detected as correct."
+        );
+    }
+
+    #[test]
     fn create_github_link_for_sub_requirement() {
         let url_prefix = "https://github.com/mhatzl/mantra/wiki/";
         let filepath = std::path::PathBuf::from(

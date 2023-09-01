@@ -99,7 +99,7 @@ fn update_links(wiki: &Wiki, filepath: &Path, content: &str) -> Result<String, L
                 .to_string();
 
             let update_link = match captures.name("link") {
-                Some(existing_link) => wiki
+                Some(existing_link) => !wiki
                     .is_valid_link(&req_id, existing_link.as_str())
                     .map_err(|_| LinkError::WikiLink {
                         req_id: req_id.clone(),
@@ -141,7 +141,9 @@ fn update_links(wiki: &Wiki, filepath: &Path, content: &str) -> Result<String, L
         }
     }
 
-    new_content.push("".to_string());
+    if content.ends_with('\n') {
+        new_content.push("".to_string());
+    }
 
     Ok(new_content.join("\n"))
 }
@@ -177,5 +179,40 @@ pub enum LinkError {
 impl From<WikiError> for LinkError {
     fn from(_value: WikiError) -> Self {
         LinkError::WikiSetup
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn setup_wiki() -> Wiki {
+        let filename = "5-REQ-wiki.link.md";
+        let content = r#"
+# wiki.link: Some Title
+
+**References:**
+
+- in branch main: 2
+        "#;
+
+        let mut wiki = Wiki::try_from((PathBuf::from(filename), content)).unwrap();
+        wiki.set_url_prefix("https://github.com/mhatzl/mantra/wiki".to_string());
+        wiki
+    }
+
+    #[test]
+    fn update_invalid_link_bad_anchor() {
+        let wiki = setup_wiki();
+        let filename = "references_wiki_link.rs";
+        let content = "[req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#documentation-for-requirements)";
+
+        let new_content = update_links(&wiki, &PathBuf::from(filename), content).unwrap();
+
+        assert_eq!(
+            new_content,
+            "[req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#wikilink-some-title)",
+            "Invalid link not updated correctly."
+        );
     }
 }
