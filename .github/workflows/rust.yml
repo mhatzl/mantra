@@ -1,0 +1,57 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # [req:qa.pipeline.1_style]
+  format:
+    name: Check Formatting
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run cargo fmt
+      run: cargo fmt -- --check
+
+  # [req:qa.pipeline.2_lint]
+  lint:
+    name: Run Linter (clippy)
+    runs-on: ubuntu-latest
+    # [req:qa.sustain]
+    needs: format
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run linter
+      run: cargo clippy -- -D warnings
+
+  # [req:qa.pipeline.3_build]
+  build:
+    name: Run Build
+    runs-on: ubuntu-latest
+    # [req:qa.sustain]
+    needs: lint
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --verbose
+
+  # [req:qa.pipeline.4_tests]
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    # [req:qa.sustain]
+    needs: build
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: cargo test --verbose
