@@ -1,6 +1,9 @@
 name: mantra-link
 on: workflow_dispatch
 
+permissions:
+    contents: write
+
 jobs:
     mantra-link:
         runs-on: ubuntu-latest

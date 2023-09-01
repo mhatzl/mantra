@@ -8,6 +8,8 @@ RUN cargo install --path .
 FROM alpine:3.18
 COPY --from=builder /usr/local/cargo/bin/mantra /usr/local/bin/mantra
 
+RUN apk add --no-cache git
+
 # To mount the folder containing requirements of the wiki
 RUN mkdir /req_folder
 VOLUME /req_folder
