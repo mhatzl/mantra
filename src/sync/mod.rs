@@ -75,8 +75,6 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
                 .ref_list
                 .is_empty();
 
-            // let mut ref_list_line_nr = req.line_nr + 2; // Note: +2 to start looking for *reference* list entries after heading and blank line.
-
             if untraced_before {
                 new_lines.push("".to_string());
                 new_lines.push("**References:**".to_string());
