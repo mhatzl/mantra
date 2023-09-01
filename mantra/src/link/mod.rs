@@ -60,6 +60,11 @@ pub fn link(params: &GlobalParameter) -> Result<(), LinkError> {
             .map_err(|_| logid::pipe!(LinkError::CouldNotAccessFile(project_folder.clone())))?;
     }
 
+    logid::log!(
+        logid::new_log_id!("LinkInfo", logid::log_id::LogLevel::Info),
+        "Updated wiki-links the in the given project folder."
+    );
+
     Ok(())
 }
 

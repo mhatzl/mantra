@@ -1,4 +1,4 @@
-name: mantra_link
+name: mantra-link
 on: workflow_dispatch
 
 jobs:
@@ -6,9 +6,6 @@ jobs:
         runs-on: ubuntu-latest
         container:
             image: manuelhatzl/mantra:latest
-            env:
-                MANTRA_CMD: link
-                MANTRA_ARGS: "--wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/"
             volumes:
                 - ./req_folder:/req_folder
                 - ./proj_folder:/proj_folder
@@ -26,4 +23,12 @@ jobs:
 
             - name: update-links
               run: mantra link --wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/ /req_folder /proj_folder
-              
+
+            - name: push-changes
+              working-directory: ./proj_folder
+              run: |
+                git config user.name github-actions
+                git config user.email github-actions@github.com
+                git add .
+                git commit -m "chore: update wiki-links in project repository"
+                git push
