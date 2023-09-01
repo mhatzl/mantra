@@ -16,8 +16,4 @@ VOLUME /req_folder
 RUN mkdir /proj_folder
 VOLUME /proj_folder
 
-# Makes it possible to run different commands with one image
-ENV MANTRA_CMD=sync
-ENV MANTRA_ARGS=""
-
-ENTRYPOINT mantra $MANTRA_CMD $MANTRA_ARGS /req_folder /proj_folder
+CMD ["mantra"]
