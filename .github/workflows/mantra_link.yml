@@ -63,7 +63,7 @@ jobs:
                 path: './proj_folder'
 
             - name: sync-references
-              run: mantra sync --branch-name=main /req_folder /proj_folder
+              run: mantra sync --branch-name=main ./wiki/5-Requirements /proj_folder
 
             - name: push-changes
               working-directory: ./wiki
