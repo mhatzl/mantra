@@ -1,4 +1,4 @@
-name: mantry_link
+name: mantra_link
 on: workflow_dispatch
 
 jobs:
@@ -23,7 +23,3 @@ jobs:
             - uses: actions/checkout@v3
               with:
                 path: './proj_folder'
-                
-            - name: wiki-changes
-              run: git status
-              working-directory: /req_folder
