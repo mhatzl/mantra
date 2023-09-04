@@ -81,10 +81,16 @@ fn update_links(wiki: &Wiki, filepath: &Path, content: &str) -> Result<String, L
     let lines = content.lines();
     let mut ignore_match = false;
     let mut new_content: Vec<String> = Vec::new();
+    let mut in_verbatim_context = false;
 
     for (line_nr, line) in lines.enumerate() {
         if line.contains("[mantra:ignore_next]") {
             ignore_match = true;
+        } else if line.trim().starts_with("```") || line.trim().starts_with("~~~") {
+            in_verbatim_context = !in_verbatim_context;
+        } else if in_verbatim_context {
+            new_content.push(line.to_string());
+            continue;
         }
 
         let mut line_updated = false;
