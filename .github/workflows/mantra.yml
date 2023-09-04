@@ -1,10 +1,16 @@
 name: mantra
-on: workflow_dispatch
+on: 
+    push:
+        branches: [ main ]
+    workflow_dispatch:
 
 permissions:
     contents: write
 
 jobs:
+    # Updates wiki-links in the project.
+    #
+    # [req:wiki.link.update]
     mantra-link:
         runs-on: ubuntu-latest
         container:
@@ -38,6 +44,9 @@ jobs:
                 git commit -m "chore: update wiki-links in project repository"
                 git push
 
+    # Synchronizes references between project and wiki.
+    #            
+    # [req:sync.ci.code]
     mantra-sync:
         runs-on: ubuntu-latest
         needs: mantra-link
