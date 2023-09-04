@@ -96,7 +96,7 @@ fn github_wiki_link(url_prefix: &str, filepath: &Path, heading: &str) -> String 
         .collect::<Vec<&str>>()
         .join("");
 
-    if url_prefix.ends_with('/') {
+    if url_prefix.ends_with('/') || url_prefix.trim().is_empty() {
         format!("{url_prefix}{filename}#{converted_heading}")
     } else {
         format!("{url_prefix}/{filename}#{converted_heading}")
