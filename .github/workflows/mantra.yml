@@ -9,9 +9,6 @@ jobs:
         runs-on: ubuntu-latest
         container:
             image: manuelhatzl/mantra:latest
-            # volumes:
-            #     - ./req_folder:/req_folder
-            #     - ./proj_folder:/proj_folder
 
         steps:
             - uses: actions/checkout@v3
@@ -46,9 +43,6 @@ jobs:
         needs: mantra-link
         container:
             image: manuelhatzl/mantra:latest
-            # volumes:
-            #     - ./wiki/5-Requirements:/req_folder
-            #     - ./proj_folder:/proj_folder
 
         steps:
             - uses: actions/checkout@v3
