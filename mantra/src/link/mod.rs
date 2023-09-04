@@ -106,10 +106,12 @@ fn update_links(wiki: &Wiki, filepath: &Path, content: &str) -> Result<String, L
             let update_link = match captures.name("link") {
                 Some(existing_link) => !wiki
                     .is_valid_link(&req_id, existing_link.as_str())
-                    .map_err(|_| LinkError::WikiLink {
-                        req_id: req_id.clone(),
-                        filepath: filepath.to_path_buf(),
-                        line_nr,
+                    .map_err(|_| {
+                        logid::pipe!(LinkError::WikiLink {
+                            req_id: req_id.clone(),
+                            filepath: filepath.to_path_buf(),
+                            line_nr,
+                        })
                     })?,
                 None => true,
             };
@@ -117,10 +119,12 @@ fn update_links(wiki: &Wiki, filepath: &Path, content: &str) -> Result<String, L
             if update_link {
                 line_updated = true;
 
-                let link = wiki.wiki_link(&req_id).map_err(|_| LinkError::WikiLink {
-                    req_id: req_id.clone(),
-                    filepath: filepath.to_path_buf(),
-                    line_nr,
+                let link = wiki.wiki_link(&req_id).map_err(|_| {
+                    logid::pipe!(LinkError::WikiLink {
+                        req_id: req_id.clone(),
+                        filepath: filepath.to_path_buf(),
+                        line_nr,
+                    })
                 })?;
                 let global_match = captures
                     .get(0)
