@@ -9,9 +9,9 @@ jobs:
         runs-on: ubuntu-latest
         container:
             image: manuelhatzl/mantra:latest
-            volumes:
-                - ./req_folder:/req_folder
-                - ./proj_folder:/proj_folder
+            # volumes:
+            #     - ./req_folder:/req_folder
+            #     - ./proj_folder:/proj_folder
 
         steps:
             - uses: actions/checkout@v3
@@ -27,7 +27,7 @@ jobs:
                 token: ${{ secrets.MANTRA_TOKEN }}
 
             - name: update-links
-              run: mantra link --wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/ /req_folder /proj_folder
+              run: mantra link --wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/ ./req_folder ./proj_folder
 
             - name: push-changes
               working-directory: ./proj_folder
@@ -46,9 +46,9 @@ jobs:
         needs: mantra-link
         container:
             image: manuelhatzl/mantra:latest
-            volumes:
-                - ./wiki/5-Requirements:/req_folder
-                - ./proj_folder:/proj_folder
+            # volumes:
+            #     - ./wiki/5-Requirements:/req_folder
+            #     - ./proj_folder:/proj_folder
 
         steps:
             - uses: actions/checkout@v3
@@ -63,7 +63,7 @@ jobs:
                 path: './proj_folder'
 
             - name: sync-references
-              run: mantra sync --branch-name=main ./wiki/5-Requirements /proj_folder
+              run: mantra sync --branch-name=main ./wiki/5-Requirements ./proj_folder
 
             - name: push-changes
               working-directory: ./wiki
