@@ -2,11 +2,11 @@
 
 
 
-# Definition of Done ([req:qa.DoD](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.DoD#qadod-have-a-definition-of-done-for-requirements))
+# Definition of Done ([req:qa.DoD])
 
 **Please consider the following requirements:**
 
-- [ ] Add/Update requirement references (see: [req:qa.tracing](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.tracing#qatracing-use-requirement-ids-in-mantrahttpsgithubcommhatzlmantra))
+- [ ] Add/Update requirement references (see: [req:qa.tracing])
 
 **Note:** You may ignore requirements that are not relevant to your PR.
 

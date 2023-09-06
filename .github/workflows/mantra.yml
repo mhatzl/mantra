@@ -8,48 +8,11 @@ permissions:
     contents: write
 
 jobs:
-    # Updates wiki-links in the project.
-    #
-    # [req:wiki.link.update]
-    mantra-link:
-        runs-on: ubuntu-latest
-        container:
-            image: manuelhatzl/mantra:latest
-
-        steps:
-            - uses: actions/checkout@v3
-              with:
-                repository: 'mhatzl/mantra-wiki'
-                path: './req_folder'
-                sparse-checkout: 5-Requirements
-
-            - uses: actions/checkout@v3
-              with:
-                path: './proj_folder'
-                # PAT with 'workflow' permission required in case wiki-links in workflow files get updated
-                token: ${{ secrets.MANTRA_TOKEN }}
-
-            - name: update-links
-              run: mantra link --wiki-url-prefix=https://github.com/mhatzl/mantra/wiki/ ./req_folder ./proj_folder
-
-            - name: push-changes
-              working-directory: ./proj_folder
-              # In case nothing changed
-              continue-on-error: true
-              run: |
-                git config user.name github-actions
-                git config user.email github-actions@github.com
-                git status
-                git add .
-                git commit -m "chore: update wiki-links in project repository"
-                git push
-
     # Synchronizes references between project and wiki.
     #            
     # [req:sync.ci.code]
     mantra-sync:
         runs-on: ubuntu-latest
-        needs: mantra-link
         container:
             image: manuelhatzl/mantra:latest
 

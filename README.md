@@ -49,7 +49,7 @@ A low-level requirement of `my_req_id`.
 
 ## Referencing
 
-Requirement IDs may be referenced in the implementation and/or tests of your system/project using the syntax `[req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id)`.
+Requirement IDs may be referenced in the implementation and/or tests of your system/project using the syntax `[req:req_id]`.
 This syntax should be independent enough in most programming languages that *mantra* can distinguish an expression from a requirement reference.
 
 **Example:**
@@ -57,7 +57,7 @@ This syntax should be independent enough in most programming languages that *man
 ```rust
 /// This function does something.
 ///
-/// [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id)
+/// [req:req_id]
 fn my_function() {
   //...
 }

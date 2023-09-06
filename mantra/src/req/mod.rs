@@ -1,6 +1,6 @@
 //! Contains the structure to represent requirements and the *references* list.
 //!
-//! [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id), [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
+//! [req:req_id], [req:wiki.ref_list]
 use std::path::PathBuf;
 
 use regex::Regex;
@@ -14,22 +14,22 @@ pub mod ref_list;
 ///
 /// **Note:** Wrapper around [`String`] to be mor eexplicit.
 ///
-/// [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id), [req:req_id.sub_req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id.sub_req_id#req_idsub_req_id-sub-requirements-for-high-level-requirements)
+/// [req:req_id], [req:req_id.sub_req_id]
 pub type ReqId = String;
 
 /// Stores information for a requirement found in the wiki.
 ///
-/// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
+/// [req:wiki.ref_list]
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Req {
     /// The heading of the requirement in the wiki.
     ///
-    /// [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+    /// [req:wiki]
     pub head: ReqHeading,
 
     /// The *references* list of this requirement.
     ///
-    /// [req:wiki.ref_list](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.ref_list#wikiref_list-references-list)
+    /// [req:wiki.ref_list]
     pub ref_list: RefList,
 
     /// The filepath this requirement is defined in.
@@ -42,18 +42,18 @@ pub struct Req {
 
     /// An optional link to this requirement inside the wiki.
     ///
-    /// [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+    /// [req:wiki]
     pub wiki_link: Option<String>,
 }
 
 /// Represents a requirement heading in the wiki.
 ///
-/// [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+/// [req:wiki]
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct ReqHeading {
     /// Requirement ID of this requirement.
     ///
-    /// [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id)
+    /// [req:req_id]
     pub id: ReqId,
 
     /// The heading level of the requirement.
@@ -78,7 +78,7 @@ static REQ_HEADING_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::ne
 ///
 /// - [`ReqMatchingError::NoMatchFound`]
 ///
-/// [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id), [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+/// [req:req_id], [req:wiki]
 pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatchingError> {
     let regex = REQ_HEADING_MATCHER.get_or_init(|| {
         // Note: This pattern may only be used to match the first line of a requirement heading.

@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # [req:qa.pipeline.1_style](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.pipeline.1_style#qapipeline1_style-ensure-consistent-formatting)
+  # [req:qa.pipeline.1_style]
   format:
     name: Check Formatting
     runs-on: ubuntu-latest
@@ -20,11 +20,11 @@ jobs:
     - name: Run cargo fmt
       run: cargo fmt -- --check
 
-  # [req:qa.pipeline.2_lint](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.pipeline.2_lint#qapipeline2_lint-ensure-good-coding-standard)
+  # [req:qa.pipeline.2_lint]
   lint:
     name: Run Linter (clippy)
     runs-on: ubuntu-latest
-    # [req:qa.sustain](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.sustain#qasustain-consider-sustainability-during-design-and-development)
+    # [req:qa.sustain]
     needs: format
     
     steps:
@@ -32,11 +32,11 @@ jobs:
     - name: Run linter
       run: cargo clippy -- -D warnings
 
-  # [req:qa.pipeline.3_build](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.pipeline.3_build#qapipeline3_build-ensure-evident-builds)
+  # [req:qa.pipeline.3_build]
   build:
     name: Run Build
     runs-on: ubuntu-latest
-    # [req:qa.sustain](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.sustain#qasustain-consider-sustainability-during-design-and-development)
+    # [req:qa.sustain]
     needs: lint
 
     steps:
@@ -44,11 +44,11 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
-  # [req:qa.pipeline.4_tests](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.pipeline.4_tests#qapipeline4_tests-ensure-tests-still-pass)
+  # [req:qa.pipeline.4_tests]
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    # [req:qa.sustain](https://github.com/mhatzl/mantra/wiki/5-REQ-qa.sustain#qasustain-consider-sustainability-during-design-and-development)
+    # [req:qa.sustain]
     needs: build
     
     steps:

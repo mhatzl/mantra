@@ -1,6 +1,6 @@
 //! Contains the [`Wiki`] struct, representing found requirements of a wiki.
 //!
-//! [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+//! [req:wiki]
 
 use std::{
     collections::{hash_map::Keys, HashMap, HashSet},
@@ -20,7 +20,7 @@ pub use link::*;
 
 /// Struct representing a wiki that stores requirements.
 ///
-/// [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+/// [req:wiki]
 #[derive(Debug)]
 pub struct Wiki {
     /// Map for all found requirements in the wiki.
@@ -32,18 +32,18 @@ pub struct Wiki {
     /// **Note:** This may include IDs for non-existing requirements if a sub-requirement is created at a *deeper* level, without creating the *implicit* IDs between.
     /// e.g. Creating `high_lvl.test.test_sub_req`, but not `high_lvl.test`.
     ///
-    /// [req:req_id.sub_req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id.sub_req_id#req_idsub_req_id-sub-requirements-for-high-level-requirements)
+    /// [req:req_id.sub_req_id]
     sub_map: HashMap<ReqId, HashSet<ReqId>>,
 
     /// List of high-level requirements found in this wiki.
     ///
-    /// [req:wiki](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki#wiki-documentation-for-requirements)
+    /// [req:wiki]
     high_lvl_reqs: Vec<ReqId>,
 
     /// The prefix every wiki-link must have to correctly point to the requirement inside the wiki.
     /// This option is required to validate wiki-links that may be set for references.
     ///
-    /// [req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#wikilink-manage-links-to-requirements)
+    /// [req:wiki.link]
     wiki_url_prefix: Option<String>,
 
     kind: WikiKind,

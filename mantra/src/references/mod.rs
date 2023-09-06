@@ -14,7 +14,7 @@ pub mod changes;
 /// Map to store the current reference counter for direct references to requirements.
 /// This counter may be used to update/validate the existing reference counts inside the wiki.
 ///
-/// [req:ref_req](https://github.com/mhatzl/mantra/wiki/5-REQ-ref_req#ref_req-reference-requirements)
+/// [req:ref_req]
 #[derive(Debug)]
 pub struct ReferencesMap {
     /// HashMap to store the current reference counter.
@@ -206,7 +206,7 @@ mod test {
         let wiki = setup_wiki();
         let filename = "test_file";
         // Note: ID must be identical to the one in `setup_wiki()`.
-        let content = "[req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id)\n[req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id)";
+        let content = "[req:req_id]\n[req:req_id]";
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
         let added_refs = ref_map
@@ -225,7 +225,7 @@ mod test {
         let wiki = setup_wiki();
         let filename = "test_file";
         // Note: ID must be identical to the one in `setup_wiki()`.
-        let content = "// [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id)\n\n// In addition to [req:req_id](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id).";
+        let content = "// [req:req_id]\n\n// In addition to [req:req_id].";
 
         let ref_map = ReferencesMap::with(&mut wiki.requirements());
         let added_refs = ref_map

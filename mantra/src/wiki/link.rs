@@ -1,6 +1,6 @@
 //! Handles *wiki-link* requirements.
 //!
-//! [req:wiki.link](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link#wikilink-manage-links-to-requirements)
+//! [req:wiki.link]
 
 use std::path::Path;
 
@@ -23,7 +23,7 @@ impl Wiki {
     /// - [`WikiLinkError::ReqNotInWiki`]
     /// - [`WikiLinkError::UnsupportedWiki`]
     ///
-    /// [req:wiki.link.check](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link.check#wikilinkcheck-check-validity-of-wiki-links)
+    /// [req:wiki.link.check]
     pub fn is_valid_link(&self, req_id: &ReqId, link: &str) -> Result<bool, WikiLinkError> {
         let url_prefix = self
             .wiki_url_prefix
@@ -51,7 +51,7 @@ impl Wiki {
     /// - [`WikiLinkError::ReqNotInWiki`]
     /// - [`WikiLinkError::UnsupportedWiki`]
     ///
-    /// [req:wiki.link.update](https://github.com/mhatzl/mantra/wiki/5-REQ-wiki.link.update#wikilinkupdate-automatically-update-wiki-links)
+    /// [req:wiki.link.update]
     pub fn wiki_link(&self, req_id: &ReqId) -> Result<String, WikiLinkError> {
         let url_prefix = self
             .wiki_url_prefix
