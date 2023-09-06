@@ -79,7 +79,7 @@ impl ReferenceChanges {
                     Some(entry) => entry.ref_cnt = new_cnt_kind,
                     None => req.ref_list.push(RefListEntry {
                         branch_name: self.branch_name.clone(),
-                        branch_link: self.branch_link.clone(), // see DR-20230906_2 for more info
+                        branch_link: self.branch_link.clone(), // [req:wiki.ref_list.branch_link] (see DR-20230906_2 for more info)
                         ref_cnt: new_cnt_kind,
                         is_manual: false,
                         is_deprecated: false,

@@ -30,7 +30,7 @@ pub struct SyncParameter {
 
     /// Optional link to the branch.
     ///
-    /// [req:wiki.ref_list]
+    /// [req:wiki.ref_list.branch_link]
     #[arg(long)]
     pub branch_link: Option<String>,
 }
