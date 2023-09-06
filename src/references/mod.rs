@@ -7,7 +7,7 @@ use std::{
 use regex::Regex;
 use walkdir::WalkDir;
 
-use crate::{req::ReqId, wiki::Wiki};
+use crate::wiki::{req::ReqId, Wiki};
 
 pub mod changes;
 

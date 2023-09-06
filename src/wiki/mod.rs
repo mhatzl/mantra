@@ -9,11 +9,13 @@ use std::{
 
 use walkdir::WalkDir;
 
-use crate::req::{
-    get_req_heading,
-    ref_list::{get_ref_entry, RefListEntry},
-    Req, ReqId, ReqMatchingError,
+use self::{
+    ref_list::RefListEntry,
+    req::{Req, ReqId, ReqMatchingError},
 };
+
+pub mod ref_list;
+pub mod req;
 
 /// Struct representing a wiki that stores requirements.
 ///
@@ -153,7 +155,7 @@ impl Wiki {
             if !in_verbatim_context {
                 if line.starts_with("**References:**") {
                     has_references_list = true;
-                } else if let Ok(req_heading) = get_req_heading(line) {
+                } else if let Ok(req_heading) = self::req::get_req_heading(line) {
                     // Add previous found requirement to wiki, before starting this one.
                     if let Some(req) = curr_req.as_mut() {
                         let req_id = req.head.id.clone();
@@ -203,7 +205,7 @@ impl Wiki {
                     });
                 } else if has_references_list {
                     if let Some(req) = curr_req.as_mut() {
-                        match get_ref_entry(line) {
+                        match self::ref_list::get_ref_entry(line) {
                             Ok(entry) => {
                                 req.ref_list.push(entry);
                             }

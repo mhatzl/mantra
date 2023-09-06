@@ -8,7 +8,6 @@ use logid::{
 mod cli;
 mod global_param;
 mod references;
-mod req;
 mod sync;
 mod wiki;
 

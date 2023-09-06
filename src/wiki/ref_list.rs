@@ -194,9 +194,7 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
 /// [req:wiki.ref_list]
 #[cfg(test)]
 mod test {
-    use crate::req::ref_list::RefCntKind;
-
-    use super::get_ref_entry;
+    use super::*;
 
     #[test]
     fn basic_ref_entry() {

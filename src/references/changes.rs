@@ -8,12 +8,10 @@ use std::{
     sync::{atomic::Ordering, Arc},
 };
 
-use crate::{
-    req::{
-        ref_list::{RefCntKind, RefListEntry},
-        Req, ReqId,
-    },
-    wiki::{Wiki, WikiReq},
+use crate::wiki::{
+    ref_list::{RefCntKind, RefListEntry},
+    req::{Req, ReqId},
+    Wiki, WikiReq,
 };
 
 use super::ReferencesMap;
@@ -192,11 +190,7 @@ impl ReferenceChanges {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
-    use crate::{references::ReferencesMap, req::ref_list::RefCntKind, wiki::Wiki};
-
-    use super::ReferenceChanges;
+    use super::*;
 
     fn setup_wiki() -> Wiki {
         let filename = "test_wiki";

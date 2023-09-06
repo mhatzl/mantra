@@ -6,9 +6,7 @@ use std::path::PathBuf;
 use regex::Regex;
 use thiserror::Error;
 
-use self::ref_list::RefList;
-
-pub mod ref_list;
+use super::ref_list::RefList;
 
 /// Type for a requirement ID.
 ///
