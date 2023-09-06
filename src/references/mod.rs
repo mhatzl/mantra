@@ -106,6 +106,7 @@ impl ReferencesMap {
         let mut ignore_match = false;
 
         for (line_nr, line) in lines.enumerate() {
+            // [req:ref_req.ignore]
             if line.contains("[mantra:ignore_next]") {
                 ignore_match = true;
             }
