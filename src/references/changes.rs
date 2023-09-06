@@ -107,15 +107,12 @@ impl ReferenceChanges {
     /// # Possible Errors
     ///
     /// - [`ReferencesError::DeprecatedReqReferenced`]
-    ///
-    /// #[req:wiki.ref_list.deprecated]
     fn update_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) -> Result<(), ReferencesError> {
         let flat_wiki = wiki.flatten();
 
         for req in flat_wiki {
             let req_id = req.req_id().clone();
 
-            // TODO: Check for *manual* flag
             let new_direct_cnt = ref_map
                 .map
                 .get(&req_id)
@@ -149,6 +146,7 @@ impl ReferenceChanges {
                 WikiReq::Explicit { req: explicit_req } => {
                     let kind_changed = match wiki.req_ref_entry(&req_id, &self.branch_name) {
                         Some(req_entry) => {
+                            // [req:wiki.ref_list.deprecated]
                             if req_entry.is_deprecated && new_cnt_kind != RefCntKind::Untraced {
                                 return logid::err!(ReferencesError::DeprecatedReqReferenced {
                                     req_id: req_id.clone(),
@@ -187,30 +185,48 @@ impl ReferenceChanges {
     fn sub_ref_cnts(&mut self, sub_reqs: &HashSet<ReqId>, wiki: &Wiki) -> usize {
         let mut sub_cnt = 0;
         for sub_req in sub_reqs {
-            let sub_cnt_kind = self.new_cnt_map.get(sub_req).unwrap_or_else(|| {
-                match wiki.req_ref_entry(sub_req, &self.branch_name) {
-                    Some(req_entry) => &req_entry.ref_cnt,
+            let opt_ref_entry = wiki.req_ref_entry(sub_req, &self.branch_name);
+
+            let mut sub_cnt_kind = self.new_cnt_map.get(sub_req).copied().unwrap_or_else(|| {
+                match opt_ref_entry {
+                    Some(entry) => entry.ref_cnt,
                     None => {
                         if wiki.is_implicit(sub_req) {
                             // Note: Counter for implicit requirements are already up-to-date,
                             // because like sub-requirements, they appear in the flattened wiki before the high-level requirement.
-                            self.implicits_cnt_map
+                            *self
+                                .implicits_cnt_map
                                 .get(sub_req)
                                 .expect("Implicit requirement not in implicit cnt-map.")
                         } else {
                             // Note: Might be `None` for sub-requirements that are **not** *active* in this branch.
-                            &RefCntKind::Untraced
+                            RefCntKind::Untraced
                         }
                     }
                 }
             });
+
+            // [req:wiki.ref_list.manual]
+            if opt_ref_entry.map_or_else(|| false, |entry| entry.is_manual) {
+                sub_cnt_kind = match sub_cnt_kind {
+                    RefCntKind::HighLvl {
+                        direct_cnt,
+                        sub_cnt,
+                    } => RefCntKind::HighLvl {
+                        direct_cnt: direct_cnt + 1,
+                        sub_cnt,
+                    },
+                    RefCntKind::LowLvl { cnt } => RefCntKind::LowLvl { cnt: cnt + 1 },
+                    RefCntKind::Untraced => RefCntKind::LowLvl { cnt: 1 },
+                };
+            }
 
             sub_cnt += match sub_cnt_kind {
                 RefCntKind::HighLvl {
                     direct_cnt,
                     sub_cnt,
                 } => direct_cnt + sub_cnt,
-                RefCntKind::LowLvl { cnt } => *cnt,
+                RefCntKind::LowLvl { cnt } => cnt,
                 // TODO: Check for *manual* flag here
                 RefCntKind::Untraced => 0,
             }
@@ -384,6 +400,60 @@ mod test {
         assert!(
             changes.is_err(),
             "Referencing deprecated requirement did not result in error."
+        );
+    }
+
+    fn setup_manual_verified_wiki() -> Wiki {
+        let filename = "test_wiki";
+        let content = r#"
+# ref_req: Some Title
+
+**References:**
+
+- in branch main: 1
+
+## ref_req.test: Some Title
+
+**References:**
+
+- in branch main: manual
+        "#;
+
+        Wiki::try_from((PathBuf::from(filename), content)).unwrap()
+    }
+
+    #[test]
+    fn manual_flag_for_low_lvl_ref_entry() {
+        let wiki = setup_manual_verified_wiki();
+        let ref_map = setup_references(&wiki);
+        let branch_name = String::from("main");
+        let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
+
+        let changes = ReferenceChanges::new(
+            branch_name.into(),
+            Some(branch_link.clone().into()),
+            &wiki,
+            &ref_map,
+        )
+        .unwrap();
+
+        let file_changes = changes.ordered_file_changes();
+        let test_file_changes = &file_changes[0].1;
+
+        let high_lvl_ref_entry = &test_file_changes[0].ref_list[0];
+
+        assert_eq!(
+            high_lvl_ref_entry.to_string(),
+            "- in branch main: 3 (1 direct)",
+            "*manual* flag not correctly counted in parent requirement."
+        );
+
+        let low_lvl_ref_entry = &test_file_changes[1].ref_list[0];
+
+        assert_eq!(
+            low_lvl_ref_entry.to_string(),
+            "- in branch main: manual + 1",
+            "*manual* flag + reference not correctly displayed."
         );
     }
 }

@@ -32,20 +32,35 @@ pub struct RefListEntry {
     /// [req:wiki.ref_list]
     pub ref_cnt: RefCntKind,
 
+    /// Marks this entry to require manual verification.
+    ///
+    /// [req:wiki.ref_list.manual]
     pub is_manual: bool,
 
+    /// Marks this requirement to be deprecated in this branch.
+    ///
+    /// [req:wiki.ref_list.deprecated]
     pub is_deprecated: bool,
 }
 
 impl std::fmt::Display for RefListEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // [req:wiki.ref_list.manual], [req:wiki.ref_list.deprecated]
+        let cnt = if self.is_deprecated {
+            "deprecated".to_string()
+        } else if self.is_manual {
+            let mut s = "manual".to_string();
+            if self.ref_cnt != RefCntKind::Untraced {
+                s.push_str(&format!(" + {}", self.ref_cnt));
+            }
+            s
+        } else {
+            self.ref_cnt.to_string()
+        };
+
         match &self.branch_link {
-            Some(link) => write!(
-                f,
-                "- in branch [{}]({}): {}",
-                self.branch_name, link, self.ref_cnt
-            ),
-            None => write!(f, "- in branch {}: {}", self.branch_name, self.ref_cnt),
+            Some(link) => write!(f, "- in branch [{}]({}): {}", self.branch_name, link, cnt),
+            None => write!(f, "- in branch {}: {}", self.branch_name, cnt),
         }
     }
 }
@@ -53,7 +68,7 @@ impl std::fmt::Display for RefListEntry {
 /// Reference counter kind for a requirement.
 ///
 /// [req:req_id.sub_req_id], [req:wiki.ref_list]
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RefCntKind {
     /// Counter for a high-level requirement.
     ///
@@ -313,6 +328,39 @@ mod test {
         assert!(
             ref_entry_result.is_err(),
             "Deprecated flag with cnt did not result in error."
+        );
+    }
+
+    #[test]
+    fn deprecated_ref_entry_to_string() {
+        let ref_entry = get_ref_entry("- in branch main: deprecated").unwrap();
+
+        assert_eq!(
+            ref_entry.to_string(),
+            "- in branch main: deprecated",
+            "*deprecated* requirement not printed correctly."
+        );
+    }
+
+    #[test]
+    fn manual_ref_entry_to_string() {
+        let ref_entry = get_ref_entry("- in branch main: manual").unwrap();
+
+        assert_eq!(
+            ref_entry.to_string(),
+            "- in branch main: manual",
+            "*manual* requirement not printed correctly."
+        );
+    }
+
+    #[test]
+    fn manual_ref_entry_with_refs_to_string() {
+        let ref_entry = get_ref_entry("- in branch main: manual + 2 (1 direct)").unwrap();
+
+        assert_eq!(
+            ref_entry.to_string(),
+            "- in branch main: manual + 2 (1 direct)",
+            "*manual* requirement with references not printed correctly."
         );
     }
 }

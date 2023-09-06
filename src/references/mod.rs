@@ -159,6 +159,7 @@ pub enum ReferencesError {
         line_nr: usize,
     },
 
+    // [req:wiki.ref_list.deprecated]
     #[error("Deprecated requirement with ID '{}' or a sub-requirement of it is referenced at least once in branch '{}'.", .req_id, .branch_name)]
     DeprecatedReqReferenced { req_id: String, branch_name: String },
 }
