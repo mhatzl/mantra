@@ -25,17 +25,24 @@ pub struct ReferenceChanges {
     implicits_cnt_map: HashMap<ReqId, RefCntKind>,
     file_changes: HashMap<PathBuf, Vec<Req>>,
     branch_name: Arc<String>,
+    branch_link: Option<Arc<String>>,
 }
 
 impl ReferenceChanges {
     /// Creates [`ReferenceChanges`] from the given wiki and reference map.
     /// Found references are compared against the references entry in the wiki for the given branch name.
-    pub fn new(branch_name: Arc<String>, wiki: &Wiki, ref_map: &ReferencesMap) -> Self {
+    pub fn new(
+        branch_name: Arc<String>,
+        branch_link: Option<Arc<String>>,
+        wiki: &Wiki,
+        ref_map: &ReferencesMap,
+    ) -> Self {
         let mut changes = ReferenceChanges {
             new_cnt_map: HashMap::new(),
             implicits_cnt_map: HashMap::new(),
             file_changes: HashMap::new(),
             branch_name,
+            branch_link,
         };
 
         changes.update_cnts(wiki, ref_map);
@@ -72,7 +79,7 @@ impl ReferenceChanges {
                     Some(entry) => entry.ref_cnt = new_cnt_kind,
                     None => req.ref_list.push(RefListEntry {
                         branch_name: self.branch_name.clone(),
-                        branch_link: None,
+                        branch_link: self.branch_link.clone(), // see DR-20230906_2 for more info
                         ref_cnt: new_cnt_kind,
                         is_manual: false,
                         is_deprecated: false,
@@ -227,7 +234,7 @@ mod test {
         let ref_map = setup_references(&wiki);
         let branch_name = String::from("main");
 
-        let changes = ReferenceChanges::new(branch_name.into(), &wiki, &ref_map);
+        let changes = ReferenceChanges::new(branch_name.into(), None, &wiki, &ref_map);
 
         assert_eq!(
             changes.new_cnt_map.len(),
@@ -245,6 +252,70 @@ mod test {
                 direct_cnt: 1,
                 sub_cnt: 1
             },
+        );
+    }
+
+    fn setup_partial_referenced_wiki() -> Wiki {
+        let filename = "test_wiki";
+        let content = r#"
+# ref_req: Some Title
+
+**References:**
+
+- in branch main: 2 (1 direct)
+
+## ref_req.test: Some Title
+
+        "#;
+
+        Wiki::try_from((PathBuf::from(filename), content)).unwrap()
+    }
+
+    #[test]
+    fn branch_link_updated_for_new_ref_entries() {
+        let wiki = setup_partial_referenced_wiki();
+        let ref_map = setup_references(&wiki);
+        let branch_name = String::from("main");
+        let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
+
+        let changes = ReferenceChanges::new(
+            branch_name.into(),
+            Some(branch_link.clone().into()),
+            &wiki,
+            &ref_map,
+        );
+
+        assert_eq!(
+            changes.new_cnt_map.len(),
+            1,
+            "More than one reference counter changed."
+        );
+
+        let file_changes = changes.ordered_file_changes();
+        let test_file_changes = &file_changes[0].1;
+
+        assert_eq!(
+            test_file_changes.len(),
+            1,
+            "More than one requirement reference changed."
+        );
+
+        let low_lvl_req = &test_file_changes[0];
+        assert_eq!(
+            low_lvl_req.head.id, "ref_req.test",
+            "Wrong requirement Id changed."
+        );
+        assert_eq!(
+            low_lvl_req.ref_list.len(),
+            1,
+            "More than one ref entry created."
+        );
+
+        let ref_entry = &low_lvl_req.ref_list[0];
+        assert_eq!(
+            ref_entry.branch_link,
+            Some(branch_link.into()),
+            "Branch link was not added to new ref entry."
         );
     }
 }

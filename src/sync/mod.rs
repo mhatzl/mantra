@@ -27,6 +27,12 @@ pub struct SyncParameter {
     /// [req:wiki.ref_list]
     #[arg(long, required = false, default_value = "main")]
     pub branch_name: String,
+
+    /// Optional link to the branch.
+    ///
+    /// [req:wiki.ref_list]
+    #[arg(long)]
+    pub branch_link: Option<String>,
 }
 
 /// Synchronizes requirement references between requirements in a wiki, and references to them in a project.
@@ -36,7 +42,15 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
     let wiki = Wiki::try_from(&params.global.req_folder)?;
     let ref_map = ReferencesMap::try_from((&wiki, &params.global.proj_folder))?;
 
-    let changes = ReferenceChanges::new(params.branch_name.clone().into(), &wiki, &ref_map);
+    let changes = ReferenceChanges::new(
+        params.branch_name.clone().into(),
+        params
+            .branch_link
+            .as_ref()
+            .map(|link| std::sync::Arc::new(link.clone())),
+        &wiki,
+        &ref_map,
+    );
     let ordered_file_changes = changes.ordered_file_changes();
 
     if ordered_file_changes.is_empty() {
