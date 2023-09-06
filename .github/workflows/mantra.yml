@@ -10,11 +10,16 @@ permissions:
 jobs:
     # Synchronizes references between project and wiki.
     #            
-    # [req:sync.ci.code]
+    # [req:sync.ci]
     mantra-sync:
         runs-on: ubuntu-latest
         container:
             image: manuelhatzl/mantra:latest
+
+        env:
+            # see: https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions
+            # Note: We only care about `ref_name`, because this workflow should only be triggered on `push`.
+            BRANCH_NAME: ${{ github.ref_name }} 
 
         steps:
             - uses: actions/checkout@v3
@@ -29,7 +34,7 @@ jobs:
                 path: './proj_folder'
 
             - name: sync-references
-              run: mantra sync --branch-name=main ./wiki/5-Requirements ./proj_folder
+              run: mantra sync --branch-name=$BRANCH_NAME --branch-link=https://github.com/mhatzl/mantra/tree/$BRANCH_NAME ./wiki/5-Requirements ./proj_folder
 
             - name: push-changes
               working-directory: ./wiki
