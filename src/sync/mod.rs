@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use clap::Args;
 
 use crate::{
-    global_param::GlobalParameter,
+    globals::GlobalParameter,
     references::{changes::ReferenceChanges, ReferencesError, ReferencesMap},
     wiki::{Wiki, WikiError},
 };
@@ -59,8 +59,20 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
     }
 
     for (filepath, changed_req) in ordered_file_changes {
-        let orig_content = std::fs::read_to_string(filepath)
-            .map_err(|_| logid::pipe!(SyncError::AccessingWikiFile(filepath.clone())))?;
+        let orig_content_res = std::fs::read_to_string(filepath)
+            .map_err(|_| logid::pipe!(SyncError::AccessingWikiFile(filepath.clone())));
+
+        let orig_content = match orig_content_res {
+            Ok(orig) => orig,
+            Err(err) => {
+                if crate::globals::early_exit() {
+                    return Err(err);
+                } else {
+                    continue;
+                }
+            }
+        };
+
         let orig_lines: Vec<&str> = orig_content.lines().collect();
         let mut orig_line_nr = 0;
         let mut new_lines: Vec<String> = Vec::with_capacity(orig_lines.len());
@@ -125,6 +137,7 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
             new_lines.push("".to_string());
         }
 
+        // Note: Always exit if we fail to write, because this is a severe problem.
         std::fs::write(filepath, new_lines.join("\n"))
             .map_err(|_| logid::pipe!(SyncError::AccessingWikiFile(filepath.clone())))?;
     }

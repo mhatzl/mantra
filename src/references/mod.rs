@@ -51,13 +51,24 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
                 });
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
-                    let content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
+                    let res_content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
                         logid::pipe!(ReferencesError::CouldNotAccessFile(
                             dir_entry.path().to_path_buf()
                         ))
-                    })?;
+                    });
 
-                    ref_map.trace(dir_entry.path(), &content)?;
+                    match res_content {
+                        Ok(content) => {
+                            ref_map.trace(dir_entry.path(), &content)?;
+                        }
+                        Err(err) => {
+                            if crate::globals::early_exit() {
+                                return Err(err);
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
                 }
             }
         } else {
@@ -128,11 +139,17 @@ impl ReferencesMap {
                         added_refs += 1;
                     }
                     None => {
-                        return logid::err!(ReferencesError::ReqNotInWiki {
+                        let err = logid::err!(ReferencesError::ReqNotInWiki {
                             req_id: req_id.clone(),
                             filepath: filepath.to_path_buf(),
                             line_nr,
-                        })
+                        });
+
+                        if crate::globals::early_exit() {
+                            return err;
+                        } else {
+                            continue;
+                        }
                     }
                 }
             }

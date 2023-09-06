@@ -57,17 +57,36 @@ impl TryFrom<&PathBuf> for Wiki {
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
                     let filepath = dir_entry.into_path();
-                    let content = std::fs::read_to_string(filepath.clone()).map_err(|_| {
-                        logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone()))
-                    })?;
-                    wiki.add(filepath, &content)?;
+                    let res_content = std::fs::read_to_string(filepath.clone())
+                        .map_err(|_| logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone())));
+
+                    match res_content {
+                        Ok(content) => {
+                            wiki.add(filepath, &content)?;
+                        }
+                        Err(err) => {
+                            if crate::globals::early_exit() {
+                                return Err(err);
+                            }
+                        }
+                    }
                 }
             }
         } else {
             let filepath = req_path.to_path_buf();
-            let content = std::fs::read_to_string(req_path)
-                .map_err(|_| logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone())))?;
-            wiki.add(filepath, &content)?;
+            let res_content = std::fs::read_to_string(req_path)
+                .map_err(|_| logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone())));
+
+            match res_content {
+                Ok(content) => {
+                    wiki.add(filepath, &content)?;
+                }
+                Err(err) => {
+                    if crate::globals::early_exit() {
+                        return Err(err);
+                    }
+                }
+            }
         }
 
         Ok(wiki)
@@ -163,11 +182,17 @@ impl Wiki {
                         let prev_req = self.req_map.insert(req_id.clone(), std::mem::take(req));
 
                         if let Some(prev) = prev_req {
-                            return logid::err!(WikiError::DuplicateReqId {
+                            let err = logid::err!(WikiError::DuplicateReqId {
                                 req_id: req_id.clone(),
                                 filepath: prev.filepath.clone(),
                                 line_nr: prev.line_nr,
                             });
+
+                            if crate::globals::early_exit() {
+                                return err;
+                            } else {
+                                continue;
+                            }
                         }
                     }
 
@@ -211,11 +236,17 @@ impl Wiki {
                             }
                             Err(ReqMatchingError::NoMatchFound) => continue,
                             Err(err) => {
-                                return logid::err!(WikiError::InvalidRefListEntry {
+                                let err = logid::err!(WikiError::InvalidRefListEntry {
                                     filepath: filepath.clone(),
                                     line_nr,
                                     cause: err.to_string(),
-                                })
+                                });
+
+                                if crate::globals::early_exit() {
+                                    return err;
+                                } else {
+                                    continue;
+                                }
                             }
                         }
 
@@ -235,11 +266,15 @@ impl Wiki {
             let prev_req = self.req_map.insert(req_id.clone(), req);
 
             if let Some(prev) = prev_req {
-                return logid::err!(WikiError::DuplicateReqId {
+                let err = logid::err!(WikiError::DuplicateReqId {
                     req_id: req_id.clone(),
                     filepath: prev.filepath.clone(),
                     line_nr: prev.line_nr,
                 });
+
+                if crate::globals::early_exit() {
+                    return err;
+                }
             }
         }
 

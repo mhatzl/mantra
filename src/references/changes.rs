@@ -148,10 +148,16 @@ impl ReferenceChanges {
                         Some(req_entry) => {
                             // [req:wiki.ref_list.deprecated]
                             if req_entry.is_deprecated && new_cnt_kind != RefCntKind::Untraced {
-                                return logid::err!(ReferencesError::DeprecatedReqReferenced {
+                                let err = logid::err!(ReferencesError::DeprecatedReqReferenced {
                                     req_id: req_id.clone(),
                                     branch_name: self.branch_name.to_string()
                                 });
+
+                                if crate::globals::early_exit() {
+                                    return err;
+                                } else {
+                                    continue;
+                                }
                             }
 
                             req_entry.ref_cnt != new_cnt_kind
