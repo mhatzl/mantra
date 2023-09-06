@@ -4,7 +4,7 @@ on:
       - main
 
 # See: https://github.com/google-github-actions/release-please-action
-name: Release Please
+name: release-please
 
 permissions:
   contents: write
