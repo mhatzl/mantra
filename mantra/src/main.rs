@@ -7,7 +7,6 @@ use logid::{
 
 mod cli;
 mod global_param;
-mod link;
 mod references;
 mod req;
 mod sync;
