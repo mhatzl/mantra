@@ -8,7 +8,7 @@ use clap::Args;
 
 use crate::{
     global_param::GlobalParameter,
-    references::{changes::ReferenceChanges, ReferencesMap, ReferencesMapError},
+    references::{changes::ReferenceChanges, ReferencesError, ReferencesMap},
     wiki::{Wiki, WikiError},
 };
 
@@ -50,7 +50,7 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
             .map(|link| std::sync::Arc::new(link.clone())),
         &wiki,
         &ref_map,
-    );
+    )?;
     let ordered_file_changes = changes.ordered_file_changes();
 
     if ordered_file_changes.is_empty() {
@@ -154,8 +154,8 @@ impl From<WikiError> for SyncError {
     }
 }
 
-impl From<ReferencesMapError> for SyncError {
-    fn from(_value: ReferencesMapError) -> Self {
+impl From<ReferencesError> for SyncError {
+    fn from(_value: ReferencesError) -> Self {
         SyncError::ReferenceCounting
     }
 }

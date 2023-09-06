@@ -24,7 +24,7 @@ pub struct ReferencesMap {
 }
 
 impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
-    type Error = ReferencesMapError;
+    type Error = ReferencesError;
 
     /// Creates a [`ReferencesMap`] for the given wiki, using references from the given project folder.
     fn try_from(value: (&Wiki, &PathBuf)) -> Result<Self, Self::Error> {
@@ -32,7 +32,7 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
         let project_folder = value.1;
 
         if !project_folder.exists() {
-            return logid::err!(ReferencesMapError::CouldNotFindProjectFolder(
+            return logid::err!(ReferencesError::CouldNotFindProjectFolder(
                 project_folder.clone(),
             ));
         }
@@ -52,7 +52,7 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
             while let Some(Ok(dir_entry)) = walk.next() {
                 if dir_entry.file_type().is_file() {
                     let content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
-                        logid::pipe!(ReferencesMapError::CouldNotAccessFile(
+                        logid::pipe!(ReferencesError::CouldNotAccessFile(
                             dir_entry.path().to_path_buf()
                         ))
                     })?;
@@ -62,9 +62,7 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
             }
         } else {
             let content = std::fs::read_to_string(project_folder).map_err(|_| {
-                logid::pipe!(ReferencesMapError::CouldNotAccessFile(
-                    project_folder.clone()
-                ))
+                logid::pipe!(ReferencesError::CouldNotAccessFile(project_folder.clone()))
             })?;
 
             ref_map.trace(project_folder, &content)?;
@@ -94,7 +92,7 @@ impl ReferencesMap {
     /// Goes through the given content and increases the reference counter for referenced requirements.
     ///
     /// **Note:** Not required for `self` to be mutable, because counts are stored as [`AtomicUsize`].
-    fn trace(&self, filepath: &Path, content: &str) -> Result<usize, ReferencesMapError> {
+    fn trace(&self, filepath: &Path, content: &str) -> Result<usize, ReferencesError> {
         let references_regex = REFERENCES_MATCHER.get_or_init(|| {
             // [mantra:ignore_next]
             Regex::new(r"\[req:(?<req_id>[^\]\s]+)\]")
@@ -130,7 +128,7 @@ impl ReferencesMap {
                         added_refs += 1;
                     }
                     None => {
-                        return logid::err!(ReferencesMapError::ReqNotInWiki {
+                        return logid::err!(ReferencesError::ReqNotInWiki {
                             req_id: req_id.clone(),
                             filepath: filepath.to_path_buf(),
                             line_nr,
@@ -146,7 +144,7 @@ impl ReferencesMap {
 
 /// Enum representing possible errors that may occur, when using functions for [`ReferencesMap`].
 #[derive(Debug, thiserror::Error, logid::ErrLogId)]
-pub enum ReferencesMapError {
+pub enum ReferencesError {
     #[error("Could not access file '{}' in the project folder.", .0.to_string_lossy())]
     CouldNotAccessFile(PathBuf),
 
@@ -160,6 +158,9 @@ pub enum ReferencesMapError {
         filepath: PathBuf,
         line_nr: usize,
     },
+
+    #[error("Deprecated requirement with ID '{}' or a sub-requirement of it is referenced at least once in branch '{}'.", .req_id, .branch_name)]
+    DeprecatedReqReferenced { req_id: String, branch_name: String },
 }
 
 #[cfg(test)]

@@ -105,7 +105,7 @@ static BRANCH_LINK_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::ne
 /// [req:wiki.ref_list]
 pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingError> {
     let entry_regex = REF_ENTRY_MATCHER.get_or_init(|| {
-        Regex::new(r"^[-\+\*]\sin\sbranch\s(?<branch>[^\s]+):\s(?:(?<depr>deprecated)|(?<manual>manual(?<plus>\s\+)?)\s*)?(?<cnt>\d+)?(?:\s\((?<direct_cnt>\d+)\sdirect\))?")
+        Regex::new(r"^[-\+\*]\sin\sbranch\s(?<branch>[^\s]+):\s(?:(?<depr>deprecated)|(?<manual>manual))?(?<plus>\s\+\s)?\s*(?<cnt>\d+)?(?:\s\((?<direct_cnt>\d+)\sdirect\))?")
             .expect("Regex to match a *references* list entry could **not** be created.")
     });
 
@@ -137,6 +137,7 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
                 None => (Arc::new(branch.to_string()), None),
             };
 
+            // [req:wiki.ref_list.deprecated]
             let is_deprecated = captures.name("depr").is_some();
             let is_manual = captures.name("manual").is_some();
             let has_plus = captures.name("plus").is_some();
@@ -279,5 +280,39 @@ mod test {
             "Deprecated flag wrongfully detected."
         );
         assert!(!ref_entry.is_manual, "Manual flag wrongfully detected.");
+    }
+
+    #[test]
+    fn deprecated_ref_entry() {
+        let ref_entry = get_ref_entry("- in branch main: deprecated").unwrap();
+
+        assert_eq!(
+            ref_entry.ref_cnt,
+            RefCntKind::Untraced,
+            "Reference counter wrongfully set for *deprecated* requirement."
+        );
+
+        assert!(ref_entry.is_deprecated, "Deprecated flag not detected.");
+        assert!(!ref_entry.is_manual, "Manual flag wrongfully detected.");
+    }
+
+    #[test]
+    fn deprecated_plus_cnt_ref_entry() {
+        let ref_entry_result = get_ref_entry("- in branch main: deprecated + 1");
+
+        assert!(
+            ref_entry_result.is_err(),
+            "Deprecated flag with cnt did not result in error."
+        );
+    }
+
+    #[test]
+    fn deprecated_cnt_no_plus_ref_entry() {
+        let ref_entry_result = get_ref_entry("- in branch main: deprecated 1");
+
+        assert!(
+            ref_entry_result.is_err(),
+            "Deprecated flag with cnt did not result in error."
+        );
     }
 }

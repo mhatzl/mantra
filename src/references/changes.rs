@@ -8,10 +8,13 @@ use std::{
     sync::{atomic::Ordering, Arc},
 };
 
-use crate::wiki::{
-    ref_list::{RefCntKind, RefListEntry},
-    req::{Req, ReqId},
-    Wiki, WikiReq,
+use crate::{
+    references::ReferencesError,
+    wiki::{
+        ref_list::{RefCntKind, RefListEntry},
+        req::{Req, ReqId},
+        Wiki, WikiReq,
+    },
 };
 
 use super::ReferencesMap;
@@ -31,12 +34,16 @@ pub struct ReferenceChanges {
 impl ReferenceChanges {
     /// Creates [`ReferenceChanges`] from the given wiki and reference map.
     /// Found references are compared against the references entry in the wiki for the given branch name.
+    ///
+    /// # Possible Errors
+    ///
+    /// - [`ReferencesError::DeprecatedReqReferenced`]
     pub fn new(
         branch_name: Arc<String>,
         branch_link: Option<Arc<String>>,
         wiki: &Wiki,
         ref_map: &ReferencesMap,
-    ) -> Self {
+    ) -> Result<Self, ReferencesError> {
         let mut changes = ReferenceChanges {
             new_cnt_map: HashMap::new(),
             implicits_cnt_map: HashMap::new(),
@@ -45,8 +52,8 @@ impl ReferenceChanges {
             branch_link,
         };
 
-        changes.update_cnts(wiki, ref_map);
-        changes
+        changes.update_cnts(wiki, ref_map)?;
+        Ok(changes)
     }
 
     /// Returns filepaths and updated requirements if their reference counters changed.
@@ -96,7 +103,13 @@ impl ReferenceChanges {
     /// Updates the reference counters for all requirements, starting from the first leaf requirement of the first high-level requirement.
     ///
     /// **Note:** Only changed counters are added to `self.new_cnt_map`.
-    fn update_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) {
+    ///
+    /// # Possible Errors
+    ///
+    /// - [`ReferencesError::DeprecatedReqReferenced`]
+    ///
+    /// #[req:wiki.ref_list.deprecated]
+    fn update_cnts(&mut self, wiki: &Wiki, ref_map: &ReferencesMap) -> Result<(), ReferencesError> {
         let flat_wiki = wiki.flatten();
 
         for req in flat_wiki {
@@ -135,7 +148,16 @@ impl ReferenceChanges {
             match req {
                 WikiReq::Explicit { req: explicit_req } => {
                     let kind_changed = match wiki.req_ref_entry(&req_id, &self.branch_name) {
-                        Some(req_entry) => req_entry.ref_cnt != new_cnt_kind,
+                        Some(req_entry) => {
+                            if req_entry.is_deprecated && new_cnt_kind != RefCntKind::Untraced {
+                                return logid::err!(ReferencesError::DeprecatedReqReferenced {
+                                    req_id: req_id.clone(),
+                                    branch_name: self.branch_name.to_string()
+                                });
+                            }
+
+                            req_entry.ref_cnt != new_cnt_kind
+                        }
                         // Note: Might happen if the requirement had no references in this branch before.
                         None => new_cnt_kind != RefCntKind::Untraced,
                     };
@@ -155,6 +177,8 @@ impl ReferenceChanges {
                 }
             }
         }
+
+        Ok(())
     }
 
     /// Calculates the sum of all updated reference counters of the given sub requirements.
@@ -234,7 +258,7 @@ mod test {
         let ref_map = setup_references(&wiki);
         let branch_name = String::from("main");
 
-        let changes = ReferenceChanges::new(branch_name.into(), None, &wiki, &ref_map);
+        let changes = ReferenceChanges::new(branch_name.into(), None, &wiki, &ref_map).unwrap();
 
         assert_eq!(
             changes.new_cnt_map.len(),
@@ -283,7 +307,8 @@ mod test {
             Some(branch_link.clone().into()),
             &wiki,
             &ref_map,
-        );
+        )
+        .unwrap();
 
         assert_eq!(
             changes.new_cnt_map.len(),
@@ -316,6 +341,49 @@ mod test {
             ref_entry.branch_link,
             Some(branch_link.into()),
             "Branch link was not added to new ref entry."
+        );
+    }
+
+    fn setup_deprecated_wiki() -> Wiki {
+        let filename = "test_wiki";
+        let content = r#"
+# ref_req: Some Title
+
+**References:**
+
+- in branch main: deprecated
+        "#;
+
+        Wiki::try_from((PathBuf::from(filename), content)).unwrap()
+    }
+
+    fn setup_deprecated_references(wiki: &Wiki) -> ReferencesMap {
+        let filename = "test_file";
+        // Note: IDs must be identical to the one in `setup_wiki()`.
+        let content = "[req:ref_req]";
+
+        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        ref_map.trace(&PathBuf::from(filename), content).unwrap();
+        ref_map
+    }
+
+    #[test]
+    fn deprecated_req_referenced() {
+        let wiki = setup_deprecated_wiki();
+        let ref_map = setup_deprecated_references(&wiki);
+        let branch_name = String::from("main");
+        let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
+
+        let changes = ReferenceChanges::new(
+            branch_name.into(),
+            Some(branch_link.clone().into()),
+            &wiki,
+            &ref_map,
+        );
+
+        assert!(
+            changes.is_err(),
+            "Referencing deprecated requirement did not result in error."
         );
     }
 }
