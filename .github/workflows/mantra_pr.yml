@@ -37,8 +37,9 @@ jobs:
                 output="$(cat check_overview.md)"
                 output="${output//$'\n'/\\n}"
                 output="${output// /_}"
-                echo "::set-output name=check-overview::$output"
+                cat output
+                echo "check-overview=$output" >> $GITHUB_OUTPUT
 
             - name: summary
               run: |
-                ${{ steps.check.outputs.* }} >> "$GITHUB_STEP_SUMMARY"
+                ${{ steps.check.outputs.check-overview }} >> "$GITHUB_STEP_SUMMARY"
