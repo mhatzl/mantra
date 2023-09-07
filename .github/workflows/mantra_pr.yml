@@ -37,9 +37,14 @@ jobs:
               run: |
                 mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder 2>&1 > check_overview.md
                 output="$(cat check_overview.md)"
+                output="${output//$'\n'/\\n}"
+                output="${output// / }" 
                 cat check_overview.md
                 echo "check-overview=$output" >> $GITHUB_OUTPUT
 
             - name: summary
               run: |
-                echo "${{ steps.check.outputs.check-overview }}" >> $GITHUB_STEP_SUMMARY
+                summary = ${{ steps.check.outputs.check-overview }}
+                summary="${summary//\\n/'\n'}"
+                summary="${summary// / }" 
+                echo "$summary" >> $GITHUB_STEP_SUMMARY
