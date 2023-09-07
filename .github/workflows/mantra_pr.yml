@@ -37,7 +37,7 @@ jobs:
                 output="$(cat check_overview.md)"
                 output="${output//$'\n'/\\n}"
                 output="${output// /_}"
-                cat output
+                cat $output
                 echo "check-overview=$output" >> $GITHUB_OUTPUT
 
             - name: summary
