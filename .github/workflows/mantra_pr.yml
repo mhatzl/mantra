@@ -15,9 +15,9 @@ jobs:
 
         env:
             # see: https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions
-            # Note: We only care about `head_ref`, because this workflow should only be triggered on `pull_requests`.
+            # Note: `base_ref` for `pull_requests`.
             # `ref_name` is used for workflow_dispatch.
-            BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+            BRANCH_NAME: ${{ github.base_ref || github.ref_name }} 
 
         steps:
             - uses: actions/checkout@v3
