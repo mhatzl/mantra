@@ -241,7 +241,7 @@ fn check_report(
 
     if err_cnt > 0 {
         report.push_str(&format!(
-            "--------------------------------------------------------------------
+            "\n--------------------------------------------------------------------
 `mantra check` found {} error{} for branch: {}\n\n**Failed checks:**\n\n",
             err_cnt,
             if err_cnt > 1 { "s" } else { "" },

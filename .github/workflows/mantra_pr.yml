@@ -8,7 +8,7 @@ permissions:
     pull-requests: write
 
 jobs:
-    # [req:check.pr-ci] <- trigger wrong id to fail mantra
+  # [req:bad]
     mantra-pr:
         runs-on: ubuntu-latest
         container:
@@ -33,13 +33,15 @@ jobs:
 
             - name: check
               id: check
-              # '2>&1' forwards stderr to stdout, so error logs get included in output.
+              # '&>' to get stderr and stdout in one file, so error logs get included in output.
               # Uses ' ' (U+2002) isntead of regular space for output, because GitHub output cannot handle regular spaces
               # see: https://stackoverflow.com/questions/59191913/how-do-i-get-the-output-of-a-specific-step-in-github-actions
               run: |
-                mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder 2>&1 > check_overview.md
+                mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder &> check_overview.md
                 output="$(cat check_overview.md)"
-                output="${output//$'\n'/\\n}"
+                output="${output//\'/\\\'}"
+                output="${output//\"/\\\"}"
+                output="${output//$'\n'/\\\\n}"
                 output="${output// / }" 
                 cat check_overview.md
                 echo "check-overview=$output" >> $GITHUB_OUTPUT
@@ -47,7 +49,7 @@ jobs:
             - name: summary
               # The *newline* replacement is needed to get nice formatting in the summary
               run: |
-                summary="$(echo '${{ steps.check.outputs.check-overview }}')"
+                summary="$(echo ${{ steps.check.outputs.check-overview }})"
                 summary="${summary//\\n/
                 }"
                 echo "$summary" >> $GITHUB_STEP_SUMMARY
