@@ -51,6 +51,7 @@ jobs:
                 echo "$summary" >> $GITHUB_STEP_SUMMARY
 
             - name: comment
+              # To ignore runs with workflow_dispatch
               if: ${{ github.event_name == 'pull_request' }}
               uses: actions/github-script@v6
               with:
