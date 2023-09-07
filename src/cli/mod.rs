@@ -2,7 +2,7 @@
 
 use clap::{Parser, Subcommand};
 
-use crate::sync::SyncParameter;
+use crate::{check::CheckParameter, sync::SyncParameter};
 
 const HELP_TEMPLATE: &str = r#"
 {before-help}{name} {version} - {about-with-newline}
@@ -30,11 +30,23 @@ impl Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Synchronizes references between wiki and project.
+    ///
+    /// [req:sync]
     #[command(name = "sync")]
     Sync {
         /// Parameters for synchronization.
         #[command(flatten)]
         param: SyncParameter,
+    },
+
+    /// Checks wiki structure and references in the project.
+    ///
+    /// [req:check]
+    #[command(name = "check")]
+    Check {
+        /// Parameters for validation of wiki and references.
+        #[command(flatten)]
+        param: CheckParameter,
     },
 }
 
@@ -42,6 +54,9 @@ impl Command {
     fn run(&self) -> Result<(), CmdError> {
         match self {
             Command::Sync { param } => crate::sync::sync(param).map_err(|_| CmdError::SyncError),
+            Command::Check { param } => {
+                crate::check::check(param).map_err(|_| CmdError::CheckError)
+            }
         }
     }
 }
@@ -50,6 +65,9 @@ impl Command {
 pub enum CmdError {
     #[error("Synchronization between wiki and project failed.")]
     SyncError,
+
+    #[error("Validation of wiki and/or references in the project failed.")]
+    CheckError,
 
     #[error("No command was given. Use '-h' or '--help' for help.")]
     MissingCmd,

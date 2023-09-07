@@ -29,3 +29,10 @@ static EARLY_EXIT_ON_ERROR: std::sync::atomic::AtomicBool =
 pub fn early_exit() -> bool {
     EARLY_EXIT_ON_ERROR.load(std::sync::atomic::Ordering::Relaxed)
 }
+
+/// Disables early exit on errors.
+///
+/// [req:check]
+pub fn disable_early_exit() {
+    EARLY_EXIT_ON_ERROR.store(false, std::sync::atomic::Ordering::Relaxed);
+}
