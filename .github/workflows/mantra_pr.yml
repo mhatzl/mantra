@@ -1,0 +1,40 @@
+name: mantra-pr
+on:
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    issues: write
+
+jobs:
+    mantra-pr:
+        runs-on: ubuntu-latest
+        container:
+            image: manuelhatzl/mantra:main
+
+        env:
+            # see: https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions
+            # Note: We only care about `head_ref`, because this workflow should only be triggered on `pull_requests`.
+            # `ref_name` is used for workflow_dispatch.
+            BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                repository: 'mhatzl/mantra-wiki'
+                path: './req_folder'
+                sparse-checkout: 5-Requirements
+
+            - uses: actions/checkout@v3
+              with:
+                path: './proj_folder'
+
+            - name: check
+              id: check
+              # '2>&1' forwards stderr to stdout, so error logs get included in output.
+              run: |
+                { mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder 2>&1 ;} >> "$GITHUB_OUTPUT"
+
+            - name: summary
+              run: |
+                ${{ steps.check.outputs.* }} >> "$GITHUB_STEP_SUMMARY"
