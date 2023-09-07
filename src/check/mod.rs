@@ -241,7 +241,8 @@ fn check_report(
 
     if err_cnt > 0 {
         report.push_str(&format!(
-            "`mantra check` found {} error{} for branch: {}\n\n**Failed checks:**\n\n",
+            "--------------------------------------------------------------------
+`mantra check` found {} error{} for branch: {}\n\n**Failed checks:**\n\n",
             err_cnt,
             if err_cnt > 1 { "s" } else { "" },
             branch_name,
@@ -300,7 +301,8 @@ fn check_report(
     } else {
         // Note: New lines are added automatically, and indentation is preserved for multi-line strings.
         report.push_str(&format!(
-            "`mantra check` ran successfully for branch: {branch_name}\n
+            "--------------------------------------------------------------------
+`mantra check` ran successfully for branch: {branch_name}\n
 **Checks:**\n
 - All references refer to existing requirements
 - No deprecated requirement referenced
