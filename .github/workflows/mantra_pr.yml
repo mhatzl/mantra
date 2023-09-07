@@ -39,6 +39,8 @@ jobs:
                 mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder &> check_overview.md
                 output="$(cat check_overview.md)"
                 output="${output//$'\n'/\\n}"
+                output="${output//\'/\\'}"
+                output="${output//\"/\\"}"
                 output="${output// / }" 
                 cat check_overview.md
                 echo "check-overview=$output" >> $GITHUB_OUTPUT
