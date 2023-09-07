@@ -33,7 +33,7 @@ jobs:
               id: check
               # '2>&1' forwards stderr to stdout, so error logs get included in output.
               run: |
-                mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder >> "$GITHUB_OUTPUT"
+                mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder
 
             - name: summary
               run: |
