@@ -33,7 +33,11 @@ jobs:
               id: check
               # '2>&1' forwards stderr to stdout, so error logs get included in output.
               run: |
-                mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder
+                mantra check --branch-name=$BRANCH_NAME ./req_folder ./proj_folder 2>&1 > check_overview.md
+                output="$(cat check_overview.md)"
+                output="${output//$'\n'/\\n}"
+                output="${output// /_}"
+                echo "::set-output name=check-overview::$output"
 
             - name: summary
               run: |
