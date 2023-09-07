@@ -44,7 +44,7 @@ jobs:
 
             - name: summary
               run: |
-                summary = ${{ steps.check.outputs.check-overview }}
+                summary="${{ steps.check.outputs.check-overview }}"
                 summary="${summary//\\n/'\n'}"
                 summary="${summary// / }" 
                 echo "$summary" >> $GITHUB_STEP_SUMMARY
