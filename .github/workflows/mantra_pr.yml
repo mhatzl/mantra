@@ -50,7 +50,10 @@ jobs:
               # The *newline* replacement is needed to get nice formatting in the summary
               run: |
                 summary="$(echo ${{ steps.check.outputs.check-overview }})"
-                
+                echo "$summary"
+                summary="${summary//\\n/
+                }"
+                echo "$summary"
                 echo "$summary" >> $GITHUB_STEP_SUMMARY
 
             - name: comment
