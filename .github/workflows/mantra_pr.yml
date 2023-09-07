@@ -43,8 +43,21 @@ jobs:
                 echo "check-overview=$output" >> $GITHUB_OUTPUT
 
             - name: summary
+              # The *newline* replacement is needed to get nice formatting in the summary
               run: |
                 summary="$(echo '${{ steps.check.outputs.check-overview }}')"
                 summary="${summary//\\n/
                 }"
                 echo "$summary" >> $GITHUB_STEP_SUMMARY
+
+            - name: comment
+              if: ${{ github.event_name == 'pull_request' }}
+              uses: actions/github-script@v6
+              with:
+                script: |
+                    github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: '${{ steps.check.outputs.check-overview }}'
+                    })
