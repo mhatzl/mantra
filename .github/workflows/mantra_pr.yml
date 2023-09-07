@@ -8,7 +8,7 @@ permissions:
     pull-requests: write
 
 jobs:
-    # [req:check.pr-ci] <- wrong id to fail mantra
+    # [req:check.pr-ci] <- trigger wrong id to fail mantra
     mantra-pr:
         runs-on: ubuntu-latest
         container:
