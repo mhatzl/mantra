@@ -50,11 +50,9 @@ jobs:
               # The *newline* replacement is needed to get nice formatting in the summary
               run: |
                 summary="$(echo '${{ steps.check.outputs.check-overview }}')"
-                summary="${summary//\'/\\\'}"
-                summary="${summary//\"/\\\"}"
                 summary="${summary//\\n/
                 }"
-                echo "$summary" >> $GITHUB_STEP_SUMMARY
+                echo $summary >> $GITHUB_STEP_SUMMARY
 
             - name: comment
               # To ignore runs with workflow_dispatch
