@@ -15,7 +15,7 @@ jobs:
 
         env:
             # see: https://stackoverflow.com/questions/58033366/how-to-get-the-current-branch-within-github-actions
-            # Note: `base_ref` for `pull_requests`.
+            # Note: We only care about `base_ref`, because this workflow should be triggered on `pull_requests`, but use the target branch for reference comparisons.
             # `ref_name` is used for workflow_dispatch.
             BRANCH_NAME: ${{ github.base_ref || github.ref_name }} 
 
