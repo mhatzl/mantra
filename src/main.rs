@@ -5,8 +5,9 @@ use logid::{
     logging::filter::{AddonFilter, FilterConfigBuilder},
 };
 
+mod check;
 mod cli;
-mod global_param;
+mod globals;
 mod references;
 mod sync;
 mod wiki;

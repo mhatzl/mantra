@@ -3,7 +3,7 @@
 //! [req:sync]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{hash_map::IntoIter, HashMap, HashSet},
     path::PathBuf,
     sync::{atomic::Ordering, Arc},
 };
@@ -54,6 +54,13 @@ impl ReferenceChanges {
 
         changes.update_cnts(wiki, ref_map)?;
         Ok(changes)
+    }
+
+    /// Returns an iterator over all requirements with changed counters.
+    ///
+    /// [req:check]
+    pub fn cnt_changes(self) -> IntoIter<ReqId, RefCntKind> {
+        self.new_cnt_map.into_iter()
     }
 
     /// Returns filepaths and updated requirements if their reference counters changed.
@@ -148,10 +155,16 @@ impl ReferenceChanges {
                         Some(req_entry) => {
                             // [req:wiki.ref_list.deprecated]
                             if req_entry.is_deprecated && new_cnt_kind != RefCntKind::Untraced {
-                                return logid::err!(ReferencesError::DeprecatedReqReferenced {
+                                let err = logid::err!(ReferencesError::DeprecatedReqReferenced {
                                     req_id: req_id.clone(),
                                     branch_name: self.branch_name.to_string()
                                 });
+
+                                if crate::globals::early_exit() {
+                                    return err;
+                                } else {
+                                    continue;
+                                }
                             }
 
                             req_entry.ref_cnt != new_cnt_kind
