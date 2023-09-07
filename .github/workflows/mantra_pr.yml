@@ -8,6 +8,7 @@ permissions:
     pull-requests: write
 
 jobs:
+  # [req:bad]
     mantra-pr:
         runs-on: ubuntu-latest
         container:
