@@ -6,7 +6,7 @@ use clap::Args;
 
 use crate::wiki::{ref_list::RefCntKind, req::ReqId, Wiki, WikiError};
 
-/// Parameters for the `status` command.
+/// Parameters for the `release` command.
 ///
 /// [req:status]
 #[derive(Args, Debug, Clone)]
