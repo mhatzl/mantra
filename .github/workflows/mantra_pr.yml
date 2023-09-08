@@ -50,7 +50,7 @@ jobs:
             - name: summary
               # The *newline* replacement is needed to get nice formatting in the summary
               run: |
-                summary="$(echo ${{ steps.check.outputs.check-overview }})"
+                summary="$(echo '${{ steps.check.outputs.check-overview }}')"
                 summary="${summary//\\n/
                 }"
                 echo "$summary"
