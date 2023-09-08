@@ -1,3 +1,7 @@
+//! Contains functionality for the `status` command.
+//!
+//! [req:status]
+
 use std::path::PathBuf;
 
 use clap::Args;
