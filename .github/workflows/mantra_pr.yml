@@ -60,9 +60,10 @@ jobs:
               uses: actions/github-script@v6
               with:
                 script: |
-                    github.rest.issues.createComment({
+                    const check_overview = '${{ steps.check.outputs.check-overview }}'.replaceAll('\\n', '\n')
+                    await github.rest.issues.createComment({
                         issue_number: context.issue.number,
                         owner: context.repo.owner,
                         repo: context.repo.repo,
-                        body: '${{ steps.check.outputs.check-overview }}'
+                        body: check_overview
                     })
