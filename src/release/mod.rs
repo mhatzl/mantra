@@ -37,8 +37,14 @@ pub struct ReleaseParameter {
     /// If this option is not set, the report is printed to stdout.
     ///
     /// **Note:** The report will be a markdown file, so the given extension is ignored.
-    #[arg(long, alias = "release-file")]
+    #[arg(long, aliases = ["release-file", "out-file", "checklist-file"])]
     pub report_file: Option<std::path::PathBuf>,
+
+    /// Set this flag to turn this report into a checklist for requirements tagged with *manual*.
+    ///
+    /// [req:release.checklist]
+    #[arg(long)]
+    pub checklist: bool,
 }
 
 /// Creates a release report, and writes the report either to the given report-file,
@@ -49,15 +55,23 @@ pub fn release(param: &ReleaseParameter) -> Result<(), ReleaseError> {
     let wiki = Wiki::try_from(&param.req_folder)?;
     let high_reqs = wiki.high_lvl_reqs();
 
+    let head = if param.checklist {
+        "Requirements requiring *manual* verification for"
+    } else {
+        "*Active* requirements in"
+    };
+
     let report = format!(
-        "***Active* requirements in release {}:**\n\n{}",
+        "**{} release {}:**\n\n{}",
+        head,
         param.release_tag,
         release_list(
             &wiki,
             &param.wiki_url_prefix,
             &param.branch,
             high_reqs.iter(),
-            0
+            0,
+            param.checklist,
         )
     );
 
@@ -92,18 +106,25 @@ fn release_list<'a>(
     branch: &str,
     req_ids: impl Iterator<Item = &'a ReqId>,
     indent: usize,
+    checklist: bool,
 ) -> String {
     let mut list = String::new();
 
     req_ids.for_each(|req_id| {
+        let mut sub_indent = indent;
+
         if let Some(req) = wiki.req(req_id) {
+            if !checklist {
+                sub_indent += 2; // only indent explicit requirements
+            }
+
             if let Some(entry) = req
                 .ref_list
                 .iter()
                 .find(|entry| entry.branch_name.as_str() == branch)
             {
                 if !entry.is_deprecated
-                    && (entry.is_manual || entry.ref_cnt != RefCntKind::Untraced)
+                    && (entry.is_manual || (!checklist && entry.ref_cnt != RefCntKind::Untraced))
                 {
                     let wiki_link = match &wiki_url_prefix {
                         Some(prefix) => {
@@ -129,8 +150,9 @@ fn release_list<'a>(
                         None => String::new(),
                     };
                     list.push_str(&format!(
-                        "{}- {}: {}{}\n",
+                        "{}- {}{}: {}{}\n",
                         " ".repeat(indent),
+                        if checklist { "[ ] " } else { "" },
                         req_id,
                         req.head.title,
                         wiki_link,
@@ -148,7 +170,8 @@ fn release_list<'a>(
                 wiki_url_prefix,
                 branch,
                 ordered_subs.iter().copied(),
-                indent + 2,
+                sub_indent,
+                checklist,
             ));
         }
     });
