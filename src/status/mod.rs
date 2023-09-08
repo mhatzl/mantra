@@ -68,8 +68,8 @@ pub fn status(param: &StatusParameter) -> Result<(), StatusError> {
     let wiki = Wiki::try_from(&param.req_folder)?;
 
     let overview = match &param.cmp_branch {
-        Some(branch_b) => self::cmp::status_cmp(&wiki, &param.branch, branch_b)?,
-        None => self::branch::status_branch(&wiki, param)?,
+        Some(branch_b) => self::cmp::status_cmp(&wiki, &param.branch, branch_b),
+        None => self::branch::status_branch(&wiki, param),
     };
 
     println!("{overview}");

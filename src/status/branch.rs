@@ -4,12 +4,12 @@
 
 use crate::wiki::Wiki;
 
-use super::{StatusError, StatusParameter};
+use super::StatusParameter;
 
 /// Creates an overview for a specific branch in the wiki.
 ///
 /// [req:status.branch]
-pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> Result<String, StatusError> {
+pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> String {
     let mut ready_cnt = 0;
     let mut ready_details = Vec::new();
 
@@ -119,7 +119,7 @@ pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> Result<String, Sta
         overview.push_str(&create_req_details(manual_details));
     }
 
-    Ok(overview)
+    overview
 }
 
 /// Creates list of requirement details.
