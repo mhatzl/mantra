@@ -37,7 +37,7 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
             ));
         }
 
-        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        let ref_map = ReferencesMap::with(&mut wiki.req_ids());
 
         if project_folder.is_dir() {
             let mut walk = WalkDir::new(project_folder)
@@ -209,7 +209,7 @@ mod test {
         // Note: ID must be identical to the one in `setup_wiki()`.
         let content = "[req:req_id]";
 
-        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        let ref_map = ReferencesMap::with(&mut wiki.req_ids());
         let added_refs = ref_map
             .trace(&PathBuf::from(filename), content)
             .expect("Failed to create references map.");
@@ -228,7 +228,7 @@ mod test {
         // Note: ID must be identical to the one in `setup_wiki()`.
         let content = "[req:req_id]\n[req:req_id]";
 
-        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        let ref_map = ReferencesMap::with(&mut wiki.req_ids());
         let added_refs = ref_map
             .trace(&PathBuf::from(filename), content)
             .expect("Failed to create references map.");
@@ -247,7 +247,7 @@ mod test {
         // Note: ID must be identical to the one in `setup_wiki()`.
         let content = "// [req:req_id]\n\n// In addition to [req:req_id].";
 
-        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        let ref_map = ReferencesMap::with(&mut wiki.req_ids());
         let added_refs = ref_map
             .trace(&PathBuf::from(filename), content)
             .expect("Failed to create references map.");
