@@ -2,7 +2,7 @@
 
 use clap::{Parser, Subcommand};
 
-use crate::{check::CheckParameter, sync::SyncParameter};
+use crate::{check::CheckParameter, status::StatusParameter, sync::SyncParameter};
 
 const HELP_TEMPLATE: &str = r#"
 {before-help}{name} {version} - {about-with-newline}
@@ -48,6 +48,16 @@ enum Command {
         #[command(flatten)]
         param: CheckParameter,
     },
+
+    /// Creates status overview of the wiki.
+    ///
+    /// [req:status]
+    #[command(name = "status")]
+    Status {
+        /// Parameters for the status command.
+        #[command(flatten)]
+        param: StatusParameter,
+    },
 }
 
 impl Command {
@@ -56,6 +66,9 @@ impl Command {
             Command::Sync { param } => crate::sync::sync(param).map_err(|_| CmdError::SyncError),
             Command::Check { param } => {
                 crate::check::check(param).map_err(|_| CmdError::CheckError)
+            }
+            Command::Status { param } => {
+                crate::status::status(param).map_err(|_| CmdError::StatusError)
             }
         }
     }
@@ -68,6 +81,9 @@ pub enum CmdError {
 
     #[error("Validation of wiki and/or references in the project failed.")]
     CheckError,
+
+    #[error("Creating status overview for wiki failed.")]
+    StatusError,
 
     #[error("No command was given. Use '-h' or '--help' for help.")]
     MissingCmd,

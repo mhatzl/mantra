@@ -276,7 +276,7 @@ mod test {
         // Note: IDs must be identical to the one in `setup_wiki()`.
         let content = "[req:ref_req][req:ref_req.test]";
 
-        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        let ref_map = ReferencesMap::with(&mut wiki.req_ids());
         ref_map.trace(&PathBuf::from(filename), content).unwrap();
         ref_map
     }
@@ -391,7 +391,7 @@ mod test {
         // Note: IDs must be identical to the one in `setup_wiki()`.
         let content = "[req:ref_req]";
 
-        let ref_map = ReferencesMap::with(&mut wiki.requirements());
+        let ref_map = ReferencesMap::with(&mut wiki.req_ids());
         ref_map.trace(&PathBuf::from(filename), content).unwrap();
         ref_map
     }

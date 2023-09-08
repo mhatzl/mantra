@@ -3,7 +3,10 @@
 //! [req:wiki]
 
 use std::{
-    collections::{hash_map::Keys, HashMap, HashSet},
+    collections::{
+        hash_map::{Keys, Values},
+        HashMap, HashSet,
+    },
     path::PathBuf,
 };
 
@@ -114,8 +117,13 @@ impl Wiki {
     }
 
     /// Returns an iterator over the IDs of found requirements in the wiki.
-    pub fn requirements(&self) -> Keys<ReqId, Req> {
+    pub fn req_ids(&self) -> Keys<ReqId, Req> {
         self.req_map.keys()
+    }
+
+    /// Returns an iterator over the requirements of found requirements in the wiki.
+    pub fn reqs(&self) -> Values<ReqId, Req> {
+        self.req_map.values()
     }
 
     /// Returns the sub-requirements of a given requirement, or `None` if it is a *leaf* requirement.
