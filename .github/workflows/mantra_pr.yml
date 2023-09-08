@@ -53,7 +53,6 @@ jobs:
                 summary="$(echo '${{ steps.check.outputs.check-overview }}')"
                 summary="${summary//\\n/
                 }"
-                echo "$summary"
                 echo "$summary" >> $GITHUB_STEP_SUMMARY
 
             - name: comment
