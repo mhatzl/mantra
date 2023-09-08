@@ -9,6 +9,7 @@ mod check;
 mod cli;
 mod globals;
 mod references;
+mod release;
 mod status;
 mod sync;
 mod wiki;

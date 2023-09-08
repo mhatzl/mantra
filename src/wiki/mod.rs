@@ -136,6 +136,10 @@ impl Wiki {
         self.req_map.get(req_id)
     }
 
+    pub fn high_lvl_reqs(&self) -> &Vec<ReqId> {
+        &self.high_lvl_reqs
+    }
+
     /// Checks if the given requirement ID is only implicitly created in the Wiki,
     /// but has no wiki-section on its own.
     ///

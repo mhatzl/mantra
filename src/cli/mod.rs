@@ -2,7 +2,9 @@
 
 use clap::{Parser, Subcommand};
 
-use crate::{check::CheckParameter, status::StatusParameter, sync::SyncParameter};
+use crate::{
+    check::CheckParameter, release::ReleaseParameter, status::StatusParameter, sync::SyncParameter,
+};
 
 const HELP_TEMPLATE: &str = r#"
 {before-help}{name} {version} - {about-with-newline}
@@ -58,6 +60,16 @@ enum Command {
         #[command(flatten)]
         param: StatusParameter,
     },
+
+    /// Creates a release report.
+    ///
+    /// [req:release]
+    #[command(name = "release")]
+    Release {
+        /// Parameters for the release command.
+        #[command(flatten)]
+        param: ReleaseParameter,
+    },
 }
 
 impl Command {
@@ -69,6 +81,9 @@ impl Command {
             }
             Command::Status { param } => {
                 crate::status::status(param).map_err(|_| CmdError::StatusError)
+            }
+            Command::Release { param } => {
+                crate::release::release(param).map_err(|_| CmdError::ReleaseError)
             }
         }
     }
@@ -84,6 +99,9 @@ pub enum CmdError {
 
     #[error("Creating status overview for wiki failed.")]
     StatusError,
+
+    #[error("Failed to create a release report.")]
+    ReleaseError,
 
     #[error("No command was given. Use '-h' or '--help' for help.")]
     MissingCmd,
