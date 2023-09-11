@@ -47,14 +47,6 @@ impl ProjectLine {
             repo_name: repo_name.map(|s| s.into()),
         }
     }
-
-    pub fn with(branch_name: String, branch_link: Option<String>) -> Self {
-        ProjectLine {
-            branch_name: branch_name.into(),
-            branch_link: branch_link.map(|s| s.into()),
-            repo_name: None,
-        }
-    }
 }
 
 /// Represents one entry inside the *references* list.

@@ -296,7 +296,8 @@ mod test {
         let branch_name = String::from("main");
 
         let changes =
-            ReferenceChanges::new(ProjectLine::with(branch_name, None), &wiki, &ref_map).unwrap();
+            ReferenceChanges::new(ProjectLine::new(None, branch_name, None), &wiki, &ref_map)
+                .unwrap();
 
         assert_eq!(
             changes.new_cnt_map.len(),
@@ -341,7 +342,7 @@ mod test {
         let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
 
         let changes = ReferenceChanges::new(
-            ProjectLine::with(branch_name, Some(branch_link.clone())),
+            ProjectLine::new(None, branch_name, Some(branch_link.clone())),
             &wiki,
             &ref_map,
         )
@@ -412,7 +413,7 @@ mod test {
         let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
 
         let changes = ReferenceChanges::new(
-            ProjectLine::with(branch_name, Some(branch_link.clone())),
+            ProjectLine::new(None, branch_name, Some(branch_link.clone())),
             &wiki,
             &ref_map,
         );
@@ -450,7 +451,7 @@ mod test {
         let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
 
         let changes = ReferenceChanges::new(
-            ProjectLine::with(branch_name, Some(branch_link.clone())),
+            ProjectLine::new(None, branch_name, Some(branch_link.clone())),
             &wiki,
             &ref_map,
         )
