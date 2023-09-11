@@ -43,7 +43,7 @@ jobs:
             - name: job-date
               id: job-date
               run: |
-                echo "date=$(date +'%Y-%m-%d_%H:%M')" >> $GITHUB_OUTPUT
+                echo "date=$(date -u +'%Y-%m-%d_%H:%MUTC')" >> $GITHUB_OUTPUT
 
             - name: update-sidebar
               run: |
