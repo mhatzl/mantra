@@ -49,6 +49,9 @@ jobs:
             - name: update-sidebar
               run: |
                 sed -i -r "s/\*\*Last update:\*\*.+/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}  /" ./wiki/_Sidebar.md
+                repo=$(echo "${{ github.repository }}")
+                repo=${repo//\//\\/}
+                sed -i -r "s/\*\*Repository:\*\*.+/\*\*Repository:\*\* $repo  /" ./wiki/_Sidebar.md
                 sed -i -r "s/\*\*Branch:\*\*.+/\*\*Branch:\*\* $BRANCH_NAME  /" ./wiki/_Sidebar.md
                 short_sha=$(echo "${{ github.sha }}")
                 short_sha=${short_sha:0:7}
