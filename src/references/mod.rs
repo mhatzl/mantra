@@ -4,8 +4,8 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+use ignore::{overrides::OverrideBuilder, WalkBuilder};
 use regex::Regex;
-use walkdir::WalkDir;
 
 use crate::wiki::{req::ReqId, Wiki};
 
@@ -40,37 +40,39 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
         let ref_map = ReferencesMap::with(&mut wiki.req_ids());
 
         if project_folder.is_dir() {
-            let mut walk = WalkDir::new(project_folder)
-                .into_iter()
-                // TODO: add filter option using ignore files
-                .filter_entry(|entry| {
-                    entry.file_name().to_string_lossy() != "target"
-                        && entry.file_name().to_string_lossy() != ".git"
-                        && entry.file_name().to_string_lossy() != "Cargo.lock"
-                        && entry.file_name().to_string_lossy() != ".vscode"
-                });
-            while let Some(Ok(dir_entry)) = walk.next() {
-                if dir_entry.file_type().is_file() {
+            // [req:filter]
+            let walk = WalkBuilder::new(project_folder)
+                .add_custom_ignore_filename(".mantraignore")
+                .hidden(false) // Note: To **not** ignore '.github' and '.gitlab' in the first place
+                .overrides(
+                    OverrideBuilder::new("./")
+                        .add("!.git/")
+                        .expect("Not possible to ignore .git folder in custom override.")
+                        .build()
+                        .expect("Could not create custom override to ignore .git folder."),
+                )
+                .build_parallel();
+
+            walk.run(|| std::boxed::Box::new(|dir_entry_res| {
+                let dir_entry: ignore::DirEntry = match dir_entry_res {
+                    Ok(entry) => entry,
+                    Err(_) => return ignore::WalkState::Continue,
+                };
+
+                if dir_entry.file_type().expect("No file type found for given project folder. Note: stdin is not supported.").is_file() {
                     let res_content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
                         logid::pipe!(ReferencesError::CouldNotAccessFile(
                             dir_entry.path().to_path_buf()
                         ))
                     });
 
-                    match res_content {
-                        Ok(content) => {
-                            ref_map.trace(dir_entry.path(), &content)?;
-                        }
-                        Err(err) => {
-                            if crate::globals::early_exit() {
-                                return Err(err);
-                            } else {
-                                continue;
-                            }
-                        }
+                    if let Ok(content) = res_content {
+                        let _ = ref_map.trace(dir_entry.path(), &content);
                     }
                 }
-            }
+
+                ignore::WalkState::Continue
+            }));
         } else {
             let content = std::fs::read_to_string(project_folder).map_err(|_| {
                 logid::pipe!(ReferencesError::CouldNotAccessFile(project_folder.clone()))

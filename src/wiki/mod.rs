@@ -10,7 +10,7 @@ use std::{
     path::PathBuf,
 };
 
-use walkdir::WalkDir;
+use ignore::{types::TypesBuilder, WalkBuilder};
 
 use self::{
     ref_list::RefListEntry,
@@ -50,15 +50,23 @@ impl TryFrom<&PathBuf> for Wiki {
         let mut wiki = Wiki::new();
 
         if req_path.is_dir() {
-            let mut walk = WalkDir::new(req_path).into_iter().filter_entry(|entry| {
-                entry.file_type().is_dir()
-                    || entry
-                        .path()
-                        .extension()
-                        .map_or(false, |ext| ext == "md" || ext == "markdown")
-            });
-            while let Some(Ok(dir_entry)) = walk.next() {
-                if dir_entry.file_type().is_file() {
+            let walk = WalkBuilder::new(req_path)
+                .types(
+                    TypesBuilder::new()
+                        .add_defaults()
+                        .select("markdown")
+                        .build()
+                        .expect("Could not create markdown file filter."),
+                )
+                .build();
+
+            for dir_entry_res in walk {
+                let dir_entry = match dir_entry_res {
+                    Ok(entry) => entry,
+                    Err(_) => continue,
+                };
+
+                if dir_entry.file_type().expect("No file type found for given requirements folder. Note: stdin is not supported.").is_file() {
                     let filepath = dir_entry.into_path();
                     let res_content = std::fs::read_to_string(filepath.clone())
                         .map_err(|_| logid::pipe!(WikiError::CouldNotAccessFile(filepath.clone())));
