@@ -43,13 +43,13 @@ jobs:
             - name: job-date
               id: job-date
               run: |
-                echo "date=$(date +'%Y-%m-%d_%HH:%MM')" >> $GITHUB_OUTPUT
+                echo "date=$(date +'%Y-%m-%d_%H:%M')" >> $GITHUB_OUTPUT
 
             - name: update-sidebar
               run: |
-                sidebar="$(cat ./wiki/_Sidebar.md)"
-                sidebar="${sidebar/\*\*Last update:\*\* +(!(\n))/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}}"
-                echo "$sidebar"
+                cat ./wiki/_Sidebar.md
+                sed -i -r "s/\*\*Last update:\*\* [^\n]/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}"
+                cat ./wiki/_Sidebar.md
 
             - name: push-changes
               working-directory: ./wiki
