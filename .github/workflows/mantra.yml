@@ -40,6 +40,25 @@ jobs:
             - name: sync-references
               run: mantra sync --branch-name=$BRANCH_NAME --branch-link=https://github.com/mhatzl/mantra/tree/$BRANCH_NAME ./wiki/5-Requirements ./proj_folder
 
+            - name: job-date
+              id: job-date
+              # '-u' for UTC 
+              run: |
+                echo "date=$(date -u +'%Y-%m-%d_%H:%M UTC')" >> $GITHUB_OUTPUT
+
+            - name: update-sidebar
+              run: |
+                sed -i -r "s/\*\*Last update:\*\*.+/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}  /" ./wiki/_Sidebar.md
+                repo=$(echo "${{ github.repository }}")
+                repo=${repo//\//\\/}
+                sed -i -r "s/\*\*Repository:\*\*.+/\*\*Repository:\*\* $repo  /" ./wiki/_Sidebar.md
+                sed -i -r "s/\*\*Branch:\*\*.+/\*\*Branch:\*\* $BRANCH_NAME  /" ./wiki/_Sidebar.md
+                short_sha=$(echo "${{ github.sha }}")
+                short_sha=${short_sha:0:7}
+                commit_link=$(echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}")
+                commit_link=${commit_link//\//\\/}
+                sed -i -r "s/\*\*Commit:\*\*.+/\*\*Commit:\*\* \[$short_sha\]\($commit_link\)  /" ./wiki/_Sidebar.md
+
             - name: push-changes
               working-directory: ./wiki
               # In case nothing changed
