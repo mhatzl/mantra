@@ -149,12 +149,21 @@ impl Wiki {
         self.req_map.get(req_id).is_none() && self.sub_map.get(req_id).is_some()
     }
 
-    pub fn req_ref_entry(&self, req_id: &ReqId, branch_name: &str) -> Option<&RefListEntry> {
+    /// Get the *references* list entry for the given requirement ID,
+    /// and repository and branch name.
+    ///
+    /// [req:wiki.ref_list.repo]
+    pub fn req_ref_entry(
+        &self,
+        req_id: &ReqId,
+        repo: Option<&str>,
+        branch_name: &str,
+    ) -> Option<&RefListEntry> {
         match self.req(req_id) {
-            Some(wiki_req) => wiki_req
-                .ref_list
-                .iter()
-                .find(|entry| entry.branch_name.as_ref() == branch_name),
+            Some(wiki_req) => wiki_req.ref_list.iter().find(|entry| {
+                entry.proj_line.branch_name.as_ref() == branch_name
+                    && entry.proj_line.repo_name.as_ref().map(|r| r.as_str()) == repo
+            }),
             None => None,
         }
     }

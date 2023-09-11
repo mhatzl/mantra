@@ -71,7 +71,7 @@ pub fn status_cmp(wiki: &Wiki, branch_a: &str, branch_b: &str) -> String {
 fn req_phase(ref_list: &[RefListEntry], branch: &str) -> String {
     let phase = match ref_list
         .iter()
-        .find(|entry| entry.branch_name.as_str() == branch)
+        .find(|entry| entry.proj_line.branch_name.as_str() == branch)
     {
         Some(entry) => {
             if entry.is_deprecated {
