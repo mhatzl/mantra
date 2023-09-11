@@ -84,7 +84,7 @@ pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatching
         // => iterate through files line by line
         //
         // Regex to match full req-structure: (?:^|\n)(?<heading_lvl>#+) (?<id>[^:]+):(?<heading>(?:.|\n)+)\*\*References:\*\*\n\n*(?<entries>(?:[-\+\*][^\n]*\n?){1,})
-        Regex::new(r"^(?<lvl>#+)\s(?<id>[^:]+):(?<title>.+)")
+        Regex::new(r"^(?<lvl>#+)\s(?<id>[^\s:]+):(?<title>.+)")
             .expect("Regex to match the requirement heading could **not** be created.")
     });
 
@@ -111,7 +111,7 @@ pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatching
 }
 
 /// Errors that may occure when trying to match regex patterns against given inputs.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum ReqMatchingError {
     /// No match was found in the given input.
     #[error("No match was found in the given input.")]
@@ -207,6 +207,17 @@ mod test {
             act_heading.title.as_str(),
             "Some Title",
             "Heading title was not retrieved correctly."
+        );
+    }
+
+    #[test]
+    fn ignore_req_id_with_whitespace() {
+        let act_heading = get_req_heading("# req id: Some Title");
+
+        assert_eq!(
+            act_heading.unwrap_err(),
+            super::ReqMatchingError::NoMatchFound,
+            "Requirement ID with whitespace was extracted as valid ID."
         );
     }
 }
