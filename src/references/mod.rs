@@ -51,12 +51,12 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
                         .build()
                         .expect("Could not create custom override to ignore .git folder."),
                 )
-                .build();
+                .build_parallel();
 
-            for dir_entry_res in walk {
-                let dir_entry = match dir_entry_res {
+            walk.run(|| std::boxed::Box::new(|dir_entry_res| {
+                let dir_entry: ignore::DirEntry = match dir_entry_res {
                     Ok(entry) => entry,
-                    Err(_) => continue,
+                    Err(_) => return ignore::WalkState::Continue,
                 };
 
                 if dir_entry.file_type().expect("No file type found for given project folder. Note: stdin is not supported.").is_file() {
@@ -66,20 +66,13 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
                         ))
                     });
 
-                    match res_content {
-                        Ok(content) => {
-                            ref_map.trace(dir_entry.path(), &content)?;
-                        }
-                        Err(err) => {
-                            if crate::globals::early_exit() {
-                                return Err(err);
-                            } else {
-                                continue;
-                            }
-                        }
+                    if let Ok(content) = res_content {
+                        let _ = ref_map.trace(dir_entry.path(), &content);
                     }
                 }
-            }
+
+                ignore::WalkState::Continue
+            }));
         } else {
             let content = std::fs::read_to_string(project_folder).map_err(|_| {
                 logid::pipe!(ReferencesError::CouldNotAccessFile(project_folder.clone()))
