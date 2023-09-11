@@ -48,7 +48,7 @@ jobs:
             - name: update-sidebar
               run: |
                 cat ./wiki/_Sidebar.md
-                sed -i -r "s/\*\*Last update:\*\* [^\n]/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}"
+                sed -i -r "s/\*\*Last update:\*\* [^\n]/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}" ./wiki/_Sidebar.md
                 cat ./wiki/_Sidebar.md
 
             - name: push-changes
