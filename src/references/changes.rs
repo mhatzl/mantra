@@ -248,7 +248,6 @@ impl ReferenceChanges {
                     sub_cnt,
                 } => direct_cnt + sub_cnt,
                 RefCntKind::LowLvl { cnt } => cnt,
-                // TODO: Check for *manual* flag here
                 RefCntKind::Untraced => 0,
             }
         }
