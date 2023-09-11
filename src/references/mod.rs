@@ -59,8 +59,6 @@ impl TryFrom<(&Wiki, &PathBuf)> for ReferencesMap {
                     Err(_) => continue,
                 };
 
-                println!("{:?}", &dir_entry);
-
                 if dir_entry.file_type().expect("No file type found for given project folder. Note: stdin is not supported.").is_file() {
                     let res_content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
                         logid::pipe!(ReferencesError::CouldNotAccessFile(
