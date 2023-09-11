@@ -177,8 +177,12 @@ pub enum ReferencesError {
     },
 
     // [req:wiki.ref_list.deprecated]
-    #[error("Deprecated requirement with ID '{}' or a sub-requirement of it is referenced at least once in branch '{}'.", .req_id, .branch_name)]
-    DeprecatedReqReferenced { req_id: String, branch_name: String },
+    #[error("Deprecated requirement with ID '{}' or a sub-requirement of it is referenced at least once {}in branch '{}'.", .req_id, .repo_name.as_ref().map(|r| format!("in repo {} ", r)).unwrap_or(String::new()), .branch_name)]
+    DeprecatedReqReferenced {
+        req_id: String,
+        repo_name: Option<String>,
+        branch_name: String,
+    },
 }
 
 #[cfg(test)]

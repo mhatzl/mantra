@@ -26,7 +26,7 @@ pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> String {
         match req
             .ref_list
             .iter()
-            .find(|entry| entry.branch_name.as_ref() == &param.branch)
+            .find(|entry| entry.proj_line.branch_name.as_ref() == &param.branch)
         {
             Some(entry) => {
                 if entry.is_deprecated {

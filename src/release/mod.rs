@@ -121,7 +121,7 @@ fn release_list<'a>(
             if let Some(entry) = req
                 .ref_list
                 .iter()
-                .find(|entry| entry.branch_name.as_str() == branch)
+                .find(|entry| entry.proj_line.branch_name.as_str() == branch)
             {
                 if !entry.is_deprecated
                     && (entry.is_manual || (!checklist && entry.ref_cnt != RefCntKind::Untraced))

@@ -13,19 +13,59 @@ use super::ReqMatchingError;
 /// [req:wiki.ref_list]
 pub type RefList = Vec<RefListEntry>;
 
+/// Represents the project line in an entry inside the *references* list.
+/// A project line contains the branch, and an optional repository name.
+///
+/// [req:wiki.ref_list.repo]
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ProjectLine {
+    /// The name of the branch for an entry in the *references* list.
+    ///
+    /// [req:wiki.ref_list]
+    pub branch_name: Arc<String>,
+
+    /// The link to the branch for an entry in the *references* list.
+    ///
+    /// [req:wiki.ref_list.branch_link] (see DR-20230906_2 for more info)
+    pub branch_link: Option<Arc<String>>,
+
+    /// The optional repository name for an entry in the *references* list.
+    ///
+    /// [req:wiki.ref_list.repo]
+    pub repo_name: Option<Arc<String>>,
+}
+
+impl ProjectLine {
+    pub fn new(
+        repo_name: Option<String>,
+        branch_name: String,
+        branch_link: Option<String>,
+    ) -> Self {
+        ProjectLine {
+            branch_name: branch_name.into(),
+            branch_link: branch_link.map(|s| s.into()),
+            repo_name: repo_name.map(|s| s.into()),
+        }
+    }
+
+    pub fn with(branch_name: String, branch_link: Option<String>) -> Self {
+        ProjectLine {
+            branch_name: branch_name.into(),
+            branch_link: branch_link.map(|s| s.into()),
+            repo_name: None,
+        }
+    }
+}
+
 /// Represents one entry inside the *references* list.
 ///
 /// [req:wiki.ref_list]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RefListEntry {
-    /// The name of the branch for this entry.
+    /// The project line this entry is associated with.
     ///
-    /// [req:wiki.ref_list]
-    pub branch_name: Arc<String>,
-    /// The link to the branch for this entry.
-    ///
-    /// [req:wiki.ref_list.branch_link]
-    pub branch_link: Option<Arc<String>>,
+    /// [req:wiki.ref_list.repo]
+    pub proj_line: ProjectLine,
 
     /// The reference counter for this entry.
     ///
@@ -58,10 +98,17 @@ impl std::fmt::Display for RefListEntry {
             self.ref_cnt.to_string()
         };
 
-        match &self.branch_link {
-            Some(link) => write!(f, "- in branch [{}]({}): {}", self.branch_name, link, cnt),
-            None => write!(f, "- in branch {}: {}", self.branch_name, cnt),
-        }
+        let repo = match &self.proj_line.repo_name {
+            Some(repo_name) => format!("in repo {} ", repo_name),
+            None => String::new(),
+        };
+
+        let branch = match &self.proj_line.branch_link {
+            Some(link) => format!("in branch [{}]({})", self.proj_line.branch_name, link),
+            None => format!("in branch {}", self.proj_line.branch_name),
+        };
+
+        write!(f, "- {repo}{branch}: {cnt}")
     }
 }
 
@@ -120,12 +167,16 @@ static BRANCH_LINK_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::ne
 /// [req:wiki.ref_list]
 pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingError> {
     let entry_regex = REF_ENTRY_MATCHER.get_or_init(|| {
-        Regex::new(r"^[-\+\*]\sin\sbranch\s(?<branch>[^\s]+):\s(?:(?<depr>deprecated)|(?<manual>manual))?(?<plus>\s\+\s)?\s*(?<cnt>\d+)?(?:\s\((?<direct_cnt>\d+)\sdirect\))?")
+        Regex::new(r"^[-\+\*]\s(?:in\srepo\s(?<repo>[^\s]+)\s)?in\sbranch\s(?<branch>[^\s]+):\s(?:(?<depr>deprecated)|(?<manual>manual))?(?<plus>\s\+\s)?\s*(?<cnt>\d+)?(?:\s\((?<direct_cnt>\d+)\sdirect\))?")
             .expect("Regex to match a *references* list entry could **not** be created.")
     });
 
     match entry_regex.captures(possible_entry) {
         Some(captures) => {
+            let repo_name = captures
+                .name("repo")
+                .map(|r| Arc::new(r.as_str().to_string()));
+
             let branch = captures
                 .name("branch")
                 .expect("`branch` capture group was not in *references* list entry match.")
@@ -196,8 +247,11 @@ pub fn get_ref_entry(possible_entry: &str) -> Result<RefListEntry, ReqMatchingEr
             };
 
             Ok(RefListEntry {
-                branch_name,
-                branch_link,
+                proj_line: ProjectLine {
+                    branch_name,
+                    branch_link,
+                    repo_name,
+                },
                 ref_cnt,
                 is_deprecated,
                 is_manual,
@@ -217,12 +271,12 @@ mod test {
         let ref_entry = get_ref_entry("- in branch main: 10").unwrap();
 
         assert_eq!(
-            ref_entry.branch_name.as_str(),
+            ref_entry.proj_line.branch_name.as_str(),
             "main",
             "Branch name was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.branch_link, None,
+            ref_entry.proj_line.branch_link, None,
             "Branch link was not retrieved correctly."
         );
         assert_eq!(
@@ -243,12 +297,12 @@ mod test {
         let ref_entry = get_ref_entry("- in branch stable: 10 (2 direct)").unwrap();
 
         assert_eq!(
-            ref_entry.branch_name.as_str(),
+            ref_entry.proj_line.branch_name.as_str(),
             "stable",
             "Branch name was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.branch_link, None,
+            ref_entry.proj_line.branch_link, None,
             "Branch link was not retrieved correctly."
         );
         assert_eq!(
@@ -272,12 +326,12 @@ mod test {
         let ref_entry = get_ref_entry("- in branch [main](https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id): 10 (2 direct)").unwrap();
 
         assert_eq!(
-            ref_entry.branch_name.as_str(),
+            ref_entry.proj_line.branch_name.as_str(),
             "main",
             "Branch name was not retrieved correctly."
         );
         assert_eq!(
-            ref_entry.branch_link.unwrap().as_ref(),
+            ref_entry.proj_line.branch_link.unwrap().as_ref(),
             &"https://github.com/mhatzl/mantra/wiki/5-REQ-req_id#req_id-requirement-id".to_string(),
             "Branch link was not retrieved correctly."
         );
@@ -361,6 +415,48 @@ mod test {
             ref_entry.to_string(),
             "- in branch main: manual + 2 (1 direct)",
             "*manual* requirement with references not printed correctly."
+        );
+    }
+
+    #[test]
+    fn basic_repo_ref_entry() {
+        let ref_entry = get_ref_entry("- in repo mantra in branch main: 10").unwrap();
+
+        assert_eq!(
+            ref_entry.proj_line.repo_name.unwrap().as_str(),
+            "mantra",
+            "Repo name was not retrieved correctly."
+        );
+        assert_eq!(
+            ref_entry.proj_line.branch_name.as_str(),
+            "main",
+            "Branch name was not retrieved correctly."
+        );
+        assert_eq!(
+            ref_entry.proj_line.branch_link, None,
+            "Branch link was not retrieved correctly."
+        );
+        assert_eq!(
+            ref_entry.ref_cnt,
+            RefCntKind::LowLvl { cnt: 10 },
+            "Reference counter was not retrieved correctly."
+        );
+
+        assert!(
+            !ref_entry.is_deprecated,
+            "Deprecated flag wrongfully detected."
+        );
+        assert!(!ref_entry.is_manual, "Manual flag wrongfully detected.");
+    }
+
+    #[test]
+    fn repo_ref_entry_to_string() {
+        let ref_entry = get_ref_entry("- in repo mantra in branch main: 2").unwrap();
+
+        assert_eq!(
+            ref_entry.to_string(),
+            "- in repo mantra in branch main: 2",
+            "Repository name in entry not printed correctly."
         );
     }
 }

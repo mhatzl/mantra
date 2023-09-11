@@ -14,7 +14,10 @@ use logid::{
 use crate::{
     globals::GlobalParameter,
     references::{changes::ReferenceChanges, ReferencesError, ReferencesMap},
-    wiki::{ref_list::RefCntKind, Wiki, WikiError},
+    wiki::{
+        ref_list::{ProjectLine, RefCntKind},
+        Wiki, WikiError,
+    },
 };
 
 /// Parameters for the `check` command.
@@ -32,6 +35,12 @@ pub struct CheckParameter {
     /// [req:wiki.ref_list]
     #[arg(long, required = false, default_value = "main")]
     pub branch_name: String,
+
+    /// Optional repository name in case multiple repositories point to the same wiki.
+    ///
+    /// [req:wiki.ref_list.repo]
+    #[arg(long, alias = "repo")]
+    pub repo_name: Option<String>,
 }
 
 /// Counter for errors indicating references to missing requirement IDs in the wiki.
@@ -57,6 +66,7 @@ fn handle_error_cnts(event: Arc<Event<LogId, LogMsg, LogEventEntry>>) {
     let depr_referenced = LogId::from(ReferencesError::DeprecatedReqReferenced {
         req_id: String::new(),
         branch_name: String::new(),
+        repo_name: None,
     });
     let dupl_req_id = LogId::from(WikiError::DuplicateReqId {
         req_id: String::new(),
@@ -106,7 +116,11 @@ pub fn check(param: &CheckParameter) -> Result<(), CheckError> {
     let wiki = Wiki::try_from(&param.global.req_folder)?;
     let ref_map = ReferencesMap::try_from((&wiki, &param.global.proj_folder))?;
 
-    let changes = ReferenceChanges::new(param.branch_name.clone().into(), None, &wiki, &ref_map)?;
+    let changes = ReferenceChanges::new(
+        ProjectLine::new(param.repo_name.clone(), param.branch_name.clone(), None),
+        &wiki,
+        &ref_map,
+    )?;
     let cnt_changes = changes.cnt_changes();
 
     let mut new_active_reqs = Vec::new();
@@ -115,7 +129,7 @@ pub fn check(param: &CheckParameter) -> Result<(), CheckError> {
     let mut became_untraced = Vec::new();
 
     for (req_id, new_cnt_kind) in cnt_changes {
-        match wiki.req_ref_entry(&req_id, &param.branch_name) {
+        match wiki.req_ref_entry(&req_id, param.repo_name.as_deref(), &param.branch_name) {
             Some(entry) => {
                 let old_cnt_kind = entry.ref_cnt;
                 match old_cnt_kind {

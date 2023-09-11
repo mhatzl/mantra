@@ -5,13 +5,13 @@
 use std::{
     collections::{hash_map::IntoIter, HashMap, HashSet},
     path::PathBuf,
-    sync::{atomic::Ordering, Arc},
+    sync::atomic::Ordering,
 };
 
 use crate::{
     references::ReferencesError,
     wiki::{
-        ref_list::{RefCntKind, RefListEntry},
+        ref_list::{ProjectLine, RefCntKind, RefListEntry},
         req::{Req, ReqId},
         Wiki, WikiReq,
     },
@@ -27,8 +27,7 @@ pub struct ReferenceChanges {
     new_cnt_map: HashMap<ReqId, RefCntKind>,
     implicits_cnt_map: HashMap<ReqId, RefCntKind>,
     file_changes: HashMap<PathBuf, Vec<Req>>,
-    branch_name: Arc<String>,
-    branch_link: Option<Arc<String>>,
+    proj_line: ProjectLine,
 }
 
 impl ReferenceChanges {
@@ -39,8 +38,7 @@ impl ReferenceChanges {
     ///
     /// - [`ReferencesError::DeprecatedReqReferenced`]
     pub fn new(
-        branch_name: Arc<String>,
-        branch_link: Option<Arc<String>>,
+        proj_line: ProjectLine,
         wiki: &Wiki,
         ref_map: &ReferencesMap,
     ) -> Result<Self, ReferencesError> {
@@ -48,8 +46,7 @@ impl ReferenceChanges {
             new_cnt_map: HashMap::new(),
             implicits_cnt_map: HashMap::new(),
             file_changes: HashMap::new(),
-            branch_name,
-            branch_link,
+            proj_line,
         };
 
         changes.update_cnts(wiki, ref_map)?;
@@ -85,15 +82,13 @@ impl ReferenceChanges {
                     .expect("Changed requirement had no new counter in `new_cnt_map`.")
                     .to_owned();
 
-                match req
-                    .ref_list
-                    .iter_mut()
-                    .find(|entry| entry.branch_name == self.branch_name)
-                {
+                match req.ref_list.iter_mut().find(|entry| {
+                    entry.proj_line.branch_name == self.proj_line.branch_name
+                        && entry.proj_line.repo_name == self.proj_line.repo_name
+                }) {
                     Some(entry) => entry.ref_cnt = new_cnt_kind,
                     None => req.ref_list.push(RefListEntry {
-                        branch_name: self.branch_name.clone(),
-                        branch_link: self.branch_link.clone(), // [req:wiki.ref_list.branch_link] (see DR-20230906_2 for more info)
+                        proj_line: self.proj_line.clone(),
                         ref_cnt: new_cnt_kind,
                         is_manual: false,
                         is_deprecated: false,
@@ -151,13 +146,22 @@ impl ReferenceChanges {
 
             match req {
                 WikiReq::Explicit { req: explicit_req } => {
-                    let kind_changed = match wiki.req_ref_entry(&req_id, &self.branch_name) {
+                    let kind_changed = match wiki.req_ref_entry(
+                        &req_id,
+                        self.proj_line.repo_name.as_ref().map(|r| r.as_str()),
+                        &self.proj_line.branch_name,
+                    ) {
                         Some(req_entry) => {
                             // [req:wiki.ref_list.deprecated]
                             if req_entry.is_deprecated && new_cnt_kind != RefCntKind::Untraced {
                                 let err = logid::err!(ReferencesError::DeprecatedReqReferenced {
                                     req_id: req_id.clone(),
-                                    branch_name: self.branch_name.to_string()
+                                    repo_name: self
+                                        .proj_line
+                                        .repo_name
+                                        .as_ref()
+                                        .map(|s| s.to_string()),
+                                    branch_name: self.proj_line.branch_name.to_string()
                                 });
 
                                 if crate::globals::early_exit() {
@@ -198,7 +202,11 @@ impl ReferenceChanges {
     fn sub_ref_cnts(&mut self, sub_reqs: &HashSet<ReqId>, wiki: &Wiki) -> usize {
         let mut sub_cnt = 0;
         for sub_req in sub_reqs {
-            let opt_ref_entry = wiki.req_ref_entry(sub_req, &self.branch_name);
+            let opt_ref_entry = wiki.req_ref_entry(
+                sub_req,
+                self.proj_line.repo_name.as_ref().map(|r| r.as_str()),
+                &self.proj_line.branch_name,
+            );
 
             let mut sub_cnt_kind = self.new_cnt_map.get(sub_req).copied().unwrap_or_else(|| {
                 match opt_ref_entry {
@@ -287,7 +295,8 @@ mod test {
         let ref_map = setup_references(&wiki);
         let branch_name = String::from("main");
 
-        let changes = ReferenceChanges::new(branch_name.into(), None, &wiki, &ref_map).unwrap();
+        let changes =
+            ReferenceChanges::new(ProjectLine::with(branch_name, None), &wiki, &ref_map).unwrap();
 
         assert_eq!(
             changes.new_cnt_map.len(),
@@ -332,8 +341,7 @@ mod test {
         let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
 
         let changes = ReferenceChanges::new(
-            branch_name.into(),
-            Some(branch_link.clone().into()),
+            ProjectLine::with(branch_name, Some(branch_link.clone())),
             &wiki,
             &ref_map,
         )
@@ -367,7 +375,7 @@ mod test {
 
         let ref_entry = &low_lvl_req.ref_list[0];
         assert_eq!(
-            ref_entry.branch_link,
+            ref_entry.proj_line.branch_link,
             Some(branch_link.into()),
             "Branch link was not added to new ref entry."
         );
@@ -404,8 +412,7 @@ mod test {
         let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
 
         let changes = ReferenceChanges::new(
-            branch_name.into(),
-            Some(branch_link.clone().into()),
+            ProjectLine::with(branch_name, Some(branch_link.clone())),
             &wiki,
             &ref_map,
         );
@@ -443,8 +450,7 @@ mod test {
         let branch_link = String::from("https://github.com/mhatzl/mantra/tree/main");
 
         let changes = ReferenceChanges::new(
-            branch_name.into(),
-            Some(branch_link.clone().into()),
+            ProjectLine::with(branch_name, Some(branch_link.clone())),
             &wiki,
             &ref_map,
         )

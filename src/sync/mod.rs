@@ -9,7 +9,7 @@ use clap::Args;
 use crate::{
     globals::GlobalParameter,
     references::{changes::ReferenceChanges, ReferencesError, ReferencesMap},
-    wiki::{Wiki, WikiError},
+    wiki::{ref_list::ProjectLine, Wiki, WikiError},
 };
 
 /// Parameters for the `sync` command.
@@ -33,6 +33,12 @@ pub struct SyncParameter {
     /// [req:wiki.ref_list.branch_link]
     #[arg(long)]
     pub branch_link: Option<String>,
+
+    /// Optional repository name in case multiple repositories point to the same wiki.
+    ///
+    /// [req:wiki.ref_list.repo]
+    #[arg(long, alias = "repo")]
+    pub repo_name: Option<String>,
 }
 
 /// Synchronizes requirement references between requirements in a wiki, and references to them in a project.
@@ -43,11 +49,11 @@ pub fn sync(params: &SyncParameter) -> Result<(), SyncError> {
     let ref_map = ReferencesMap::try_from((&wiki, &params.global.proj_folder))?;
 
     let changes = ReferenceChanges::new(
-        params.branch_name.clone().into(),
-        params
-            .branch_link
-            .as_ref()
-            .map(|link| std::sync::Arc::new(link.clone())),
+        ProjectLine::new(
+            params.repo_name.clone(),
+            params.branch_name.clone(),
+            params.branch_link.clone(),
+        ),
         &wiki,
         &ref_map,
     )?;
