@@ -49,7 +49,8 @@ jobs:
               run: |
                 sed -i -r "s/\*\*Last update:\*\*.+/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}  /" ./wiki/_Sidebar.md
                 sed -i -r "s/\*\*Branch:\*\*.+/\*\*Branch:\*\* $BRANCH_NAME  /" ./wiki/_Sidebar.md
-                sed -i -r "s/\*\*Commit:\*\*.+/\*\*Commit:\*\* ${{ github.sha }}  /" ./wiki/_Sidebar.md
+                short_sha=$(echo "${{ github.sha }}")
+                sed -i -r "s/\*\*Commit:\*\*.+/\*\*Commit:\*\* [${short_sha:0:7}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})  /" ./wiki/_Sidebar.md
                 cat ./wiki/_Sidebar.md
 
             - name: push-changes
