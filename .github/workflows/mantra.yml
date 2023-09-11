@@ -42,6 +42,7 @@ jobs:
 
             - name: job-date
               id: job-date
+              # '-u' for UTC 
               run: |
                 echo "date=$(date -u +'%Y-%m-%d_%H:%M UTC')" >> $GITHUB_OUTPUT
 
@@ -54,7 +55,6 @@ jobs:
                 commit_link=$(echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}")
                 commit_link=${commit_link//\//\\/}
                 sed -i -r "s/\*\*Commit:\*\*.+/\*\*Commit:\*\* \[$short_sha\]\($commit_link\)  /" ./wiki/_Sidebar.md
-                cat ./wiki/_Sidebar.md
 
             - name: push-changes
               working-directory: ./wiki
