@@ -40,6 +40,17 @@ jobs:
             - name: sync-references
               run: mantra sync --branch-name=$BRANCH_NAME --branch-link=https://github.com/mhatzl/mantra/tree/$BRANCH_NAME ./wiki/5-Requirements ./proj_folder
 
+            - name: job-date
+              id: job-date
+              run: |
+                echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+            - name: update-sidebar
+              run: |
+                sidebar="$(cat ./wiki/_Sidebar.md)"
+                sidebar="${sidebar/\*\*Last\supdate:\*\*\s([^\n]+)/\*\*Last update:\*\* ${{ steps.job-date.outputs.date }}}"
+                echo "$sidebar"
+
             - name: push-changes
               working-directory: ./wiki
               # In case nothing changed
