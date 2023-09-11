@@ -141,7 +141,8 @@ fn release_list<'a>(
                                 .to_lowercase();
 
                             format!(
-                                "([wiki-link]({}{}{}))",
+                                "  \n{}See in wiki: {}{}{}",
+                                " ".repeat(sub_indent),
                                 prefix,
                                 if prefix.ends_with('/') { "" } else { "/" },
                                 file_link
