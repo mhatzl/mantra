@@ -13,8 +13,13 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+
+    env:
+      BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
+
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v3
+        id: release
         with:
           # Change type and name depending on your repository
           # See: https://github.com/google-github-actions/release-please-action#release-types-supported
@@ -30,3 +35,18 @@ jobs:
             {"type":"arch","section":"Architectur/Refactor","hidden":false},
             {"type":"chore","section":"Miscellaneous","hidden":true}
             ]
+
+      - uses: actions/checkout@v3
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          repository: 'mhatzl/mantra-wiki'
+          path: './req_folder'
+          sparse-checkout: 5-Requirements
+
+      - name: release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            mantra release --branch=$BRANCH_NAME --release-tag=${{ steps.release.outputs.tag_name }} --report-file=release_report.md ./req_folder
+            gh release upload ${{ steps.release.outputs.tag_name }} release_report.md
