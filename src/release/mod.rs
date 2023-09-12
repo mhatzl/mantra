@@ -45,6 +45,12 @@ pub struct ReleaseParameter {
     /// [req:release.checklist]
     #[arg(long)]
     pub checklist: bool,
+
+    /// Optional repository name in case multiple repositories point to the same wiki.
+    ///
+    /// [req:wiki.ref_list.repo]
+    #[arg(long, alias = "repo")]
+    pub repo_name: Option<String>,
 }
 
 /// Creates a release report, and writes the report either to the given report-file,
@@ -69,6 +75,7 @@ pub fn release(param: &ReleaseParameter) -> Result<(), ReleaseError> {
             &wiki,
             &param.wiki_url_prefix,
             &param.branch,
+            param.repo_name.as_deref(),
             high_reqs.iter(),
             0,
             param.checklist,
@@ -104,6 +111,7 @@ fn release_list<'a>(
     wiki: &'a Wiki,
     wiki_url_prefix: &Option<String>,
     branch: &str,
+    repo: Option<&str>,
     req_ids: impl Iterator<Item = &'a ReqId>,
     indent: usize,
     checklist: bool,
@@ -118,11 +126,10 @@ fn release_list<'a>(
                 sub_indent += 2; // only indent explicit requirements
             }
 
-            if let Some(entry) = req
-                .ref_list
-                .iter()
-                .find(|entry| entry.proj_line.branch_name.as_str() == branch)
-            {
+            if let Some(entry) = req.ref_list.iter().find(|entry| {
+                entry.proj_line.branch_name.as_str() == branch
+                    && entry.proj_line.repo_name.as_ref().map(|s| s.as_str()) == repo
+            }) {
                 if !entry.is_deprecated
                     && (entry.is_manual || (!checklist && entry.ref_cnt != RefCntKind::Untraced))
                 {
@@ -170,6 +177,7 @@ fn release_list<'a>(
                 wiki,
                 wiki_url_prefix,
                 branch,
+                repo,
                 ordered_subs.iter().copied(),
                 sub_indent,
                 checklist,
