@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/mhatzl/mantra/compare/v0.2.5...v0.2.6) (2023-09-12)
+
+
+### Bug Fixes
+
+* unescape newlines for release report file ([2621f3e](https://github.com/mhatzl/mantra/commit/2621f3e08e61593bf0c53cc65718a3afd58bf362))
+
 ## [0.2.5](https://github.com/mhatzl/mantra/compare/v0.2.4...v0.2.5) (2023-09-12)
 
 
