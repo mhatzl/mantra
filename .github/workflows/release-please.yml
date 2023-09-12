@@ -93,10 +93,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           report="$(echo '${{ env.report }}')"
-          echo "$report"
           report="${report//\\n/
           }"
-          echo "$report"
-          echo $report >> release_report.md
+          echo "$report" >> release_report.md
           cat release_report.md
           gh release upload ${{ env.tag_name }} release_report.md
