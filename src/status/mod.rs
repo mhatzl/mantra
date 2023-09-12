@@ -29,11 +29,23 @@ pub struct StatusParameter {
     #[arg(long, alias = "branch-name", required = false, default_value = "main")]
     pub branch: String,
 
+    /// Optional repository name for the `branch` option in case multiple repositories point to the same wiki.
+    ///
+    /// [req:wiki.ref_list.repo]
+    #[arg(long, alias = "repo")]
+    pub repo_name: Option<String>,
+
     /// An optional branch to compare against the branch set with `--branch`.
     ///
     /// [req:status.cmp]
     #[arg(long)]
     pub cmp_branch: Option<String>,
+
+    /// Optional repository name for the `cmp-branch` option in case multiple repositories point to the same wiki.
+    ///
+    /// [req:wiki.ref_list.repo]
+    #[arg(long, alias = "cmp-repo")]
+    pub cmp_repo_name: Option<String>,
 
     /// Flag to output detailed information about *ready* requirements.
     ///
@@ -68,7 +80,13 @@ pub fn status(param: &StatusParameter) -> Result<(), StatusError> {
     let wiki = Wiki::try_from(&param.req_folder)?;
 
     let overview = match &param.cmp_branch {
-        Some(branch_b) => self::cmp::status_cmp(&wiki, &param.branch, branch_b),
+        Some(branch_b) => self::cmp::status_cmp(
+            &wiki,
+            param.repo_name.as_deref(),
+            &param.branch,
+            param.cmp_repo_name.as_deref(),
+            branch_b,
+        ),
         None => self::branch::status_branch(&wiki, param),
     };
 
