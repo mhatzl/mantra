@@ -13,6 +13,8 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    container:
+      image: manuelhatzl/mantra:main
 
     env:
       BRANCH_NAME: ${{ github.base_ref || github.ref_name }}
