@@ -64,7 +64,7 @@ jobs:
         id: report
         if: ${{ env.release_created }}
         run: |
-            mantra release --branch=$BRANCH_NAME --release-tag=${{ env.tag_name }} --report-file=release_report.md ./req_folder
+            mantra release --branch=$BRANCH_NAME --release-tag=${{ env.tag_name }} --wiki-url-prefix=https://github.com/mhatzl/mantra/wiki --report-file=release_report.md ./req_folder
             content=$(cat release_report.md)
             content="${content//\'/\\\'}"
             content="${content//\"/\\\"}"
