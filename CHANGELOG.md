@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.10](https://github.com/mhatzl/mantra/compare/v0.2.9...v0.2.10) (2023-09-12)
+
+
+### Bug Fixes
+
+* quote report to preserve whitespace ([0f518bd](https://github.com/mhatzl/mantra/commit/0f518bdf33e2b6856fd03a2039fc0aed9855fd48))
+
 ## [0.2.9](https://github.com/mhatzl/mantra/compare/v0.2.8...v0.2.9) (2023-09-12)
 
 
