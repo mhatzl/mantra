@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/mhatzl/mantra/compare/v0.2.6...v0.2.7) (2023-09-12)
+
+
+### Bug Fixes
+
+* escape quotes in release report ([0836c72](https://github.com/mhatzl/mantra/commit/0836c72b422668c0dab6ad63c47dd048401e88c0))
+
 ## [0.2.6](https://github.com/mhatzl/mantra/compare/v0.2.5...v0.2.6) (2023-09-12)
 
 
