@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/mhatzl/mantra/compare/v0.2.10...v0.2.11) (2023-09-12)
+
+
+### Bug Fixes
+
+* add wiki-links to release report ([e4f098b](https://github.com/mhatzl/mantra/commit/e4f098b4c7aea953ac8e6d3b17b136e0a4eb8feb))
+
 ## [0.2.10](https://github.com/mhatzl/mantra/compare/v0.2.9...v0.2.10) (2023-09-12)
 
 
