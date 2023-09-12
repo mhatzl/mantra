@@ -78,7 +78,7 @@ pub fn release(param: &ReleaseParameter) -> Result<(), ReleaseError> {
     match &param.report_file {
         Some(filepath) => {
             let mut report_file = filepath.clone();
-            report_file.set_extension(".md");
+            report_file.set_extension("md");
 
             std::fs::write(report_file, report)
                 .map_err(|_| logid::pipe!(ReleaseError::WritingReport))?;
