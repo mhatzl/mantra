@@ -43,7 +43,7 @@ jobs:
           path: './req_folder'
           sparse-checkout: 5-Requirements
 
-      - name: release
+      - name: report
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
