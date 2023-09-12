@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/mhatzl/mantra/compare/v0.2.8...v0.2.9) (2023-09-12)
+
+
+### Bug Fixes
+
+* quote release report to preserve newlines ([1e18b75](https://github.com/mhatzl/mantra/commit/1e18b75a6aefaef23b5d4f1c1b66883c0b3e8ee3))
+
 ## [0.2.8](https://github.com/mhatzl/mantra/compare/v0.2.7...v0.2.8) (2023-09-12)
 
 
