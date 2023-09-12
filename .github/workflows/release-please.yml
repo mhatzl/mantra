@@ -65,12 +65,11 @@ jobs:
         if: ${{ env.release_created }}
         run: |
             mantra release --branch=$BRANCH_NAME --release-tag=${{ env.tag_name }} --report-file=release_report.md ./req_folder
-            report=$(cat release_report.md)
-            report="${report//\'/\\\'}"
-            report="${report//\"/\\\"}"
-            report="${report//$'\n'/\\n}"
+            content=$(cat release_report.md)
+            content="${content//\'/\\\'}"
+            content="${content//\"/\\\"}"
             echo "report<<EOF" >> $GITHUB_OUTPUT
-            echo $report >> $GITHUB_OUTPUT
+            echo "$content" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
 
   upload-report:
@@ -93,8 +92,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           report="$(echo '${{ env.report }}')"
-          report="${report//\\n/
-          }"
           echo "$report" >> release_report.md
           cat release_report.md
           gh release upload ${{ env.tag_name }} release_report.md
