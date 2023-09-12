@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/mhatzl/mantra/compare/v0.2.4...v0.2.5) (2023-09-12)
+
+
+### Bug Fixes
+
+* escape newlines in release report ([60e4aff](https://github.com/mhatzl/mantra/commit/60e4affdfa7296b35ba5ccde4877089f8448be6b))
+
 ## [0.2.4](https://github.com/mhatzl/mantra/compare/v0.2.3...v0.2.4) (2023-09-12)
 
 
