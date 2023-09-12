@@ -1,6 +1,6 @@
 [package]
 name = "mantra"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2021"
 authors = ["Manuel Hatzl"]
 description = "Tool to trace requirements down to implementation and tests."
