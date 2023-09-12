@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/mhatzl/mantra/compare/v0.2.3...v0.2.4) (2023-09-12)
+
+
+### Bug Fixes
+
+* checkout project repo for report upload ([6a55c3d](https://github.com/mhatzl/mantra/commit/6a55c3d1674f06f0ed0c131e82f875f23f8a7e6d))
+
 ## [0.2.3](https://github.com/mhatzl/mantra/compare/v0.2.2...v0.2.3) (2023-09-12)
 
 
