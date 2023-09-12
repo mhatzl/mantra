@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/mhatzl/mantra/compare/v0.2.0...v0.2.1) (2023-09-12)
+
+
+### Bug Fixes
+
+* add mantra container to release action ([24fc391](https://github.com/mhatzl/mantra/commit/24fc39143186dc4d9d304b6344267127fb512799))
+
 ## [0.2.0](https://github.com/mhatzl/mantra/compare/v0.1.0...v0.2.0) (2023-09-12)
 
 
