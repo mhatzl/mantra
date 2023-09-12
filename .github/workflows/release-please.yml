@@ -65,7 +65,6 @@ jobs:
         if: ${{ env.release_created }}
         run: |
             mantra release --branch=$BRANCH_NAME --release-tag=${{ env.tag_name }} --report-file=release_report.md ./req_folder
-            ls
             echo "report<<EOF" >> $GITHUB_OUTPUT
             echo $(cat release_report.md) >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
@@ -81,10 +80,13 @@ jobs:
       report: ${{ needs.release-report.outputs.report }}  
 
     steps:
+      - uses: actions/checkout@v3
+        if: ${{ env.release_created }}
+
       - name: upload
         if: ${{ env.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ env.report }}" >> report.md
-          gh release upload ${{ env.tag_name }} report.md
+          echo "${{ env.report }}" >> release_report.md
+          gh release upload ${{ env.tag_name }} release_report.md
