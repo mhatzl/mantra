@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/mhatzl/mantra/compare/v0.2.1...v0.2.2) (2023-09-12)
+
+
+### Bug Fixes
+
+* split release report into multiple jobs ([0dbadf0](https://github.com/mhatzl/mantra/commit/0dbadf065e1a1a9ccbdec02ae7cf97fb50c49c34))
+
 ## [0.2.1](https://github.com/mhatzl/mantra/compare/v0.2.0...v0.2.1) (2023-09-12)
 
 
