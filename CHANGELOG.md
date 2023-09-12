@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8](https://github.com/mhatzl/mantra/compare/v0.2.7...v0.2.8) (2023-09-12)
+
+
+### Bug Fixes
+
+* trigger release action ([047fa0f](https://github.com/mhatzl/mantra/commit/047fa0f309e00ad8e264a0f46511abf30aefc487))
+
 ## [0.2.7](https://github.com/mhatzl/mantra/compare/v0.2.6...v0.2.7) (2023-09-12)
 
 
