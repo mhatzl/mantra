@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/mhatzl/mantra/compare/v0.2.2...v0.2.3) (2023-09-12)
+
+
+### Bug Fixes
+
+* add GITHUB_TOKEN for release report upload ([1e59207](https://github.com/mhatzl/mantra/commit/1e59207112a2faefe362a519175dde5a5c36731c))
+* remove dot from report extension ([43f71a8](https://github.com/mhatzl/mantra/commit/43f71a88da8e38b664fb70e0d53afa5e2a20a858))
+
 ## [0.2.2](https://github.com/mhatzl/mantra/compare/v0.2.1...v0.2.2) (2023-09-12)
 
 
