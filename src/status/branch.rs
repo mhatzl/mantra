@@ -23,11 +23,10 @@ pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> String {
     let mut manual_details = Vec::new();
 
     for req in wiki.reqs() {
-        match req
-            .ref_list
-            .iter()
-            .find(|entry| entry.proj_line.branch_name.as_ref() == &param.branch)
-        {
+        match req.ref_list.iter().find(|entry| {
+            entry.proj_line.branch_name.as_ref() == &param.branch
+                && entry.proj_line.repo_name.as_deref() == param.repo_name.as_ref()
+        }) {
             Some(entry) => {
                 if entry.is_deprecated {
                     deprecated_cnt += 1;
@@ -61,7 +60,15 @@ pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> String {
         }
     }
 
-    let mut overview = format!("**Wiki status for branch `{}`:**\n\n", param.branch);
+    let mut overview = format!(
+        "**Wiki status for {}branch `{}`:**\n\n",
+        if let Some(repo) = &param.repo_name {
+            format!("repository '{}' with ", repo)
+        } else {
+            String::new()
+        },
+        param.branch
+    );
 
     overview.push_str(&format!(
         "- {} requirement{} *ready* to be implemented\n",
