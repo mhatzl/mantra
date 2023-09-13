@@ -1,6 +1,10 @@
 # mantra
 
-**M**anuel's **AN**forderungs-**TRA**cing
+![build-test](https://github.com/mhatzl/mantra/actions/workflows/rust.yml/badge.svg?branch=main)
+[![docker](https://github.com/mhatzl/mantra/actions/workflows/docker.yml/badge.svg?branch=main)](https://hub.docker.com/r/manuelhatzl/mantra)
+![mantra-sync](https://github.com/mhatzl/mantra/actions/workflows/mantra.yml/badge.svg?branch=main)
+
+**M**anuels **AN**forderungs-**TRA**cing
 
 *mantra* is a tool for easier tracing between requirements, implementation, and tests.
 
