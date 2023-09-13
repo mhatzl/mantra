@@ -73,25 +73,25 @@ pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> String {
     overview.push_str(&format!(
         "- {} requirement{} *ready* to be implemented\n",
         ready_cnt,
-        if ready_cnt == 1 { "is" } else { "s are" },
+        if ready_cnt == 1 { " is" } else { "s are" },
     ));
 
     overview.push_str(&format!(
         "- {} requirement{} *active*\n",
         active_cnt,
-        if active_cnt == 1 { "is" } else { "s are" },
+        if active_cnt == 1 { " is" } else { "s are" },
     ));
 
     overview.push_str(&format!(
         "- {} requirement{} *deprecated*\n",
         deprecated_cnt,
-        if deprecated_cnt == 1 { "is" } else { "s are" },
+        if deprecated_cnt == 1 { " is" } else { "s are" },
     ));
 
     overview.push_str(&format!(
         "- {} requirement{} need *manual* verification\n",
         manual_cnt,
-        if manual_cnt == 1 { "is" } else { "s are" },
+        if manual_cnt == 1 { " is" } else { "s are" },
     ));
 
     if !ready_details.is_empty() {
