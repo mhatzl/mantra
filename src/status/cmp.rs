@@ -38,7 +38,7 @@ pub fn status_cmp(
         let phase_b = req_phase(&req.ref_list, repo_b, branch_b);
 
         if phase_a != phase_b {
-            max_req_column_width = max_req_column_width.max(req.head.id.len());
+            max_req_column_width = max_req_column_width.max(req.head.id.len() + 2); // +2 for ``
             max_branch_a_column_width = max_branch_a_column_width.max(phase_a.len());
             max_branch_b_column_width = max_branch_b_column_width.max(phase_b.len());
 
@@ -72,12 +72,12 @@ pub fn status_cmp(
     );
 
     for (req_id, phase_a, phase_b) in differences {
-        let req_spaces = " ".repeat(max_req_column_width - req_id.len());
+        let req_spaces = " ".repeat(max_req_column_width - (req_id.len() + 2)); // +2 for ``
         let column_a_spaces = " ".repeat(max_branch_a_column_width - phase_a.len());
         let column_b_spaces = " ".repeat(max_branch_b_column_width - phase_b.len());
 
         status.push_str(&format!(
-            "| {}{} | {}{} | {}{} |",
+            "| `{}`{} | {}{} | {}{} |",
             req_id, req_spaces, phase_a, column_a_spaces, phase_b, column_b_spaces
         ));
     }
@@ -147,9 +147,9 @@ mod test {
             status,
             "**Wiki differences between `main` and `stable`:**
 
-| REQ-ID       | main       | stable |
-| ------------ | ---------- | ------ |
-| ref_req.test | deprecated | active |",
+| REQ-ID         | main       | stable |
+| -------------- | ---------- | ------ |
+| `ref_req.test` | deprecated | active |",
             "Generated status differs for deprecated wiki entry."
         );
     }
@@ -185,9 +185,9 @@ mod test {
             status,
             "**Wiki differences between `my_repo/main` and `cmp_repo/main`:**
 
-| REQ-ID       | my_repo/main | cmp_repo/main |
-| ------------ | ------------ | ------------- |
-| ref_req.test | deprecated   | active        |",
+| REQ-ID         | my_repo/main | cmp_repo/main |
+| -------------- | ------------ | ------------- |
+| `ref_req.test` | deprecated   | active        |",
             "Generated status differs for deprecated wiki entry."
         );
     }
