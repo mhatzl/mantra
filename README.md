@@ -175,7 +175,7 @@ Use `mantra <command> --help` to see all available options per command.
   - 1 requirement is *ready* to be implemented
   - 30 requirements are *active*
   - 0 requirements are *deprecated*
-  - 0 requirements are need *manual* verification
+  - 0 requirements need *manual* verification
 
   ***Ready* requirements:**
 

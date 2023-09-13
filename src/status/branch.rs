@@ -89,9 +89,9 @@ pub fn status_branch(wiki: &Wiki, param: &StatusParameter) -> String {
     ));
 
     overview.push_str(&format!(
-        "- {} requirement{} need *manual* verification\n",
+        "- {} requirement{} *manual* verification\n",
         manual_cnt,
-        if manual_cnt == 1 { " is" } else { "s are" },
+        if manual_cnt == 1 { " needs" } else { "s need" },
     ));
 
     if !ready_details.is_empty() {
