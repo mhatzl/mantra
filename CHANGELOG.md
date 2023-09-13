@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.12](https://github.com/mhatzl/mantra/compare/v0.2.11...v0.2.12) (2023-09-13)
+
+
+### Bug Fixes
+
+* add development setup section for contributor ([af8a654](https://github.com/mhatzl/mantra/commit/af8a6549cbb146529d86f326ce60acfeab403650))
+* add ignore section in README ([807f7fa](https://github.com/mhatzl/mantra/commit/807f7fa0b2b6572e9b33878e6583ab9c664d66cd))
+* add repo_name parameter to relese command ([#36](https://github.com/mhatzl/mantra/issues/36)) ([86929c6](https://github.com/mhatzl/mantra/commit/86929c6e8c769ccdedc0a9104a7c15a391dcacc7))
+* add space in status output for single reqs ([dbef93d](https://github.com/mhatzl/mantra/commit/dbef93d940b84fcb4d64c4c41b9204d6b323e2d4))
+* add workflow badges to README ([15e51c1](https://github.com/mhatzl/mantra/commit/15e51c1b1dd1fa24dd710f15a3fa3e9e1dc8840b))
+* allow multiple repos for the status command ([#38](https://github.com/mhatzl/mantra/issues/38)) ([45302f6](https://github.com/mhatzl/mantra/commit/45302f65d6a8b04a4e8904f6e0d871e384b6327a))
+* improve issue templates ([5b11571](https://github.com/mhatzl/mantra/commit/5b1157109823e7774586acd00c98166083e578a7))
+* improve module documentation ([54b06ad](https://github.com/mhatzl/mantra/commit/54b06ad38ada6bc78d503220fc75a44f07448999))
+* update README with available commands ([41ed849](https://github.com/mhatzl/mantra/commit/41ed8490e07c0c9d00261a43cb9e5c1281e5731b))
+* use h2 instead of h1 for PR template headings ([8490312](https://github.com/mhatzl/mantra/commit/8490312a47df8947ae592b83a4a0c9405dc1a640))
+* wrap req-IDs in inline verbatim for cmp table ([2775712](https://github.com/mhatzl/mantra/commit/27757120f8180e0e3edfd5b9f626130416bc6a7f))
+
 ## [0.2.11](https://github.com/mhatzl/mantra/compare/v0.2.10...v0.2.11) (2023-09-12)
 
 
