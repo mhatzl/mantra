@@ -43,11 +43,23 @@ For example, it contains project [requirements](https://github.com/mhatzl/mantra
 
 ## Development Setup
 
-{{
+*mantra* is developed using Rust.
+See [rustup](https://www.rust-lang.org/tools/install) on how to install the Rust tool chain.
 
-Provide instructions on how to set up this project for development.
+GitHub workflows use a custom docker image that is automatically built on every push to `main`.
+You may install [docker](https://docs.docker.com/engine/install/) to build the image
+and test it locally using the `Dockerfile` at the root of the repository.
 
-}}
+**Pipeline:**
+
+Every contribution must pass the following steps.
+
+1. `cargo fmt` ... To get consistent code styling
+2. `cargo clippy` ... To get better code quality
+3. `cargo build` ... To make sure *mantra* still builds
+4. `cargo test` ... To ensure that all tests still pass
+
+Please make sure that these steps pass before creating a pull request, to prevent unnecessary workflow runs.
 
 ## Commit Message Convention
 
