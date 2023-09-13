@@ -216,6 +216,20 @@ The image exposes `mantra` without any predefined command, so it may be used lik
 - [mantra.yml](/.github/workflows/mantra.yml) ... Uses `sync` to synchronize references between wiki and project
 - [release-please.yml](.github/workflows/release-please.yml) ... Uses `release` to add a release report to a created release
 
+### Skip content for the reference search
+
+Files and folders may be ignored for the references search, by adding them to `.gitignore` or `.mantraignore` files.
+These files and folders are then skipped when searching references in the project.
+
+It is also possible to ignore only the next reference inside a file, by setting `[mantra:ignore_next]` directly before the reference.
+
+**Example:**
+
+```
+[mantra:ignore_next]
+[req:ignored_req]
+```
+
 # License
 
 MIT Licensed
