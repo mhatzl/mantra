@@ -7,7 +7,6 @@ assignees: ''
 
 ---
 
-# Describe your new test case
 ## Is this test case related to other issues/PRs?
 
 
@@ -16,10 +15,10 @@ assignees: ''
 
 
 
-# Describe alternatives you've considered
+## Describe alternatives you've considered
 
 
 
-# Additional context
+## Additional context
 
 

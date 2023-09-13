@@ -7,7 +7,6 @@ assignees: ''
 
 ---
 
-# Describe the spelling mistake
 ## Where is the spelling mistake located? 
 
 

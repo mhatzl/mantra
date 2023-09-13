@@ -7,7 +7,6 @@ assignees: ''
 
 ---
 
-# Describe your feature request
 ## Is your feature request related to other issues/PRs?
 
 
@@ -16,10 +15,10 @@ assignees: ''
 
 
 
-# Describe alternatives you've considered
+## Describe alternatives you've considered
 
 
 
-# Additional context
+## Additional context
 
 

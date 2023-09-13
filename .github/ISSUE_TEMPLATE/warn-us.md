@@ -7,7 +7,6 @@ assignees: ''
 
 ---
 
-# Describe your warning
 ## Describe what you want to warn us about
 
 

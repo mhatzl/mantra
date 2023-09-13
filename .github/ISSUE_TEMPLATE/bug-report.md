@@ -7,25 +7,25 @@ assignees: ''
 
 ---
 
-# Describe the bug you've found, and why you think it is a bug
+## Describe the bug you've found, and why you think it is a bug
 
 
 
-# To Reproduce
+## To Reproduce
 
 **Steps to reproduce the behavior:**
 
 1. ...
 
 
-# Screenshots
+## Screenshots
 
 
 
-# Version/Branch used
+## Version/Branch used
 
 
 
-# Additional context
+## Additional context
 
 

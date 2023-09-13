@@ -7,7 +7,6 @@ assignees: ''
 
 ---
 
-# Describe your problem with the current documentation
 ## Describe what is/was unclear to you 
 
 
