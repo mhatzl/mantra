@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.13](https://github.com/mhatzl/mantra/compare/v0.2.12...v0.2.13) (2023-09-13)
+
+
+### Bug Fixes
+
+* correct spelling for status output ([591dc66](https://github.com/mhatzl/mantra/commit/591dc666f55e280f0fa5f5aa42d30aa5e5c57197))
+* update package name in release-please action ([acd3da9](https://github.com/mhatzl/mantra/commit/acd3da96c0bdd8b16bad9624561558ae1ec99ca6))
+
 ## [0.2.12](https://github.com/mhatzl/mantra/compare/v0.2.11...v0.2.12) (2023-09-13)
 
 
