@@ -1,3 +1,7 @@
+//! Contains functionality to handle references between wiki, implementation, and tests.
+//!
+//! [req:ref_req]
+
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
