@@ -307,7 +307,7 @@ dependencies = [
 
 [[package]]
 name = "mantra"
-version = "0.2.13"
+version = "0.2.14"
 dependencies = [
  "clap",
  "ignore",

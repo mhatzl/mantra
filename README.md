@@ -85,6 +85,26 @@ The repository name is then added to the entry in the *references* list.
 ```
 
 ## Usage
+### Setup
+
+*mantra* is available on [crates.io](https://crates.io/crates/mantra), and may be installed using the Rust [toolchain](https://www.rust-lang.org/tools/install):
+
+`cargo install mantra`
+
+Alternatively, *mantra* is available as Docker [image](https://hub.docker.com/r/manuelhatzl/mantra), and may be run locally with:
+
+`docker run manuelhatzl/mantra:main mantra`
+
+To use the Docker image inside GitHub workflows, use:
+
+```yaml
+runs-on: ubuntu-latest
+container:
+    image: manuelhatzl/mantra:main
+```
+
+**Note:** The image is based on the Alpine [image](https://hub.docker.com/_/alpine), and may not support all commands available with the Ubuntu image.
+
 ### Commands
 
 *mantra* is primarily a command line tool that offers various commands.\
