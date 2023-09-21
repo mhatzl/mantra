@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.14](https://github.com/mhatzl/mantra/compare/v0.2.13...v0.2.14) (2023-09-21)
+
+
+### Bug Fixes
+
+* add setup section in README ([0d91689](https://github.com/mhatzl/mantra/commit/0d91689b4745527698e62a0512f19fa6af555c5a))
+
 ## [0.2.13](https://github.com/mhatzl/mantra/compare/v0.2.12...v0.2.13) (2023-09-13)
 
 
