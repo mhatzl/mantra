@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/mhatzl/mantra/compare/v0.2.14...v0.3.0) (2023-09-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* enforce backtick wrap for IDs in req heading ([#43](https://github.com/mhatzl/mantra/issues/43))
+
+### Features
+
+* enforce backtick wrap for IDs in req heading ([#43](https://github.com/mhatzl/mantra/issues/43)) ([5a759ee](https://github.com/mhatzl/mantra/commit/5a759ee00561f116b93723e92c2126dc5860221b))
+
 ## [0.2.14](https://github.com/mhatzl/mantra/compare/v0.2.13...v0.2.14) (2023-09-21)
 
 
