@@ -262,13 +262,13 @@ mod test {
     fn setup_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# ref_req: Some Title
+# `ref_req`: Some Title
 
 **References:**
 
 - in branch main: 2
 
-## ref_req.test: Some Title
+## `ref_req.test`: Some Title
 
 **References:**
 
@@ -320,13 +320,13 @@ mod test {
     fn setup_partial_referenced_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# ref_req: Some Title
+# `ref_req`: Some Title
 
 **References:**
 
 - in branch main: 2 (1 direct)
 
-## ref_req.test: Some Title
+## `ref_req.test`: Some Title
 
         "#;
 
@@ -384,7 +384,7 @@ mod test {
     fn setup_deprecated_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# ref_req: Some Title
+# `ref_req`: Some Title
 
 **References:**
 
@@ -426,13 +426,13 @@ mod test {
     fn setup_manual_verified_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# ref_req: Some Title
+# `ref_req`: Some Title
 
 **References:**
 
 - in branch main: 1
 
-## ref_req.test: Some Title
+## `ref_req.test`: Some Title
 
 **References:**
 

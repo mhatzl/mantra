@@ -83,8 +83,8 @@ pub fn get_req_heading(possible_heading: &str) -> Result<ReqHeading, ReqMatching
         // Creating a pattern to match multiple lines until the *references* list is found would be too complicated.
         // => iterate through files line by line
         //
-        // Regex to match full req-structure: (?:^|\n)(?<heading_lvl>#+) (?<id>[^:]+):(?<heading>(?:.|\n)+)\*\*References:\*\*\n\n*(?<entries>(?:[-\+\*][^\n]*\n?){1,})
-        Regex::new(r"^(?<lvl>#+)\s(?<id>[^\s:]+):(?<title>.+)")
+        // [req:wiki.req_id_wrap]
+        Regex::new(r"^(?<lvl>#+)\s`(?<id>[^\s:]+)`:(?<title>.+)")
             .expect("Regex to match the requirement heading could **not** be created.")
     });
 
@@ -152,7 +152,7 @@ mod test {
 
     #[test]
     fn get_high_lvl_req() {
-        let act_heading = get_req_heading("# req_id: Some Title").unwrap();
+        let act_heading = get_req_heading("# `req_id`: Some Title").unwrap();
 
         assert_eq!(
             act_heading.id.as_str(),
@@ -172,7 +172,7 @@ mod test {
 
     #[test]
     fn get_low_lvl_req() {
-        let act_heading = get_req_heading("# req_id.sub_req: Some Title").unwrap();
+        let act_heading = get_req_heading("# `req_id.sub_req`: Some Title").unwrap();
 
         assert_eq!(
             act_heading.id.as_str(),
@@ -192,7 +192,7 @@ mod test {
 
     #[test]
     fn get_req_in_sub_heading() {
-        let act_heading = get_req_heading("## req_id.sub_req: Some Title").unwrap();
+        let act_heading = get_req_heading("## `req_id.sub_req`: Some Title").unwrap();
 
         assert_eq!(
             act_heading.id.as_str(),

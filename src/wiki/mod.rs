@@ -354,11 +354,11 @@ pub enum WikiReq {
     /// **Example:**
     ///
     /// ```text
-    /// # req_id: Some high-level requirement
+    /// # `req_id`: Some high-level requirement
     ///
     /// Explicit requirement.
     ///
-    /// ## req_id.test.sub_req: Some low-level requirement
+    /// ## `req_id.test.sub_req`: Some low-level requirement
     ///
     /// This automatically creates `req_id.test` as an implicit requirement.
     /// ```
@@ -414,7 +414,7 @@ mod test {
         let filename = "test_file";
         // Note: String moved to the most left to get correct new line behavior.
         let content = r#"
-# req_id: Some Title
+# `req_id`: Some Title
 
 **References:**
 
@@ -445,7 +445,7 @@ mod test {
     fn req_missing_ref_list_start() {
         let filename = "test_file";
         let content = r#"
-# req_id: Some Title
+# `req_id`: Some Title
 
 - in branch main: 2
         "#;
@@ -474,7 +474,7 @@ mod test {
     fn low_lvl_req_with_1_ref_entry() {
         let filename = "test_file";
         let content = r#"
-# req_id.sub_req: Some Title
+# `req_id.sub_req`: Some Title
 
 **References:**
 
@@ -517,13 +517,13 @@ mod test {
     fn flattend_wiki_one_sub() {
         let filename = "test_file";
         let content = r#"
-# req_id: Some Title
+# `req_id`: Some Title
 
 **References:**
 
 - in branch main: 2
 
-## req_id.sub_req: Some Title
+## `req_id.sub_req`: Some Title
 
 **References:**
 
@@ -560,13 +560,13 @@ mod test {
     fn low_lvl_req_skipped_one_lvl() {
         let filename = "test_file";
         let content = r#"
-# req_id: Some Title
+# `req_id`: Some Title
 
 **References:**
 
 - in branch main: 2 (1 direct)
 
-## req_id.test.some_test: Some Test
+## `req_id.test.some_test`: Some Test
 
 **References:**
 
@@ -609,13 +609,13 @@ mod test {
     fn one_implicit_req() {
         let filename = "test_file";
         let content = r#"
-# req_id: Some Title
+# `req_id`: Some Title
 
 **References:**
 
 - in branch main: 2 (1 direct)
 
-## req_id.test.some_test: Some Test
+## `req_id.test.some_test`: Some Test
 
 **References:**
 

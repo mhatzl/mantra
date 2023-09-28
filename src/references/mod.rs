@@ -202,7 +202,7 @@ mod test {
     fn setup_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# req_id: Some Title
+# `req_id`: Some Title
 
 **References:**
 

@@ -26,7 +26,7 @@ Since systems/projects may have different branches, these numbers are linked to 
 **Example:**
 
 ```
-# my_req_id: Some requirement title
+# `my_req_id`: Some requirement title
 
 **References:**
 
@@ -42,11 +42,11 @@ A requirement hierarchy may be used to create a structure of high and low-level 
 **Example:**
 
 ```
-# my_req_id: Some requirement title
+# `my_req_id`: Some requirement title
 
 A high-level requirement.
 
-## my_req_id.sub_req_id: Some sub-requirement title
+## `my_req_id.sub_req_id`: Some sub-requirement title
 
 A low-level requirement of `my_req_id`.
 ```

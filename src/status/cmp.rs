@@ -119,14 +119,14 @@ mod test {
     fn setup_deprecated_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# ref_req: Some Title
+# `ref_req`: Some Title
 
 **References:**
 
 - in branch main: 2
 - in branch stable: 2 (0 direct)
 
-## ref_req.test: Some Title
+## `ref_req.test`: Some Title
 
 **References:**
 
@@ -157,14 +157,14 @@ mod test {
     fn setup_mult_repo_wiki() -> Wiki {
         let filename = "test_wiki";
         let content = r#"
-# ref_req: Some Title
+# `ref_req`: Some Title
 
 **References:**
 
 - in repo my_repo in branch main: 2
 - in repo cmp_repo in branch main: 2 (0 direct)
 
-## ref_req.test: Some Title
+## `ref_req.test`: Some Title
 
 **References:**
 
