@@ -7,3 +7,10 @@ edition = "2021"
 
 [dependencies]
 mantra-rust-procm = { path = "../mantra-rust-procm" }
+defmt = { version = "0.3.6", optional = true }
+log = { version = "0.4.21", optional = true }
+
+[features]
+defmt = ["dep:defmt"]
+stdout = []
+log = ["dep:log"]
