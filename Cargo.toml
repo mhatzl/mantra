@@ -2,5 +2,7 @@
 resolver = "2"
 members = [
     "crawler",
-    "langs/rust/mantra-rust-macros", "langs/rust/mantra-rust-procm",
+    "langs/rust/mantra-rust-procm",
+    "langs/rust/mantra-rust-macros",
+    "langs/rust/examples/*",
 ]
