@@ -26,3 +26,20 @@ impl core::fmt::Display for ReqCov {
         )
     }
 }
+
+#[cfg(feature = "decode")]
+use once_cell::unsync::Lazy;
+#[cfg(feature = "decode")]
+use regex::bytes::Regex;
+
+#[cfg(feature = "decode")]
+pub const REQ_ID_MATCH_NAME: &str = "id";
+#[cfg(feature = "decode")]
+pub const FILE_MATCH_NAME: &str = "file";
+#[cfg(feature = "decode")]
+pub const LINE_MATCH_NAME: &str = "line";
+
+#[cfg(feature = "decode")]
+thread_local! {
+    pub static REQ_COV_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"mantra: req-id='(?<id>.+)'; file='(?<file>.+)'; line='(?<line>\d+)';").unwrap());
+}
