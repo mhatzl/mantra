@@ -1,4 +1,4 @@
-use mantra_rust_macros::req;
+use mantra_rust_macros::{req, reqcov};
 
 use std::io::Write;
 
@@ -6,6 +6,8 @@ use std::io::Write;
 #[req(my_req.test)]
 fn attrb_macro_usage() {
     println!("fn body");
+
+    reqcov!("direct-req".test, 2387192);
 }
 
 pub fn main() {

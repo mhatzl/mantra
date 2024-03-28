@@ -2,6 +2,7 @@
 
 use coverage::ReqCov;
 pub use mantra_rust_procm::req;
+pub use mantra_rust_procm::reqcov;
 
 pub mod coverage;
 
@@ -18,7 +19,7 @@ pub fn req_print(req: ReqCov) {
 }
 
 #[macro_export]
-macro_rules! reqcov {
+macro_rules! mr_reqcov {
     ($($req_id:literal),+) => {
         $(
             $crate::req_print($crate::coverage::ReqCov{id: $req_id, file: file!(), line: line!()});
