@@ -12,5 +12,6 @@ log = { version = "0.4.21", optional = true }
 
 [features]
 defmt = ["dep:defmt"]
-stdout = []
+stdout = ["std"]
 log = ["dep:log"]
+std = []

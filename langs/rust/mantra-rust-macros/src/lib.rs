@@ -1,60 +1,27 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use coverage::ReqCov;
 pub use mantra_rust_procm::req;
 
-#[cfg(all(any(feature = "stdout", feature = "log"), feature = "defmt"))]
-compile_error!("The 'defmt' feature may not be used together with features 'log' or 'stdout'.");
+pub mod coverage;
 
-#[cfg(feature = "log")]
-pub use log;
+#[inline]
+pub fn req_print(req: ReqCov) {
+    #[cfg(feature = "log")]
+    log::trace!("{}", req);
 
-#[cfg(feature = "defmt")]
-pub use defmt;
+    #[cfg(feature = "defmt")]
+    defmt::println!("{}", req);
 
-#[cfg(all(feature = "log", not(any(feature = "defmt", feature = "stdout"))))]
-#[macro_export]
-macro_rules! reqcov {
-    ($($req_id:literal),+) => {
-        $(
-            $crate::log::trace!("mantra: req-id='{}'", $req_id);
-        )+
-    };
+    #[cfg(feature = "stdout")]
+    println!("{}", req);
 }
 
-#[cfg(all(feature = "defmt", not(any(feature = "log", feature = "stdout"))))]
 #[macro_export]
 macro_rules! reqcov {
     ($($req_id:literal),+) => {
         $(
-            $crate::defmt::println!("mantra: req-id='{}'", $req_id);
-        )+
-    };
-}
-
-#[cfg(all(feature = "stdout", not(any(feature = "log", feature = "defmt"))))]
-#[macro_export]
-macro_rules! reqcov {
-    ($($req_id:literal),+) => {
-        $(
-            println!("mantra: req-id='{}'; file='{}'; line='{}'", $req_id, file!(), line!());
-        )+
-    };
-}
-
-#[cfg(all(feature = "stdout", feature = "log", not(feature = "defmt")))]
-#[macro_export]
-macro_rules! reqcov {
-    ($($req_id:literal),+) => {
-        $(
-            $crate::log::trace!("mantra: req-id='{}'", $req_id);
-            println!("mantra: req-id='{}'; file='{}'; line='{}'", $req_id, file!(), line!());
-        )+
-    };
-}
-
-#[cfg(not(any(feature = "stdout", feature = "log", feature = "defmt")))]
-#[macro_export]
-macro_rules! reqcov {
-    ($($req_id:literal),+) => {
-        $(
+            $crate::req_print($crate::coverage::ReqCov{id: $req_id, file: file!(), line: line!()});
         )+
     };
 }
