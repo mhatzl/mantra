@@ -460,6 +460,8 @@ dependencies = [
  "defmt",
  "log",
  "mantra-rust-procm",
+ "once_cell",
+ "regex",
 ]
 
 [[package]]
