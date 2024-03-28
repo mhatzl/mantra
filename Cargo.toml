@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crawler",
+    "extractor",
     "langs/rust/mantra-rust-procm",
     "langs/rust/mantra-rust-macros",
     "langs/rust/examples/*",
