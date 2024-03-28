@@ -10,7 +10,7 @@ fn attrb_macro_usage() {
 
 pub fn main() {
     env_logger::builder()
-        .filter_level(mantra_rust_macros::log::LevelFilter::Trace)
+        .filter_level(log::LevelFilter::Trace)
         .format(|buf, record| {
             writeln!(
                 buf,
