@@ -4,11 +4,41 @@ use syn::{parse_macro_input, parse_quote, ItemFn, Stmt};
 
 #[proc_macro_attribute]
 pub fn req(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let mut wrapped_fn: ItemFn = parse_macro_input!(item);
+
+    let mut req_ids = extract_req_ids(attr);
+    req_ids.reverse();
+
+    for req in req_ids {
+        let req_literal = syn::LitStr::new(&req, proc_macro2::Span::call_site());
+        let macro_stmt: Stmt = parse_quote!(mantra_rust_macros::mr_reqcov!(#req_literal););
+
+        wrapped_fn.block.stmts.insert(0, macro_stmt);
+    }
+
+    quote!(#wrapped_fn).into()
+}
+
+#[proc_macro]
+pub fn reqcov(input: TokenStream) -> TokenStream {
+    let req_ids = extract_req_ids(input);
+
+    let mut stream = TokenStream::new();
+
+    for req in req_ids {
+        let req_literal = syn::LitStr::new(&req, proc_macro2::Span::call_site());
+        stream.extend::<TokenStream>(quote!(mantra_rust_macros::mr_reqcov!(#req_literal);).into())
+    }
+
+    stream
+}
+
+fn extract_req_ids(input: TokenStream) -> Vec<String> {
     let mut req_ids = Vec::new();
     let mut req_part = String::new();
     let mut prev_was_punct = false;
 
-    for token in attr.into_iter() {
+    for token in input.into_iter() {
         match token {
             proc_macro::TokenTree::Group(group) => panic!(
                 "Invalid keyword '{}'. Grouping requirement IDs is not supported.",
@@ -54,8 +84,14 @@ pub fn req(attr: TokenStream, item: TokenStream) -> TokenStream {
                 if !req_part.is_empty() && !prev_was_punct {
                     panic!("ID parts must be separated by '-' or '.'.");
                 }
+                let literal_str = literal.to_string();
+
+                if literal_str.contains('.') {
+                    panic!("Quoted strings or numbers must not contain '.', because '.' is used for nested requirements.");
+                }
+
                 prev_was_punct = false;
-                req_part.push_str(&literal.to_string());
+                req_part.push_str(&literal_str.replace('"', ""));
             }
         }
     }
@@ -64,16 +100,5 @@ pub fn req(attr: TokenStream, item: TokenStream) -> TokenStream {
         req_ids.push(req_part);
     }
 
-    req_ids.reverse();
-
-    let mut wrapped_fn: ItemFn = parse_macro_input!(item);
-
-    for req in req_ids {
-        let req_literal = syn::LitStr::new(&req, proc_macro2::Span::call_site());
-        let macro_stmt: Stmt = parse_quote!(mantra_rust_macros::reqcov!(#req_literal););
-
-        wrapped_fn.block.stmts.insert(0, macro_stmt);
-    }
-
-    quote!(#wrapped_fn).into()
+    req_ids
 }
