@@ -1,6 +1,7 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 #runner = "probe-rs run --chip XMC4700-F144x2048"
 runner = "arm-none-eabi-gdb -x openocd.gdb"
+#runner = "embedded-runner.exe"
 
 rustflags = [
   "-C", "link-arg=-Tlink.x",
