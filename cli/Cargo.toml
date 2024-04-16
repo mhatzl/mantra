@@ -6,3 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+mantra-db = { path = "../db" }
+mantra-extract = { path = "../extract" }
+tokio = { version = "1.37.0", features = ["full"] }
