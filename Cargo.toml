@@ -3,5 +3,5 @@ resolver = "2"
 members = [
     "langs/rust/mantra-rust-procm",
     "langs/rust/mantra-rust-macros",
-    "langs/rust/examples/*", "langs/mantra-lang-traits", "trace", "extract", "db", "report", "analyze", "cli",
+    "langs/rust/examples/*", "langs/mantra-lang-tracing", "trace", "extract", "db", "report", "analyze", "cli", "langs/rust/mantra-rust-trace",
 ]

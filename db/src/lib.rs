@@ -1,8 +1,8 @@
 // setup db (migrate macro verwenden)
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use mantra_lang_traits::ReqTrace;
+use mantra_lang_tracing::ReqTrace;
 use serde::{Deserialize, Serialize};
 use sqlx::Pool;
 
@@ -137,26 +137,79 @@ impl MantraDb {
         project_name: &str,
         origin: ProjectOrigin,
     ) -> Result<(), DbError> {
-        todo!()
+        let ser_origin: sqlx::types::Json<ProjectOrigin> = origin.into();
+
+        let _ = sqlx::query!(
+            "insert or replace into Projects (name, origin) values ($1, $2)",
+            project_name,
+            ser_origin
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| {
+            DbError::Insertion(format!(
+                "Adding project '{}' failed with error: {}",
+                &project_name, err
+            ))
+        })?;
+
+        Ok(())
     }
 
     pub async fn add_traces(
         &self,
         project_name: &str,
-        filepath: &PathBuf,
-        traces: Vec<ReqTrace>,
+        filepath: &Path,
+        traces: &[ReqTrace],
     ) -> Result<(), DbError> {
-        todo!()
+        for trace in traces {
+            let req_id = trace.req_id();
+            let file = filepath.to_string_lossy();
+            let _ = sqlx::query!(
+                "insert or ignore into Traces (req_id, project_name, filepath, line) values ($1, $2, $3, $4)",
+                req_id,
+                project_name,
+                file,
+                *trace.line(),
+            )
+            .execute(&self.pool)
+            .await
+            .map_err(|err| {
+                DbError::Insertion(format!(
+                    "Adding trace for id='{}', project='{}', file='{}', line='{}' failed with error: {}",
+                    &trace.req_id(), &project_name, file, trace.line(), err
+                ))
+            })?;
+        }
+
+        Ok(())
     }
 
     pub async fn add_coverage(
         &self,
         project_name: &str,
-        filepath: &PathBuf,
+        filepath: &Path,
         line: u32,
         req_id: &str,
     ) -> Result<(), DbError> {
-        todo!()
+        let file = filepath.to_string_lossy();
+        let _ = sqlx::query!(
+                "insert or ignore into Coverage (req_id, project_name, filepath, line) values ($1, $2, $3, $4)",
+                req_id,
+                project_name,
+                file,
+                line,
+            )
+            .execute(&self.pool)
+            .await
+            .map_err(|err| {
+                DbError::Insertion(format!(
+                    "Adding coverage for id='{}', project='{}', file='{}', line='{}' failed with error: {}",
+                    req_id, &project_name, file, line, err
+                ))
+            })?;
+
+        Ok(())
     }
 
     pub async fn add_deprecated(&self, project_name: &str, req_id: &str) -> Result<(), DbError> {
@@ -178,10 +231,12 @@ impl MantraDb {
     }
 }
 
+#[derive(Deserialize, Serialize)]
 pub enum ProjectOrigin {
     GitRepo(GitRepoOrigin),
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct GitRepoOrigin {
     pub link: String,
     pub branch: Option<String>,
