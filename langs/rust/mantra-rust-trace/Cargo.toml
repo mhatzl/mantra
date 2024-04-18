@@ -1,5 +1,5 @@
 [package]
-name = "mantra-rust-procm"
+name = "mantra-rust-trace"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 mantra-lang-tracing = { path = "../../mantra-lang-tracing" }
-syn = { version = "2.0", features = ["full"] }
-proc-macro2 = "1.0"
-quote = "1.0"
+tree-sitter = "0.20.10"
+tree-sitter-rust = "0.20.4"
 
-[lib]
-proc-macro = true
+[build-dependencies]
+cc="*"
+
