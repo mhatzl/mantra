@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use mantra_lang_tracing::ReqTrace;
+use mantra_lang_tracing::TraceEntry;
 use serde::{Deserialize, Serialize};
 use sqlx::Pool;
 
@@ -28,14 +28,17 @@ pub enum RequirementOrigin {
 
 #[derive(Deserialize, Serialize)]
 pub struct GitHubReqOrigin {
-    pub root: String,
+    pub link: String,
     pub path: PathBuf,
     pub line: usize,
 }
 
+#[derive(Debug, Clone, clap::Args)]
+#[group(id = "db")]
 pub struct Config {
     /// URL to connect to a SQL database.
-    /// Default is a SQLite file named `mantra.db` that is located under `.mantra/` at the workspace root.
+    /// Default is a SQLite file named `mantra.db` that is located at the workspace root.
+    #[arg(long, alias = "db-url")]
     pub url: Option<String>,
 }
 
@@ -43,7 +46,10 @@ static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 
 impl MantraDb {
     pub async fn new(cfg: &Config) -> Result<Self, DbError> {
-        let url = cfg.url.clone().unwrap_or("sqlite://mantra.db".to_string());
+        let url = cfg
+            .url
+            .clone()
+            .unwrap_or("sqlite://mantra.db?mode=rwc".to_string());
         let pool = Pool::<DB>::connect(&url)
             .await
             .map_err(|err| DbError::Connection(err.to_string()))?;
@@ -149,7 +155,7 @@ impl MantraDb {
         .map_err(|err| {
             DbError::Insertion(format!(
                 "Adding project '{}' failed with error: {}",
-                &project_name, err
+                project_name, err
             ))
         })?;
 
@@ -160,26 +166,31 @@ impl MantraDb {
         &self,
         project_name: &str,
         filepath: &Path,
-        traces: &[ReqTrace],
+        traces: &[TraceEntry],
     ) -> Result<(), DbError> {
+        let file = filepath.to_string_lossy();
+
         for trace in traces {
-            let req_id = trace.req_id();
-            let file = filepath.to_string_lossy();
-            let _ = sqlx::query!(
-                "insert or ignore into Traces (req_id, project_name, filepath, line) values ($1, $2, $3, $4)",
-                req_id,
-                project_name,
-                file,
-                *trace.line(),
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| {
-                DbError::Insertion(format!(
-                    "Adding trace for id='{}', project='{}', file='{}', line='{}' failed with error: {}",
-                    &trace.req_id(), &project_name, file, trace.line(), err
-                ))
-            })?;
+            let ids = trace.ids();
+            let line = trace.line();
+
+            for id in ids {
+                let _ = sqlx::query!(
+                    "insert or ignore into Traces (req_id, project_name, filepath, line) values ($1, $2, $3, $4)",
+                    id,
+                    project_name,
+                    file,
+                    line,
+                )
+                .execute(&self.pool)
+                .await
+                .map_err(|err| {
+                    DbError::Insertion(format!(
+                        "Adding trace for id='{}', project='{}', file='{}', line='{}' failed with error: {}",
+                        id, project_name, file, line, err
+                    ))
+                })?;
+            }
         }
 
         Ok(())
@@ -188,14 +199,43 @@ impl MantraDb {
     pub async fn add_coverage(
         &self,
         project_name: &str,
+        test_name: &str,
         filepath: &Path,
         line: u32,
         req_id: &str,
     ) -> Result<(), DbError> {
         let file = filepath.to_string_lossy();
         let _ = sqlx::query!(
-                "insert or ignore into Coverage (req_id, project_name, filepath, line) values ($1, $2, $3, $4)",
+                "insert or ignore into Coverage (req_id, project_name, test_name, filepath, line) values ($1, $2, $3, $4, $5)",
                 req_id,
+                project_name,
+                test_name,
+                file,
+                line,
+            )
+            .execute(&self.pool)
+            .await
+            .map_err(|err| {
+                DbError::Insertion(format!(
+                    "Adding coverage for id='{}', project='{}', test='{}', file='{}', line='{}' failed with error: {}",
+                    req_id, project_name, test_name, file, line, err
+                ))
+            })?;
+
+        Ok(())
+    }
+
+    pub async fn add_test(
+        &self,
+        name: &str,
+        project_name: &str,
+        filepath: &Path,
+        line: u32,
+    ) -> Result<(), DbError> {
+        let file = filepath.to_string_lossy();
+        let _ = sqlx::query!(
+                "insert or ignore into Tests (name, project_name, filepath, line) values ($1, $2, $3, $4)",
+                name,
                 project_name,
                 file,
                 line,
@@ -204,20 +244,48 @@ impl MantraDb {
             .await
             .map_err(|err| {
                 DbError::Insertion(format!(
-                    "Adding coverage for id='{}', project='{}', file='{}', line='{}' failed with error: {}",
-                    req_id, &project_name, file, line, err
+                    "Adding test for test='{}', project='{}', file='{}', line='{}' failed with error: {}",
+                    name, project_name, file, line, err
                 ))
             })?;
 
         Ok(())
     }
 
-    pub async fn add_deprecated(&self, project_name: &str, req_id: &str) -> Result<(), DbError> {
-        todo!()
+    pub async fn add_deprecated(&self, req_id: &str, project_name: &str) -> Result<(), DbError> {
+        let _ = sqlx::query!(
+            "insert or replace into DeprecatedRequirements (req_id, project_name) values ($1, $2)",
+            req_id,
+            project_name
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| {
+            DbError::Insertion(format!(
+                "Adding deprecated requirement='{}' for project='{}' failed with error: {}",
+                req_id, project_name, err
+            ))
+        })?;
+
+        Ok(())
     }
 
-    pub async fn add_untraceable(&self, project_name: &str, req_id: &str) -> Result<(), DbError> {
-        todo!()
+    pub async fn add_untraceable(&self, req_id: &str, project_name: &str) -> Result<(), DbError> {
+        let _ = sqlx::query!(
+            "insert or replace into UntraceableRequirements (req_id, project_name) values ($1, $2)",
+            req_id,
+            project_name
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| {
+            DbError::Insertion(format!(
+                "Adding untraceable requirement='{}' for project='{}' failed with error: {}",
+                req_id, project_name, err
+            ))
+        })?;
+
+        Ok(())
     }
 
     pub async fn is_valid(&self) -> Result<(), DbError> {
@@ -226,23 +294,23 @@ impl MantraDb {
     }
 
     pub fn pool(&self) -> &Pool<DB> {
-        // akt workaround für custom queries
+        // workaround for custom queries
         &self.pool
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, clap::Parser)]
 pub enum ProjectOrigin {
     GitRepo(GitRepoOrigin),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, clap::Args)]
 pub struct GitRepoOrigin {
     pub link: String,
     pub branch: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DbError {
     Connection(String),
     Migration(String),

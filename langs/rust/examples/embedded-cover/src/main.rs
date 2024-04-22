@@ -12,10 +12,17 @@ use panic_probe as _;
 
 // same panicking *behavior* as `panic-probe` but doesn't print a panic message
 // this prevents the panic message being printed *twice* when `defmt::panic` is invoked
+#[cfg(target_os = "none")]
 #[defmt::panic_handler]
 fn panic() -> ! {
-    cortex_m::asm::udf()
+    // cortex_m::asm::udf()
+    panic_probe::hard_fault()
 }
+
+// #[panic_handler]
+// pub fn panic(_info: &core::panic::PanicInfo) -> ! {
+
+// }
 
 /// Terminates the application and makes a semihosting-capable debug tool exit
 /// with status code 0.

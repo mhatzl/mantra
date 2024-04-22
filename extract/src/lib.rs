@@ -94,9 +94,9 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
                 reqs.push(Requirement {
                     id,
                     origin: mantra_db::RequirementOrigin::GitHub(GitHubReqOrigin {
-                        root: link.to_string(),
+                        link: link.to_string(),
                         path: filepath.to_path_buf(),
-                        line: line_nr,
+                        line: line_nr + 1,
                     })
                     .into(),
                 });
@@ -107,14 +107,16 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
     reqs
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, clap::Args)]
+#[group(id = "extract")]
 pub struct Config {
     pub root: PathBuf,
     pub link: String,
+    #[arg(value_enum)]
     pub origin: ExtractOrigin,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, clap::ValueEnum)]
 pub enum ExtractOrigin {
     GitHub,
     Jira,
