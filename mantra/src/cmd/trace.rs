@@ -29,14 +29,14 @@ pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
                 .is_file()
             {
                 if let Some(traces) = collect_traces(dir_entry.path())? {
-                    db.add_traces(&cfg.project_name, dir_entry.path(), &traces)
+                    db.add_traces(&cfg.project_name, &cfg.root, dir_entry.path(), &traces)
                         .await
                         .map_err(TraceError::DbError)?
                 }
             }
         }
     } else if let Some(traces) = collect_traces(&cfg.root)? {
-        db.add_traces(&cfg.project_name, &cfg.root, &traces)
+        db.add_traces(&cfg.project_name, &cfg.root, &cfg.root, &traces)
             .await
             .map_err(TraceError::DbError)?
     }

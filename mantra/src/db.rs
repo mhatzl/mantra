@@ -33,6 +33,17 @@ pub struct GitHubReqOrigin {
     pub line: usize,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, clap::Parser)]
+pub enum ProjectOrigin {
+    GitRepo(GitRepoOrigin),
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, clap::Args)]
+pub struct GitRepoOrigin {
+    pub link: String,
+    pub branch: Option<String>,
+}
+
 #[derive(Debug, Clone, clap::Args)]
 #[group(id = "db")]
 pub struct Config {
@@ -40,6 +51,14 @@ pub struct Config {
     /// Default is a SQLite file named `mantra.db` that is located at the workspace root.
     #[arg(long, alias = "db-url")]
     pub url: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub enum DbError {
+    Connection(String),
+    Migration(String),
+    Insertion(String),
+    RelativeFilepath(String),
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
@@ -93,7 +112,7 @@ impl MantraDb {
                 let existing_parent = if parent_exists {
                     parent.to_string()
                 } else {
-                    self.get_existing_parent(parent)
+                    self.get_req_parent(parent)
                         .await
                         .ok_or(DbError::Insertion(format!(
                             "Parent is missing for child='{}'.",
@@ -121,7 +140,7 @@ impl MantraDb {
         Ok(())
     }
 
-    async fn get_existing_parent(&self, mut id: &str) -> Option<String> {
+    async fn get_req_parent(&self, mut id: &str) -> Option<String> {
         while let Some((parent, _)) = id.rsplit_once('.') {
             let parent_exists = sqlx::query!("select id from requirements where id = $1", parent)
                 .fetch_one(&self.pool)
@@ -165,10 +184,11 @@ impl MantraDb {
     pub async fn add_traces(
         &self,
         project_name: &str,
+        root: &Path,
         filepath: &Path,
         traces: &[TraceEntry],
     ) -> Result<(), DbError> {
-        let file = filepath.to_string_lossy();
+        let file = get_relative_path(root, filepath)?;
 
         for trace in traces {
             let ids = trace.ids();
@@ -199,12 +219,13 @@ impl MantraDb {
     pub async fn add_coverage(
         &self,
         project_name: &str,
+        root: &Path,
         test_name: &str,
         filepath: &Path,
         line: u32,
         req_id: &str,
     ) -> Result<(), DbError> {
-        let file = filepath.to_string_lossy();
+        let file = get_relative_path(root, filepath)?;
         let _ = sqlx::query!(
                 "insert or ignore into Coverage (req_id, project_name, test_name, filepath, line) values ($1, $2, $3, $4, $5)",
                 req_id,
@@ -229,10 +250,11 @@ impl MantraDb {
         &self,
         name: &str,
         project_name: &str,
+        root: &Path,
         filepath: &Path,
         line: u32,
     ) -> Result<(), DbError> {
-        let file = filepath.to_string_lossy();
+        let file = get_relative_path(root, filepath)?;
         let _ = sqlx::query!(
                 "insert or ignore into Tests (name, project_name, filepath, line) values ($1, $2, $3, $4)",
                 name,
@@ -299,20 +321,59 @@ impl MantraDb {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, clap::Parser)]
-pub enum ProjectOrigin {
-    GitRepo(GitRepoOrigin),
+fn get_relative_path(root: &Path, filepath: &Path) -> Result<String, DbError> {
+    let root_string = root.to_string_lossy();
+    let file_string = filepath.to_string_lossy();
+
+    if root_string == file_string {
+        match filepath.file_name() {
+            Some(filename) => {
+                return Ok(filename.to_string_lossy().to_string());
+            }
+            None => {
+                return Err(DbError::RelativeFilepath(format!(
+                    "Invalid filepath '{}' given relative to root path '{}'.",
+                    filepath.display(),
+                    root.display()
+                )))
+            }
+        }
+    }
+
+    match file_string.strip_prefix(root_string.as_ref()) {
+        Some(relative_path) => Ok(relative_path.to_string()),
+        None => Err(DbError::RelativeFilepath(format!(
+            "Root path '{}' is not the root of the given filepath '{}'.",
+            root.display(),
+            filepath.display()
+        ))),
+    }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, clap::Args)]
-pub struct GitRepoOrigin {
-    pub link: String,
-    pub branch: Option<String>,
-}
+#[cfg(test)]
+mod test {
+    use super::*;
 
-#[derive(Debug, Clone)]
-pub enum DbError {
-    Connection(String),
-    Migration(String),
-    Insertion(String),
+    #[test]
+    fn valid_relative_filepath() {
+        let root = PathBuf::from("src/");
+        let filepath = PathBuf::from("src/cmd/mod.rs");
+
+        let relative_path = get_relative_path(&root, &filepath).unwrap();
+
+        assert_eq!(
+            relative_path, "cmd/mod.rs",
+            "Relative filepath not extracted correctly."
+        )
+    }
+
+    #[test]
+    fn filepath_is_root() {
+        let root = PathBuf::from("src/main.rs");
+        let filepath = PathBuf::from("src/main.rs");
+
+        let relative_path = get_relative_path(&root, &filepath).unwrap();
+
+        assert_eq!(relative_path, "main.rs", "Filename not used for root file.")
+    }
 }
