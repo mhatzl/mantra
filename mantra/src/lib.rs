@@ -17,6 +17,12 @@ pub enum MantraError {
     AddProject(DbError),
     #[error("Failed to update coverage data. Cause: {}", .0)]
     Coverage(CoverageError),
+    #[error("Failed to deprecate requirements. Cause: {}", .0)]
+    DeprecateReq(DbError),
+    #[error("Failed to add untraceable requirements. Cause: {}", .0)]
+    AddUntraceable(DbError),
+    #[error("Failed to delete database entries. Cause: {}", .0)]
+    Delete(DbError),
 }
 
 pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
@@ -40,5 +46,47 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
                 .await
                 .map_err(MantraError::Coverage)
         }
+        cmd::Cmd::DeprecateReq(deprecate_cfg) => {
+            for req_id in deprecate_cfg.req_ids {
+                db.add_deprecated(&req_id, &deprecate_cfg.project_name)
+                    .await
+                    .map_err(MantraError::DeprecateReq)?;
+            }
+
+            Ok(())
+        }
+        cmd::Cmd::AddUntraceable(untraceable_cfg) => {
+            for req_id in untraceable_cfg.req_ids {
+                db.add_untraceable(&req_id, &untraceable_cfg.project_name)
+                    .await
+                    .map_err(MantraError::AddUntraceable)?;
+            }
+
+            Ok(())
+        }
+        cmd::Cmd::DeleteReqs(delete_req_cfg) => db
+            .delete_reqs(&delete_req_cfg)
+            .await
+            .map_err(MantraError::Delete),
+        cmd::Cmd::DeleteTraces(delete_traces_cfg) => db
+            .delete_traces(&delete_traces_cfg)
+            .await
+            .map_err(MantraError::Delete),
+        cmd::Cmd::DeleteCoverage(delete_coverage_cfg) => db
+            .delete_coverage(&delete_coverage_cfg)
+            .await
+            .map_err(MantraError::Delete),
+        cmd::Cmd::DeleteProjects(delete_project_cfg) => db
+            .delete_projects(&delete_project_cfg)
+            .await
+            .map_err(MantraError::Delete),
+        cmd::Cmd::DeleteDeprecated(delete_deprecated_cfg) => db
+            .delete_deprecated(&delete_deprecated_cfg)
+            .await
+            .map_err(MantraError::Delete),
+        cmd::Cmd::DeleteUntraceable(delete_untraceable_cfg) => db
+            .delete_untraceables(&delete_untraceable_cfg)
+            .await
+            .map_err(MantraError::Delete),
     }
 }

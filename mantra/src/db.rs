@@ -8,6 +8,11 @@ use sqlx::Pool;
 
 pub use sqlx;
 
+use crate::cfg::{
+    DeleteCoverageConfig, DeleteDeprecatedConfig, DeleteProjectConfig, DeleteReqsConfig,
+    DeleteTracesConfig, DeleteUntraceableConfig,
+};
+
 pub type DB = sqlx::sqlite::Sqlite;
 
 #[derive(Debug)]
@@ -55,14 +60,16 @@ pub struct Config {
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum DbError {
-    #[error("Could not get connection to database. Cause: {}.", .0)]
+    #[error("Could not get connection to database. Cause: {}", .0)]
     Connection(String),
-    #[error("Could not run migration on database. Cause: {}.", .0)]
+    #[error("Could not run migration on database. Cause: {}", .0)]
     Migration(String),
-    #[error("Could not insert data into database. Cause: {}.", .0)]
+    #[error("Could not insert data into database. Cause: {}", .0)]
     Insertion(String),
-    #[error("Failed to make filepath relative to root. Cause: {}.", .0)]
+    #[error("Failed to make filepath relative to root. Cause: {}", .0)]
     RelativeFilepath(String),
+    #[error("Failed to delete table content. Cause: {}", .0)]
+    Delete(String),
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
@@ -322,6 +329,334 @@ impl MantraDb {
     pub fn pool(&self) -> &Pool<DB> {
         // workaround for custom queries
         &self.pool
+    }
+
+    pub async fn delete_reqs(&self, cfg: &DeleteReqsConfig) -> Result<(), DbError> {
+        match &cfg.ids {
+            Some(ids) => {
+                for id in ids {
+                    let _ = sqlx::query!(
+                        "delete from RequirementHierarchies where parent_id = $1 or child_id = $1",
+                        id
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!("delete from Coverage where req_id = $1", id)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+
+                    let _ = sqlx::query!("delete from Traces where req_id = $1", id)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+
+                    let _ =
+                        sqlx::query!("delete from DeprecatedRequirements where req_id = $1", id)
+                            .execute(&self.pool)
+                            .await
+                            .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ =
+                        sqlx::query!("delete from UntraceableRequirements where req_id = $1", id)
+                            .execute(&self.pool)
+                            .await
+                            .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!("delete from Requirements where id = $1", id)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+                }
+            }
+            None => {
+                let _ = sqlx::query!("delete from RequirementHierarchies")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Coverage")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+
+                let _ = sqlx::query!("delete from Traces")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+
+                let _ = sqlx::query!("delete from DeprecatedRequirements")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from UntraceableRequirements")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Requirements")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_projects(&self, cfg: &DeleteProjectConfig) -> Result<(), DbError> {
+        match &cfg.projects {
+            Some(projects) => {
+                for project in projects {
+                    let _ = sqlx::query!("delete from Coverage where project_name = $1", project)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+
+                    let _ = sqlx::query!("delete from Traces where project_name = $1", project)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!("delete from Tests where project_name = $1", project)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!(
+                        "delete from DeprecatedRequirements where project_name = $1",
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!(
+                        "delete from UntraceableRequirements where project_name = $1",
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!("delete from Projects where name = $1", project)
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+                }
+            }
+            None => {
+                let _ = sqlx::query!("delete from Coverage")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Traces")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Tests")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from DeprecatedRequirements")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from UntraceableRequirements")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Projects")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_traces(&self, cfg: &DeleteTracesConfig) -> Result<(), DbError> {
+        let ids = cfg.req_ids.as_deref().unwrap_or_default();
+        let projects = cfg.projects.as_deref().unwrap_or_default();
+
+        if ids.is_empty() && projects.is_empty() {
+            let _ = sqlx::query!("delete from Traces")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+        } else if ids.is_empty() {
+            for project in projects {
+                let _ = sqlx::query!("delete from Traces where project_name = $1", project)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else if projects.is_empty() {
+            for id in ids {
+                let _ = sqlx::query!("delete from Traces where req_id = $1", id)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else {
+            for id in ids {
+                for project in projects {
+                    let _ = sqlx::query!(
+                        "delete from Traces where req_id = $1 and project_name = $2",
+                        id,
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_deprecated(&self, cfg: &DeleteDeprecatedConfig) -> Result<(), DbError> {
+        let ids = cfg.req_ids.as_deref().unwrap_or_default();
+        let projects = cfg.projects.as_deref().unwrap_or_default();
+
+        if ids.is_empty() && projects.is_empty() {
+            let _ = sqlx::query!("delete from DeprecatedRequirements")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+        } else if ids.is_empty() {
+            for project in projects {
+                let _ = sqlx::query!(
+                    "delete from DeprecatedRequirements where project_name = $1",
+                    project
+                )
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else if projects.is_empty() {
+            for id in ids {
+                let _ = sqlx::query!("delete from DeprecatedRequirements where req_id = $1", id)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else {
+            for id in ids {
+                for project in projects {
+                    let _ = sqlx::query!(
+                        "delete from DeprecatedRequirements where req_id = $1 and project_name = $2",
+                        id,
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_untraceables(&self, cfg: &DeleteUntraceableConfig) -> Result<(), DbError> {
+        let ids = cfg.req_ids.as_deref().unwrap_or_default();
+        let projects = cfg.projects.as_deref().unwrap_or_default();
+
+        if ids.is_empty() && projects.is_empty() {
+            let _ = sqlx::query!("delete from UntraceableRequirements")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+        } else if ids.is_empty() {
+            for project in projects {
+                let _ = sqlx::query!(
+                    "delete from UntraceableRequirements where project_name = $1",
+                    project
+                )
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else if projects.is_empty() {
+            for id in ids {
+                let _ = sqlx::query!("delete from UntraceableRequirements where req_id = $1", id)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else {
+            for id in ids {
+                for project in projects {
+                    let _ = sqlx::query!(
+                        "delete from UntraceableRequirements where req_id = $1 and project_name = $2",
+                        id,
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_coverage(&self, cfg: &DeleteCoverageConfig) -> Result<(), DbError> {
+        let tests = cfg.tests.as_deref().unwrap_or_default();
+        let projects = cfg.projects.as_deref().unwrap_or_default();
+
+        if tests.is_empty() && projects.is_empty() {
+            let _ = sqlx::query!("delete from Coverage")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+            let _ = sqlx::query!("delete from Tests")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+        } else if tests.is_empty() {
+            for project in projects {
+                let _ = sqlx::query!("delete from Coverage where project_name = $1", project)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Tests where project_name = $1", project)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else if projects.is_empty() {
+            for test in tests {
+                let _ = sqlx::query!("delete from Coverage where test_name = $1", test)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Tests where name = $1", test)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        } else {
+            for test in tests {
+                for project in projects {
+                    let _ = sqlx::query!(
+                        "delete from Coverage where test_name = $1 and project_name = $2",
+                        test,
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                    let _ = sqlx::query!(
+                        "delete from Tests where name = $1 and project_name = $2",
+                        test,
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 
