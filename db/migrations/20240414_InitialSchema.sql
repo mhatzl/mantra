@@ -27,13 +27,24 @@ create table if not exists Traces (
     primary key (req_id, project_name, filepath, line)
 );
 
--- coverage data
+-- coverage data per test
 create table if not exists Coverage (
     req_id text not null references Requirements(id),
     project_name text not null references Projects(name),
+    test_name text not null,
     filepath text not null,
     line integer not null,
-    primary key (req_id, project_name, filepath, line)
+    primary key (req_id, project_name, test_name, filepath, line),
+    foreign key (test_name, project_name) references Tests(name, project_name)
+);
+
+-- tests per project
+create table if not exists Tests (
+    name text not null,
+    project_name text not null references Projects(name),
+    filepath text not null,
+    line integer not null,
+    primary key (name, project_name)
 );
 
 -- deprecated requirements

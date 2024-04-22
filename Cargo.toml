@@ -5,3 +5,6 @@ members = [
     "langs/rust/mantra-rust-macros",
     "langs/rust/examples/*", "langs/mantra-lang-tracing", "trace", "extract", "db", "report", "analyze", "cli", "langs/rust/mantra-rust-trace",
 ]
+
+[workspace.dependencies]
+clap = { version = "4.5.4", features = ["derive"] }

@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 mantra-rust-macros = { path = "../../mantra-rust-macros", features = ["defmt"] }
-cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
-cortex-m-rt = "0.7"
-defmt = "0.3"
-defmt-rtt = "0.4"
-panic-probe = { version = "0.3", features = ["print-defmt"] }
+cortex-m = { version = "0.7.0", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.0"
+defmt = "0.3.0"
+defmt-rtt = "0.4.0"
+panic-probe = { version = "0.3.0", features = ["print-defmt"] }
 cortex-m-semihosting = "0.5.0"
 xmc4700 = { version = "0.8.0", features = ["rt"]}
 xmc4-hal = { version = "0.1.1", features = ["xmc47xx"]}

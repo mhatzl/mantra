@@ -7,3 +7,12 @@ edition = "2021"
 
 [dependencies]
 proc-macro2 = "1.0.81"
+regex = "1.10.4"
+tree-sitter = "0.20.10"
+tree-sitter-rust = "0.20.4"
+
+[build-dependencies]
+cc = "1.0.90"
+
+[dev-dependencies]
+mantra-rust-macros = { path = "../rust/mantra-rust-macros" }
