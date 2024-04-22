@@ -5,6 +5,29 @@ use crate::db::{GitHubReqOrigin, MantraDb, Requirement};
 use ignore::{types::TypesBuilder, WalkBuilder};
 use regex::Regex;
 
+#[derive(Debug, Clone, clap::Args)]
+#[group(id = "extract")]
+pub struct Config {
+    pub root: PathBuf,
+    pub link: String,
+    #[arg(value_enum)]
+    pub origin: ExtractOrigin,
+}
+
+#[derive(Debug, Clone, clap::ValueEnum)]
+pub enum ExtractOrigin {
+    GitHub,
+    Jira,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExtractError {
+    #[error("Could not access file '{}'.", .0)]
+    CouldNotAccessFile(String),
+    #[error("Database error while extracting requirements. Cause: {}", .0)]
+    DbError(crate::db::DbError),
+}
+
 pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<(), ExtractError> {
     match cfg.origin {
         ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link).await,
@@ -106,25 +129,4 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
     }
 
     reqs
-}
-
-#[derive(Debug, Clone, clap::Args)]
-#[group(id = "extract")]
-pub struct Config {
-    pub root: PathBuf,
-    pub link: String,
-    #[arg(value_enum)]
-    pub origin: ExtractOrigin,
-}
-
-#[derive(Debug, Clone, clap::ValueEnum)]
-pub enum ExtractOrigin {
-    GitHub,
-    Jira,
-}
-
-#[derive(Debug)]
-pub enum ExtractError {
-    CouldNotAccessFile(String),
-    DbError(crate::db::DbError),
 }

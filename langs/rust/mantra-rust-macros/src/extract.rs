@@ -8,14 +8,31 @@ const FILE_MATCH_NAME: &str = "file";
 const LINE_MATCH_NAME: &str = "line";
 
 thread_local! {
-    static REQ_COV_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"mantra: req-id='(?<id>.+)'; file='(?<file>.+)'; line='(?<line>\d+)';").unwrap());
+    static REQ_COV_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"mantra: req-id=`(?<id>.+)`; file='(?<file>.+)'; line='(?<line>\d+)';").unwrap());
 }
 
 #[derive(Debug)]
 pub struct CoveredReq {
-    pub id: Vec<String>,
+    pub id: String,
     pub file: PathBuf,
     pub line: u32,
+}
+
+pub fn extract_first_coverage(content: &str) -> Option<CoveredReq> {
+    REQ_COV_REGEX.with(|re| match re.captures(content.as_bytes()) {
+        Some(coverage_capture) => {
+            let id = String::from_utf8(coverage_capture[REQ_ID_MATCH_NAME].to_vec()).ok()?;
+            let file =
+                PathBuf::from(String::from_utf8(coverage_capture[FILE_MATCH_NAME].to_vec()).ok()?);
+            let line: u32 = String::from_utf8(coverage_capture[LINE_MATCH_NAME].to_vec())
+                .ok()?
+                .parse()
+                .ok()?;
+
+            Some(CoveredReq { id, file, line })
+        }
+        None => None,
+    })
 }
 
 pub fn extract_covered_reqs(content: &[u8]) -> Option<Vec<CoveredReq>> {
@@ -24,20 +41,21 @@ pub fn extract_covered_reqs(content: &[u8]) -> Option<Vec<CoveredReq>> {
         let captures = re.captures_iter(content);
 
         for cap in captures {
-            let combined_id = String::from_utf8(cap[REQ_ID_MATCH_NAME].to_vec()).ok()?;
+            let id = String::from_utf8(cap[REQ_ID_MATCH_NAME].to_vec()).ok()?;
             let file = PathBuf::from(String::from_utf8(cap[FILE_MATCH_NAME].to_vec()).ok()?);
             let line: u32 = String::from_utf8(cap[LINE_MATCH_NAME].to_vec())
                 .ok()?
                 .parse()
                 .ok()?;
 
-            reqs.push(CoveredReq {
-                id: combined_id.split('.').map(|s| s.to_string()).collect(),
-                file,
-                line,
-            })
+            reqs.push(CoveredReq { id, file, line })
         }
-        Some(reqs)
+
+        if reqs.is_empty() {
+            None
+        } else {
+            Some(reqs)
+        }
     })
 }
 
@@ -47,7 +65,7 @@ mod test {
 
     use crate::ReqCovStatic;
 
-    use super::extract_covered_reqs;
+    use super::*;
 
     #[test]
     fn extract_root_req() {
@@ -58,26 +76,17 @@ mod test {
         let intern_req_cov = ReqCovStatic { id, file, line };
         let displayed_req_cov = intern_req_cov.to_string();
 
-        let extracted_reqs = extract_covered_reqs(displayed_req_cov.as_bytes()).unwrap();
+        let extracted_req = extract_first_coverage(&displayed_req_cov).unwrap();
 
-        assert_eq!(extracted_reqs.len(), 1, "Single requirement not extracted.");
-
-        let root_req = extracted_reqs.first().unwrap();
-
-        assert_eq!(root_req.id.len(), 1, "Root ID was split.");
-        assert_eq!(
-            root_req.id.first().unwrap(),
-            id,
-            "Extracted ID differs from original."
-        );
+        assert_eq!(extracted_req.id, id, "Extracted ID differs from original.");
 
         assert_eq!(
-            root_req.file,
+            extracted_req.file,
             PathBuf::from(file),
             "Extracted file differs from original."
         );
         assert_eq!(
-            root_req.line, line,
+            extracted_req.line, line,
             "Extracted line number differs from original."
         );
     }

@@ -10,5 +10,6 @@ pub mod trace;
 pub enum Cmd {
     Trace(trace::Config),
     Extract(extract::Config),
+    Coverage(coverage::CliConfig),
     AddProject(ProjectConfig),
 }

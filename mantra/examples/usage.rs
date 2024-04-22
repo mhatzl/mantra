@@ -30,16 +30,30 @@ async fn main() {
         }),
     };
     let trace_cfg = mantra::cfg::Config {
-        db,
+        db: db.clone(),
         cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::Config {
             root: root.clone(),
-            project_name,
+            project_name: project_name.clone(),
+        }),
+    };
+    let coverage_cfg = mantra::cfg::Config {
+        db,
+        cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::CliConfig {
+            data_file: PathBuf::from("mantra/examples/usage/defmt_test.log"),
+            cfg: mantra::cmd::coverage::Config {
+                project_name,
+                root,
+                test_prefix: None,
+                fmt: mantra::cmd::coverage::LogFormat::DefmtJson,
+            },
         }),
     };
 
-    mantra::run(extract_cfg).await;
+    mantra::run(extract_cfg).await.unwrap();
 
-    mantra::run(project_cfg).await;
+    mantra::run(project_cfg).await.unwrap();
 
-    mantra::run(trace_cfg).await;
+    mantra::run(trace_cfg).await.unwrap();
+
+    mantra::run(coverage_cfg).await.unwrap();
 }
