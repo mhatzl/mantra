@@ -53,11 +53,15 @@ pub struct Config {
     pub url: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum DbError {
+    #[error("Could not get connection to database. Cause: {}.", .0)]
     Connection(String),
+    #[error("Could not run migration on database. Cause: {}.", .0)]
     Migration(String),
+    #[error("Could not insert data into database. Cause: {}.", .0)]
     Insertion(String),
+    #[error("Failed to make filepath relative to root. Cause: {}.", .0)]
     RelativeFilepath(String),
 }
 

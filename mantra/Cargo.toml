@@ -11,6 +11,7 @@ name = "mantra"
 [dependencies]
 mantra-lang-tracing = { path = "../langs/mantra-lang-tracing" }
 mantra-rust-trace = { path = "../langs/rust/mantra-rust-trace" }
+mantra-rust-macros = { path = "../langs/rust/mantra-rust-macros", features = ["extract"] }
 regex.workspace = true
 tree-sitter-rust.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
@@ -20,4 +21,5 @@ serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 ignore = "0.4.20"
 mime_guess = "2.0.4"
-
+defmt-json-schema = "0.1.0"
+thiserror = "1.0.59"

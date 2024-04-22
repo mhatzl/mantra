@@ -40,7 +40,7 @@ impl defmt::Format for ReqCovStatic {
     fn format(&self, fmt: defmt::Formatter) {
         defmt::write!(
             fmt,
-            "mantra: req-id='{=str}'; file='{=str}'; line='{}';",
+            "mantra: req-id=`{=str}`; file='{=str}'; line='{}';",
             self.id,
             self.file,
             self.line
@@ -52,7 +52,7 @@ impl core::fmt::Display for ReqCovStatic {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "mantra: req-id='{}'; file='{}'; line='{}';",
+            "mantra: req-id=`{}`; file='{}'; line='{}';",
             self.id, self.file, self.line
         )
     }

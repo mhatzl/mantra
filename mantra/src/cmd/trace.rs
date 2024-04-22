@@ -5,6 +5,21 @@ use crate::db::MantraDb;
 use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector, TraceEntry};
 
+#[derive(Debug, Clone, clap::Args)]
+#[group(id = "trace")]
+pub struct Config {
+    pub root: PathBuf,
+    pub project_name: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TraceError {
+    #[error("Could not access file '{}'.", .0)]
+    CouldNotAccessFile(String),
+    #[error("Database error while updating trace data. Cause: {}", .0)]
+    DbError(crate::db::DbError),
+}
+
 pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
     if cfg.root.is_dir() {
         let walk = WalkBuilder::new(&cfg.root)
@@ -79,17 +94,4 @@ fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError
 
     let mut collector = PlainCollector::new(&content);
     Ok(collector.collect(&()))
-}
-
-#[derive(Debug, Clone, clap::Args)]
-#[group(id = "trace")]
-pub struct Config {
-    pub root: PathBuf,
-    pub project_name: String,
-}
-
-#[derive(Debug)]
-pub enum TraceError {
-    CouldNotAccessFile(String),
-    DbError(crate::db::DbError),
 }
