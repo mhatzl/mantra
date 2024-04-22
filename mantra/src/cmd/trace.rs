@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use crate::db::MantraDb;
+
 use ignore::{types::TypesBuilder, WalkBuilder};
-use mantra_db::MantraDb;
 use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector, TraceEntry};
 
 pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
@@ -90,5 +91,5 @@ pub struct Config {
 #[derive(Debug)]
 pub enum TraceError {
     CouldNotAccessFile(String),
-    DbError(mantra_db::DbError),
+    DbError(crate::db::DbError),
 }

@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 mantra-lang-tracing = { path = "../../mantra-lang-tracing" }
-tree-sitter = "0.20.10"
-tree-sitter-rust = "0.20.4"
+tree-sitter.workspace = true
+tree-sitter-rust.workspace = true
 
 [build-dependencies]
-cc = "1.0.90"
+cc.workspace = true
 

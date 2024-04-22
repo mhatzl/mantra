@@ -1,13 +1,23 @@
 [package]
-name = "mantra-db"
+name = "mantra-cli"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "mantra"
+
 [dependencies]
 mantra-lang-tracing = { path = "../langs/mantra-lang-tracing" }
+mantra-rust-trace = { path = "../langs/rust/mantra-rust-trace" }
+regex.workspace = true
+tree-sitter-rust.workspace = true
+tokio = { version = "1.37.0", features = ["full"] }
+clap = { version = "4.5.4", features = ["derive"] }
 sqlx = { version = "0.7.4", features = ["sqlite", "json", "runtime-tokio"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
-clap.workspace = true
+ignore = "0.4.20"
+mime_guess = "2.0.4"
+

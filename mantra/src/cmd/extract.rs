@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use crate::db::{GitHubReqOrigin, MantraDb, Requirement};
+
 use ignore::{types::TypesBuilder, WalkBuilder};
-use mantra_db::{GitHubReqOrigin, MantraDb, Requirement};
 use regex::Regex;
 
 pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<(), ExtractError> {
@@ -93,7 +94,7 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
 
                 reqs.push(Requirement {
                     id,
-                    origin: mantra_db::RequirementOrigin::GitHub(GitHubReqOrigin {
+                    origin: crate::db::RequirementOrigin::GitHub(GitHubReqOrigin {
                         link: link.to_string(),
                         path: filepath.to_path_buf(),
                         line: line_nr + 1,
@@ -125,5 +126,5 @@ pub enum ExtractOrigin {
 #[derive(Debug)]
 pub enum ExtractError {
     CouldNotAccessFile(String),
-    DbError(mantra_db::DbError),
+    DbError(crate::db::DbError),
 }
