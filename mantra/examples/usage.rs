@@ -32,7 +32,7 @@ async fn main() {
     let trace_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::Config {
-            root: root.clone(),
+            root,
             project_name: project_name.clone(),
         }),
     };
@@ -42,7 +42,6 @@ async fn main() {
             data_file: PathBuf::from("mantra/examples/usage/defmt_test.log"),
             cfg: mantra::cmd::coverage::Config {
                 project_name,
-                root,
                 test_prefix: None,
                 fmt: mantra::cmd::coverage::LogFormat::DefmtJson,
             },

@@ -16,7 +16,6 @@ pub struct CliConfig {
 #[derive(Debug, clap::Args)]
 pub struct Config {
     pub project_name: String,
-    pub root: PathBuf,
     /// Optional prefix set before identifiers of test functions.
     pub test_prefix: Option<String>,
     #[arg(value_enum)]
@@ -61,14 +60,7 @@ pub async fn coverage_from_str(
 ) -> Result<(), CoverageError> {
     match cfg.fmt {
         LogFormat::DefmtJson => {
-            coverage_from_defmtjson(
-                data,
-                db,
-                &cfg.project_name,
-                &cfg.root,
-                cfg.test_prefix.as_deref(),
-            )
-            .await
+            coverage_from_defmtjson(data, db, &cfg.project_name, cfg.test_prefix.as_deref()).await
         }
     }
 }
@@ -77,14 +69,13 @@ pub async fn coverage_from_defmt_frames(
     frames: &[JsonFrame],
     db: &MantraDb,
     project_name: &str,
-    root: &Path,
     test_prefix: Option<&str>,
 ) -> Result<(), CoverageError> {
     let mut current_test_fn = None;
 
     for frame in frames {
         current_test_fn =
-            add_frame_to_db(frame, db, project_name, root, test_prefix, current_test_fn).await?;
+            add_frame_to_db(frame, db, project_name, test_prefix, current_test_fn).await?;
     }
 
     Ok(())
@@ -94,7 +85,6 @@ async fn add_frame_to_db(
     frame: &JsonFrame,
     db: &MantraDb,
     project_name: &str,
-    root: &Path,
     test_prefix: Option<&str>,
     mut current_test_fn: Option<String>,
 ) -> Result<Option<String>, CoverageError> {
@@ -151,7 +141,6 @@ async fn add_frame_to_db(
                 db.add_test(
                     &test_fn_name,
                     project_name,
-                    root,
                     &PathBuf::from(file),
                     line_nr,
                 )
@@ -169,7 +158,6 @@ async fn add_frame_to_db(
         if let Some(ref current_test) = current_test_fn {
             db.add_coverage(
                 project_name,
-                root,
                 current_test,
                 &covered_req.file,
                 covered_req.line,
@@ -187,7 +175,6 @@ async fn coverage_from_defmtjson(
     data: &str,
     db: &MantraDb,
     project_name: &str,
-    root: &Path,
     test_prefix: Option<&str>,
 ) -> Result<(), CoverageError> {
     let lines = data.lines().collect::<Vec<_>>();
@@ -220,8 +207,7 @@ async fn coverage_from_defmtjson(
                 })?;
 
                 current_test_fn =
-                    add_frame_to_db(&frame, db, project_name, root, test_prefix, current_test_fn)
-                        .await?;
+                    add_frame_to_db(&frame, db, project_name, test_prefix, current_test_fn).await?;
             }
         }
         _ => {
