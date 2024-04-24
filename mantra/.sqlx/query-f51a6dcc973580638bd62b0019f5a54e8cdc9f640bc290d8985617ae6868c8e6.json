@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from UntraceableRequirements where req_id = $1 and project_name = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f51a6dcc973580638bd62b0019f5a54e8cdc9f640bc290d8985617ae6868c8e6"
+}

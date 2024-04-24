@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into UntraceableRequirements (req_id, project_name) values ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f46819dde70e1b09ddf33293455ed16bd6fac7cf49147e8b5738cfc38a9e89b4"
+}

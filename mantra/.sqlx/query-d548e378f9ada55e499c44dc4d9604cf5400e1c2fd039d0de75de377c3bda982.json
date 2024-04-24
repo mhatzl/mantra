@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select id from requirements where id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "d548e378f9ada55e499c44dc4d9604cf5400e1c2fd039d0de75de377c3bda982"
+}

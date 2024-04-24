@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from DeprecatedRequirements where project_name = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b2354c1d05fa5beecababc83be4284eee3bd0f3ef8b177c889ca50bfe16f7106"
+}

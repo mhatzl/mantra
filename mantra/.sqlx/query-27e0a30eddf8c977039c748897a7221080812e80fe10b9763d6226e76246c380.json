@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into Requirements (id, origin) values ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "27e0a30eddf8c977039c748897a7221080812e80fe10b9763d6226e76246c380"
+}

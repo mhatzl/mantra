@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or ignore into RequirementHierarchies (parent_id, child_id) values ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "93680fc9df9cdaa4bc66cae1904e8a7ad75cbbfe1cc2ae19240973ecf92c896d"
+}

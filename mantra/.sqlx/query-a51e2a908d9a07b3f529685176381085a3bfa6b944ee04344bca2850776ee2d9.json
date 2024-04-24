@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Traces where req_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a51e2a908d9a07b3f529685176381085a3bfa6b944ee04344bca2850776ee2d9"
+}
