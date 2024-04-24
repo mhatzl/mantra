@@ -201,7 +201,7 @@ impl MantraDb {
         filepath: &Path,
         traces: &[TraceEntry],
     ) -> Result<(), DbError> {
-        let file = get_relative_path(root, filepath)?;
+        let file = get_relative_path(root, filepath)?.display().to_string();
 
         for trace in traces {
             let ids = trace.ids();
@@ -232,13 +232,13 @@ impl MantraDb {
     pub async fn add_coverage(
         &self,
         project_name: &str,
-        root: &Path,
         test_name: &str,
         filepath: &Path,
         line: u32,
         req_id: &str,
     ) -> Result<(), DbError> {
-        let file = get_relative_path(root, filepath)?;
+        // Note: filepath is already relative due to how the "file!()" macro works
+        let file = filepath.display().to_string();
         let _ = sqlx::query!(
                 "insert or ignore into Coverage (req_id, project_name, test_name, filepath, line) values ($1, $2, $3, $4, $5)",
                 req_id,
@@ -263,11 +263,10 @@ impl MantraDb {
         &self,
         name: &str,
         project_name: &str,
-        root: &Path,
         filepath: &Path,
         line: u32,
     ) -> Result<(), DbError> {
-        let file = get_relative_path(root, filepath)?;
+        let file = filepath.display().to_string();
         let _ = sqlx::query!(
                 "insert or ignore into Tests (name, project_name, filepath, line) values ($1, $2, $3, $4)",
                 name,
@@ -726,14 +725,11 @@ impl MantraDb {
     }
 }
 
-fn get_relative_path(root: &Path, filepath: &Path) -> Result<String, DbError> {
-    let root_string = root.to_string_lossy();
-    let file_string = filepath.to_string_lossy();
-
-    if root_string == file_string {
+pub fn get_relative_path(root: &Path, filepath: &Path) -> Result<PathBuf, DbError> {
+    if root == filepath {
         match filepath.file_name() {
             Some(filename) => {
-                return Ok(filename.to_string_lossy().to_string());
+                return Ok(PathBuf::from(filename));
             }
             None => {
                 return Err(DbError::RelativeFilepath(format!(
@@ -745,9 +741,9 @@ fn get_relative_path(root: &Path, filepath: &Path) -> Result<String, DbError> {
         }
     }
 
-    match file_string.strip_prefix(root_string.as_ref()) {
-        Some(relative_path) => Ok(relative_path.to_string()),
-        None => Err(DbError::RelativeFilepath(format!(
+    match filepath.strip_prefix(root) {
+        Ok(relative_path) => Ok(relative_path.to_path_buf()),
+        Err(_) => Err(DbError::RelativeFilepath(format!(
             "Root path '{}' is not the root of the given filepath '{}'.",
             root.display(),
             filepath.display()
@@ -767,7 +763,8 @@ mod test {
         let relative_path = get_relative_path(&root, &filepath).unwrap();
 
         assert_eq!(
-            relative_path, "cmd/mod.rs",
+            relative_path,
+            PathBuf::from("cmd/mod.rs"),
             "Relative filepath not extracted correctly."
         )
     }
@@ -779,6 +776,10 @@ mod test {
 
         let relative_path = get_relative_path(&root, &filepath).unwrap();
 
-        assert_eq!(relative_path, "main.rs", "Filename not used for root file.")
+        assert_eq!(
+            relative_path,
+            PathBuf::from("main.rs"),
+            "Filename not used for root file."
+        )
     }
 }

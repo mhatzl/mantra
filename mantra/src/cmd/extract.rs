@@ -5,16 +5,17 @@ use crate::db::{GitHubReqOrigin, MantraDb, Requirement};
 use ignore::{types::TypesBuilder, WalkBuilder};
 use regex::Regex;
 
-#[derive(Debug, Clone, clap::Args)]
+#[derive(Debug, Clone, clap::Args, serde::Deserialize)]
 #[group(id = "extract")]
 pub struct Config {
+    #[arg(alias = "local-path")]
     pub root: PathBuf,
     pub link: String,
     #[arg(value_enum)]
     pub origin: ExtractOrigin,
 }
 
-#[derive(Debug, Clone, clap::ValueEnum)]
+#[derive(Debug, Clone, clap::ValueEnum, serde::Deserialize)]
 pub enum ExtractOrigin {
     GitHub,
     Jira,
