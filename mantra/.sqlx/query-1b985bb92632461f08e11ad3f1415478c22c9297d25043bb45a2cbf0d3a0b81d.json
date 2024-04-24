@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or ignore into Traces (req_id, project_name, filepath, line) values ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "1b985bb92632461f08e11ad3f1415478c22c9297d25043bb45a2cbf0d3a0b81d"
+}

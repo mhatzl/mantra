@@ -70,6 +70,8 @@ pub enum DbError {
     RelativeFilepath(String),
     #[error("Failed to delete table content. Cause: {}", .0)]
     Delete(String),
+    #[error("The database contains invalid data. Cause: {}", .0)]
+    Validate(String),
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
@@ -322,8 +324,20 @@ impl MantraDb {
     }
 
     pub async fn is_valid(&self) -> Result<(), DbError> {
-        // validate db tables
-        todo!()
+        let traced_deprecated = sqlx::query!("select t.req_id from Traces as t, DeprecatedRequirements as dr where t.req_id = dr.req_id and t.project_name = dr.project_name limit 5").fetch_all(&self.pool).await.map_err(|err| DbError::Validate(err.to_string()))?;
+
+        if traced_deprecated.is_empty() {
+            Ok(())
+        } else {
+            Err(DbError::Validate(format!(
+                "One or more deprecated requirements have trace entries. Requirement ids: `{}`.",
+                traced_deprecated
+                    .iter()
+                    .map(|entry| entry.req_id.clone())
+                    .collect::<Vec<_>>()
+                    .join("`, `")
+            )))
+        }
     }
 
     pub fn pool(&self) -> &Pool<DB> {
@@ -397,6 +411,12 @@ impl MantraDb {
                     .map_err(|err| DbError::Delete(err.to_string()))?;
             }
         }
+
+        let _ =
+            sqlx::query!("delete from Tests where name not in (select test_name from Coverage)")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
 
         Ok(())
     }
@@ -474,12 +494,28 @@ impl MantraDb {
         let projects = cfg.projects.as_deref().unwrap_or_default();
 
         if ids.is_empty() && projects.is_empty() {
+            let _ = sqlx::query!("delete from Coverage")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+            let _ = sqlx::query!("delete from Tests")
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
             let _ = sqlx::query!("delete from Traces")
                 .execute(&self.pool)
                 .await
                 .map_err(|err| DbError::Delete(err.to_string()))?;
         } else if ids.is_empty() {
             for project in projects {
+                let _ = sqlx::query!("delete from Coverage where project_name = $1", project)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+                let _ = sqlx::query!("delete from Tests where project_name = $1", project)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
                 let _ = sqlx::query!("delete from Traces where project_name = $1", project)
                     .execute(&self.pool)
                     .await
@@ -487,14 +523,35 @@ impl MantraDb {
             }
         } else if projects.is_empty() {
             for id in ids {
+                let _ = sqlx::query!("delete from Coverage where req_id = $1", id)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
                 let _ = sqlx::query!("delete from Traces where req_id = $1", id)
                     .execute(&self.pool)
                     .await
                     .map_err(|err| DbError::Delete(err.to_string()))?;
             }
+
+            // tests have no associated requirement id, so deleting on "req_id" is not possible.
+            // But if no coverage links to a test, it is safe to delete it
+            let _ = sqlx::query!(
+                "delete from Tests where name not in (select test_name from Coverage)"
+            )
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DbError::Delete(err.to_string()))?;
         } else {
             for id in ids {
                 for project in projects {
+                    let _ = sqlx::query!(
+                        "delete from Coverage where req_id = $1 and project_name = $2",
+                        id,
+                        project
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
                     let _ = sqlx::query!(
                         "delete from Traces where req_id = $1 and project_name = $2",
                         id,
@@ -505,6 +562,15 @@ impl MantraDb {
                     .map_err(|err| DbError::Delete(err.to_string()))?;
                 }
             }
+
+            // tests have no associated requirement id, so deleting on "req_id" is not possible.
+            // But if no coverage links to a test, it is safe to delete it
+            let _ = sqlx::query!(
+                "delete from Tests where name not in (select test_name from Coverage)"
+            )
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DbError::Delete(err.to_string()))?;
         }
 
         Ok(())

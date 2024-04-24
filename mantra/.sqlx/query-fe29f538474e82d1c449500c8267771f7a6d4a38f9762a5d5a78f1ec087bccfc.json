@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Coverage",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "fe29f538474e82d1c449500c8267771f7a6d4a38f9762a5d5a78f1ec087bccfc"
+}

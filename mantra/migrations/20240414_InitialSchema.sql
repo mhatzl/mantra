@@ -35,7 +35,8 @@ create table if not exists Coverage (
     filepath text not null,
     line integer not null,
     primary key (req_id, project_name, test_name, filepath, line),
-    foreign key (test_name, project_name) references Tests(name, project_name)
+    foreign key (test_name, project_name) references Tests(name, project_name),
+    foreign key (req_id, project_name, filepath, line) references Traces(req_id, project_name, filepath, line)
 );
 
 -- tests per project

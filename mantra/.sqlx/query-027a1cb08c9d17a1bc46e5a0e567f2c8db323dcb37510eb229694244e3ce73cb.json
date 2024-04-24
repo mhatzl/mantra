@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Traces",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "027a1cb08c9d17a1bc46e5a0e567f2c8db323dcb37510eb229694244e3ce73cb"
+}

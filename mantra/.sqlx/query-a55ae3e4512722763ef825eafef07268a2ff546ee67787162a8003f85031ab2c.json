@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into DeprecatedRequirements (req_id, project_name) values ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a55ae3e4512722763ef825eafef07268a2ff546ee67787162a8003f85031ab2c"
+}
