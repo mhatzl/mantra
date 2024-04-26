@@ -40,11 +40,14 @@ create table if not exists Coverage (
 );
 
 -- tests per project
+--
+-- NOTE: 'passed = null' means the test is still running, or was not finished properly.
 create table if not exists Tests (
     name text not null,
     project_name text not null references Projects(name),
     filepath text not null,
     line integer not null,
+    passed integer,
     primary key (name, project_name)
 );
 
@@ -55,9 +58,29 @@ create table if not exists DeprecatedRequirements (
     primary key (req_id, project_name)
 );
 
--- manually traced requirements
+-- untraceable requirements that require manual review
 create table if not exists UntraceableRequirements (
     req_id text not null references Requirements(id),
     project_name text not null references Projects(name),
     primary key (req_id, project_name)
+);
+
+-- review to add manually verified requirements
+create table if not exists Review (
+    project_name text not null references Projects(name),
+    name text not null,
+    date text not null,
+    reviewer text not null,
+    comment text,
+    primary key (name, project_name, date)
+);
+
+-- manually verified requirements
+create table if not exists ManuallyVerified (
+    req_id text not null references Requirements(id),
+    project_name text not null,
+    review_name text not null,    
+    review_date text not null,
+    comment text,
+    foreign key (review_name, review_date, project_name) references Review(name, date, project_name)
 );

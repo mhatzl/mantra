@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update Tests set passed = $1 where name = $2 and project_name = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "236b6e5904cd1727ba8293d1ec7b13895d297d15a8adaa5cd1608ca5591226ee"
+}
