@@ -85,7 +85,6 @@ pub async fn coverage_from_defmt_frames(
     let mut current_test_fn: Option<String> = None;
 
     for frame in frames {
-        // TODO: update "passed" state for tests
         let new_test_fn = add_frame_to_db(
             frame,
             db,
