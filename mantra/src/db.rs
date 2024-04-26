@@ -70,8 +70,12 @@ pub enum DbError {
     RelativeFilepath(String),
     #[error("Failed to delete table content. Cause: {}", .0)]
     Delete(String),
+    #[error("Failed to update table content. Cause: {}", .0)]
+    Update(String),
     #[error("The database contains invalid data. Cause: {}", .0)]
     Validate(String),
+    #[error("Foreign key violation: {}", .0)]
+    ForeignKeyViolation(String),
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
@@ -239,7 +243,7 @@ impl MantraDb {
     ) -> Result<(), DbError> {
         // Note: filepath is already relative due to how the "file!()" macro works
         let file = filepath.display().to_string();
-        let _ = sqlx::query!(
+        let query_result = sqlx::query!(
                 "insert or ignore into Coverage (req_id, project_name, test_name, filepath, line) values ($1, $2, $3, $4, $5)",
                 req_id,
                 project_name,
@@ -248,8 +252,17 @@ impl MantraDb {
                 line,
             )
             .execute(&self.pool)
-            .await
-            .map_err(|err| {
+            .await;
+
+        if let Err(sqlx::Error::Database(sqlx_db_error)) = &query_result {
+            if sqlx_db_error.kind() == sqlx::error::ErrorKind::ForeignKeyViolation {
+                return Err(DbError::ForeignKeyViolation(
+                    sqlx_db_error.message().to_string(),
+                ));
+            }
+        }
+
+        query_result.map_err(|err| {
                 DbError::Insertion(format!(
                     "Adding coverage for id='{}', project='{}', test='{}', file='{}', line='{}' failed with error: {}",
                     req_id, project_name, test_name, file, line, err
@@ -265,14 +278,16 @@ impl MantraDb {
         project_name: &str,
         filepath: &Path,
         line: u32,
+        passed: Option<bool>,
     ) -> Result<(), DbError> {
         let file = filepath.display().to_string();
         let _ = sqlx::query!(
-                "insert or ignore into Tests (name, project_name, filepath, line) values ($1, $2, $3, $4)",
+                "insert or ignore into Tests (name, project_name, filepath, line, passed) values ($1, $2, $3, $4, $5)",
                 name,
                 project_name,
                 file,
                 line,
+                passed,
             )
             .execute(&self.pool)
             .await
@@ -282,6 +297,25 @@ impl MantraDb {
                     name, project_name, file, line, err
                 ))
             })?;
+
+        Ok(())
+    }
+
+    pub async fn test_passed(&self, name: &str, project_name: &str) -> Result<(), DbError> {
+        let _ = sqlx::query!(
+            "update Tests set passed = $1 where name = $2 and project_name = $3",
+            Some(true),
+            name,
+            project_name
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| {
+            DbError::Update(format!(
+                "Could not set 'passed = true' for test '{}' for project '{}'. Cause: {}",
+                name, project_name, err
+            ))
+        })?;
 
         Ok(())
     }
