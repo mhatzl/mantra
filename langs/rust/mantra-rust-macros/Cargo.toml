@@ -1,5 +1,6 @@
 [package]
 name = "mantra-rust-macros"
+description = "Provides macros to create requirement traces and coverage logs for the `mantra` framework."
 version = "0.1.0"
 edition.workspace = true
 repository.workspace = true 
