@@ -1,12 +1,14 @@
 [package]
 name = "mantra-rust-macros"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+repository.workspace = true 
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-rust-procm = { path = "../mantra-rust-procm" }
+mantra-rust-procm = { path = "../mantra-rust-procm", version = "0" }
 regex = { workspace = true, optional = true }
 defmt = { version = "0.3.6", optional = true }
 log = { version = "0.4.21", optional = true }

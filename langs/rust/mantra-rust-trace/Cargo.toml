@@ -1,12 +1,14 @@
 [package]
 name = "mantra-rust-trace"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+repository.workspace = true 
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../../mantra-lang-tracing" }
+mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0" }
 tree-sitter.workspace = true
 tree-sitter-rust.workspace = true
 

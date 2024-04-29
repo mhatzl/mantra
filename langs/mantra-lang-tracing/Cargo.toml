@@ -1,7 +1,9 @@
 [package]
 name = "mantra-lang-tracing"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true 
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,4 +17,4 @@ tree-sitter-rust.workspace = true
 cc.workspace = true
 
 [dev-dependencies]
-mantra-rust-macros = { path = "../rust/mantra-rust-macros" }
+mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0" }
