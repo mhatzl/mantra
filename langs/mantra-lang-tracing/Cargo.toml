@@ -17,4 +17,4 @@ tree-sitter-rust.workspace = true
 cc.workspace = true
 
 [dev-dependencies]
-mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0" }
+#mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0" }
