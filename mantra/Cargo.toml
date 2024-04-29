@@ -1,5 +1,6 @@
 [package]
 name = "mantra"
+description = "`mantra` offers a lightweight approach for requirement tracing and coverage."
 version.workspace = true
 edition.workspace = true
 repository.workspace = true 

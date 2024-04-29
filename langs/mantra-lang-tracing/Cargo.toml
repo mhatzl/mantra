@@ -1,5 +1,6 @@
 [package]
 name = "mantra-lang-tracing"
+description = "Contains functionality needed to collect requirement traces from code or plain text files for the `mantra` framework."
 version.workspace = true
 edition.workspace = true
 repository.workspace = true 
