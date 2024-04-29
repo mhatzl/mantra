@@ -1,12 +1,14 @@
 [package]
 name = "mantra-rust-procm"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+repository.workspace = true 
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../../mantra-lang-tracing" }
+mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0" }
 proc-macro2.workspace = true
 syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
