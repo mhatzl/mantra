@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "delete from Coverage",
+  "query": "delete from TestRuns",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "fe29f538474e82d1c449500c8267771f7a6d4a38f9762a5d5a78f1ec087bccfc"
+  "hash": "7626e386184fc5d7514f447de0e39138091fb6ac45977409d55262eb3c32419b"
 }

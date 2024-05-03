@@ -1,6 +1,6 @@
 use crate::{
     cmd::Cmd,
-    db::{self, ProjectOrigin},
+    db::{self},
 };
 
 #[derive(clap::Parser)]
@@ -12,25 +12,13 @@ pub struct Config {
 }
 
 #[derive(clap::Args)]
-pub struct ProjectConfig {
-    #[arg(long)]
-    pub name: String,
-    #[command(subcommand)]
-    pub origin: ProjectOrigin,
-}
-
-#[derive(clap::Args)]
 pub struct DeprecateConfig {
-    #[arg(long)]
-    pub project_name: String,
     #[arg(long, alias = "id")]
     pub req_ids: Vec<String>,
 }
 
 #[derive(clap::Args)]
-pub struct UntraceableConfig {
-    #[arg(long)]
-    pub project_name: String,
+pub struct ManualRequirementConfig {
     #[arg(long, alias = "id")]
     pub req_ids: Vec<String>,
 }
@@ -43,38 +31,40 @@ pub struct DeleteReqsConfig {
 
 #[derive(clap::Args)]
 pub struct DeleteTracesConfig {
-    #[arg(long)]
+    #[arg(long, alias = "id")]
     pub req_ids: Option<Vec<String>>,
+}
+
+#[derive(clap::Args)]
+pub struct DeleteTestRunConfig {
     #[arg(long)]
-    pub projects: Option<Vec<String>>,
+    pub name: Option<String>,
+    #[arg(long)]
+    pub date: Option<String>,
 }
 
 #[derive(clap::Args)]
 pub struct DeleteCoverageConfig {
-    #[arg(long)]
-    pub projects: Option<Vec<String>>,
-    #[arg(long)]
-    pub tests: Option<Vec<String>>,
-}
-
-#[derive(clap::Args)]
-pub struct DeleteProjectConfig {
-    #[arg(long)]
-    pub projects: Option<Vec<String>>,
+    #[arg(long, alias = "id")]
+    pub req_ids: Option<Vec<String>>,
 }
 
 #[derive(clap::Args)]
 pub struct DeleteDeprecatedConfig {
-    #[arg(long)]
+    #[arg(long, alias = "id")]
     pub req_ids: Option<Vec<String>>,
-    #[arg(long)]
-    pub projects: Option<Vec<String>>,
 }
 
 #[derive(clap::Args)]
-pub struct DeleteUntraceableConfig {
-    #[arg(long)]
+pub struct DeleteManualRequirementsConfig {
+    #[arg(long, alias = "id")]
     pub req_ids: Option<Vec<String>>,
+}
+
+#[derive(clap::Args)]
+pub struct DeleteReviewConfig {
     #[arg(long)]
-    pub projects: Option<Vec<String>>,
+    pub name: Option<String>,
+    #[arg(long)]
+    pub date: Option<String>,
 }

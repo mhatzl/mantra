@@ -5,12 +5,6 @@ create table if not exists Requirements (
     origin text not null
 );
 
--- projects, repositories, or branches for which trace data may be collected
-create table if not exists Projects (
-    name text primary key,
-    origin text not null
-);
-
 -- hierarchy
 create table if not exists RequirementHierarchies (
     child_id text not null references Requirements(id),
@@ -21,66 +15,77 @@ create table if not exists RequirementHierarchies (
 -- traces
 create table if not exists Traces (
     req_id text not null references Requirements(id),
-    project_name text not null references Projects(name),
     filepath text not null,
     line integer not null,
-    primary key (req_id, project_name, filepath, line)
+    primary key (req_id, filepath, line)
 );
 
--- coverage data per test
-create table if not exists Coverage (
-    req_id text not null references Requirements(id),
-    project_name text not null references Projects(name),
-    test_name text not null,
-    filepath text not null,
-    line integer not null,
-    primary key (req_id, project_name, test_name, filepath, line),
-    foreign key (test_name, project_name) references Tests(name, project_name),
-    foreign key (req_id, project_name, filepath, line) references Traces(req_id, project_name, filepath, line)
+-- test runs that executed tests
+--
+-- NOTE: `nr_of_tests` is the number of expected tests in one run.
+-- Meaning, if there are fewer associated tests in the Tests table, not all tests were executed.
+create table if not exists TestRuns (
+    name text not null,
+    date text not null,
+    nr_of_tests integer,
+    logs text,
+    primary key (name, date)
 );
 
--- tests per project
+-- tests per test run
 --
 -- NOTE: 'passed = null' means the test is still running, or was not finished properly.
 create table if not exists Tests (
+    test_run_name text not null,
+    test_run_date text not null,
     name text not null,
-    project_name text not null references Projects(name),
     filepath text not null,
     line integer not null,
     passed integer,
-    primary key (name, project_name)
+    primary key (test_run_name, test_run_date, name),
+    foreign key (test_run_name, test_run_date) references TestRuns(name, date)
+);
+
+-- coverage data per test
+create table if not exists TestCoverage (
+    req_id text not null references Requirements(id),
+    test_run_name text not null,
+    test_run_date text not null,
+    test_name text not null,
+    filepath text not null,
+    line integer not null,
+    primary key (req_id, test_run_name, test_run_date, test_name, filepath, line),
+    foreign key (test_run_name, test_run_date, test_name) references Tests(test_run_name, test_run_date, name),
+    foreign key (req_id, filepath, line) references Traces(req_id, filepath, line)
 );
 
 -- deprecated requirements
 create table if not exists DeprecatedRequirements (
     req_id text not null references Requirements(id),
-    project_name text not null references Projects(name),
-    primary key (req_id, project_name)
+    primary key (req_id)
 );
 
--- untraceable requirements that require manual review
-create table if not exists UntraceableRequirements (
+-- requirements that require manual review
+create table if not exists ManualRequirements (
     req_id text not null references Requirements(id),
-    project_name text not null references Projects(name),
-    primary key (req_id, project_name)
+    primary key (req_id)
 );
 
 -- review to add manually verified requirements
-create table if not exists Review (
-    project_name text not null references Projects(name),
+create table if not exists Reviews (
     name text not null,
     date text not null,
     reviewer text not null,
     comment text,
-    primary key (name, project_name, date)
+    primary key (name, date)
 );
 
 -- manually verified requirements
 create table if not exists ManuallyVerified (
-    req_id text not null references Requirements(id),
-    project_name text not null,
+    req_id text not null references ManualRequirements(req_id),
     review_name text not null,    
     review_date text not null,
     comment text,
-    foreign key (review_name, review_date, project_name) references Review(name, date, project_name)
+    primary key (req_id, review_name, review_date),
+    foreign key (review_name, review_date) references Reviews(name, date)
 );

@@ -1,12 +1,13 @@
 use crate::cfg::{
-    DeleteCoverageConfig, DeleteDeprecatedConfig, DeleteProjectConfig, DeleteReqsConfig,
-    DeleteTracesConfig, DeleteUntraceableConfig, DeprecateConfig, ProjectConfig, UntraceableConfig,
+    DeleteCoverageConfig, DeleteDeprecatedConfig, DeleteManualRequirementsConfig, DeleteReqsConfig,
+    DeleteReviewConfig, DeleteTracesConfig, DeprecateConfig, ManualRequirementConfig,
 };
 
 pub mod analyze;
 pub mod coverage;
 pub mod extract;
 pub mod report;
+pub mod review;
 pub mod trace;
 
 #[derive(clap::Subcommand)]
@@ -14,13 +15,12 @@ pub enum Cmd {
     Trace(trace::Config),
     Extract(extract::Config),
     Coverage(coverage::CliConfig),
-    AddProject(ProjectConfig),
     DeprecateReq(DeprecateConfig),
-    AddUntraceable(UntraceableConfig),
+    AddManuelReq(ManualRequirementConfig),
     DeleteReqs(DeleteReqsConfig),
     DeleteTraces(DeleteTracesConfig),
     DeleteCoverage(DeleteCoverageConfig),
-    DeleteProjects(DeleteProjectConfig),
     DeleteDeprecated(DeleteDeprecatedConfig),
-    DeleteUntraceable(DeleteUntraceableConfig),
+    DeleteManualReq(DeleteManualRequirementsConfig),
+    DeleteReview(DeleteReviewConfig),
 }

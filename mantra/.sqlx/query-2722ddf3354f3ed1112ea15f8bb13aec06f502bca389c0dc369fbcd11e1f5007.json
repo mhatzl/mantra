@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from ManuallyVerified",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "2722ddf3354f3ed1112ea15f8bb13aec06f502bca389c0dc369fbcd11e1f5007"
+}

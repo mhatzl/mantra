@@ -16,7 +16,7 @@ regex.workspace = true
 tree-sitter-rust.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
 clap = { version = "4.5.4", features = ["derive"] }
-sqlx = { version = "0.7.4", features = ["sqlite", "json", "runtime-tokio"] }
+sqlx = { version = "0.7.4", features = ["sqlite", "json", "runtime-tokio", "time"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 ignore = "0.4.20"
@@ -24,3 +24,4 @@ mime_guess = "2.0.4"
 defmt-json-schema = "0.1.0"
 thiserror = "1.0.59"
 log = "0.4.21"
+time = "0.3.36"

@@ -4,6 +4,7 @@ use db::DbError;
 pub mod cfg;
 pub mod cmd;
 pub mod db;
+pub mod path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MantraError {
@@ -20,7 +21,7 @@ pub enum MantraError {
     #[error("Failed to deprecate requirements. Cause: {}", .0)]
     DeprecateReq(DbError),
     #[error("Failed to add untraceable requirements. Cause: {}", .0)]
-    AddUntraceable(DbError),
+    AddManualReq(DbError),
     #[error("Failed to delete database entries. Cause: {}", .0)]
     Delete(DbError),
 }
@@ -37,10 +38,6 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         cmd::Cmd::Extract(extract_cfg) => cmd::extract::extract(&db, &extract_cfg)
             .await
             .map_err(MantraError::Extract),
-        cmd::Cmd::AddProject(project_cfg) => db
-            .add_project(&project_cfg.name, project_cfg.origin.clone())
-            .await
-            .map_err(MantraError::AddProject),
         cmd::Cmd::Coverage(coverage_cfg) => {
             cmd::coverage::coverage_from_path(&coverage_cfg.data_file, &db, &coverage_cfg.cfg)
                 .await
@@ -48,18 +45,18 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         }
         cmd::Cmd::DeprecateReq(deprecate_cfg) => {
             for req_id in deprecate_cfg.req_ids {
-                db.add_deprecated(&req_id, &deprecate_cfg.project_name)
+                db.add_deprecated(&req_id)
                     .await
                     .map_err(MantraError::DeprecateReq)?;
             }
 
             Ok(())
         }
-        cmd::Cmd::AddUntraceable(untraceable_cfg) => {
-            for req_id in untraceable_cfg.req_ids {
-                db.add_untraceable(&req_id, &untraceable_cfg.project_name)
+        cmd::Cmd::AddManuelReq(manual_req_cfg) => {
+            for req_id in manual_req_cfg.req_ids {
+                db.add_manual_req(&req_id)
                     .await
-                    .map_err(MantraError::AddUntraceable)?;
+                    .map_err(MantraError::AddManualReq)?;
             }
 
             Ok(())
@@ -76,17 +73,14 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             .delete_coverage(&delete_coverage_cfg)
             .await
             .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteProjects(delete_project_cfg) => db
-            .delete_projects(&delete_project_cfg)
-            .await
-            .map_err(MantraError::Delete),
         cmd::Cmd::DeleteDeprecated(delete_deprecated_cfg) => db
             .delete_deprecated(&delete_deprecated_cfg)
             .await
             .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteUntraceable(delete_untraceable_cfg) => db
-            .delete_untraceables(&delete_untraceable_cfg)
+        cmd::Cmd::DeleteManualReq(delete_manual_req_cfg) => db
+            .delete_manual_reqs(&delete_manual_req_cfg)
             .await
             .map_err(MantraError::Delete),
+        cmd::Cmd::DeleteReview(_delete_review_cfg) => todo!(),
     }
 }

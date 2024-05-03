@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Reviews where (name, date) not in (select review_name, review_date from ManuallyVerified)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "57fcadcac51c01d2862c1ad666e46230dd72be4f377dacc840123c7e7ec95921"
+}

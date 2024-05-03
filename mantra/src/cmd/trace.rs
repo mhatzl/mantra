@@ -9,7 +9,8 @@ use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector, TraceEnt
 #[group(id = "trace")]
 pub struct Config {
     pub root: PathBuf,
-    pub project_name: String,
+    #[arg(long)]
+    pub keep_root_absolute: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -21,6 +22,12 @@ pub enum TraceError {
 }
 
 pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
+    let root_path = if cfg.keep_root_absolute {
+        None
+    } else {
+        Some(cfg.root.as_path())
+    };
+
     if cfg.root.is_dir() {
         let walk = WalkBuilder::new(&cfg.root)
             .types(
@@ -44,14 +51,14 @@ pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
                 .is_file()
             {
                 if let Some(traces) = collect_traces(dir_entry.path())? {
-                    db.add_traces(&cfg.project_name, &cfg.root, dir_entry.path(), &traces)
+                    db.add_traces(dir_entry.path(), root_path, &traces)
                         .await
                         .map_err(TraceError::DbError)?
                 }
             }
         }
     } else if let Some(traces) = collect_traces(&cfg.root)? {
-        db.add_traces(&cfg.project_name, &cfg.root, &cfg.root, &traces)
+        db.add_traces(&cfg.root, root_path, &traces)
             .await
             .map_err(TraceError::DbError)?
     }

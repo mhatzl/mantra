@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "select t.req_id from Traces as t, DeprecatedRequirements as dr where t.req_id = dr.req_id and t.project_name = dr.project_name limit 5",
+  "query": "select t.req_id from Traces as t, DeprecatedRequirements as dr where t.req_id = dr.req_id limit 5",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "31213164fa049af70a7a6a617468bb54cb5be5682c33398174c4f7e588896336"
+  "hash": "9f33c8916240eea1e01219e716663665c035f90084cacb8f7e43519033c35041"
 }

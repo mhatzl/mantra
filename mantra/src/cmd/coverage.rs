@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use defmt_json_schema::v1::JsonFrame;
 use regex::Regex;
+use time::OffsetDateTime;
 
 use crate::db::{DbError, MantraDb};
 
@@ -15,11 +16,16 @@ pub struct CliConfig {
 
 #[derive(Debug, clap::Args)]
 pub struct Config {
-    pub project_name: String,
-    /// Optional prefix set before identifiers of test functions.
-    pub test_prefix: Option<String>,
+    #[arg(long)]
+    pub test_run: String,
     #[arg(value_enum)]
     pub fmt: LogFormat,
+}
+
+#[derive(Debug)]
+pub struct TestRunConfig {
+    pub name: String,
+    pub date: time::OffsetDateTime,
 }
 
 #[derive(Debug, Clone, clap::ValueEnum)]
@@ -70,8 +76,7 @@ pub async fn coverage_from_str(
                 })?);
             }
 
-            coverage_from_defmt_frames(&frames, db, &cfg.project_name, cfg.test_prefix.as_deref())
-                .await
+            coverage_from_defmt_frames(&frames, db, &cfg.test_run).await
         }
     }
 }
@@ -79,24 +84,28 @@ pub async fn coverage_from_str(
 pub async fn coverage_from_defmt_frames(
     frames: &[JsonFrame],
     db: &MantraDb,
-    project_name: &str,
-    test_prefix: Option<&str>,
+    test_run_name: &str,
 ) -> Result<(), CoverageError> {
     let mut current_test_fn: Option<String> = None;
+    let test_run = TestRunConfig {
+        name: test_run_name.to_string(),
+        date: OffsetDateTime::now_utc(),
+    };
+
+    db.add_test_run(
+        &test_run,
+        &serde_json::to_string(frames)
+            .expect("Serializing log frames must work, because frames were deserialized."),
+    )
+    .await
+    .map_err(CoverageError::Db)?;
 
     for frame in frames {
-        let new_test_fn = add_frame_to_db(
-            frame,
-            db,
-            project_name,
-            test_prefix,
-            current_test_fn.as_deref(),
-        )
-        .await?;
+        let new_test_fn = add_frame_to_db(frame, db, &test_run, current_test_fn.as_deref()).await?;
 
         if current_test_fn != new_test_fn {
             if let Some(passed_test_fn) = &current_test_fn {
-                db.test_passed(passed_test_fn, project_name)
+                db.test_passed(&test_run, passed_test_fn)
                     .await
                     .map_err(CoverageError::Db)?;
             }
@@ -111,17 +120,24 @@ pub async fn coverage_from_defmt_frames(
 async fn add_frame_to_db(
     frame: &JsonFrame,
     db: &MantraDb,
-    project_name: &str,
-    test_prefix: Option<&str>,
+    test_run: &TestRunConfig,
     current_test_fn: Option<&str>,
 ) -> Result<Option<String>, CoverageError> {
     let test_fn_matcher = TEST_FN_MATCHER.get_or_init(|| {
-        Regex::new(r"^\(\d+/\d+\)\s(?<state>(?:running)|(?:ignoring))\s`(?<fn_name>.+)`...")
-            .expect("Could not create regex matcher for defmt test-fn entries.")
+        Regex::new(
+            r"^\(\d+/(?<nr_tests>\d+)\)\s(?<state>(?:running)|(?:ignoring))\s`(?<fn_name>.+)`...",
+        )
+        .expect("Could not create regex matcher for defmt test-fn entries.")
     });
     let mut new_test_fn: Option<String> = current_test_fn.map(|t| t.to_string());
 
     if let Some(captured_test_fn) = test_fn_matcher.captures(&frame.data) {
+        let nr_tests: u32 = captured_test_fn
+            .name("nr_tests")
+            .expect("Number of tests from the test-fn was not captured.")
+            .as_str()
+            .parse()
+            .expect("Number of tests must be convertible to u32.");
         let fn_state = captured_test_fn
             .name("state")
             .expect("State of the test-fn was not captured.");
@@ -159,16 +175,15 @@ async fn add_frame_to_db(
 
         match fn_state.as_str() {
             "running" => {
-                let test_fn_name = if let Some(prefix) = test_prefix {
-                    format!("{}:{}::{}", prefix, mod_path_str, fn_name.as_str())
-                } else {
-                    format!("{}::{}", mod_path_str, fn_name.as_str())
-                };
+                let test_fn_name = format!("{}::{}", mod_path_str, fn_name.as_str());
                 new_test_fn = Some(test_fn_name.clone());
 
+                db.update_nr_of_tests(test_run, nr_tests)
+                .await.map_err(CoverageError::Db)?;
+
                 db.add_test(
+                    test_run,
                     &test_fn_name,
-                    project_name,
                     &PathBuf::from(file),
                     line_nr,
                 None, // test result is always unknown at the start
@@ -187,7 +202,7 @@ async fn add_frame_to_db(
         if let Some(current_test) = current_test_fn {
             let db_result = db
                 .add_coverage(
-                    project_name,
+                    test_run,
                     current_test,
                     &covered_req.file,
                     covered_req.line,
@@ -204,7 +219,7 @@ async fn add_frame_to_db(
         };
     } else if frame.data == "all tests passed!" {
         if let Some(passed_test) = current_test_fn {
-            db.test_passed(passed_test, project_name)
+            db.test_passed(test_run, passed_test)
                 .await
                 .map_err(CoverageError::Db)?;
         }

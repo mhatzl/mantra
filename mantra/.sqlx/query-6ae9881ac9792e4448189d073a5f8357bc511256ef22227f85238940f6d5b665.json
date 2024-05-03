@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from TestCoverage where req_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6ae9881ac9792e4448189d073a5f8357bc511256ef22227f85238940f6d5b665"
+}
