@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into ManualRequirements (req_id) values ($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "069b7eb5b0f0edf468125273bb2d77572e3c87918d0d6792523d86e8c146fd65"
+}

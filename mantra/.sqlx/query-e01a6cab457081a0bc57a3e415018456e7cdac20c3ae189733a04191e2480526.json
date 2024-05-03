@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "delete from UntraceableRequirements",
+  "query": "delete from TestCoverage",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "a29963bb80a721ba26e248d0aeffd45ee8acadac28d7cf8929556294ecdfa1a0"
+  "hash": "e01a6cab457081a0bc57a3e415018456e7cdac20c3ae189733a04191e2480526"
 }
