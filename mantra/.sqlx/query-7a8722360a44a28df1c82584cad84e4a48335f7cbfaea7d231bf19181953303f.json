@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "delete from ManuallyVerified",
+  "query": "update Traces set generation = 0",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "2722ddf3354f3ed1112ea15f8bb13aec06f502bca389c0dc369fbcd11e1f5007"
+  "hash": "7a8722360a44a28df1c82584cad84e4a48335f7cbfaea7d231bf19181953303f"
 }

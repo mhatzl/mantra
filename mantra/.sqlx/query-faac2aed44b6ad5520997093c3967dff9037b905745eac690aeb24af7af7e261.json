@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select max(generation) as nr from Requirements",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "faac2aed44b6ad5520997093c3967dff9037b905745eac690aeb24af7af7e261"
+}

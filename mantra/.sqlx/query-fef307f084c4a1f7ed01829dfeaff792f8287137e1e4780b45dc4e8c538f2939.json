@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "select id, origin, annotation from Requirements where generation < $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "origin",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "annotation",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "fef307f084c4a1f7ed01829dfeaff792f8287137e1e4780b45dc4e8c538f2939"
+}

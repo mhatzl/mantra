@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::db::{GitHubReqOrigin, MantraDb, Requirement};
+use crate::db::{GitHubReqOrigin, MantraDb, Requirement, RequirementChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use regex::Regex;
@@ -29,14 +29,20 @@ pub enum ExtractError {
     DbError(crate::db::DbError),
 }
 
-pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<(), ExtractError> {
+pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<RequirementChanges, ExtractError> {
     match cfg.origin {
         ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link).await,
         ExtractOrigin::Jira => todo!(),
     }
 }
 
-async fn extract_github(db: &MantraDb, root: &Path, link: &str) -> Result<(), ExtractError> {
+async fn extract_github(
+    db: &MantraDb,
+    root: &Path,
+    link: &str,
+) -> Result<RequirementChanges, ExtractError> {
+    let mut reqs = Vec::new();
+
     if root.is_dir() {
         let walk = WalkBuilder::new(root)
             .types(
@@ -63,14 +69,11 @@ async fn extract_github(db: &MantraDb, root: &Path, link: &str) -> Result<(), Ex
                 let content = std::fs::read_to_string(dir_entry.path())
                     .map_err(|_| ExtractError::CouldNotAccessFile(filepath))?;
 
-                let reqs = extract_from_wiki_content(&content, dir_entry.path(), link);
-
-                if reqs.is_empty() {
-                    // warn that no reqs were found
-                    continue;
-                }
-
-                db.add_reqs(reqs).await.map_err(ExtractError::DbError)?
+                reqs.append(&mut extract_from_wiki_content(
+                    &content,
+                    dir_entry.path(),
+                    link,
+                ));
             }
         }
     } else {
@@ -78,16 +81,19 @@ async fn extract_github(db: &MantraDb, root: &Path, link: &str) -> Result<(), Ex
         let content = std::fs::read_to_string(root)
             .map_err(|_| ExtractError::CouldNotAccessFile(filepath))?;
 
-        let reqs = extract_from_wiki_content(&content, root, link);
-
-        if reqs.is_empty() {
-            // warn that no reqs were found
-        } else {
-            db.add_reqs(reqs).await.map_err(ExtractError::DbError)?
-        }
+        reqs = extract_from_wiki_content(&content, root, link);
     }
 
-    Ok(())
+    if reqs.is_empty() {
+        // warn that no reqs were found
+        let changes = RequirementChanges {
+            new_generation: db.max_req_generation().await,
+            ..Default::default()
+        };
+        Ok(changes)
+    } else {
+        db.add_reqs(reqs).await.map_err(ExtractError::DbError)
+    }
 }
 
 static REQ_ID_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
@@ -124,6 +130,7 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
                         line: line_nr + 1,
                     })
                     .into(),
+                    annotation: None,
                 });
             }
         }

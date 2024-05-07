@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0d5499ffe8e14c6a7e9c0ea2fc1583ed00354382684e988e5c10f623b7226f89"
+}

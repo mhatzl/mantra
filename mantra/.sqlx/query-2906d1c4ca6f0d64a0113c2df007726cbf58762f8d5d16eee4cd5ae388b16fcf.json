@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Traces where generation < $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2906d1c4ca6f0d64a0113c2df007726cbf58762f8d5d16eee4cd5ae388b16fcf"
+}

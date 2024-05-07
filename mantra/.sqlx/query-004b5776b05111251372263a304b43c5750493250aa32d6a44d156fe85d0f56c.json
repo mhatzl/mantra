@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into Requirements (id, generation, origin, annotation) values ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "004b5776b05111251372263a304b43c5750493250aa32d6a44d156fe85d0f56c"
+}

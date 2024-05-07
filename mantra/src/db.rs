@@ -9,10 +9,7 @@ use sqlx::Pool;
 pub use sqlx;
 
 use crate::{
-    cfg::{
-        DeleteCoverageConfig, DeleteDeprecatedConfig, DeleteManualRequirementsConfig,
-        DeleteReqsConfig, DeleteTracesConfig,
-    },
+    cfg::{DeleteCoverageConfig, DeleteReqsConfig, DeleteTracesConfig},
     cmd::coverage::TestRunConfig,
 };
 
@@ -23,18 +20,178 @@ pub struct MantraDb {
     pool: Pool<DB>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Trace {
+    req_id: String,
+    filepath: PathBuf,
+    line: u32,
+}
+
+impl std::fmt::Display for Trace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "id=`{}`, file='{}', line='{}'",
+            self.req_id,
+            self.filepath.display(),
+            self.line
+        )
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DeletedTraces(Vec<Trace>);
+
+impl std::ops::Deref for DeletedTraces {
+    type Target = Vec<Trace>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for DeletedTraces {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl std::fmt::Display for DeletedTraces {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_empty() {
+            writeln!(f, "No trace was deleted.")
+        } else {
+            writeln!(f, "'{}' traces deleted:", self.len())?;
+            for trace in &self.0 {
+                writeln!(f, "- {trace}")?;
+            }
+
+            Ok(())
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct TraceChanges {
+    pub inserted: Vec<Trace>,
+    pub unchanged_cnt: usize,
+    pub new_generation: i64,
+}
+
+impl TraceChanges {
+    pub fn merge(&mut self, other: &mut Self) {
+        self.inserted.append(&mut other.inserted);
+        self.unchanged_cnt += other.unchanged_cnt;
+    }
+}
+
+impl std::fmt::Display for TraceChanges {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.inserted.is_empty() {
+            if self.unchanged_cnt == 0 {
+                writeln!(f, "No traces found.")?;
+            } else {
+                writeln!(f, "'{}' traces kept.", self.unchanged_cnt)?;
+            }
+        } else {
+            writeln!(f, "'{}' traces added:", self.inserted.len())?;
+            for trace in &self.inserted {
+                writeln!(f, "- `{}`", trace)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Requirement {
     pub id: String,
     pub origin: sqlx::types::Json<RequirementOrigin>,
+    pub annotation: Option<String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DeletedRequirements(Vec<Requirement>);
+
+impl std::ops::Deref for DeletedRequirements {
+    type Target = Vec<Requirement>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for DeletedRequirements {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl std::fmt::Display for DeletedRequirements {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_empty() {
+            writeln!(f, "No requirement was deleted.")
+        } else {
+            writeln!(f, "'{}' requirements deleted:", self.len())?;
+            for req in &self.0 {
+                writeln!(f, "- {}", req.id)?;
+            }
+
+            Ok(())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RequirementUpdate {
+    pub old: Requirement,
+    pub new: Requirement,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct RequirementChanges {
+    pub updated: Vec<RequirementUpdate>,
+    pub inserted: Vec<Requirement>,
+    pub unchanged_cnt: usize,
+    pub new_generation: i64,
+}
+
+impl std::fmt::Display for RequirementChanges {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.updated.is_empty() && self.inserted.is_empty() {
+            if self.unchanged_cnt == 0 {
+                writeln!(f, "No requirements found.")?;
+            } else {
+                writeln!(f, "'{}' requirements kept.", self.unchanged_cnt)?;
+            }
+        } else {
+            if !self.updated.is_empty() {
+                writeln!(f, "'{}' requirements updated:", self.updated.len())?;
+                for req in &self.updated {
+                    writeln!(f, "- `{}`", req.new.id)?;
+                }
+            }
+
+            if !self.inserted.is_empty() {
+                writeln!(f, "'{}' requirements added:", self.inserted.len())?;
+                for req in &self.inserted {
+                    writeln!(f, "- `{}`", req.id)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum RequirementOrigin {
     GitHub(GitHubReqOrigin),
     Jira(String),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GitHubReqOrigin {
     pub link: String,
     pub path: PathBuf,
@@ -90,27 +247,67 @@ impl MantraDb {
         Ok(Self { pool })
     }
 
-    pub async fn add_reqs(&self, reqs: Vec<Requirement>) -> Result<(), DbError> {
-        for req in &reqs {
-            let res = sqlx::query!(
-                "insert or replace into Requirements (id, origin) values ($1, $2)",
-                req.id,
-                req.origin
-            )
-            .execute(&self.pool)
-            .await;
+    pub async fn add_reqs(&self, reqs: Vec<Requirement>) -> Result<RequirementChanges, DbError> {
+        let mut changes = RequirementChanges::default();
+        let old_generation = self.max_req_generation().await;
+        let new_generation = old_generation + 1;
+        changes.new_generation = new_generation;
 
-            if let Err(err) = res {
-                return Err(DbError::Insertion(format!(
-                    "Adding requirement '{}' failed with error: {}",
-                    &req.id, err
-                )));
+        for req in &reqs {
+            if let Ok(existing_record) = sqlx::query!(
+                "select id, origin, annotation from Requirements where id = $1",
+                req.id
+            )
+            .fetch_one(&self.pool)
+            .await
+            {
+                let existing_req = Requirement {
+                    id: existing_record.id,
+                    origin: serde_json::from_str(&existing_record.origin)
+                        .expect("Origin was serialized before."),
+                    annotation: existing_record.annotation,
+                };
+                if req != &existing_req {
+                    changes.updated.push(RequirementUpdate {
+                        old: existing_req,
+                        new: req.clone(),
+                    });
+                } else {
+                    changes.unchanged_cnt += 1;
+                }
+
+                sqlx::query!(
+                    "update Requirements set generation = $2, origin = $3, annotation = $4 where id = $1",
+                    req.id,
+                    new_generation,
+                    req.origin,
+                    req.annotation,
+                )
+                .execute(&self.pool)
+                .await;
+            } else {
+                changes.inserted.push(req.clone());
+
+                let res = sqlx::query!(
+                    "insert into Requirements (id, generation, origin, annotation) values ($1, $2, $3, $4)",
+                    req.id,
+                    new_generation,
+                    req.origin,
+                    req.annotation,
+                )
+                .execute(&self.pool)
+                .await;
+
+                if let Err(err) = res {
+                    return Err(DbError::Insertion(format!(
+                        "Adding requirement '{}' failed with error: {}",
+                        &req.id, err
+                    )));
+                }
             }
         }
 
-        // hierarchy cannot be setup before due to foreign key constraint and possible "holes" in the hierarchy.
-        // e.g. parent="req_id" child="req_id.test.first" with hole="req_id.test"
-        for req in &reqs {
+        for req in &changes.inserted {
             if let Some((parent, _)) = req.id.rsplit_once('.') {
                 let parent_exists =
                     sqlx::query!("select id from requirements where id = $1", parent)
@@ -146,7 +343,58 @@ impl MantraDb {
             }
         }
 
-        Ok(())
+        Ok(changes)
+    }
+
+    pub async fn delete_req_generations(
+        &self,
+        before: i64,
+    ) -> Result<Option<DeletedRequirements>, DbError> {
+        let mut deleted = DeletedRequirements::default();
+
+        if let Ok(old_reqs) = sqlx::query!(
+            "select id, origin, annotation from Requirements where generation < $1",
+            before
+        )
+        .fetch_all(&self.pool)
+        .await
+        {
+            for old_req in old_reqs {
+                deleted.push(Requirement {
+                    id: old_req.id,
+                    origin: serde_json::from_str(&old_req.origin)
+                        .expect("Origin was serialized before."),
+                    annotation: old_req.annotation,
+                })
+            }
+        }
+
+        sqlx::query!("delete from Requirements where generation < $1", before)
+            .execute(&self.pool)
+            .await;
+
+        Ok(if deleted.is_empty() {
+            None
+        } else {
+            Some(deleted)
+        })
+    }
+
+    pub async fn max_req_generation(&self) -> i64 {
+        if let Ok(record) = sqlx::query!("select max(generation) as nr from Requirements")
+            .fetch_one(&self.pool)
+            .await
+        {
+            record.nr.unwrap_or_default()
+        } else {
+            0
+        }
+    }
+
+    pub async fn reset_req_generation(&self) {
+        sqlx::query!("update Requirements set generation = 0")
+            .execute(&self.pool)
+            .await;
     }
 
     async fn get_req_parent(&self, mut id: &str) -> Option<String> {
@@ -171,7 +419,11 @@ impl MantraDb {
         filepath: &Path,
         root: Option<&Path>,
         traces: &[TraceEntry],
-    ) -> Result<(), DbError> {
+        new_generation: i64,
+    ) -> Result<TraceChanges, DbError> {
+        let mut changes = TraceChanges::default();
+        changes.new_generation = new_generation;
+
         let file = if let Some(root_path) = root {
             get_relative_path(root_path, filepath)?
                 .display()
@@ -185,24 +437,82 @@ impl MantraDb {
             let line = trace.line();
 
             for id in ids {
-                let _ = sqlx::query!(
-                    "insert or ignore into Traces (req_id, filepath, line) values ($1, $2, $3)",
-                    id,
-                    file,
-                    line,
-                )
-                .execute(&self.pool)
-                .await
-                .map_err(|err| {
-                    DbError::Insertion(format!(
-                        "Adding trace for id='{}', file='{}', line='{}' failed with error: {}",
-                        id, file, line, err
-                    ))
-                })?;
+                if (sqlx::query!("select req_id, filepath, line from Traces where req_id = $1 and filepath = $2 and line = $3", id, file, line).fetch_one(&self.pool).await).is_ok() {
+                    sqlx::query!("update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3", id, file, line, new_generation).execute(&self.pool).await;
+                    changes.unchanged_cnt += 1;
+                } else {
+                    changes.inserted.push(Trace{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
+
+                    let _ = sqlx::query!(
+                        "insert into Traces (req_id, filepath, line, generation) values ($1, $2, $3, $4)",
+                        id,
+                        file,
+                        line,
+                        new_generation,
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| {
+                        DbError::Insertion(format!(
+                            "Adding trace for id='{}', file='{}', line='{}' failed with error: {}",
+                            id, file, line, err
+                        ))
+                    })?;
+                }
             }
         }
 
-        Ok(())
+        Ok(changes)
+    }
+
+    pub async fn max_trace_generation(&self) -> i64 {
+        if let Ok(record) = sqlx::query!("select max(generation) as nr from Traces")
+            .fetch_one(&self.pool)
+            .await
+        {
+            record.nr.unwrap_or_default()
+        } else {
+            0
+        }
+    }
+
+    pub async fn reset_trace_generation(&self) {
+        sqlx::query!("update Traces set generation = 0")
+            .execute(&self.pool)
+            .await;
+    }
+
+    pub async fn delete_trace_generations(
+        &self,
+        before: i64,
+    ) -> Result<Option<DeletedTraces>, DbError> {
+        let mut deleted_traces = DeletedTraces::default();
+
+        if let Ok(old_traces) = sqlx::query!(
+            "select req_id, filepath, line from Traces where generation < $1",
+            before
+        )
+        .fetch_all(&self.pool)
+        .await
+        {
+            for old_trace in old_traces {
+                deleted_traces.push(Trace {
+                    req_id: old_trace.req_id,
+                    filepath: PathBuf::from(old_trace.filepath),
+                    line: old_trace.line.try_into().expect("Line must be u32."),
+                })
+            }
+        }
+
+        sqlx::query!("delete from Traces where generation < $1", before)
+            .execute(&self.pool)
+            .await;
+
+        Ok(if deleted_traces.is_empty() {
+            None
+        } else {
+            Some(deleted_traces)
+        })
     }
 
     pub async fn add_coverage(
@@ -341,42 +651,8 @@ impl MantraDb {
         Ok(())
     }
 
-    pub async fn add_deprecated(&self, req_id: &str) -> Result<(), DbError> {
-        let _ = sqlx::query!(
-            "insert or replace into DeprecatedRequirements (req_id) values ($1)",
-            req_id
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|err| {
-            DbError::Insertion(format!(
-                "Adding deprecated requirement='{}' failed with error: {}",
-                req_id, err
-            ))
-        })?;
-
-        Ok(())
-    }
-
-    pub async fn add_manual_req(&self, req_id: &str) -> Result<(), DbError> {
-        let _ = sqlx::query!(
-            "insert or replace into ManualRequirements (req_id) values ($1)",
-            req_id
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|err| {
-            DbError::Insertion(format!(
-                "Adding manual requirement='{}' failed with error: {}",
-                req_id, err
-            ))
-        })?;
-
-        Ok(())
-    }
-
     pub async fn is_valid(&self) -> Result<(), DbError> {
-        let traced_deprecated = sqlx::query!("select t.req_id from Traces as t, DeprecatedRequirements as dr where t.req_id = dr.req_id limit 5").fetch_all(&self.pool).await.map_err(|err| DbError::Validate(err.to_string()))?;
+        let traced_deprecated = sqlx::query!("select t.req_id from Traces as t, Requirements as r where t.req_id = r.id and r.annotation = 'deprecated' limit 100").fetch_all(&self.pool).await.map_err(|err| DbError::Validate(err.to_string()))?;
 
         if traced_deprecated.is_empty() {
             Ok(())
@@ -401,34 +677,6 @@ impl MantraDb {
         match &cfg.ids {
             Some(ids) => {
                 for id in ids {
-                    let _ = sqlx::query!(
-                        "delete from RequirementHierarchies where parent_id = $1 or child_id = $1",
-                        id
-                    )
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                    let _ = sqlx::query!("delete from TestCoverage where req_id = $1", id)
-                        .execute(&self.pool)
-                        .await
-                        .map_err(|err| DbError::Delete(err.to_string()))?;
-                    let _ = sqlx::query!("delete from Traces where req_id = $1", id)
-                        .execute(&self.pool)
-                        .await
-                        .map_err(|err| DbError::Delete(err.to_string()))?;
-                    let _ =
-                        sqlx::query!("delete from DeprecatedRequirements where req_id = $1", id)
-                            .execute(&self.pool)
-                            .await
-                            .map_err(|err| DbError::Delete(err.to_string()))?;
-                    let _ = sqlx::query!("delete from ManuallyVerified where req_id = $1", id)
-                        .execute(&self.pool)
-                        .await
-                        .map_err(|err| DbError::Delete(err.to_string()))?;
-                    let _ = sqlx::query!("delete from ManualRequirements where req_id = $1", id)
-                        .execute(&self.pool)
-                        .await
-                        .map_err(|err| DbError::Delete(err.to_string()))?;
                     let _ = sqlx::query!("delete from Requirements where id = $1", id)
                         .execute(&self.pool)
                         .await
@@ -441,7 +689,6 @@ impl MantraDb {
                 .execute(&self.pool)
                 .await
                 .map_err(|err| DbError::Delete(err.to_string()))?;
-
                 let _ =
                 sqlx::query!("delete from TestRuns where (name, date) not in (select test_run_name, test_run_date from TestCoverage)")
                     .execute(&self.pool)
@@ -454,35 +701,7 @@ impl MantraDb {
                     .map_err(|err| DbError::Delete(err.to_string()))?;
             }
             None => {
-                let _ = sqlx::query!("delete from RequirementHierarchies")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from TestCoverage")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from Traces")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from Tests")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
                 let _ = sqlx::query!("delete from TestRuns")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from DeprecatedRequirements")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from ManuallyVerified")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from ManualRequirements")
                     .execute(&self.pool)
                     .await
                     .map_err(|err| DbError::Delete(err.to_string()))?;
@@ -504,10 +723,6 @@ impl MantraDb {
         let ids = cfg.req_ids.as_deref().unwrap_or_default();
 
         if ids.is_empty() {
-            let _ = sqlx::query!("delete from TestCoverage")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
             let _ = sqlx::query!("delete from Tests")
                 .execute(&self.pool)
                 .await
@@ -522,10 +737,6 @@ impl MantraDb {
                 .map_err(|err| DbError::Delete(err.to_string()))?;
         } else {
             for id in ids {
-                let _ = sqlx::query!("delete from TestCoverage where req_id = $1", id)
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
                 let _ = sqlx::query!("delete from Traces where req_id = $1", id)
                     .execute(&self.pool)
                     .await
@@ -547,67 +758,6 @@ impl MantraDb {
             .execute(&self.pool)
             .await
             .map_err(|err| DbError::Delete(err.to_string()))?;
-        }
-
-        Ok(())
-    }
-
-    pub async fn delete_deprecated(&self, cfg: &DeleteDeprecatedConfig) -> Result<(), DbError> {
-        let ids = cfg.req_ids.as_deref().unwrap_or_default();
-
-        if ids.is_empty() {
-            let _ = sqlx::query!("delete from DeprecatedRequirements")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-        } else {
-            for id in ids {
-                let _ = sqlx::query!("delete from DeprecatedRequirements where req_id = $1", id)
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-            }
-        }
-
-        Ok(())
-    }
-
-    pub async fn delete_manual_reqs(
-        &self,
-        cfg: &DeleteManualRequirementsConfig,
-    ) -> Result<(), DbError> {
-        let ids = cfg.req_ids.as_deref().unwrap_or_default();
-
-        if ids.is_empty() {
-            let _ = sqlx::query!("delete from ManuallyVerified")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-            let _ = sqlx::query!("delete from ManualRequirements")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-            let _ = sqlx::query!("delete from Reviews")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-        } else {
-            for id in ids {
-                let _ = sqlx::query!("delete from ManuallyVerified where req_id = $1", id)
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from ManualRequirements where req_id = $1", id)
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-            }
-
-            let _ =
-                sqlx::query!("delete from Reviews where (name, date) not in (select review_name, review_date from ManuallyVerified)")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
         }
 
         Ok(())
