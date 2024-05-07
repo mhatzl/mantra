@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "delete from RequirementHierarchies",
+  "query": "update Requirements set generation = 0",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "86afdf16eba6c0851a3b9e579bb5da4b4dce8adb9b8f72658ab5cfadcd03c5dc"
+  "hash": "cff2e67ba60c36f0f6708b3ba6f5444dd741062a3239cde09ad636389a5847f4"
 }

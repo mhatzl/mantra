@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::db::MantraDb;
+use crate::db::{MantraDb, TraceChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector, TraceEntry};
@@ -21,11 +21,19 @@ pub enum TraceError {
     DbError(crate::db::DbError),
 }
 
-pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
+pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<TraceChanges, TraceError> {
     let root_path = if cfg.keep_root_absolute {
         None
     } else {
         Some(cfg.root.as_path())
+    };
+
+    let old_generation = db.max_trace_generation().await;
+    let new_generation = old_generation + 1;
+
+    let mut changes = TraceChanges {
+        new_generation,
+        ..Default::default()
     };
 
     if cfg.root.is_dir() {
@@ -51,19 +59,23 @@ pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<(), TraceError> {
                 .is_file()
             {
                 if let Some(traces) = collect_traces(dir_entry.path())? {
-                    db.add_traces(dir_entry.path(), root_path, &traces)
+                    let mut trace_changes = db
+                        .add_traces(dir_entry.path(), root_path, &traces, new_generation)
                         .await
-                        .map_err(TraceError::DbError)?
+                        .map_err(TraceError::DbError)?;
+                    changes.merge(&mut trace_changes);
                 }
             }
         }
-    } else if let Some(traces) = collect_traces(&cfg.root)? {
-        db.add_traces(&cfg.root, root_path, &traces)
-            .await
-            .map_err(TraceError::DbError)?
-    }
 
-    Ok(())
+        Ok(changes)
+    } else if let Some(traces) = collect_traces(&cfg.root)? {
+        db.add_traces(&cfg.root, root_path, &traces, new_generation)
+            .await
+            .map_err(TraceError::DbError)
+    } else {
+        Ok(changes)
+    }
 }
 
 fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError> {

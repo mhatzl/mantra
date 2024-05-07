@@ -32,34 +32,28 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         .map_err(MantraError::DbSetup)?;
 
     match cfg.cmd {
-        cmd::Cmd::Trace(trace_cfg) => cmd::trace::trace(&db, &trace_cfg)
-            .await
-            .map_err(MantraError::Trace),
-        cmd::Cmd::Extract(extract_cfg) => cmd::extract::extract(&db, &extract_cfg)
-            .await
-            .map_err(MantraError::Extract),
+        cmd::Cmd::Trace(trace_cfg) => {
+            let changes = cmd::trace::trace(&db, &trace_cfg)
+                .await
+                .map_err(MantraError::Trace)?;
+
+            println!("{changes}");
+
+            Ok(())
+        }
+        cmd::Cmd::Extract(extract_cfg) => {
+            let changes = cmd::extract::extract(&db, &extract_cfg)
+                .await
+                .map_err(MantraError::Extract)?;
+
+            println!("{changes}");
+
+            Ok(())
+        }
         cmd::Cmd::Coverage(coverage_cfg) => {
             cmd::coverage::coverage_from_path(&coverage_cfg.data_file, &db, &coverage_cfg.cfg)
                 .await
                 .map_err(MantraError::Coverage)
-        }
-        cmd::Cmd::DeprecateReq(deprecate_cfg) => {
-            for req_id in deprecate_cfg.req_ids {
-                db.add_deprecated(&req_id)
-                    .await
-                    .map_err(MantraError::DeprecateReq)?;
-            }
-
-            Ok(())
-        }
-        cmd::Cmd::AddManuelReq(manual_req_cfg) => {
-            for req_id in manual_req_cfg.req_ids {
-                db.add_manual_req(&req_id)
-                    .await
-                    .map_err(MantraError::AddManualReq)?;
-            }
-
-            Ok(())
         }
         cmd::Cmd::DeleteReqs(delete_req_cfg) => db
             .delete_reqs(&delete_req_cfg)
@@ -71,14 +65,6 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             .map_err(MantraError::Delete),
         cmd::Cmd::DeleteCoverage(delete_coverage_cfg) => db
             .delete_coverage(&delete_coverage_cfg)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteDeprecated(delete_deprecated_cfg) => db
-            .delete_deprecated(&delete_deprecated_cfg)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteManualReq(delete_manual_req_cfg) => db
-            .delete_manual_reqs(&delete_manual_req_cfg)
             .await
             .map_err(MantraError::Delete),
         cmd::Cmd::DeleteReview(_delete_review_cfg) => todo!(),

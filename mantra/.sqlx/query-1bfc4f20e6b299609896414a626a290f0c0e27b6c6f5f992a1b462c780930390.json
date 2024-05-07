@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Requirements where generation < $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "1bfc4f20e6b299609896414a626a290f0c0e27b6c6f5f992a1b462c780930390"
+}

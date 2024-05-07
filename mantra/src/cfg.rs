@@ -12,18 +12,6 @@ pub struct Config {
 }
 
 #[derive(clap::Args)]
-pub struct DeprecateConfig {
-    #[arg(long, alias = "id")]
-    pub req_ids: Vec<String>,
-}
-
-#[derive(clap::Args)]
-pub struct ManualRequirementConfig {
-    #[arg(long, alias = "id")]
-    pub req_ids: Vec<String>,
-}
-
-#[derive(clap::Args)]
 pub struct DeleteReqsConfig {
     #[arg(long)]
     pub ids: Option<Vec<String>>,
@@ -45,18 +33,6 @@ pub struct DeleteTestRunConfig {
 
 #[derive(clap::Args)]
 pub struct DeleteCoverageConfig {
-    #[arg(long, alias = "id")]
-    pub req_ids: Option<Vec<String>>,
-}
-
-#[derive(clap::Args)]
-pub struct DeleteDeprecatedConfig {
-    #[arg(long, alias = "id")]
-    pub req_ids: Option<Vec<String>>,
-}
-
-#[derive(clap::Args)]
-pub struct DeleteManualRequirementsConfig {
     #[arg(long, alias = "id")]
     pub req_ids: Option<Vec<String>>,
 }

@@ -1,3 +1,2 @@
-{"schema_version":1}
 {"data":"(1/1) running `test_fn`...","host_timestamp":1642698490360848721,"level":null,"location":{"file":"mantra/examples/usage/traces.rs","line":7,"module_path":{"crate_name":"usage","modules":[],"function":"test_fn"}},"target_timestamp":"0"}
 {"data":"mantra: req-id=`main_id`; file='mantra/examples/usage/traces.rs'; line='1';","host_timestamp":1642698490360848722,"level":null,"location":{"file":"mantra/examples/usage/traces.rs","line":1,"module_path":{"crate_name":"usage","modules":[],"function":"traced_fn"}},"target_timestamp":"0"}
