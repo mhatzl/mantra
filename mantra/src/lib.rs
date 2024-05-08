@@ -24,6 +24,8 @@ pub enum MantraError {
     AddManualReq(DbError),
     #[error("Failed to delete database entries. Cause: {}", .0)]
     Delete(DbError),
+    #[error("Failed to clean the database. Cause: {}", .0)]
+    Clean(DbError),
 }
 
 pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
@@ -63,10 +65,14 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             .delete_traces(&delete_traces_cfg)
             .await
             .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteCoverage(delete_coverage_cfg) => db
-            .delete_coverage(&delete_coverage_cfg)
+        cmd::Cmd::DeleteTestRuns(delete_test_runs_cfg) => db
+            .delete_test_runs(delete_test_runs_cfg)
             .await
             .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteReview(_delete_review_cfg) => todo!(),
+        cmd::Cmd::DeleteReviews(delete_reviews_cfg) => db
+            .delete_reviews(delete_reviews_cfg)
+            .await
+            .map_err(MantraError::Delete),
+        cmd::Cmd::Clean => db.clean().await.map_err(MantraError::Clean),
     }
 }

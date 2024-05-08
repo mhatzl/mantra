@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Reviews where unixepoch(date) < unixepoch($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "88c2f7dafa8cfdad25df162c8a96ee6a53d1c5ec2c97c9daa94dffbe449422e9"
+}

@@ -15,20 +15,24 @@ pub struct Config {
 pub struct DeleteReqsConfig {
     #[arg(long)]
     pub ids: Option<Vec<String>>,
+    /// Delete requirements before the set generation.
+    #[arg(long)]
+    pub before: Option<i64>,
 }
 
 #[derive(clap::Args)]
 pub struct DeleteTracesConfig {
     #[arg(long, alias = "id")]
     pub req_ids: Option<Vec<String>>,
+    /// Delete traces before the set generation.
+    #[arg(long)]
+    pub before: Option<i64>,
 }
 
 #[derive(clap::Args)]
-pub struct DeleteTestRunConfig {
-    #[arg(long)]
-    pub name: Option<String>,
-    #[arg(long)]
-    pub date: Option<String>,
+pub struct DeleteTestRunsConfig {
+    #[arg(long, alias = "older-than")]
+    pub before: Option<String>,
 }
 
 #[derive(clap::Args)]
@@ -38,9 +42,7 @@ pub struct DeleteCoverageConfig {
 }
 
 #[derive(clap::Args)]
-pub struct DeleteReviewConfig {
-    #[arg(long)]
-    pub name: Option<String>,
-    #[arg(long)]
-    pub date: Option<String>,
+pub struct DeleteReviewsConfig {
+    #[arg(long, alias = "older-than")]
+    pub before: Option<String>,
 }
