@@ -9,7 +9,10 @@ use sqlx::Pool;
 pub use sqlx;
 
 use crate::{
-    cfg::{DeleteCoverageConfig, DeleteReqsConfig, DeleteTracesConfig},
+    cfg::{
+        DeleteCoverageConfig, DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig,
+        DeleteTracesConfig,
+    },
     cmd::coverage::TestRunConfig,
 };
 
@@ -421,8 +424,10 @@ impl MantraDb {
         traces: &[TraceEntry],
         new_generation: i64,
     ) -> Result<TraceChanges, DbError> {
-        let mut changes = TraceChanges::default();
-        changes.new_generation = new_generation;
+        let mut changes = TraceChanges {
+            new_generation,
+            ..Default::default()
+        };
 
         let file = if let Some(root_path) = root {
             get_relative_path(root_path, filepath)?
@@ -605,6 +610,36 @@ impl MantraDb {
         Ok(())
     }
 
+    pub async fn add_skipped_test(
+        &self,
+        test_run: &TestRunConfig,
+        name: &str,
+        filepath: &Path,
+        line: u32,
+        reason: Option<String>,
+    ) -> Result<(), DbError> {
+        let file = filepath.display().to_string();
+        sqlx::query!(
+                "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
+                name,
+                test_run.name,
+                test_run.date,
+                file,
+                line,
+                reason,
+            )
+            .execute(&self.pool)
+            .await
+            .map_err(|err| {
+                DbError::Insertion(format!(
+                    "Adding skipped test '{}' for test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
+                    name, test_run.name, test_run.date, file, line, err
+                ))
+            })?;
+
+        Ok(())
+    }
+
     pub async fn add_test_run(
         &self,
         test_run: &TestRunConfig,
@@ -652,7 +687,7 @@ impl MantraDb {
     }
 
     pub async fn is_valid(&self) -> Result<(), DbError> {
-        let traced_deprecated = sqlx::query!("select t.req_id from Traces as t, Requirements as r where t.req_id = r.id and r.annotation = 'deprecated' limit 100").fetch_all(&self.pool).await.map_err(|err| DbError::Validate(err.to_string()))?;
+        let traced_deprecated = sqlx::query!("select t.req_id from Traces t, DeprecatedRequirements dr where t.req_id = dr.id limit 100").fetch_all(&self.pool).await.map_err(|err| DbError::Validate(err.to_string()))?;
 
         if traced_deprecated.is_empty() {
             Ok(())
@@ -674,45 +709,35 @@ impl MantraDb {
     }
 
     pub async fn delete_reqs(&self, cfg: &DeleteReqsConfig) -> Result<(), DbError> {
-        match &cfg.ids {
-            Some(ids) => {
-                for id in ids {
-                    let _ = sqlx::query!("delete from Requirements where id = $1", id)
-                        .execute(&self.pool)
-                        .await
-                        .map_err(|err| DbError::Delete(err.to_string()))?;
-                }
+        let ids = cfg.ids.as_deref().unwrap_or_default();
 
-                let _ = sqlx::query!(
-                    "delete from Tests where name not in (select test_name from TestCoverage)"
-                )
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ =
-                sqlx::query!("delete from TestRuns where (name, date) not in (select test_run_name, test_run_date from TestCoverage)")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ =
-                sqlx::query!("delete from Reviews where (name, date) not in (select review_name, review_date from ManuallyVerified)")
+        if ids.is_empty() {
+            if let Some(before) = cfg.before {
+                let _ = sqlx::query!("delete from Requirements where generation < $1", before)
                     .execute(&self.pool)
                     .await
                     .map_err(|err| DbError::Delete(err.to_string()))?;
             }
-            None => {
-                let _ = sqlx::query!("delete from TestRuns")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from Reviews")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
-                let _ = sqlx::query!("delete from Requirements")
-                    .execute(&self.pool)
-                    .await
-                    .map_err(|err| DbError::Delete(err.to_string()))?;
+        } else {
+            for id in ids {
+                match cfg.before {
+                    Some(before) => {
+                        sqlx::query!(
+                            "delete from Requirements where id = $1 and generation < $2",
+                            id,
+                            before
+                        )
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+                    }
+                    None => {
+                        sqlx::query!("delete from Requirements where id = $1", id)
+                            .execute(&self.pool)
+                            .await
+                            .map_err(|err| DbError::Delete(err.to_string()))?;
+                    }
+                };
             }
         }
 
@@ -723,84 +748,99 @@ impl MantraDb {
         let ids = cfg.req_ids.as_deref().unwrap_or_default();
 
         if ids.is_empty() {
-            let _ = sqlx::query!("delete from Tests")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-            let _ = sqlx::query!("delete from TestRuns")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-            let _ = sqlx::query!("delete from Traces")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-        } else {
-            for id in ids {
-                let _ = sqlx::query!("delete from Traces where req_id = $1", id)
+            if let Some(before) = cfg.before {
+                let _ = sqlx::query!("delete from Traces where generation < $1", before)
                     .execute(&self.pool)
                     .await
                     .map_err(|err| DbError::Delete(err.to_string()))?;
             }
-
-            // tests have no associated requirement id, so deleting on "req_id" is not possible.
-            // But if no coverage links to a test, it is safe to delete it
-            let _ = sqlx::query!(
-                "delete from Tests where name not in (select test_name from TestCoverage)"
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| DbError::Delete(err.to_string()))?;
-
-            let _ = sqlx::query!(
-                "delete from TestRuns where (name, date) not in (select test_run_name, test_run_date from TestCoverage)"
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| DbError::Delete(err.to_string()))?;
+        } else {
+            for id in ids {
+                match cfg.before {
+                    Some(before) => {
+                        sqlx::query!(
+                            "delete from Traces where req_id = $1 and generation < $2",
+                            id,
+                            before
+                        )
+                        .execute(&self.pool)
+                        .await
+                        .map_err(|err| DbError::Delete(err.to_string()))?;
+                    }
+                    None => {
+                        sqlx::query!("delete from Traces where req_id = $1", id)
+                            .execute(&self.pool)
+                            .await
+                            .map_err(|err| DbError::Delete(err.to_string()))?;
+                    }
+                };
+            }
         }
 
         Ok(())
     }
 
-    pub async fn delete_coverage(&self, cfg: &DeleteCoverageConfig) -> Result<(), DbError> {
-        let ids = cfg.req_ids.as_deref().unwrap_or_default();
-
-        if ids.is_empty() {
-            let _ = sqlx::query!("delete from TestCoverage")
+    pub async fn delete_test_runs(&self, cfg: DeleteTestRunsConfig) -> Result<(), DbError> {
+        match cfg.before {
+            Some(before) => {
+                sqlx::query!(
+                    "delete from TestRuns where unixepoch(date) < unixepoch($1)",
+                    before
+                )
                 .execute(&self.pool)
                 .await
                 .map_err(|err| DbError::Delete(err.to_string()))?;
-            let _ = sqlx::query!("delete from Tests")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-            let _ = sqlx::query!("delete from TestRuns")
-                .execute(&self.pool)
-                .await
-                .map_err(|err| DbError::Delete(err.to_string()))?;
-        } else {
-            for id in ids {
-                let _ = sqlx::query!("delete from TestCoverage where req_id = $1", id)
+            }
+            None => {
+                sqlx::query!("delete from TestRuns")
                     .execute(&self.pool)
                     .await
                     .map_err(|err| DbError::Delete(err.to_string()))?;
             }
-
-            let _ = sqlx::query!(
-                "delete from Tests where name not in (select test_name from TestCoverage)"
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| DbError::Delete(err.to_string()))?;
-
-            let _ = sqlx::query!(
-                "delete from TestRuns where (name, date) not in (select test_run_name, test_run_date from TestCoverage)"
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| DbError::Delete(err.to_string()))?;
         }
+
+        Ok(())
+    }
+
+    pub async fn delete_reviews(&self, cfg: DeleteReviewsConfig) -> Result<(), DbError> {
+        match cfg.before {
+            Some(before) => {
+                sqlx::query!(
+                    "delete from Reviews where unixepoch(date) < unixepoch($1)",
+                    before
+                )
+                .execute(&self.pool)
+                .await
+                .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+            None => {
+                sqlx::query!("delete from Reviews")
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| DbError::Delete(err.to_string()))?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn clean(&self) -> Result<(), DbError> {
+        let _ = sqlx::query!(
+            "delete from Tests where name not in (select test_name from TestCoverage)"
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DbError::Delete(err.to_string()))?;
+        let _ =
+        sqlx::query!("delete from TestRuns where (name, date) not in (select test_run_name, test_run_date from TestCoverage)")
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DbError::Delete(err.to_string()))?;
+        let _ =
+        sqlx::query!("delete from Reviews where (name, date) not in (select review_name, review_date from ManuallyVerified)")
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DbError::Delete(err.to_string()))?;
 
         Ok(())
     }

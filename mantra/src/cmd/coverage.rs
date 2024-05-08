@@ -103,7 +103,7 @@ pub async fn coverage_from_defmt_frames(
     for frame in frames {
         let new_test_fn = add_frame_to_db(frame, db, &test_run, current_test_fn.as_deref()).await?;
 
-        if current_test_fn != new_test_fn {
+        if current_test_fn != new_test_fn || frame.data.to_lowercase() == "all tests passed!" {
             if let Some(passed_test_fn) = &current_test_fn {
                 db.test_passed(&test_run, passed_test_fn)
                     .await
@@ -191,6 +191,20 @@ async fn add_frame_to_db(
                 .await.map_err(CoverageError::Db)?;
             }
             "ignoring" => {
+                let test_fn_name = format!("{}::{}", mod_path_str, fn_name.as_str());
+
+                db.update_nr_of_tests(test_run, nr_tests)
+                .await.map_err(CoverageError::Db)?;
+
+                db.add_skipped_test(
+                    test_run,
+                    &test_fn_name,
+                    &PathBuf::from(file),
+                    line_nr,
+                    None, // TODO: adapt 'ignore'-attribute in defmt-test to allow string literal as argument
+                )
+                .await.map_err(CoverageError::Db)?;
+
                 new_test_fn = None;
             }
             _ => unreachable!("Invalid state '{}' for test function '{}' in log entry '{}'. Only 'running' and 'ignoring' are allowed.", fn_state.as_str(), fn_name.as_str(), frame.data),
@@ -227,54 +241,5 @@ async fn add_frame_to_db(
 
     Ok(new_test_fn)
 }
-
-// async fn coverage_from_defmtjson(
-//     data: &str,
-//     db: &MantraDb,
-//     project_name: &str,
-//     test_prefix: Option<&str>,
-// ) -> Result<(), CoverageError> {
-//     let lines = data.lines().collect::<Vec<_>>();
-
-//     let schema_version: SchemaVersion =
-//         serde_json::from_str(lines.first().ok_or(CoverageError::DefmtJson(
-//             "Missing defmt schema version at start of given data.".to_string(),
-//         ))?)
-//         .map_err(|err| {
-//             CoverageError::DefmtJson(format!(
-//                 "Could not extract defmt schema version from given data. Cause: {}",
-//                 err
-//             ))
-//         })?;
-
-//     match schema_version {
-//         defmt_json_schema::v1::SCHEMA_VERSION => {
-//             let mut current_test_fn = None;
-
-//             for line in &lines[1..] {
-//                 if line.is_empty() {
-//                     continue;
-//                 }
-
-//                 let frame: JsonFrame = serde_json::from_str(line).map_err(|err| {
-//                     CoverageError::DefmtJson(format!(
-//                         "Could not extract defmt log frame from line '{}'. Cause: {}",
-//                         line, err
-//                     ))
-//                 })?;
-
-//                 current_test_fn =
-//                     add_frame_to_db(&frame, db, project_name, test_prefix, current_test_fn).await?;
-//             }
-//         }
-//         _ => {
-//             return Err(CoverageError::DefmtJson(
-//                 "Only defmt schema version 1 is supported for now.".to_string(),
-//             ))
-//         }
-//     }
-
-//     Ok(())
-// }
 
 static TEST_FN_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();

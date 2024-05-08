@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "90181a31500076aae265f0a744a903bd2c434ddb4c3897edde4aa9fed69fed7f"
+}

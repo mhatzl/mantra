@@ -1,4 +1,4 @@
-use crate::cfg::{DeleteCoverageConfig, DeleteReqsConfig, DeleteReviewConfig, DeleteTracesConfig};
+use crate::cfg::{DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig, DeleteTracesConfig};
 
 pub mod analyze;
 pub mod coverage;
@@ -14,6 +14,7 @@ pub enum Cmd {
     Coverage(coverage::CliConfig),
     DeleteReqs(DeleteReqsConfig),
     DeleteTraces(DeleteTracesConfig),
-    DeleteCoverage(DeleteCoverageConfig),
-    DeleteReview(DeleteReviewConfig),
+    DeleteTestRuns(DeleteTestRunsConfig),
+    DeleteReviews(DeleteReviewsConfig),
+    Clean,
 }
