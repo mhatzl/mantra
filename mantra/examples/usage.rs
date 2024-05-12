@@ -36,7 +36,7 @@ async fn main() {
     let report_cfg = mantra::cfg::Config {
         db,
         cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
-            path: PathBuf::from("mantra/examples/"),
+            path: PathBuf::from("mantra/examples/mantra_report.json"),
             template: None,
             json: true,
         }),
