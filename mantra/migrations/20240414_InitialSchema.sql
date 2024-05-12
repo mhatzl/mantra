@@ -16,80 +16,6 @@ create table RequirementHierarchies (
     primary key (child_id, parent_id)
 );
 
-create view RequirementChildren as
-with recursive TransitiveChildren(id, child_id) as
-(
-    select parent_id, child_id from RequirementHierarchies
-    union all
-    select tc.id, rh.child_id from RequirementHierarchies rh, TransitiveChildren tc
-    where tc.child_id = rh.parent_id
-)
-select id, child_id from TransitiveChildren;
-
-create view DeprecatedRequirements as
-select id, origin, annotation from Requirements
-where lower(annotation) = 'deprecated';
-
-create view ManualRequirements as
-select id, origin, annotation from Requirements
-where lower(annotation) = 'manual';
-
-create view DirectlyTracedRequirements as
-select id, origin, annotation from Requirements
-where id in (select req_id from Traces);
-
-create view IndirectlyTracedRequirements as
-select r.id, r.origin, r.annotation from Requirements r, RequirementChildren c
-where r.id = c.id and c.child_id in (select id from DirectlyTracedRequirements)
-and r.id not in (select id from DirectlyTracedRequirements);
-
-create view TracedRequirements as
-select id, origin, annotation from DirectlyTracedRequirements
-union all
-select id, origin, annotation from IndirectlyTracedRequirements;
-
-create view UntracedRequirements as
-select id, origin, annotation from Requirements
-except
-select id, origin, annotation from TracedRequirements;
-
-create view DirectlyCoveredRequirements as
-select id, origin, annotation from Requirements
-where id in (select req_id from TestCoverage);
-
-create view IndirectlyCoveredRequirements as
-select r.id, r.origin, r.annotation from Requirements r, RequirementChildren c
-where r.id = c.id and c.child_id in (select id from DirectlyCoveredRequirements)
-and r.id not in (select id from DirectlyCoveredRequirements);
-
-create view CoveredRequirements as
-select id, origin, annotation from DirectlyCoveredRequirements
-union all
-select id, origin, annotation from IndirectlyCoveredRequirements;
-
-create view UncoveredRequirements as
-select id, origin, annotation from Requirements
-except
-select id, origin, annotation from CoveredRequirements;
-
-create view PassedCoveredRequirements as
-select id, origin, annotation from CoveredRequirements
-where id not in (select req_id from FailedTestCoverage);
-
-create view FailedCoveredRequirements as
-select id, origin, annotation from CoveredRequirements
-where id in (select req_id from FailedTestCoverage);
-
-create view RequirementCoverageOverview as
-with NrRequirements(cnt) as (select count(*) from Requirements),
-NrTraced(cnt) as (select count(*) from TracedRequirements),
-NrCovered(cnt) as (select count(*) from CoveredRequirements),
-NrPassed(cnt) as (select count(*) from PassedCoveredRequirements)
-select r.cnt as req_cnt, t.cnt as traced_cnt, case when r.cnt = 0 then null else (t.cnt * 1.0 / r.cnt) end as traced_ratio,
-    c.cnt as covered_cnt, case when r.cnt = 0 then null else (c.cnt * 1.0 / r.cnt) end as covered_ration,
-    p.cnt as passed_cnt, case when r.cnt = 0 then null else (p.cnt * 1.0 / r.cnt) end as passed_ratio
-from NrRequirements r, NrTraced t, NrCovered c, NrPassed p;
-
 -- traces to requirements
 -- generation is used to show changes for "--dry-run" and to delete non-existing traces.
 create table Traces (
@@ -111,79 +37,6 @@ create table TestRuns (
     logs text,
     primary key (name, date)
 );
-
-create view PassedTests as
-select test_run_name, test_run_date, name, filepath, line
-from Tests
-where passed = 1;
-
-create view FailedTestCoverage as
-select tc.req_id, tc.test_run_name, tc.test_run_date, tc.test_name, tc.filepath, tc.line
-from TestCoverage tc, Tests t
-where tc.test_run_name = t.test_run_name and tc.test_run_date = t.test_run_date
-    and tc.test_name = t.name and t.passed <> 1;
-
-create view TestRunOverview as
-with NrTests(name, date, cnt) as
-(
-    select tr.name, tr.date, count(*)
-    from TestRuns tr, Tests t
-    where tr.name = t.test_run_name and tr.date = t.test_run_date
-    group by tr.name, tr.date
-),
-NrPassed(name, date, cnt) as
-(
-    select tr.name, tr.date, count(*)
-    from TestRuns tr, PassedTests t
-    where tr.name = t.test_run_name and tr.date = t.test_run_date
-    group by tr.name, tr.date
-),
-NrFailed(name, date, cnt) as
-(
-    select tr.name, tr.date, count(*)
-    from TestRuns tr, Tests t
-    where tr.name = t.test_run_name and tr.date = t.test_run_date
-        and t.passed <> 1
-    group by tr.name, tr.date
-),
-NrSkipped(name, date, cnt) as
-(
-    select tr.name, tr.date, count(*)
-    from TestRuns tr, SkippedTests t
-    where tr.name = t.test_run_name and tr.date = t.test_run_date
-    group by tr.name, tr.date
-),
-TestRunCnts(name, date, tests, passed, failed, skipped) as
-(
-    select name, date, sum(tests), sum(passed), sum(failed), sum(skipped)
-    from (
-        select name, date, cnt as tests, 0 as passed, 0 as failed, 0 as skipped
-        from NrTests
-        union all
-        select name, date, 0 as tests, cnt as passed, 0 as failed, 0 as skipped
-        from NrPassed
-        union all
-        select name, date, 0 as tests, 0 as passed, cnt as failed, 0 as skipped
-        from NrFailed
-        union all
-        select name, date, 0 as tests, 0 as passed, 0 as failed, cnt as skipped
-        from NrSkipped
-    )
-    where name not null and date not null
-    group by name, date
-)
-select name, date, tests,
-    passed, case when tests = 0 then null else (passed * 1.0 / tests) end as passed_ratio,
-    failed, case when tests = 0 then null else (failed * 1.0 / tests) end as failed_ratio,
-    skipped, case when tests = 0 then null else (skipped * 1.0 / tests) end as skipped_ratio
-from TestRunCnts;
-
-create view OverallTestOverview as
-select sum(tests) as tests,
-    sum(passed) as passed, case when sum(tests) = 0 then null else (sum(passed) * 1.0 / sum(tests)) end as passed_ratio,
-    sum(failed) as failed, case when sum(tests) = 0 then null else (sum(failed) * 1.0 / sum(tests)) end as failed_ratio,
-    sum(skipped) as skipped, case when sum(tests) = 0 then null else (sum(skipped) * 1.0 / sum(tests)) end as skipped_ratio
-from TestRunOverview;
 
 -- tests per test run
 --
@@ -242,6 +95,261 @@ create table ManuallyVerified (
     primary key (req_id, review_name, review_date),
     foreign key (review_name, review_date) references Reviews(name, date) on delete cascade
 );
+
+-----------------------------------------------------------------------------
+-- Views
+-----------------------------------------------------------------------------
+
+create view RequirementChildren as
+with recursive TransitiveChildren(id, child_id) as
+(
+    select parent_id, child_id from RequirementHierarchies
+    union all
+    select tc.id, rh.child_id from RequirementHierarchies rh, TransitiveChildren tc
+    where tc.child_id = rh.parent_id
+)
+select id, child_id from TransitiveChildren;
+
+-- Requirements without children
+create view LeafRequirements as
+select id, origin, annotation
+from Requirements
+where id not in (select parent_id from RequirementHierarchies);
+
+create view NonLeafRequirements as
+select id, origin, annotation
+from Requirements
+except
+select id, origin, annotation
+from LeafRequirements;
+
+create view DeprecatedRequirements as
+select id, origin, annotation from Requirements
+where lower(annotation) = 'deprecated';
+
+create view ManualRequirements as
+select id, origin, annotation from Requirements
+where lower(annotation) = 'manual';
+
+create view DirectlyTracedRequirements as
+select id, origin, annotation from Requirements
+where id in (select req_id from Traces);
+
+-- A requirement is indirectly traced
+-- if **all** of its direct child requirements are either directly or indirectly traced.
+create view IndirectlyTracedRequirements as
+with recursive IsIndirectlyUntraced(id) as (
+    -- Leaf requirements cannot be traced indirectly
+    select id
+    from LeafRequirements
+    where id not in (select id from DirectlyTracedRequirements)
+    union all
+    -- Recursively get requirements that are not indirectly traced
+    select r.id
+    from NonLeafRequirements r, RequirementHierarchies rh, IsIndirectlyUntraced u
+    where r.id = rh.parent_id
+    and rh.child_id = u.id
+),
+-- Neither directly or indirectly traced requirements
+IsUntraced(id) as (
+    select id from IsIndirectlyUntraced
+    except
+    select id from DirectlyTracedRequirements
+),
+HasUntracedChild(id) as (
+    select rh.parent_id
+    from RequirementHierarchies rh, IsUntraced u
+    where rh.child_id = u.id
+)
+-- Only non-leaf requirements can be indirectly traced
+select distinct id, origin, annotation
+from NonLeafRequirements
+where id not in (select id from HasUntracedChild);
+
+-- Traces to child requirements.
+-- Also includes traces to non-leaf children.
+create view IndirectRequirementTraces as
+select ir.id, c.child_id as traced_id, t.filepath, t.line
+from IndirectlyTracedRequirements ir, RequirementChildren c, Traces t
+where ir.id = c.id and c.child_id = t.req_id;
+
+create view TracedRequirements as
+select id, origin, annotation from DirectlyTracedRequirements
+union
+select id, origin, annotation from IndirectlyTracedRequirements;
+
+create view UntracedRequirements as
+select id, origin, annotation from Requirements
+except
+select id, origin, annotation from TracedRequirements;
+
+create view DirectlyCoveredRequirements as
+select id, origin, annotation from Requirements
+where id in (select req_id from TestCoverage);
+
+-- Indirectly covered requirements have the same constraint
+-- as indirectly traced requirements.
+--
+-- See description for indirectly traced requirements for more information.
+create view IndirectlyCoveredRequirements as
+with recursive IsIndirectlyUncovered(id) as (
+    -- Leaf requirements cannot be covered indirectly
+    select id
+    from LeafRequirements
+    where id not in (select id from DirectlyCoveredRequirements)
+    union all
+    -- Recursively get requirements that are not indirectly covered
+    select r.id
+    from NonLeafRequirements r, RequirementHierarchies rh, IsIndirectlyUncovered u
+    where r.id = rh.parent_id
+    and rh.child_id = u.id
+),
+-- Neither directly or indirectly covered requirements
+IsUncovered(id) as (
+    select id from IsIndirectlyUncovered
+    except
+    select id from DirectlyCoveredRequirements
+),
+HasUncoveredChild(id) as (
+    select rh.parent_id
+    from RequirementHierarchies rh, IsUncovered u
+    where rh.child_id = u.id
+)
+-- Only non-leaf requirements can be indirectly uncovered
+select distinct id, origin, annotation
+from NonLeafRequirements
+where id not in (select id from HasUncoveredChild);
+
+-- Test coverage of child requirements.
+-- Also includes test coverage of non-leaf children.
+create view IndirectRequirementTestCoverage as
+select r.id, c.child_id as covered_id, v.test_run_name, v.test_run_date, v.test_name, v.filepath, v.line
+from Requirements r, RequirementChildren c, TestCoverage v
+where r.id = c.id and c.child_id = v.req_id;
+
+create view CoveredRequirements as
+select id, origin, annotation from DirectlyCoveredRequirements
+union
+select id, origin, annotation from IndirectlyCoveredRequirements;
+
+create view UncoveredRequirements as
+select id, origin, annotation from Requirements
+except
+select id, origin, annotation from CoveredRequirements;
+
+create view PassedCoveredRequirements as
+select r.id, r.origin, r.annotation
+from CoveredRequirements r
+except
+select f.id, f.origin, f.annotation
+from FailedCoveredRequirements f;
+
+-- Coverage of a requirement failed if either one of the following holds:
+--
+-- - one of the tests failed that directly covered the requirement
+-- - one of the child requirements has failed coverage
+create view FailedCoveredRequirements as
+with HasFailedChild(id) as (
+    select r.id from Requirements r, RequirementHierarchies rh
+    where r.id = rh.parent_id
+    and rh.child_id in (select req_id from FailedTestCoverage)
+)
+select id, origin, annotation from CoveredRequirements
+where id in (select req_id from FailedTestCoverage)
+or id in (select id from HasFailedChild);
+
+create view RequirementCoverageOverview as
+with NrRequirements(cnt) as (select count(*) from Requirements),
+NrTraced(cnt) as (select count(*) from TracedRequirements),
+NrCovered(cnt) as (select count(*) from CoveredRequirements),
+NrPassed(cnt) as (select count(*) from PassedCoveredRequirements)
+select r.cnt as req_cnt, t.cnt as traced_cnt, case when r.cnt = 0 then 0.0 else (t.cnt * 1.0 / r.cnt) end as traced_ratio,
+    c.cnt as covered_cnt, case when r.cnt = 0 then 0.0 else (c.cnt * 1.0 / r.cnt) end as covered_ratio,
+    p.cnt as passed_cnt, case when r.cnt = 0 then 0.0 else (p.cnt * 1.0 / r.cnt) end as passed_ratio
+from NrRequirements r, NrTraced t, NrCovered c, NrPassed p;
+
+create view PassedTests as
+select test_run_name, test_run_date, name, filepath, line
+from Tests
+where passed = 1;
+
+create view FailedTestCoverage as
+select tc.req_id, tc.test_run_name, tc.test_run_date, tc.test_name, tc.filepath, tc.line
+from TestCoverage tc, Tests t
+where tc.test_run_name = t.test_run_name and tc.test_run_date = t.test_run_date
+    and tc.test_name = t.name and t.passed <> 1;
+
+create view TestRunOverview as
+with NrTests(name, date, cnt) as
+(
+    select tr.name, tr.date, tr.nr_of_tests
+    from TestRuns tr
+),
+NrRanTests(name, date, cnt) as
+(
+    select tr.name, tr.date, count(*)
+    from TestRuns tr, Tests t
+    where tr.name = t.test_run_name and tr.date = t.test_run_date
+    group by tr.name, tr.date
+),
+NrPassed(name, date, cnt) as
+(
+    select tr.name, tr.date, count(*)
+    from TestRuns tr, PassedTests t
+    where tr.name = t.test_run_name and tr.date = t.test_run_date
+    group by tr.name, tr.date
+),
+NrFailed(name, date, cnt) as
+(
+    select tr.name, tr.date, count(*)
+    from TestRuns tr, Tests t
+    where tr.name = t.test_run_name and tr.date = t.test_run_date
+        and t.passed <> 1
+    group by tr.name, tr.date
+),
+NrSkipped(name, date, cnt) as
+(
+    select tr.name, tr.date, count(*)
+    from TestRuns tr, SkippedTests t
+    where tr.name = t.test_run_name and tr.date = t.test_run_date
+    group by tr.name, tr.date
+),
+TestRunCnts(name, date, test_cnt, ran_cnt, passed_cnt, failed_cnt, skipped_cnt) as
+(
+    select name, date, sum(test_cnt), sum(ran_cnt), sum(passed_cnt), sum(failed_cnt), sum(skipped_cnt)
+    from (
+        select name, date, cnt as test_cnt, 0 as ran_cnt, 0 as passed_cnt, 0 as failed_cnt, 0 as skipped_cnt
+        from NrTests
+        union all
+        select name, date, 0 as test_cnt, cnt as ran_cnt, 0 as passed_cnt, 0 as failed_cnt, 0 as skipped_cnt
+        from NrRanTests
+        union all
+        select name, date, 0 as test_cnt, 0 as ran_cnt, cnt as passed_cnt, 0 as failed_cnt, 0 as skipped_cnt
+        from NrPassed
+        union all
+        select name, date, 0 as test_cnt, 0 as ran_cnt, 0 as passed_cnt, cnt as failed_cnt, 0 as skipped_cnt
+        from NrFailed
+        union all
+        select name, date, 0 as test_cnt, 0 as ran_cnt, 0 as passed_cnt, 0 as failed_cnt, cnt as skipped_cnt
+        from NrSkipped
+    )
+    where name not null and date not null
+    group by name, date
+)
+select name, date, test_cnt,
+    ran_cnt, case when test_cnt = 0 then 0.0 else (ran_cnt * 1.0 / test_cnt) end as ran_ratio,
+    passed_cnt, case when test_cnt = 0 then 0.0 else (passed_cnt * 1.0 / test_cnt) end as passed_ratio,
+    failed_cnt, case when test_cnt = 0 then 0.0 else (failed_cnt * 1.0 / test_cnt) end as failed_ratio,
+    skipped_cnt, case when test_cnt = 0 then 0.0 else (skipped_cnt * 1.0 / test_cnt) end as skipped_ratio
+from TestRunCnts;
+
+create view OverallTestOverview as
+select sum(test_cnt) as test_cnt,
+    sum(ran_cnt) as ran_cnt, case when sum(test_cnt) = 0 then 0.0 else (sum(ran_cnt) * 1.0 / sum(test_cnt)) end as ran_ratio,
+    sum(passed_cnt) as passed_cnt, case when sum(test_cnt) = 0 then 0.0 else (sum(passed_cnt) * 1.0 / sum(test_cnt)) end as passed_ratio,
+    sum(failed_cnt) as failed_cnt, case when sum(test_cnt) = 0 then 0.0 else (sum(failed_cnt) * 1.0 / sum(test_cnt)) end as failed_ratio,
+    sum(skipped_cnt) as skipped_cnt, case when sum(test_cnt) = 0 then 0.0 else (sum(skipped_cnt) * 1.0 / sum(test_cnt)) end as skipped_ratio
+from TestRunOverview;
 
 create view ManuallyVerifiedRequirements as
 select r.id, r.origin, r.annotation from Requirements r, ManuallyVerified m

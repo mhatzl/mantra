@@ -22,10 +22,19 @@ pub struct Config {
     pub fmt: LogFormat,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct TestRunConfig {
     pub name: String,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
     pub date: time::OffsetDateTime,
+}
+
+pub fn iso8601_str_to_offsetdatetime(time_str: &str) -> OffsetDateTime {
+    OffsetDateTime::parse(
+        time_str,
+        &time::format_description::well_known::Iso8601::DEFAULT,
+    )
+    .expect("Test run date was added to db in ISO8601 format.")
 }
 
 #[derive(Debug, Clone, clap::ValueEnum)]

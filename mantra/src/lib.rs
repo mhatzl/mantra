@@ -1,4 +1,4 @@
-use cmd::{coverage::CoverageError, extract::ExtractError, trace::TraceError};
+use cmd::{coverage::CoverageError, extract::ExtractError, report::ReportError, trace::TraceError};
 use db::DbError;
 
 pub mod cfg;
@@ -24,6 +24,8 @@ pub enum MantraError {
     AddManualReq(DbError),
     #[error("Failed to delete database entries. Cause: {}", .0)]
     Delete(DbError),
+    #[error("Failed to create the report.")]
+    Report(ReportError),
     #[error("Failed to clean the database. Cause: {}", .0)]
     Clean(DbError),
 }
@@ -73,6 +75,9 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             .delete_reviews(delete_reviews_cfg)
             .await
             .map_err(MantraError::Delete),
+        cmd::Cmd::Report(report_cfg) => cmd::report::report(&db, report_cfg)
+            .await
+            .map_err(MantraError::Report),
         cmd::Cmd::Clean => db.clean().await.map_err(MantraError::Clean),
     }
 }
