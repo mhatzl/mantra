@@ -9,10 +9,7 @@ use sqlx::Pool;
 pub use sqlx;
 
 use crate::{
-    cfg::{
-        DeleteCoverageConfig, DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig,
-        DeleteTracesConfig,
-    },
+    cfg::{DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig, DeleteTracesConfig},
     cmd::coverage::TestRunConfig,
 };
 

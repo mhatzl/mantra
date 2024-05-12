@@ -1,5 +1,7 @@
 use crate::cfg::{DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig, DeleteTracesConfig};
 
+use self::report::ReportConfig;
+
 pub mod analyze;
 pub mod coverage;
 pub mod extract;
@@ -16,5 +18,6 @@ pub enum Cmd {
     DeleteTraces(DeleteTracesConfig),
     DeleteTestRuns(DeleteTestRunsConfig),
     DeleteReviews(DeleteReviewsConfig),
+    Report(ReportConfig),
     Clean,
 }

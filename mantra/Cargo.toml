@@ -24,4 +24,5 @@ mime_guess = "2.0.4"
 defmt-json-schema = "0.1.0"
 thiserror = "1.0.59"
 log = "0.4.21"
-time = "0.3.36"
+time = { version = "0.3.36", features = ["serde", "formatting", "parsing"] }
+tera = "1.19.1"
