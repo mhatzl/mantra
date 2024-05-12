@@ -41,13 +41,14 @@
         "direct_coverage": [
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-12T13:33:34.599263800Z",
+            "test_run_date": "+002024-05-12T14:10:16.086096100Z",
             "test_name": "usage::test_fn",
             "filepath": "traces.rs",
             "line": 1
           }
         ],
-        "indirect_coverage": []
+        "indirect_coverage": [],
+        "failed_coverage": []
       },
       "review_infos": []
     },
@@ -72,9 +73,10 @@
       },
       "test_coverage_info": {
         "covered": false,
-        "passed": true,
+        "passed": false,
         "direct_coverage": [],
-        "indirect_coverage": []
+        "indirect_coverage": [],
+        "failed_coverage": []
       },
       "review_infos": []
     },
@@ -108,9 +110,10 @@
       },
       "test_coverage_info": {
         "covered": false,
-        "passed": true,
+        "passed": false,
         "direct_coverage": [],
-        "indirect_coverage": []
+        "indirect_coverage": [],
+        "failed_coverage": []
       },
       "review_infos": []
     }
@@ -141,7 +144,7 @@
           "skipped_ratio": 0.0
         },
         "name": "test-run",
-        "date": "+002024-05-12T13:33:34.599263800Z",
+        "date": "+002024-05-12T14:10:16.086096100Z",
         "logs": "[{\"data\":\"(1/1) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"all tests passed!\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"}]",
         "tests": [
           {

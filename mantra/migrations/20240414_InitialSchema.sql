@@ -249,14 +249,22 @@ from FailedCoveredRequirements f;
 -- - one of the tests failed that directly covered the requirement
 -- - one of the child requirements has failed coverage
 create view FailedCoveredRequirements as
-with HasFailedChild(id) as (
-    select r.id from Requirements r, RequirementHierarchies rh
-    where r.id = rh.parent_id
-    and rh.child_id in (select req_id from FailedTestCoverage)
+with HasFailedChild(id, covered_id) as (
+    select r.id, rc.child_id from Requirements r, RequirementChildren rc, FailedTestCoverage f
+    where r.id = rc.id and rc.child_id = f.req_id
 )
-select id, origin, annotation from CoveredRequirements
-where id in (select req_id from FailedTestCoverage)
-or id in (select id from HasFailedChild);
+select c.id, c.origin, c.annotation, hf.covered_id
+from CoveredRequirements c, FailedTestCoverage f, HasFailedChild hf
+where c.id = f.req_id or c.id = hf.id;
+
+create view FailedRequirementCoverage as
+select fr.id, null as covered_id, fc.test_run_name, fc.test_run_date, fc.test_name, fc.filepath, fc.line
+from FailedCoveredRequirements fr, FailedTestCoverage fc
+where fr.id = fc.req_id
+union all
+select fr.id, fr.covered_id as covered_id, fc.test_run_name, fc.test_run_date, fc.test_name, fc.filepath, fc.line
+from FailedCoveredRequirements fr, FailedTestCoverage fc
+where fr.covered_id = fc.req_id;
 
 create view RequirementCoverageOverview as
 with NrRequirements(cnt) as (select count(*) from Requirements),

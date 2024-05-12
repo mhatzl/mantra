@@ -330,6 +330,7 @@ pub struct RequirementTestCoverageInfo {
     pub passed: bool,
     pub direct_coverage: Vec<DirectTestCoverageInfo>,
     pub indirect_coverage: Vec<IndirectTestCoverageInfo>,
+    pub failed_coverage: Vec<FailedTestCoverageInfo>,
 }
 
 impl RequirementTestCoverageInfo {
@@ -385,7 +386,7 @@ impl RequirementTestCoverageInfo {
 
         let passed = sqlx::query!(
             "
-            select count(*) as cnt
+            select *
             from PassedCoveredRequirements
             where id = $1
             ",
@@ -396,11 +397,36 @@ impl RequirementTestCoverageInfo {
         .ok()
         .is_some();
 
+        let records = sqlx::query!(
+            r#"
+                select covered_id, test_run_name, test_run_date, test_name, filepath, line as "line: u32"
+                from FailedRequirementCoverage
+                where id = $1
+            "#,
+            id
+        )
+        .fetch_all(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
+
+        let mut failed_coverage = Vec::with_capacity(records.len());
+        for record in records {
+            failed_coverage.push(FailedTestCoverageInfo {
+                covered_id: record.covered_id,
+                test_run_name: record.test_run_name,
+                test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
+                test_name: record.test_name,
+                filepath: record.filepath,
+                line: record.line,
+            })
+        }
+
         Ok(Self {
             covered: !direct_coverage.is_empty() || !indirect_coverage.is_empty(),
             passed,
             direct_coverage,
             indirect_coverage,
+            failed_coverage,
         })
     }
 }
@@ -418,6 +444,17 @@ pub struct DirectTestCoverageInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct IndirectTestCoverageInfo {
     pub covered_id: String,
+    pub test_run_name: String,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    pub test_run_date: OffsetDateTime,
+    pub test_name: String,
+    pub filepath: String,
+    pub line: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct FailedTestCoverageInfo {
+    pub covered_id: Option<String>,
     pub test_run_name: String,
     #[serde(serialize_with = "time::serde::iso8601::serialize")]
     pub test_run_date: OffsetDateTime,
