@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 #[tokio::main]
 async fn main() {
-    let _ = std::fs::remove_file("usage.db");
+    let _ = std::fs::remove_file("mantra/examples/usage.db");
     let db = mantra::db::Config {
         url: Some("sqlite://mantra/examples/usage.db?mode=rwc".to_string()),
     };
@@ -36,7 +36,7 @@ async fn main() {
     let report_cfg = mantra::cfg::Config {
         db,
         cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
-            path: PathBuf::from("./"),
+            path: PathBuf::from("mantra/examples/"),
             template: None,
             json: true,
         }),
@@ -48,5 +48,5 @@ async fn main() {
 
     mantra::run(coverage_cfg).await.unwrap();
 
-    // mantra::run(report_cfg).await.unwrap();
+    mantra::run(report_cfg).await.unwrap();
 }

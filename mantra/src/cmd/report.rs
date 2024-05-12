@@ -181,7 +181,7 @@ pub struct RequirementInfo {
     pub manual: bool,
     pub trace_info: RequirementTraceInfo,
     pub test_coverage_info: RequirementTestCoverageInfo,
-    pub review_info: RequirementReviewInfo,
+    pub review_infos: Vec<RequirementReviewInfo>,
 }
 
 impl RequirementInfo {
@@ -206,7 +206,18 @@ impl RequirementInfo {
 
         let trace_info = RequirementTraceInfo::try_from(db, &id).await?;
         let test_coverage_info = RequirementTestCoverageInfo::try_from(db, &id).await?;
-        let review_info = RequirementReviewInfo::try_from(db, &id).await?;
+        let review_infos = sqlx::query_as!(
+            RequirementReviewInfo,
+            r#"
+            select true as "verified: bool", review_name, review_date, comment
+            from ManuallyVerified
+            where req_id = $1
+        "#,
+            id
+        )
+        .fetch_all(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
 
         Ok(Self {
             id,
@@ -216,7 +227,7 @@ impl RequirementInfo {
             manual,
             trace_info,
             test_coverage_info,
-            review_info,
+            review_infos,
         })
     }
 }
@@ -365,6 +376,7 @@ impl RequirementTestCoverageInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct DirectTestCoverageInfo {
     pub test_run_name: String,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
     pub filepath: String,
@@ -375,6 +387,7 @@ pub struct DirectTestCoverageInfo {
 pub struct IndirectTestCoverageInfo {
     pub covered_id: String,
     pub test_run_name: String,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
     pub filepath: String,
@@ -389,27 +402,10 @@ pub struct RequirementReviewInfo {
     pub comment: Option<String>,
 }
 
-impl RequirementReviewInfo {
-    pub async fn try_from(db: &MantraDb, id: &str) -> Result<Self, ReportError> {
-        sqlx::query_as!(
-            RequirementReviewInfo,
-            r#"
-            select true as "verified: bool", review_name, review_date, comment
-            from ManuallyVerified
-            where req_id = $1
-        "#,
-            id
-        )
-        .fetch_one(db.pool())
-        .await
-        .map_err(ReportError::Db)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct TestStatistics {
     pub overview: TestsOverview,
-    pub test_runs: Vec<TestRunOverview>,
+    pub test_runs: Vec<TestRunInfo>,
 }
 
 impl TestStatistics {
@@ -430,7 +426,7 @@ impl TestStatistics {
 
         for test_run in test_run_records {
             let date = iso8601_str_to_offsetdatetime(&test_run.date);
-            test_runs.push(TestRunOverview::try_from(db, &test_run.name, &date).await?);
+            test_runs.push(TestRunInfo::try_from(db, test_run.name, date).await?);
         }
 
         Ok(Self {
@@ -481,6 +477,7 @@ impl TestsOverview {
 pub struct TestRunInfo {
     pub overview: TestRunOverview,
     pub name: String,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
     pub date: OffsetDateTime,
     pub logs: Option<String>,
     pub tests: Vec<TestInfo>,
@@ -650,6 +647,7 @@ pub enum TestState {
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct Review {
     pub name: String,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
     pub date: OffsetDateTime,
     pub reviewer: String,
     pub comment: Option<String>,
@@ -664,7 +662,7 @@ impl Review {
     ) -> Result<Self, ReportError> {
         let name: String = name.into();
 
-        let records = sqlx::query_as!(
+        let verified_reqs = sqlx::query_as!(
             VerifiedRequirement,
             "
                 select req_id as id, comment
@@ -677,8 +675,6 @@ impl Review {
         .fetch_all(db.pool())
         .await
         .map_err(ReportError::Db)?;
-
-        let verified_reqs = records;
 
         let record = sqlx::query!(
             "
