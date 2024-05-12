@@ -26,7 +26,7 @@ pub struct ReportConfig {
 }
 
 pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError> {
-    let mut filepath = if cfg.path.is_file() {
+    let mut filepath = if cfg.path.extension().is_some() {
         cfg.path
     } else {
         let now = OffsetDateTime::now_utc();
@@ -177,6 +177,8 @@ pub struct RequirementInfo {
     pub id: String,
     pub origin: RequirementOrigin,
     pub annotation: Option<String>,
+    pub parent: Option<String>,
+    pub children: Vec<String>,
     pub deprecated: bool,
     pub manual: bool,
     pub trace_info: RequirementTraceInfo,
@@ -204,15 +206,43 @@ impl RequirementInfo {
         let deprecated = record.deprecated;
         let manual = record.manual;
 
+        let record = sqlx::query!(
+            r#"
+                select parent_id
+                from RequirementHierarchies
+                where child_id = $1
+            "#,
+            id
+        )
+        .fetch_optional(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
+
+        let parent = record.map(|r| r.parent_id);
+
+        let records = sqlx::query!(
+            r#"
+                select child_id
+                from RequirementHierarchies
+                where parent_id = $1
+            "#,
+            id
+        )
+        .fetch_all(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
+
+        let children = records.into_iter().map(|r| r.child_id).collect();
+
         let trace_info = RequirementTraceInfo::try_from(db, &id).await?;
         let test_coverage_info = RequirementTestCoverageInfo::try_from(db, &id).await?;
         let review_infos = sqlx::query_as!(
             RequirementReviewInfo,
             r#"
-            select true as "verified: bool", review_name, review_date, comment
-            from ManuallyVerified
-            where req_id = $1
-        "#,
+                select true as "verified: bool", review_name, review_date, comment
+                from ManuallyVerified
+                where req_id = $1
+            "#,
             id
         )
         .fetch_all(db.pool())
@@ -223,6 +253,8 @@ impl RequirementInfo {
             id,
             origin,
             annotation,
+            parent,
+            children,
             deprecated,
             manual,
             trace_info,
