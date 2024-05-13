@@ -73,7 +73,7 @@ pub async fn create_json_report(db: &MantraDb) -> Result<String, ReportError> {
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ReportContext {
     pub overview: RequirementsOverview,
     pub requirements: Vec<RequirementInfo>,
@@ -82,7 +82,10 @@ pub struct ReportContext {
     pub trace_criteria: &'static str,
     pub test_coverage_criteria: &'static str,
     pub test_passed_coverage_criteria: &'static str,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
     pub creation_date: OffsetDateTime,
 }
 
@@ -153,7 +156,7 @@ A requirement coverage passed if all of the following criteria are met:
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RequirementsOverview {
     pub req_cnt: i32,
     pub traced_cnt: i32,
@@ -183,7 +186,7 @@ impl RequirementsOverview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RequirementInfo {
     pub id: String,
     pub origin: RequirementOrigin,
@@ -277,7 +280,7 @@ impl RequirementInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RequirementTraceInfo {
     pub traced: bool,
     pub direct_traces: Vec<DirectTraceInfo>,
@@ -326,20 +329,20 @@ impl RequirementTraceInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DirectTraceInfo {
     pub filepath: String,
     pub line: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct IndirectTraceInfo {
     pub traced_id: String,
     pub filepath: String,
     pub line: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RequirementTestCoverageInfo {
     pub covered: bool,
     pub passed: bool,
@@ -449,46 +452,55 @@ impl RequirementTestCoverageInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DirectTestCoverageInfo {
     pub test_run_name: String,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
     pub filepath: String,
     pub line: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct IndirectTestCoverageInfo {
     pub covered_id: String,
     pub test_run_name: String,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
     pub filepath: String,
     pub line: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct FailedTestCoverageInfo {
     pub covered_id: Option<String>,
     pub test_run_name: String,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
     pub filepath: String,
     pub line: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VerifiedRequirementInfo {
     pub review_name: String,
     pub review_date: String,
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TestStatistics {
     pub overview: TestsOverview,
     pub test_runs: Vec<TestRunInfo>,
@@ -523,7 +535,7 @@ impl TestStatistics {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TestsOverview {
     pub test_cnt: i32,
     pub ran_cnt: i32,
@@ -560,11 +572,14 @@ impl TestsOverview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TestRunInfo {
     pub overview: TestRunOverview,
     pub name: String,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
     pub date: OffsetDateTime,
     pub logs: Option<String>,
     pub tests: Vec<TestInfo>,
@@ -674,7 +689,7 @@ impl TestRunInfo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TestRunOverview {
     pub test_cnt: i64,
     pub ran_cnt: i64,
@@ -718,7 +733,7 @@ impl TestRunOverview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TestInfo {
     /// List of requirements that are covered by this test.
     pub covers: Vec<String>,
@@ -728,17 +743,20 @@ pub struct TestInfo {
     pub state: TestState,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum TestState {
     Passed,
     Failed,
     Skipped { reason: Option<String> },
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Review {
     pub name: String,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
     pub date: OffsetDateTime,
     pub reviewer: String,
     pub comment: Option<String>,
@@ -791,7 +809,7 @@ impl Review {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VerifiedRequirement {
     pub id: String,
     pub comment: Option<String>,
