@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "select t.req_id from Traces t, DeprecatedRequirements dr where t.req_id = dr.id limit 100",
+  "query": "select id from InvalidRequirements",
   "describe": {
     "columns": [
       {
-        "name": "req_id",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Text"
       }
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "aaaa3a76ad9dcc9f9bf740a8ab69d54db9c85c708df8104b002846c4d088f62d"
+  "hash": "b236a9bad7bb54df03d8ebb88d59ad9ca01bae17f6b8bb64bf83ca253bd77a65"
 }

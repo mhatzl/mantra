@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select count(*) as invalid_cnt from InvalidRequirements",
+  "describe": {
+    "columns": [
+      {
+        "name": "invalid_cnt",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7b4c02c4adea9a75bd59ecaa86a920195129c605404f20f417ec77d139151846"
+}

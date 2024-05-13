@@ -684,18 +684,17 @@ impl MantraDb {
     }
 
     pub async fn is_valid(&self) -> Result<(), DbError> {
-        let traced_deprecated = sqlx::query!("select t.req_id from Traces t, DeprecatedRequirements dr where t.req_id = dr.id limit 100").fetch_all(&self.pool).await.map_err(|err| DbError::Validate(err.to_string()))?;
+        let record = sqlx::query!("select count(*) as invalid_cnt from InvalidRequirements")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|err| DbError::Validate(err.to_string()))?;
 
-        if traced_deprecated.is_empty() {
+        if record.invalid_cnt == 0 {
             Ok(())
         } else {
             Err(DbError::Validate(format!(
-                "One or more deprecated requirements have trace entries. Requirement ids: `{}`.",
-                traced_deprecated
-                    .iter()
-                    .map(|entry| entry.req_id.clone())
-                    .collect::<Vec<_>>()
-                    .join("`, `")
+                "'{}' deprecated requirements have trace entries.",
+                record.invalid_cnt
             )))
         }
     }
