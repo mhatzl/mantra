@@ -57,9 +57,15 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
 }
 
 pub async fn create_tera_report(db: &MantraDb, template: &str) -> Result<String, ReportError> {
-    let context = tera::Context::from_serialize(ReportContext::try_from(db).await?)
-        .map_err(|_| ReportError::Tera)?;
-    tera::Tera::one_off(template, &context, true).map_err(|_| ReportError::Tera)
+    let context =
+        tera::Context::from_serialize(ReportContext::try_from(db).await?).map_err(|err| {
+            log::error!("{}", err);
+            ReportError::Tera
+        })?;
+    tera::Tera::one_off(template, &context, true).map_err(|err| {
+        log::error!("{}", err);
+        ReportError::Tera
+    })
 }
 
 pub async fn create_json_report(db: &MantraDb) -> Result<String, ReportError> {
@@ -110,21 +116,21 @@ impl ReportContext {
         }
 
         let trace_criteria = "
-Requirements are traced if one of the following criterias is met:
+Requirements are traced if one of the following criteria is met:
 
 - A trace directly referring to the requirement exists (Directly traced)
 - All of the leaf requirements of the requirement have direct traces (Indirectly traced)
 ";
 
         let test_coverage_criteria = "
-A requirement is covered through a test if any of the following criterias are met:
+A requirement is covered through a test if any of the following criteria are met:
 
 - At least one direct trace to the requirement was reached during test execution
 - All leaf requirements of the requirement were covered by the test
 ";
 
         let test_passed_coverage_criteria = "
-A requirement coverage passed if all of the following criterias are met:
+A requirement coverage passed if all of the following criteria are met:
 
 - All tests covering the requirement passed
 - All tests covering the child requirements of the requirement passed
@@ -183,7 +189,7 @@ pub struct RequirementInfo {
     pub manual: bool,
     pub trace_info: RequirementTraceInfo,
     pub test_coverage_info: RequirementTestCoverageInfo,
-    pub review_infos: Vec<RequirementReviewInfo>,
+    pub verified_info: Vec<VerifiedRequirementInfo>,
 }
 
 impl RequirementInfo {
@@ -236,10 +242,10 @@ impl RequirementInfo {
 
         let trace_info = RequirementTraceInfo::try_from(db, &id).await?;
         let test_coverage_info = RequirementTestCoverageInfo::try_from(db, &id).await?;
-        let review_infos = sqlx::query_as!(
-            RequirementReviewInfo,
+        let verified_info = sqlx::query_as!(
+            VerifiedRequirementInfo,
             r#"
-                select true as "verified: bool", review_name, review_date, comment
+                select review_name, review_date, comment
                 from ManuallyVerified
                 where req_id = $1
             "#,
@@ -259,7 +265,7 @@ impl RequirementInfo {
             manual,
             trace_info,
             test_coverage_info,
-            review_infos,
+            verified_info,
         })
     }
 }
@@ -464,8 +470,7 @@ pub struct FailedTestCoverageInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
-pub struct RequirementReviewInfo {
-    pub verified: bool,
+pub struct VerifiedRequirementInfo {
     pub review_name: String,
     pub review_date: String,
     pub comment: Option<String>,
@@ -588,7 +593,7 @@ impl TestRunInfo {
         .await
         .map_err(ReportError::Db)?;
 
-        let mut test_infos = Vec::new();
+        let mut test_info = Vec::new();
 
         for test in test_records {
             let covers = sqlx::query!(
@@ -619,7 +624,7 @@ impl TestRunInfo {
                 TestState::Failed
             };
 
-            test_infos.push(TestInfo {
+            test_info.push(TestInfo {
                 covers,
                 name: test.name,
                 filepath: PathBuf::from(test.filepath),
@@ -647,7 +652,7 @@ impl TestRunInfo {
             name,
             date,
             logs,
-            tests: test_infos,
+            tests: test_info,
         })
     }
 }
