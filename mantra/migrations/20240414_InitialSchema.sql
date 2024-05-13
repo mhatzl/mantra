@@ -142,6 +142,11 @@ select r.id, r.origin, r.annotation
 from Requirements r, Deprecated d 
 where r.id = d.id;
 
+create view InvalidRequirements as
+select d.id
+from DeprecatedRequirements d, Traces t
+where d.id = t.req_id;
+
 create view ManualRequirements as
 with MarkedManual(id) as (
     select id from Requirements

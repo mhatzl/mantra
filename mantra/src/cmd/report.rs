@@ -87,6 +87,7 @@ pub struct ReportContext {
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
     pub creation_date: OffsetDateTime,
+    pub validation: ValidationInfo,
 }
 
 impl ReportContext {
@@ -143,6 +144,8 @@ A requirement coverage passed if all of the following criteria are met:
 
         let creation_date = OffsetDateTime::now_utc();
 
+        let validation = ValidationInfo::try_from(db).await?;
+
         Ok(Self {
             overview,
             requirements,
@@ -152,7 +155,42 @@ A requirement coverage passed if all of the following criteria are met:
             test_coverage_criteria,
             test_passed_coverage_criteria,
             creation_date,
+            validation,
         })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct ValidationInfo {
+    pub is_valid: bool,
+    pub validation_criteria: &'static str,
+    pub invalid_reqs: Vec<String>,
+}
+
+impl ValidationInfo {
+    pub async fn try_from(db: &MantraDb) -> Result<Self, ReportError> {
+        let validation_criteria =
+            "The collected data is valid if no *deprecated* requirement is traced.";
+        let is_valid = db.is_valid().await.is_ok();
+
+        if is_valid {
+            Ok(Self {
+                is_valid,
+                validation_criteria,
+                invalid_reqs: vec![],
+            })
+        } else {
+            let invalid_records = sqlx::query!("select id from InvalidRequirements")
+                .fetch_all(db.pool())
+                .await
+                .map_err(ReportError::Db)?;
+            let invalid_reqs = invalid_records.into_iter().map(|r| r.id).collect();
+            Ok(Self {
+                is_valid,
+                validation_criteria,
+                invalid_reqs,
+            })
+        }
     }
 }
 
@@ -198,6 +236,7 @@ pub struct RequirementInfo {
     pub trace_info: RequirementTraceInfo,
     pub test_coverage_info: RequirementTestCoverageInfo,
     pub verified_info: Vec<VerifiedRequirementInfo>,
+    pub valid: bool,
 }
 
 impl RequirementInfo {
@@ -265,6 +304,18 @@ impl RequirementInfo {
         .await
         .map_err(ReportError::Db)?;
 
+        let valid = sqlx::query!(
+            r#"
+                select * from InvalidRequirements
+                where id = $1
+            "#,
+            id
+        )
+        .fetch_optional(db.pool())
+        .await
+        .map_err(ReportError::Db)?
+        .is_none();
+
         Ok(Self {
             id,
             origin,
@@ -276,6 +327,7 @@ impl RequirementInfo {
             trace_info,
             test_coverage_info,
             verified_info,
+            valid,
         })
     }
 }
