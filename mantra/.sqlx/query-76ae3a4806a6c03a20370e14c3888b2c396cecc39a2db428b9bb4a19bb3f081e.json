@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select req_id from TestCoverage\n                where test_run_name = $1 and\n                test_run_date = $2 and\n                test_name = $3\n                order by req_id\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "76ae3a4806a6c03a20370e14c3888b2c396cecc39a2db428b9bb4a19bb3f081e"
+}

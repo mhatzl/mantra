@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "select * from RequirementCoverageOverview",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_cnt",
+        "ordinal": 0,
+        "type_info": "Int"
+      },
+      {
+        "name": "traced_cnt",
+        "ordinal": 1,
+        "type_info": "Int"
+      },
+      {
+        "name": "traced_ratio",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "covered_cnt",
+        "ordinal": 3,
+        "type_info": "Int"
+      },
+      {
+        "name": "covered_ratio",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "passed_cnt",
+        "ordinal": 5,
+        "type_info": "Int"
+      },
+      {
+        "name": "passed_ratio",
+        "ordinal": 6,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "c73780b81cd1b583f16e1ea32a39b94b6e650a56e8e7ba494379bb7583b280bc"
+}

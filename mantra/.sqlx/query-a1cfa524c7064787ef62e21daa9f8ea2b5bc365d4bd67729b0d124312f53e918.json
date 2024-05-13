@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select logs from TestRuns\n            where name = $1 and date = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "logs",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "a1cfa524c7064787ef62e21daa9f8ea2b5bc365d4bd67729b0d124312f53e918"
+}

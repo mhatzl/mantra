@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select filepath, line as \"line: u32\"\n            from Traces\n            where req_id = $1\n            order by filepath, line\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "line: u32",
+        "ordinal": 1,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f7ab4ca81b43b18922c43c6cd3e033b1367e5bd2a614d94d3ce4acb34afb27c6"
+}

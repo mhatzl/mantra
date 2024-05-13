@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select traced_id as \"traced_id!\", filepath, line as \"line!: u32\"\n            from IndirectRequirementTraces\n            where id = $1\n            order by filepath, line, traced_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "traced_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "filepath",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "line!: u32",
+        "ordinal": 2,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ae56e927c99bfb0026aba45a43d9b1e8e5144d6e33c2a0d2b13b14553f20e2ce"
+}
