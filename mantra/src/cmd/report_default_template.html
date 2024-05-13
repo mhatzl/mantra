@@ -87,7 +87,7 @@
                 {% endif %}
                
                 {% if req.trace_info.indirect_traces | length > 0 %}
-                    <p>Direct traces ({{ req.trace_info.indirect_traces  | length }}):</p>
+                    <p>Indirect traces ({{ req.trace_info.indirect_traces  | length }}):</p>
                     <table>
                         <tr>
                             <th>traced-id</th>
@@ -258,8 +258,23 @@
                             skipped (reason: {% if test.state['Skipped'].reason %}
                                 {{ test.state['Skipped'].reason }}
                                 {% else %}unknown{% endif %})
+                            {% else %}
+                            failed
                             {% endif %}
                         </p>
+                        {% if test.covers | length > 0 %}
+                        <p>Covers:</p>
+                        <table>
+                            <tr>
+                                <th>Requirement ID</th>
+                            </tr>
+                            {% for id in test.covers %}
+                            <tr>
+                                <td>{{ id }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% endif %}
                     {% endfor %}
                     {% endif %}
 
@@ -296,7 +311,7 @@
     </main>
 
     <footer>
-        Report generated at {{ now() | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}
+        Report generated at {{ creation_date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}
     </footer>
 </body>
 </html>

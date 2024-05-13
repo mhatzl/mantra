@@ -1,0 +1,14 @@
+# [req(id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1, id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2)]
+# These traces result in indirect traces for 'id.sub_id_1.sub_sub_id_1'
+#
+# But 'id.sub_id_1' is **not** traced, because it has no direct traces
+# and 'id.sub_id_1.sub_sub_id_2' is not traced, so 'id.sub_id_1' is also not indirectly traced.
+
+# [req(id.sub_id_2.sub_sub_id_1, id.sub_id_2.sub_sub_id_2)]
+# These traces result in indirect traces for `id.sub_id_2`
+# eventhough the sub-sub-sub ids for `id.sub_id_2` are not traced.
+
+# [req(id.sub_id_3)]
+# Creates a direct trace for 'id.sub_id_3' eventhough all child requirements are **not** traced.
+
+# Because 'id.sub_id_1' is **not** traced, 'id' is also **not** indirectly traced.
