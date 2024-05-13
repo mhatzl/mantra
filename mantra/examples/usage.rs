@@ -41,7 +41,7 @@ async fn main() {
         cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
             path: PathBuf::from("mantra/examples/mantra_report.html"),
             template: None,
-            json: false,
+            json: true,
         }),
     };
 
