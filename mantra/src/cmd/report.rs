@@ -33,7 +33,7 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
         let format =
             time::macros::format_description!("[year][month][day]_[hour]h[minute]m[second]s");
         let filename = format!(
-            "{}_mantra_report",
+            "{}_mantra_report.html",
             now.format(format).map_err(|_| ReportError::Format)?
         );
         cfg.path.join(filename)
@@ -45,9 +45,18 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
     } else {
         let template_content = match &cfg.template {
             Some(template) => {
+                filepath.set_extension(
+                    template
+                        .extension()
+                        .map(|os| os.to_string_lossy().to_string())
+                        .unwrap_or("html".to_string()),
+                );
                 std::fs::read_to_string(template).map_err(|_| ReportError::Template)?
             }
-            None => include_str!("report_default_template.html").to_string(),
+            None => {
+                filepath.set_extension("html");
+                include_str!("report_default_template.html").to_string()
+            }
         };
 
         create_tera_report(db, &template_content).await?

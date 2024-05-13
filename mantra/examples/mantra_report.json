@@ -1,14 +1,613 @@
 {
   "overview": {
-    "req_cnt": 3,
-    "traced_cnt": 2,
-    "traced_ratio": 0.6666666666666666,
-    "covered_cnt": 1,
-    "covered_ratio": 0.3333333333333333,
-    "passed_cnt": 1,
-    "passed_ratio": 0.3333333333333333
+    "req_cnt": 19,
+    "traced_cnt": 9,
+    "traced_ratio": 0.47368421052631576,
+    "covered_cnt": 5,
+    "covered_ratio": 0.2631578947368421,
+    "passed_cnt": 2,
+    "passed_ratio": 0.10526315789473684
   },
   "requirements": [
+    {
+      "id": "id",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 6
+        }
+      },
+      "annotation": null,
+      "parent": null,
+      "children": [
+        "id.sub_id_1",
+        "id.sub_id_2",
+        "id.sub_id_3"
+      ],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 7
+        }
+      },
+      "annotation": null,
+      "parent": "id",
+      "children": [
+        "id.sub_id_1.sub_sub_id_1",
+        "id.sub_id_1.sub_sub_id_2"
+      ],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_1.sub_sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 8
+        }
+      },
+      "annotation": "manual",
+      "parent": "id.sub_id_1",
+      "children": [
+        "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+        "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2"
+      ],
+      "deprecated": false,
+      "manual": true,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [],
+        "indirect_traces": [
+          {
+            "traced_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          },
+          {
+            "traced_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ]
+      },
+      "test_coverage_info": {
+        "covered": true,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [
+          {
+            "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::indirect_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          },
+          {
+            "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::indirect_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          },
+          {
+            "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::other_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ],
+        "failed_coverage": [
+          {
+            "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::other_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ]
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 9
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_1.sub_sub_id_1",
+      "children": [],
+      "deprecated": false,
+      "manual": true,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [
+          {
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": true,
+        "passed": true,
+        "direct_coverage": [
+          {
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::indirect_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 10
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_1.sub_sub_id_1",
+      "children": [],
+      "deprecated": false,
+      "manual": true,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [
+          {
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": true,
+        "passed": false,
+        "direct_coverage": [
+          {
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::indirect_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          },
+          {
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::other_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ],
+        "indirect_coverage": [],
+        "failed_coverage": [
+          {
+            "covered_id": null,
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::other_test",
+            "filepath": "hierarchy_test.yaml",
+            "line": 1
+          }
+        ]
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_1.sub_sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 11
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_1",
+      "children": [],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 12
+        }
+      },
+      "annotation": null,
+      "parent": "id",
+      "children": [
+        "id.sub_id_2.sub_sub_id_1",
+        "id.sub_id_2.sub_sub_id_2"
+      ],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [],
+        "indirect_traces": [
+          {
+            "traced_id": "id.sub_id_2.sub_sub_id_1",
+            "filepath": "hierarchy_test.yaml",
+            "line": 7
+          },
+          {
+            "traced_id": "id.sub_id_2.sub_sub_id_2",
+            "filepath": "hierarchy_test.yaml",
+            "line": 7
+          }
+        ]
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_2.sub_sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 13
+        }
+      },
+      "annotation": "deprecated",
+      "parent": "id.sub_id_2",
+      "children": [
+        "id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_1",
+        "id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_2"
+      ],
+      "deprecated": true,
+      "manual": false,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [
+          {
+            "filepath": "hierarchy_test.yaml",
+            "line": 7
+          }
+        ],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": false
+    },
+    {
+      "id": "id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 14
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_2.sub_sub_id_1",
+      "children": [],
+      "deprecated": true,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 15
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_2.sub_sub_id_1",
+      "children": [],
+      "deprecated": true,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_2.sub_sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 16
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_2",
+      "children": [],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [
+          {
+            "filepath": "hierarchy_test.yaml",
+            "line": 7
+          }
+        ],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_3",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 17
+        }
+      },
+      "annotation": null,
+      "parent": "id",
+      "children": [
+        "id.sub_id_3.sub_sub_id_1",
+        "id.sub_id_3.sub_sub_id_2"
+      ],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": true,
+        "direct_traces": [
+          {
+            "filepath": "hierarchy_test.yaml",
+            "line": 11
+          }
+        ],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_3.sub_sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 18
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_3",
+      "children": [
+        "id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1",
+        "id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_2"
+      ],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 19
+        }
+      },
+      "annotation": "manual",
+      "parent": "id.sub_id_3.sub_sub_id_1",
+      "children": [],
+      "deprecated": false,
+      "manual": true,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 20
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_3.sub_sub_id_1",
+      "children": [],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "id.sub_id_3.sub_sub_id_2",
+      "origin": {
+        "GitHub": {
+          "link": "local",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 21
+        }
+      },
+      "annotation": null,
+      "parent": "id.sub_id_3",
+      "children": [],
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "direct_coverage": [],
+        "indirect_coverage": [],
+        "failed_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
     {
       "id": "main_id",
       "origin": {
@@ -41,7 +640,7 @@
         "direct_coverage": [
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-12T14:10:16.086096100Z",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
             "test_name": "usage::test_fn",
             "filepath": "traces.rs",
             "line": 1
@@ -50,7 +649,8 @@
         "indirect_coverage": [],
         "failed_coverage": []
       },
-      "review_infos": []
+      "verified_info": [],
+      "valid": true
     },
     {
       "id": "main_id.sub_id",
@@ -78,7 +678,8 @@
         "indirect_coverage": [],
         "failed_coverage": []
       },
-      "review_infos": []
+      "verified_info": [],
+      "valid": true
     },
     {
       "id": "other_id",
@@ -109,44 +710,93 @@
         "indirect_traces": []
       },
       "test_coverage_info": {
-        "covered": false,
+        "covered": true,
         "passed": false,
-        "direct_coverage": [],
+        "direct_coverage": [
+          {
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::other_test",
+            "filepath": "traces.yaml",
+            "line": 1
+          }
+        ],
         "indirect_coverage": [],
-        "failed_coverage": []
+        "failed_coverage": [
+          {
+            "covered_id": null,
+            "test_run_name": "test-run",
+            "test_run_date": "+002024-05-13T15:01:48.094536700Z",
+            "test_name": "usage::other_test",
+            "filepath": "traces.yaml",
+            "line": 1
+          }
+        ]
       },
-      "review_infos": []
+      "verified_info": [],
+      "valid": true
     }
   ],
   "tests": {
     "overview": {
-      "test_cnt": 1,
-      "ran_cnt": 1,
-      "ran_ratio": 1.0,
-      "passed_cnt": 1,
-      "passed_ratio": 1.0,
-      "failed_cnt": 0,
-      "failed_ratio": 0.0,
-      "skipped_cnt": 0,
-      "skipped_ratio": 0.0
+      "test_cnt": 4,
+      "ran_cnt": 3,
+      "ran_ratio": 0.75,
+      "passed_cnt": 2,
+      "passed_ratio": 0.5,
+      "failed_cnt": 1,
+      "failed_ratio": 0.25,
+      "skipped_cnt": 1,
+      "skipped_ratio": 0.25
     },
     "test_runs": [
       {
         "overview": {
-          "test_cnt": 1,
-          "ran_cnt": 1,
-          "ran_ratio": 1.0,
-          "passed_cnt": 1,
-          "passed_ratio": 1.0,
-          "failed_cnt": 0,
-          "failed_ratio": 0.0,
-          "skipped_cnt": 0,
-          "skipped_ratio": 0.0
+          "test_cnt": 4,
+          "ran_cnt": 3,
+          "ran_ratio": 0.75,
+          "passed_cnt": 2,
+          "passed_ratio": 0.5,
+          "failed_cnt": 1,
+          "failed_ratio": 0.25,
+          "skipped_cnt": 1,
+          "skipped_ratio": 0.25
         },
         "name": "test-run",
-        "date": "+002024-05-12T14:10:16.086096100Z",
-        "logs": "[{\"data\":\"(1/1) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"all tests passed!\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"}]",
+        "date": "+002024-05-13T15:01:48.094536700Z",
+        "logs": "[{\"data\":\"(1/4) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(2/4) ignoring `skipped_test`...\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(3/4) running `indirect_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(4/4) running `other_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`other_id`; file='traces.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"}]",
         "tests": [
+          {
+            "covers": [
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2"
+            ],
+            "name": "usage::indirect_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Passed"
+          },
+          {
+            "covers": [
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+              "other_id"
+            ],
+            "name": "usage::other_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Failed"
+          },
+          {
+            "covers": [],
+            "name": "usage::skipped_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": {
+              "Skipped": {
+                "reason": null
+              }
+            }
+          },
           {
             "covers": [
               "main_id"
@@ -161,7 +811,15 @@
     ]
   },
   "reviews": [],
-  "trace_criteria": "\nRequirements are traced if one of the following criterias is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n",
-  "test_coverage_criteria": "\nA requirement is covered through a test if any of the following criterias are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n",
-  "test_passed_coverage_criteria": "\nA requirement coverage passed if all of the following criterias are met:\n\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n"
+  "trace_criteria": "\nRequirements are traced if one of the following criteria is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n",
+  "test_coverage_criteria": "\nA requirement is covered through a test if any of the following criteria are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n",
+  "test_passed_coverage_criteria": "\nA requirement coverage passed if all of the following criteria are met:\n\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n",
+  "creation_date": "+002024-05-13T15:01:48.278025000Z",
+  "validation": {
+    "is_valid": false,
+    "validation_criteria": "The collected data is valid if no *deprecated* requirement is traced.",
+    "invalid_reqs": [
+      "id.sub_id_2.sub_sub_id_1"
+    ]
+  }
 }
