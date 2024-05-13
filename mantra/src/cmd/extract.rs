@@ -105,7 +105,7 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
     let mut in_verbatim_context = false;
 
     let regex = REQ_ID_MATCHER.get_or_init(|| {
-        Regex::new(r"^#+\s`(?<id>[^\s:]+)`:\s.+")
+        Regex::new(r"^#{1,6}\s`(?<id>[^\s:]+)`:\s.+")
             .expect("Regex to match the requirement ID could **not** be created.")
     });
 

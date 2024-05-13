@@ -49,21 +49,784 @@ A requirement coverage passed if all of the following criteria are met:
             <h2>Overview</h2>
             <ul>
                 <li>
-                    <p><strong>Number of requirements:</strong> 3</p>
+                    <p><strong>Number of requirements:</strong> 19</p>
                 </li>
                 <li>
-                    <p><strong>Number of traced requirements:</strong> 2 (66.66666666666666%)</p>
+                    <p><strong>Number of traced requirements:</strong> 9 (47.368421052631575%)</p>
                 </li>
                 <li>
-                    <p><strong>Number of covered requirements:</strong> 1 (33.33333333333333%)</p>
+                    <p><strong>Number of covered requirements:</strong> 5 (26.31578947368421%)</p>
                 </li>
                 <li>
-                    <p><strong>Number of passed requirements:</strong> 1 (33.33333333333333%)</p>
+                    <p><strong>Number of passed requirements:</strong> 2 (10.526315789473683%)</p>
                 </li>
             </ul>
         </section>
         <section>
             <h2>Requirements</h2>
+            
+                <h3 id="id">id</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_1</li>
+                    
+                    <li>id.sub_id_2</li>
+                    
+                    <li>id.sub_id_3</li>
+                    
+                </ul>
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_1">id.sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id</p>
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_1.sub_sub_id_1</li>
+                    
+                    <li>id.sub_id_1.sub_sub_id_2</li>
+                    
+                </ul>
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_1.sub_sub_id_1">id.sub_id_1.sub_sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_1</p>
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</li>
+                    
+                    <li>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</li>
+                    
+                </ul>
+                
+
+                <p>Traced: true</p>
+
+                
+               
+                
+                    <p>Indirect traces (2):</p>
+                    <table>
+                        <tr>
+                            <th>traced-id</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                <p>Covered: true</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+                    <p>Indirect coverage (3):</p>
+                    <table>
+                        <tr>
+                            <th>covered-id</th>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</td>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::indirect_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::indirect_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::other_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                
+                    <p>Failed coverage (1):</p>
+                    <table>
+                        <tr>
+                            <th>failed-id</th>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            
+
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::other_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                
+            
+                <h3 id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_1.sub_sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: true</p>
+
+                
+                    <p>Direct traces (1):</p>
+                    <table>
+                        <tr>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+               
+                
+
+                <p>Covered: true</p>
+                <p>Passed coverage: true</p>
+
+                
+                    <p>Direct coverage (1):</p>
+                    <table>
+                        <tr>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::indirect_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_1.sub_sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: true</p>
+
+                
+                    <p>Direct traces (1):</p>
+                    <table>
+                        <tr>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+               
+                
+
+                <p>Covered: true</p>
+                <p>Passed coverage: false</p>
+
+                
+                    <p>Direct coverage (2):</p>
+                    <table>
+                        <tr>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::indirect_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::other_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                
+
+                
+                    <p>Failed coverage (1):</p>
+                    <table>
+                        <tr>
+                            <th>failed-id</th>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            
+                            <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            
+
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::other_test</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                
+            
+                <h3 id="id.sub_id_1.sub_sub_id_2">id.sub_id_1.sub_sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_2">id.sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id</p>
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_2.sub_sub_id_1</li>
+                    
+                    <li>id.sub_id_2.sub_sub_id_2</li>
+                    
+                </ul>
+                
+
+                <p>Traced: true</p>
+
+                
+               
+                
+                    <p>Indirect traces (2):</p>
+                    <table>
+                        <tr>
+                            <th>traced-id</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_2.sub_sub_id_1</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>7</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>id.sub_id_2.sub_sub_id_2</td>
+                            <td>hierarchy_test.yaml</td>
+                            <td>7</td>
+                        </tr>
+                        
+                    </table>
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_2.sub_sub_id_1">id.sub_id_2.sub_sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_2</p>
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_1</li>
+                    
+                    <li>id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_2</li>
+                    
+                </ul>
+                
+
+                <p>Traced: true</p>
+
+                
+                    <p>Direct traces (1):</p>
+                    <table>
+                        <tr>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>hierarchy_test.yaml</td>
+                            <td>7</td>
+                        </tr>
+                        
+                    </table>
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_1">id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_2.sub_sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_2">id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_2.sub_sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_2.sub_sub_id_2">id.sub_id_2.sub_sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_2</p>
+                
+                
+                
+
+                <p>Traced: true</p>
+
+                
+                    <p>Direct traces (1):</p>
+                    <table>
+                        <tr>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>hierarchy_test.yaml</td>
+                            <td>7</td>
+                        </tr>
+                        
+                    </table>
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_3">id.sub_id_3</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id</p>
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_3.sub_sub_id_1</li>
+                    
+                    <li>id.sub_id_3.sub_sub_id_2</li>
+                    
+                </ul>
+                
+
+                <p>Traced: true</p>
+
+                
+                    <p>Direct traces (1):</p>
+                    <table>
+                        <tr>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>hierarchy_test.yaml</td>
+                            <td>11</td>
+                        </tr>
+                        
+                    </table>
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_3.sub_sub_id_1">id.sub_id_3.sub_sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_3</p>
+                
+                
+                
+                <p>Children:</p>
+                <ul>
+                    
+                    <li>id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1</li>
+                    
+                    <li>id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_2</li>
+                    
+                </ul>
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1">id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_3.sub_sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_2">id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_3.sub_sub_id_1</p>
+                
+                
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
+            
+                <h3 id="id.sub_id_3.sub_sub_id_2">id.sub_id_3.sub_sub_id_2</h3>
+                <div class="req-origin">
+                    <!-- TODO: display origin -->
+                </div>
+                
+                
+                <p>Parent: id.sub_id_3</p>
+                
+                
+                
+
+                <p>Traced: false</p>
+
+                
+               
+                
+
+                <p>Covered: false</p>
+                <p>Passed coverage: false</p>
+
+                
+
+                
+
+                
+
+                
             
                 <h3 id="main_id">main_id</h3>
                 <div class="req-origin">
@@ -117,7 +880,7 @@ A requirement coverage passed if all of the following criteria are met:
                         
                         <tr>
                             <td>test-run</td>
-                            <td>2024-05-13 12:06:18</td>
+                            <td>2024-05-13 15:07:24</td>
                             <td>usage::test_fn</td>
                             <td>traces.rs</td>
                             <td>1</td>
@@ -194,13 +957,58 @@ A requirement coverage passed if all of the following criteria are met:
                
                 
 
-                <p>Covered: false</p>
+                <p>Covered: true</p>
                 <p>Passed coverage: false</p>
 
                 
+                    <p>Direct coverage (1):</p>
+                    <table>
+                        <tr>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::other_test</td>
+                            <td>traces.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
+                
 
                 
 
+                
+                    <p>Failed coverage (1):</p>
+                    <table>
+                        <tr>
+                            <th>failed-id</th>
+                            <th>test-run-name</th>
+                            <th>test-run-date</th>
+                            <th>test-name</th>
+                            <th>filepath</th>
+                            <th>line</th>
+                        </tr>
+                        
+                        <tr>
+                            
+                            <td>other_id</td>
+                            
+
+                            <td>test-run</td>
+                            <td>2024-05-13 15:07:24</td>
+                            <td>usage::other_test</td>
+                            <td>traces.yaml</td>
+                            <td>1</td>
+                        </tr>
+                        
+                    </table>
                 
 
                 
@@ -211,19 +1019,19 @@ A requirement coverage passed if all of the following criteria are met:
             <h3>Overview</h3>
             <ul>
                 <li>
-                    <p><strong>Number of tests:</strong> 1</p>
+                    <p><strong>Number of tests:</strong> 4</p>
                 </li>
                 <li>
-                    <p><strong>Number of ran tests:</strong> 1 (100%)</p>
+                    <p><strong>Number of ran tests:</strong> 3 (75%)</p>
                 </li>
                 <li>
-                    <p><strong>Number of passed tests:</strong> 1 (100%)</p>
+                    <p><strong>Number of passed tests:</strong> 2 (50%)</p>
                 </li>
                 <li>
-                    <p><strong>Number of failed tests:</strong> 0 (0%)</p>
+                    <p><strong>Number of failed tests:</strong> 1 (25%)</p>
                 </li>
                 <li>
-                    <p><strong>Number of skipped tests:</strong> 0 (0%)</p>
+                    <p><strong>Number of skipped tests:</strong> 1 (25%)</p>
                 </li>
             </ul>
 
@@ -231,28 +1039,87 @@ A requirement coverage passed if all of the following criteria are met:
                 <h3>Test runs:</h3>
                 
                     <p>Name: test-run</p>
-                    <p>Date: 2024-05-13 12:06:18</p>
+                    <p>Date: 2024-05-13 15:07:24</p>
                     <strong>Overview</strong>
                     <ul>
                         <li>
-                            <p><strong>Number of tests:</strong> 1</p>
+                            <p><strong>Number of tests:</strong> 4</p>
                         </li>
                         <li>
-                            <p><strong>Number of ran tests:</strong> 1 (100%)</p>
+                            <p><strong>Number of ran tests:</strong> 3 (75%)</p>
                         </li>
                         <li>
-                            <p><strong>Number of passed tests:</strong> 1 (100%)</p>
+                            <p><strong>Number of passed tests:</strong> 2 (50%)</p>
                         </li>
                         <li>
-                            <p><strong>Number of failed tests:</strong> 0 (0%)</p>
+                            <p><strong>Number of failed tests:</strong> 1 (25%)</p>
                         </li>
                         <li>
-                            <p><strong>Number of skipped tests:</strong> 0 (0%)</p>
+                            <p><strong>Number of skipped tests:</strong> 1 (25%)</p>
                         </li>
                     </ul>
 
                     
                     <strong>Tests:</strong>
+                    
+                        <p>Name: usage::indirect_test</p>
+                        <p>Location: 'traces.rs'@7</p>
+                        <p>State:
+                            
+                            passed
+                            
+                        </p>
+                        
+                        <p>Covers:</p>
+                        <table>
+                            <tr>
+                                <th>Requirement ID</th>
+                            </tr>
+                            
+                            <tr>
+                                <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            </tr>
+                            
+                        </table>
+                        
+                    
+                        <p>Name: usage::other_test</p>
+                        <p>Location: 'traces.rs'@7</p>
+                        <p>State:
+                            
+                            failed
+                            
+                        </p>
+                        
+                        <p>Covers:</p>
+                        <table>
+                            <tr>
+                                <th>Requirement ID</th>
+                            </tr>
+                            
+                            <tr>
+                                <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>other_id</td>
+                            </tr>
+                            
+                        </table>
+                        
+                    
+                        <p>Name: usage::skipped_test</p>
+                        <p>Location: 'traces.rs'@7</p>
+                        <p>State:
+                            
+                            skipped (reason: unknown)
+                            
+                        </p>
+                        
                     
                         <p>Name: usage::test_fn</p>
                         <p>Location: 'traces.rs'@7</p>
@@ -261,13 +1128,26 @@ A requirement coverage passed if all of the following criteria are met:
                             passed
                             
                         </p>
+                        
+                        <p>Covers:</p>
+                        <table>
+                            <tr>
+                                <th>Requirement ID</th>
+                            </tr>
+                            
+                            <tr>
+                                <td>main_id</td>
+                            </tr>
+                            
+                        </table>
+                        
                     
                     
 
                     <details>
                         <summary>Logs during test run</summary>
                         <p><strong>Logs:</strong></p>
-                        <p>[{&quot;data&quot;:&quot;(1&#x2F;1) running `test_fn`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`main_id`; file=&#x27;traces.rs&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848722,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;all tests passed!&quot;,&quot;host_timestamp&quot;:1642698490360848723,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;}]</p>
+                        <p>[{&quot;data&quot;:&quot;(1&#x2F;4) running `test_fn`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`main_id`; file=&#x27;traces.rs&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848722,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(2&#x2F;4) ignoring `skipped_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848723,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(3&#x2F;4) running `indirect_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(4&#x2F;4) running `other_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`other_id`; file=&#x27;traces.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;}]</p>
                     </details>
                 
             
@@ -279,7 +1159,7 @@ A requirement coverage passed if all of the following criteria are met:
     </main>
 
     <footer>
-        Report generated at 2024-05-13 12:06:18
+        Report generated at 2024-05-13 15:07:24
     </footer>
 </body>
 </html>

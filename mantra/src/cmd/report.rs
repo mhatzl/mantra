@@ -82,13 +82,15 @@ pub struct ReportContext {
     pub trace_criteria: &'static str,
     pub test_coverage_criteria: &'static str,
     pub test_passed_coverage_criteria: &'static str,
+    #[serde(serialize_with = "time::serde::iso8601::serialize")]
+    pub creation_date: OffsetDateTime,
 }
 
 impl ReportContext {
     pub async fn try_from(db: &MantraDb) -> Result<Self, ReportError> {
         let overview = RequirementsOverview::try_from(db).await?;
 
-        let req_records = sqlx::query!("select id from Requirements")
+        let req_records = sqlx::query!("select id from Requirements order by id")
             .fetch_all(db.pool())
             .await
             .map_err(ReportError::Db)?;
@@ -100,7 +102,7 @@ impl ReportContext {
 
         let tests = TestStatistics::try_from(db).await?;
 
-        let review_records = sqlx::query!("select name, date from Reviews")
+        let review_records = sqlx::query!("select name, date from Reviews order by name, date")
             .fetch_all(db.pool())
             .await
             .map_err(ReportError::Db)?;
@@ -136,6 +138,8 @@ A requirement coverage passed if all of the following criteria are met:
 - All tests covering the child requirements of the requirement passed
 ";
 
+        let creation_date = OffsetDateTime::now_utc();
+
         Ok(Self {
             overview,
             requirements,
@@ -144,6 +148,7 @@ A requirement coverage passed if all of the following criteria are met:
             trace_criteria,
             test_coverage_criteria,
             test_passed_coverage_criteria,
+            creation_date,
         })
     }
 }
@@ -231,6 +236,7 @@ impl RequirementInfo {
                 select child_id
                 from RequirementHierarchies
                 where parent_id = $1
+                order by child_id
             "#,
             id
         )
@@ -248,6 +254,7 @@ impl RequirementInfo {
                 select review_name, review_date, comment
                 from ManuallyVerified
                 where req_id = $1
+                order by review_name, review_date
             "#,
             id
         )
@@ -285,6 +292,7 @@ impl RequirementTraceInfo {
             select filepath, line as "line: u32"
             from Traces
             where req_id = $1
+            order by filepath, line
         "#,
             id
         )
@@ -300,6 +308,7 @@ impl RequirementTraceInfo {
             select traced_id as "traced_id!", filepath, line as "line!: u32"
             from IndirectRequirementTraces
             where id = $1
+            order by filepath, line, traced_id
         "#,
             id
         )
@@ -346,6 +355,7 @@ impl RequirementTestCoverageInfo {
             select test_run_name, test_run_date, test_name, filepath, line as "line: u32"
             from TestCoverage
             where req_id = $1
+            order by test_run_name, test_run_date, test_name, filepath, line
         "#,
             id
         )
@@ -370,6 +380,7 @@ impl RequirementTestCoverageInfo {
             select covered_id as "covered_id!", test_run_name, test_run_date, test_name, filepath, line as "line!: u32"
             from IndirectRequirementTestCoverage
             where id = $1
+            order by test_run_name, test_run_date, test_name, filepath, line, covered_id
         "#,
             id
         )
@@ -408,6 +419,7 @@ impl RequirementTestCoverageInfo {
                 select covered_id, test_run_name, test_run_date, test_name, filepath, line as "line: u32"
                 from FailedRequirementCoverage
                 where id = $1
+                order by test_run_name, test_run_date, test_name, filepath, line, covered_id
             "#,
             id
         )
@@ -490,6 +502,7 @@ impl TestStatistics {
             "
             select name, date
             from TestRuns
+            order by name, date
             "
         )
         .fetch_all(db.pool())
@@ -568,23 +581,26 @@ impl TestRunInfo {
 
         let test_records = sqlx::query!(
             r#"
-            select
-            name, filepath, line as "line: u32",
-            passed as "passed!: bool",
-            false as "skipped!: bool",
-            null as "reason?: String"
-            from Tests
-            where test_run_name = $1 and test_run_date = $2
-            
-            union all
-            
-            select
-            name, filepath, line as "line: u32",
-            false as "passed!: bool",
-            true as "skipped!: bool",
-            reason
-            from SkippedTests
-            where test_run_name = $1 and test_run_date = $2
+            select name, passed as "passed!: bool", skipped as "skipped!: bool", reason as "reason?: String", filepath, line as "line: u32" from (
+                select
+                name, filepath, line,
+                passed,
+                false as skipped,
+                null as reason
+                from Tests
+                where test_run_name = $1 and test_run_date = $2
+                
+                union all
+                
+                select
+                name, filepath, line,
+                false as passed,
+                true as skipped,
+                reason
+                from SkippedTests
+                where test_run_name = $1 and test_run_date = $2
+            )
+            order by name, filepath, line
         "#,
             name,
             date
@@ -602,6 +618,7 @@ impl TestRunInfo {
                 where test_run_name = $1 and
                 test_run_date = $2 and
                 test_name = $3
+                order by req_id
                 ",
                 name,
                 date,
@@ -742,6 +759,7 @@ impl Review {
                 select req_id as id, comment
                 from ManuallyVerified
                 where review_name = $1 and review_date = $2
+                order by req_id
             ",
             name,
             date

@@ -224,7 +224,7 @@ where id not in (select id from HasUncoveredChild);
 -- Also includes test coverage of non-leaf children.
 create view IndirectRequirementTestCoverage as
 select r.id, c.child_id as covered_id, v.test_run_name, v.test_run_date, v.test_name, v.filepath, v.line
-from Requirements r, RequirementChildren c, TestCoverage v
+from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v
 where r.id = c.id and c.child_id = v.req_id;
 
 create view CoveredRequirements as
@@ -254,8 +254,12 @@ with HasFailedChild(id, covered_id) as (
     where r.id = rc.id and rc.child_id = f.req_id
 )
 select c.id, c.origin, c.annotation, hf.covered_id
-from CoveredRequirements c, FailedTestCoverage f, HasFailedChild hf
-where c.id = f.req_id or c.id = hf.id;
+from CoveredRequirements c, HasFailedChild hf
+where c.id = hf.id
+union all
+select c.id, c.origin, c.annotation, null as covered_id
+from CoveredRequirements c, FailedTestCoverage f
+where c.id = f.req_id;
 
 create view FailedRequirementCoverage as
 select fr.id, null as covered_id, fc.test_run_name, fc.test_run_date, fc.test_name, fc.filepath, fc.line
@@ -285,7 +289,7 @@ create view FailedTestCoverage as
 select tc.req_id, tc.test_run_name, tc.test_run_date, tc.test_name, tc.filepath, tc.line
 from TestCoverage tc, Tests t
 where tc.test_run_name = t.test_run_name and tc.test_run_date = t.test_run_date
-    and tc.test_name = t.name and t.passed <> 1;
+    and tc.test_name = t.name and (t.passed <> 1 or t.passed is null);
 
 create view TestRunOverview as
 with NrTests(name, date, cnt) as
@@ -312,7 +316,7 @@ NrFailed(name, date, cnt) as
     select tr.name, tr.date, count(*)
     from TestRuns tr, Tests t
     where tr.name = t.test_run_name and tr.date = t.test_run_date
-        and t.passed <> 1
+        and (t.passed <> 1 or t.passed is null)
     group by tr.name, tr.date
 ),
 NrSkipped(name, date, cnt) as
