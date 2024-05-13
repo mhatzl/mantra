@@ -13,6 +13,8 @@ pub struct Config {
     pub link: String,
     #[arg(value_enum)]
     pub origin: ExtractOrigin,
+    #[arg(long)]
+    pub version: Option<String>,
 }
 
 #[derive(Debug, Clone, clap::ValueEnum, serde::Deserialize)]
@@ -30,9 +32,38 @@ pub enum ExtractError {
 }
 
 pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<RequirementChanges, ExtractError> {
+    let version = get_version_nr(cfg.version.as_deref());
+
     match cfg.origin {
-        ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link).await,
+        ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link, version).await,
         ExtractOrigin::Jira => todo!(),
+    }
+}
+
+pub fn get_version_nr(version: Option<&str>) -> Option<usize> {
+    let version = version?;
+
+    if version.to_lowercase() == "cargo" {
+        if let Ok(major_version) = std::env::var("CARGO_PKG_VERSION_MAJOR") {
+            match major_version.parse() {
+                Ok(nr) => Some(nr),
+                Err(_) => {
+                    log::error!(
+                        "Could not parse major package version '{}' to a number.",
+                        major_version
+                    );
+                    None
+                }
+            }
+        } else {
+            log::error!("Could not get major version from cargo.");
+            None
+        }
+    } else if let Ok(nr) = version.parse() {
+        Some(nr)
+    } else {
+        log::error!("Could not convert given version '{}' to a number.", version);
+        None
     }
 }
 
@@ -40,6 +71,7 @@ async fn extract_github(
     db: &MantraDb,
     root: &Path,
     link: &str,
+    version: Option<usize>,
 ) -> Result<RequirementChanges, ExtractError> {
     let mut reqs = Vec::new();
 
@@ -73,6 +105,7 @@ async fn extract_github(
                     &content,
                     dir_entry.path(),
                     link,
+                    version,
                 ));
             }
         }
@@ -81,7 +114,7 @@ async fn extract_github(
         let content = std::fs::read_to_string(root)
             .map_err(|_| ExtractError::CouldNotAccessFile(filepath))?;
 
-        reqs = extract_from_wiki_content(&content, root, link);
+        reqs = extract_from_wiki_content(&content, root, link, version);
     }
 
     if reqs.is_empty() {
@@ -98,15 +131,22 @@ async fn extract_github(
 
 static REQ_ID_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
-fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<Requirement> {
+fn extract_from_wiki_content(
+    content: &str,
+    filepath: &Path,
+    link: &str,
+    version: Option<usize>,
+) -> Vec<Requirement> {
     let lines = content.lines();
 
     let mut reqs = Vec::new();
     let mut in_verbatim_context = false;
 
     let regex = REQ_ID_MATCHER.get_or_init(|| {
-        Regex::new(r"^#{1,6}\s`(?<id>[^\s:]+)`:\s.+")
-            .expect("Regex to match the requirement ID could **not** be created.")
+        Regex::new(
+            r"^#{1,6}\s`(?<id>[^\s:]+)`(?:\((?:v(?<version>\d{1,7}):)?(?<annotation>[^\)]+)\))?:\s.+",
+        )
+        .expect("Regex to match the requirement ID could **not** be created.")
     });
 
     for (line_nr, line) in lines.enumerate() {
@@ -122,6 +162,21 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
                     .as_str()
                     .to_string();
 
+                let mut annotation = captures.name("annotation").map(|c| c.as_str().to_string());
+                let extracted_version: Option<usize> = captures.name("version").map(|c| {
+                    c.as_str()
+                        .parse()
+                        .expect("Matched digits must fit into *usize*.")
+                });
+
+                if let Some(version) = version {
+                    if let Some(extracted_version) = extracted_version {
+                        if version < extracted_version {
+                            annotation = None;
+                        }
+                    }
+                }
+
                 reqs.push(Requirement {
                     id,
                     origin: crate::db::RequirementOrigin::GitHub(GitHubReqOrigin {
@@ -130,7 +185,7 @@ fn extract_from_wiki_content(content: &str, filepath: &Path, link: &str) -> Vec<
                         line: line_nr + 1,
                     })
                     .into(),
-                    annotation: None,
+                    annotation,
                 });
             }
         }

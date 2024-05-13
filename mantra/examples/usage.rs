@@ -16,6 +16,7 @@ async fn main() {
             root: root.clone(),
             link: "local".to_string(),
             origin: mantra::cmd::extract::ExtractOrigin::GitHub,
+            version: Some("cargo".to_string()),
         }),
     };
     let trace_cfg = mantra::cfg::Config {

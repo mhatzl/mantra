@@ -124,12 +124,42 @@ select id, origin, annotation
 from LeafRequirements;
 
 create view DeprecatedRequirements as
-select id, origin, annotation from Requirements
-where lower(annotation) = 'deprecated';
+with MarkedDeprecated(id) as (
+    select id from Requirements
+    where lower(annotation) = 'deprecated'
+),
+ParentMarkedDeprecated(id) as (
+    select rc.child_id
+    from RequirementChildren rc, MarkedDeprecated md
+    where rc.id = md.id
+),
+Deprecated(id) as (
+    select id from MarkedDeprecated
+    union
+    select id from ParentMarkedDeprecated
+)
+select r.id, r.origin, r.annotation
+from Requirements r, Deprecated d 
+where r.id = d.id;
 
 create view ManualRequirements as
-select id, origin, annotation from Requirements
-where lower(annotation) = 'manual';
+with MarkedManual(id) as (
+    select id from Requirements
+    where lower(annotation) = 'manual'
+),
+ParentMarkedManual(id) as (
+    select rc.child_id
+    from RequirementChildren rc, MarkedManual md
+    where rc.id = md.id
+),
+Manual(id) as (
+    select id from MarkedManual
+    union
+    select id from ParentMarkedManual
+)
+select r.id, r.origin, r.annotation
+from Requirements r, Manual d 
+where r.id = d.id;
 
 create view DirectlyTracedRequirements as
 select id, origin, annotation from Requirements
