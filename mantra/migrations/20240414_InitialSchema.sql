@@ -206,6 +206,8 @@ select id from DirectlyTracedRequirements
 union
 select id from IndirectlyTracedRequirements;
 
+-- A requirement is fully covered if all its leaf requirements are traced.
+-- Consequently, leaf requirements are fully traced if they are traced.
 create view FullyTracedRequirements as
 with HasUntracedLeaf(id) as (
     select rc.id
@@ -216,9 +218,9 @@ select lr.id
 from LeafRequirements lr, DirectlyTracedRequirements dr
 where lr.id = dr.id
 union all
-select r.id
-from Requirements r, HasUntracedLeaf hu
-where r.id = hu.id;
+select id
+from NonLeafRequirements
+where id not in (select id from HasUntracedLeaf);
 
 create view UntracedRequirements as
 select id from Requirements
@@ -284,11 +286,6 @@ select id from Requirements
 except
 select id from CoveredRequirements;
 
-create view PassedCoveredRequirements as
-select id from CoveredRequirements
-except
-select id from FailedCoveredRequirements;
-
 -- Coverage of a requirement failed if either one of the following holds:
 --
 -- - one of the tests failed that directly covered the requirement
@@ -315,6 +312,31 @@ select fr.id, fr.covered_id as covered_id, fc.test_run_name, fc.test_run_date, f
 from FailedCoveredRequirements fr, FailedTestCoverage fc
 where fr.covered_id = fc.req_id;
 
+create view PassedCoveredRequirements as
+select id from CoveredRequirements
+except
+select id from FailedCoveredRequirements;
+
+-- A requirement is fully covered if all its leaf requirements are passed covered.
+-- Consequently, leaf requirements are fully covered if they are passed covered.
+create view FullyCoveredRequirements as
+with HasUncoveredOrFailedLeaf(id) as (
+    select rc.id
+    from RequirementChildren rc, LeafRequirements lr, UncoveredRequirements ur
+    where rc.child_id = lr.id and lr.id = ur.id
+    union all
+    select rc.id
+    from RequirementChildren rc, LeafRequirements lr, FailedCoveredRequirements fr
+    where rc.child_id = lr.id and lr.id = fr.id
+)
+select lr.id
+from LeafRequirements lr, PassedCoveredRequirements pr
+where lr.id = pr.id
+union all
+select id
+from NonLeafRequirements
+where id not in (select id from HasUncoveredOrFailedLeaf);
+
 create view RequirementCoverageOverview as
 with NrRequirements(cnt) as (select count(*) from Requirements),
 NrTraced(cnt) as (select count(*) from TracedRequirements),
@@ -324,6 +346,47 @@ select r.cnt as req_cnt, t.cnt as traced_cnt, case when r.cnt = 0 then 0.0 else 
     c.cnt as covered_cnt, case when r.cnt = 0 then 0.0 else (c.cnt * 1.0 / r.cnt) end as covered_ratio,
     p.cnt as passed_cnt, case when r.cnt = 0 then 0.0 else (p.cnt * 1.0 / r.cnt) end as passed_ratio
 from NrRequirements r, NrTraced t, NrCovered c, NrPassed p;
+
+create view LeafChildOverview as
+with NrLeafs(id, cnt) as (
+    select rc.id, count(*)
+    from RequirementChildren rc, LeafRequirements lr
+    where rc.child_id = lr.id
+    group by rc.id
+), NrTracedLeafs(id, cnt) as (
+    select rc.id, count(*)
+    from RequirementChildren rc, LeafRequirements lr, DirectlyTracedRequirements dt
+    where rc.child_id = lr.id and lr.id = dt.id
+    group by rc.id
+), NrCoveredLeafs(id, cnt) as (
+    select rc.id, count(*)
+    from RequirementChildren rc, LeafRequirements lr, DirectlyCoveredRequirements dc
+    where rc.child_id = lr.id and lr.id = dc.id
+    group by rc.id
+), NrPassedCoveredLeafs(id, cnt) as (
+    select rc.id, count(*)
+    from RequirementChildren rc, LeafRequirements lr, PassedCoveredRequirements pc
+    where rc.child_id = lr.id and lr.id = pc.id
+    group by rc.id
+)
+select id, sum(leaf_cnt) as leaf_cnt,
+sum(traced_leaf_cnt) as traced_leaf_cnt, case when sum(leaf_cnt) = 0 then 0.0 else (sum(traced_leaf_cnt)  * 1.0 / sum(leaf_cnt)) end as traced_leaf_ratio,
+sum(covered_leaf_cnt) as covered_leaf_cnt, case when sum(leaf_cnt) = 0 then 0.0 else (sum(covered_leaf_cnt) * 1.0 / sum(leaf_cnt)) end as covered_leaf_ratio,
+sum(passed_covered_leaf_cnt) as passed_covered_leaf_cnt, case when sum(leaf_cnt) = 0 then 0.0 else (sum(passed_covered_leaf_cnt) * 1.0 / sum(leaf_cnt)) end as passed_covered_leaf_ratio
+from (
+    select id, cnt as leaf_cnt, 0 as traced_leaf_cnt, 0 as covered_leaf_cnt, 0 as passed_covered_leaf_cnt
+    from NrLeafs
+    union all
+    select id, 0 as leaf_cnt, cnt as traced_leaf_cnt, 0 as covered_leaf_cnt, 0 as passed_covered_leaf_cnt
+    from NrTracedLeafs
+    union all
+    select id, 0 as leaf_cnt, 0 as traced_leaf_cnt, cnt as covered_leaf_cnt, 0 as passed_covered_leaf_cnt
+    from NrCoveredLeafs
+    union all
+    select id, 0 as leaf_cnt, 0 as traced_leaf_cnt, 0 as covered_leaf_cnt, cnt as passed_covered_leaf_cnt
+    from NrPassedCoveredLeafs
+)
+group by id;
 
 create view PassedTests as
 select test_run_name, test_run_date, name, filepath, line

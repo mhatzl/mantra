@@ -17,6 +17,8 @@ Requirements are traced if one of the following criteria is met:
 
 - A trace directly referring to the requirement exists (Directly traced)
 - All of the leaf requirements of the requirement have direct traces (Indirectly traced)
+
+Requirements are fully traced if all of their leaf requirements are traced.
 </p>
             </li>
             <li>
@@ -26,15 +28,14 @@ A requirement is covered through a test if any of the following criteria are met
 
 - At least one direct trace to the requirement was reached during test execution
 - All leaf requirements of the requirement were covered by the test
-</p>
-            </li>
-            <li>
-                <p><strong>Passed Test Coverage</strong></p>
-                <p class="criteria-content">
-A requirement coverage passed if all of the following criteria are met:
 
+A requirement is passed covered if all of the following criteria are met:
+
+- The requirement is covered at least once
 - All tests covering the requirement passed
 - All tests covering the child requirements of the requirement passed
+
+Requirements are fully covered if all of their leaf requirements are passed covered.
 </p>
             </li>
         </ul>
@@ -88,11 +89,19 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+                <p>Fully traced: false (3/9)</p>
+                
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
+                <p>Fully covered: false (1/9)</p>
+                
 
                 
 
@@ -125,11 +134,19 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+                <p>Fully traced: false (2/3)</p>
+                
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
+                <p>Fully covered: false (1/3)</p>
+                
 
                 
 
@@ -162,6 +179,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+                <p>Fully traced: true (2/2)</p>
+                
+
+                
                
                 
                     <p>Indirect traces (2):</p>
@@ -191,6 +212,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Passed coverage: false</p>
 
                 
+                <p>Fully covered: false (1/2)</p>
+                
+
+                
 
                 
                     <p>Indirect coverage (3):</p>
@@ -207,7 +232,7 @@ A requirement coverage passed if all of the following criteria are met:
                         <tr>
                             <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</td>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::indirect_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -216,7 +241,7 @@ A requirement coverage passed if all of the following criteria are met:
                         <tr>
                             <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::indirect_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -225,7 +250,7 @@ A requirement coverage passed if all of the following criteria are met:
                         <tr>
                             <td>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</td>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::other_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -252,7 +277,7 @@ A requirement coverage passed if all of the following criteria are met:
                             
 
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::other_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -277,6 +302,8 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+
+                
                     <p>Direct traces (1):</p>
                     <table>
                         <tr>
@@ -298,6 +325,8 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Passed coverage: true</p>
 
                 
+
+                
                     <p>Direct coverage (1):</p>
                     <table>
                         <tr>
@@ -310,7 +339,7 @@ A requirement coverage passed if all of the following criteria are met:
                         
                         <tr>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::indirect_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -339,6 +368,8 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+
+                
                     <p>Direct traces (1):</p>
                     <table>
                         <tr>
@@ -360,6 +391,8 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Passed coverage: false</p>
 
                 
+
+                
                     <p>Direct coverage (2):</p>
                     <table>
                         <tr>
@@ -372,7 +405,7 @@ A requirement coverage passed if all of the following criteria are met:
                         
                         <tr>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::indirect_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -380,7 +413,7 @@ A requirement coverage passed if all of the following criteria are met:
                         
                         <tr>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::other_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -409,7 +442,7 @@ A requirement coverage passed if all of the following criteria are met:
                             
 
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::other_test</td>
                             <td>hierarchy_test.yaml</td>
                             <td>1</td>
@@ -434,11 +467,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -471,6 +508,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+                <p>Fully traced: false (1/3)</p>
+                
+
+                
                
                 
                     <p>Indirect traces (2):</p>
@@ -498,6 +539,10 @@ A requirement coverage passed if all of the following criteria are met:
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
+                <p>Fully covered: false (0/3)</p>
+                
 
                 
 
@@ -530,6 +575,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+                <p>Fully traced: false (0/2)</p>
+                
+
+                
                     <p>Direct traces (1):</p>
                     <table>
                         <tr>
@@ -549,6 +598,10 @@ A requirement coverage passed if all of the following criteria are met:
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
+                <p>Fully covered: false (0/2)</p>
+                
 
                 
 
@@ -572,11 +625,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -600,11 +657,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -628,6 +689,8 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+
+                
                     <p>Direct traces (1):</p>
                     <table>
                         <tr>
@@ -647,6 +710,8 @@ A requirement coverage passed if all of the following criteria are met:
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -679,6 +744,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+                <p>Fully traced: false (0/3)</p>
+                
+
+                
                     <p>Direct traces (1):</p>
                     <table>
                         <tr>
@@ -698,6 +767,10 @@ A requirement coverage passed if all of the following criteria are met:
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
+                <p>Fully covered: false (0/3)</p>
+                
 
                 
 
@@ -730,11 +803,19 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+                <p>Fully traced: false (0/2)</p>
+                
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
+                <p>Fully covered: false (0/2)</p>
+                
 
                 
 
@@ -758,11 +839,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -786,11 +871,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -814,11 +903,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -847,6 +940,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: true</p>
 
                 
+                <p>Fully traced: false (0/1)</p>
+                
+
+                
                     <p>Direct traces (1):</p>
                     <table>
                         <tr>
@@ -868,6 +965,10 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Passed coverage: true</p>
 
                 
+                <p>Fully covered: false (0/1)</p>
+                
+
+                
                     <p>Direct coverage (1):</p>
                     <table>
                         <tr>
@@ -880,7 +981,7 @@ A requirement coverage passed if all of the following criteria are met:
                         
                         <tr>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::test_fn</td>
                             <td>traces.rs</td>
                             <td>1</td>
@@ -909,11 +1010,15 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Traced: false</p>
 
                 
+
+                
                
                 
 
                 <p>Covered: false</p>
                 <p>Passed coverage: false</p>
+
+                
 
                 
 
@@ -933,6 +1038,8 @@ A requirement coverage passed if all of the following criteria are met:
                 
 
                 <p>Traced: true</p>
+
+                
 
                 
                     <p>Direct traces (2):</p>
@@ -961,6 +1068,8 @@ A requirement coverage passed if all of the following criteria are met:
                 <p>Passed coverage: false</p>
 
                 
+
+                
                     <p>Direct coverage (1):</p>
                     <table>
                         <tr>
@@ -973,7 +1082,7 @@ A requirement coverage passed if all of the following criteria are met:
                         
                         <tr>
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::other_test</td>
                             <td>traces.yaml</td>
                             <td>1</td>
@@ -1002,7 +1111,7 @@ A requirement coverage passed if all of the following criteria are met:
                             
 
                             <td>test-run</td>
-                            <td>2024-05-14 11:45:33</td>
+                            <td>2024-05-14 16:27:41</td>
                             <td>usage::other_test</td>
                             <td>traces.yaml</td>
                             <td>1</td>
@@ -1039,7 +1148,7 @@ A requirement coverage passed if all of the following criteria are met:
                 <h3>Test runs:</h3>
                 
                     <p>Name: test-run</p>
-                    <p>Date: 2024-05-14 11:45:33</p>
+                    <p>Date: 2024-05-14 16:27:41</p>
                     <strong>Overview</strong>
                     <ul>
                         <li>
@@ -1159,7 +1268,7 @@ A requirement coverage passed if all of the following criteria are met:
     </main>
 
     <footer>
-        Report generated at 2024-05-14 11:45:33
+        Report generated at 2024-05-14 16:27:41
     </footer>
 </body>
 </html>
