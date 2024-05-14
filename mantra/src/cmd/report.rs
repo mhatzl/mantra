@@ -109,7 +109,6 @@ pub struct ReportContext {
     pub reviews: Vec<Review>,
     pub trace_criteria: &'static str,
     pub test_coverage_criteria: &'static str,
-    pub test_passed_coverage_criteria: &'static str,
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
@@ -154,6 +153,8 @@ Requirements are traced if one of the following criteria is met:
 
 - A trace directly referring to the requirement exists (Directly traced)
 - All of the leaf requirements of the requirement have direct traces (Indirectly traced)
+
+Requirements are fully traced if all of their leaf requirements are traced.
 ";
 
         let test_coverage_criteria = "
@@ -161,13 +162,14 @@ A requirement is covered through a test if any of the following criteria are met
 
 - At least one direct trace to the requirement was reached during test execution
 - All leaf requirements of the requirement were covered by the test
-";
 
-        let test_passed_coverage_criteria = "
-A requirement coverage passed if all of the following criteria are met:
+A requirement is passed covered if all of the following criteria are met:
 
+- The requirement is covered at least once
 - All tests covering the requirement passed
 - All tests covering the child requirements of the requirement passed
+
+Requirements are fully covered if all of their leaf requirements are passed covered.
 ";
 
         let creation_date = OffsetDateTime::now_utc();
@@ -181,7 +183,6 @@ A requirement coverage passed if all of the following criteria are met:
             reviews,
             trace_criteria,
             test_coverage_criteria,
-            test_passed_coverage_criteria,
             creation_date,
             validation,
         })
@@ -259,6 +260,7 @@ pub struct RequirementInfo {
     pub annotation: Option<String>,
     pub parent: Option<String>,
     pub children: Vec<String>,
+    pub leaf_statistic: Option<LeafChildrenStatistic>,
     pub deprecated: bool,
     pub manual: bool,
     pub trace_info: RequirementTraceInfo,
@@ -315,6 +317,7 @@ impl RequirementInfo {
         .map_err(ReportError::Db)?;
 
         let children = records.into_iter().map(|r| r.child_id).collect();
+        let leaf_statistic = LeafChildrenStatistic::try_from(db, &id).await?;
 
         let trace_info = RequirementTraceInfo::try_from(db, &id).await?;
         let test_coverage_info = RequirementTestCoverageInfo::try_from(db, &id).await?;
@@ -350,6 +353,7 @@ impl RequirementInfo {
             annotation,
             parent,
             children,
+            leaf_statistic,
             deprecated,
             manual,
             trace_info,
@@ -361,8 +365,44 @@ impl RequirementInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct LeafChildrenStatistic {
+    leaf_cnt: i32,
+    traced_leaf_cnt: i32,
+    traced_leaf_ratio: f64,
+    covered_leaf_cnt: i32,
+    covered_leaf_ratio: f64,
+    passed_covered_leaf_cnt: i32,
+    passed_covered_leaf_ratio: f64,
+}
+
+impl LeafChildrenStatistic {
+    pub async fn try_from(db: &MantraDb, id: &str) -> Result<Option<Self>, ReportError> {
+        sqlx::query_as!(
+            LeafChildrenStatistic,
+            r#"
+                select 
+                leaf_cnt as "leaf_cnt!: i32",
+                traced_leaf_cnt as "traced_leaf_cnt!: i32",
+                traced_leaf_ratio as "traced_leaf_ratio!: f64",
+                covered_leaf_cnt as "covered_leaf_cnt!: i32",
+                covered_leaf_ratio as "covered_leaf_ratio!: f64",
+                passed_covered_leaf_cnt as "passed_covered_leaf_cnt!: i32",
+                passed_covered_leaf_ratio as "passed_covered_leaf_ratio!: f64"
+                from LeafChildOverview
+                where id = $1
+            "#,
+            id
+        )
+        .fetch_optional(db.pool())
+        .await
+        .map_err(ReportError::Db)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RequirementTraceInfo {
     pub traced: bool,
+    pub fully_traced: bool,
     pub direct_traces: Vec<DirectTraceInfo>,
     pub indirect_traces: Vec<IndirectTraceInfo>,
 }
@@ -401,8 +441,22 @@ impl RequirementTraceInfo {
 
         let indirect_traces = records;
 
+        let fully_traced = sqlx::query!(
+            r#"
+                select *
+                from FullyTracedRequirements
+                where id = $1
+            "#,
+            id
+        )
+        .fetch_optional(db.pool())
+        .await
+        .map_err(ReportError::Db)?
+        .is_some();
+
         Ok(Self {
             traced: !direct_traces.is_empty() || !indirect_traces.is_empty(),
+            fully_traced,
             direct_traces,
             indirect_traces,
         })
@@ -426,6 +480,7 @@ pub struct IndirectTraceInfo {
 pub struct RequirementTestCoverageInfo {
     pub covered: bool,
     pub passed: bool,
+    pub fully_covered: bool,
     pub direct_coverage: Vec<DirectTestCoverageInfo>,
     pub indirect_coverage: Vec<IndirectTestCoverageInfo>,
     pub failed_coverage: Vec<FailedTestCoverageInfo>,
@@ -522,9 +577,23 @@ impl RequirementTestCoverageInfo {
             })
         }
 
+        let fully_covered = sqlx::query!(
+            r#"
+                select *
+                from FullyCoveredRequirements
+                where id = $1
+            "#,
+            id
+        )
+        .fetch_optional(db.pool())
+        .await
+        .map_err(ReportError::Db)?
+        .is_some();
+
         Ok(Self {
             covered: !direct_coverage.is_empty() || !indirect_coverage.is_empty(),
             passed,
+            fully_covered,
             direct_coverage,
             indirect_coverage,
             failed_coverage,

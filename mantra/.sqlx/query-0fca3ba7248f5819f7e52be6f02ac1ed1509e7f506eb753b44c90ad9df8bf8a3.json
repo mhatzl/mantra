@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select *\n                from FullyCoveredRequirements\n                where id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0fca3ba7248f5819f7e52be6f02ac1ed1509e7f506eb753b44c90ad9df8bf8a3"
+}
