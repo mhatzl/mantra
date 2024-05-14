@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use mantra::cmd::report::ReportFormat;
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
@@ -41,7 +43,7 @@ async fn main() {
         cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
             path: PathBuf::from("mantra/examples/mantra_report.html"),
             template: None,
-            json: true,
+            formats: vec![ReportFormat::Json, ReportFormat::Html],
         }),
     };
 
