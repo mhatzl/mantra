@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use time::OffsetDateTime;
 
@@ -22,7 +22,13 @@ pub struct ReportConfig {
     #[arg(long)]
     pub template: Option<PathBuf>,
     #[arg(long)]
-    pub json: bool,
+    pub formats: Vec<ReportFormat>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, clap::ValueEnum)]
+pub enum ReportFormat {
+    Html,
+    Json,
 }
 
 pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError> {
@@ -39,30 +45,43 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
         cfg.path.join(filename)
     };
 
-    let report = if cfg.json {
-        filepath.set_extension("json");
-        create_json_report(db).await?
-    } else {
-        let template_content = match &cfg.template {
-            Some(template) => {
-                filepath.set_extension(
-                    template
-                        .extension()
-                        .map(|os| os.to_string_lossy().to_string())
-                        .unwrap_or("html".to_string()),
-                );
-                std::fs::read_to_string(template).map_err(|_| ReportError::Template)?
-            }
-            None => {
+    let formats: HashSet<ReportFormat> = HashSet::from_iter(cfg.formats.into_iter());
+
+    for format in formats {
+        match format {
+            ReportFormat::Html => {
                 filepath.set_extension("html");
-                include_str!("report_default_template.html").to_string()
+
+                let report = match &cfg.template {
+                    Some(template) => {
+                        let template_content = tokio::fs::read_to_string(template)
+                            .await
+                            .map_err(|_| ReportError::Template)?;
+                        create_tera_report(db, &template_content).await?
+                    }
+                    None => {
+                        let template_content =
+                            include_str!("report_default_template.html").to_string();
+                        create_tera_report(db, &template_content).await?
+                    }
+                };
+
+                tokio::fs::write(&filepath, report)
+                    .await
+                    .map_err(|_| ReportError::Write)?;
             }
-        };
+            ReportFormat::Json => {
+                filepath.set_extension("json");
+                let report = create_json_report(db).await?;
 
-        create_tera_report(db, &template_content).await?
-    };
+                tokio::fs::write(&filepath, report)
+                    .await
+                    .map_err(|_| ReportError::Write)?;
+            }
+        }
+    }
 
-    std::fs::write(filepath, report).map_err(|_| ReportError::Write)
+    Ok(())
 }
 
 pub async fn create_tera_report(db: &MantraDb, template: &str) -> Result<String, ReportError> {
@@ -189,7 +208,7 @@ impl ValidationInfo {
                 invalid_reqs: vec![],
             })
         } else {
-            let invalid_records = sqlx::query!("select id from InvalidRequirements")
+            let invalid_records = sqlx::query!(r#"select id as "id!" from InvalidRequirements"#)
                 .fetch_all(db.pool())
                 .await
                 .map_err(ReportError::Db)?;

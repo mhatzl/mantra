@@ -1,4 +1,3 @@
-
 -- requirements that may be traced.
 -- generation is used to show changes for "--dry-run" and to delete non-existing requirements.
 -- annotation might be "manual" or "deprecated"
@@ -112,15 +111,15 @@ select id, child_id from TransitiveChildren;
 
 -- Requirements without children
 create view LeafRequirements as
-select id, origin, annotation
+select id
 from Requirements
 where id not in (select parent_id from RequirementHierarchies);
 
 create view NonLeafRequirements as
-select id, origin, annotation
+select id
 from Requirements
 except
-select id, origin, annotation
+select id
 from LeafRequirements;
 
 create view DeprecatedRequirements as
@@ -138,14 +137,8 @@ Deprecated(id) as (
     union
     select id from ParentMarkedDeprecated
 )
-select r.id, r.origin, r.annotation
-from Requirements r, Deprecated d 
-where r.id = d.id;
-
-create view InvalidRequirements as
-select d.id
-from DeprecatedRequirements d, Traces t
-where d.id = t.req_id;
+select id
+from Deprecated d;
 
 create view ManualRequirements as
 with MarkedManual(id) as (
@@ -162,13 +155,13 @@ Manual(id) as (
     union
     select id from ParentMarkedManual
 )
-select r.id, r.origin, r.annotation
+select r.id
 from Requirements r, Manual d 
 where r.id = d.id;
 
 create view DirectlyTracedRequirements as
-select id, origin, annotation from Requirements
-where id in (select req_id from Traces);
+select r.id from Requirements r, Traces tr
+where r.id = tr.req_id;
 
 -- A requirement is indirectly traced
 -- if **all** of its direct child requirements are either directly or indirectly traced.
@@ -197,7 +190,7 @@ HasUntracedChild(id) as (
     where rh.child_id = u.id
 )
 -- Only non-leaf requirements can be indirectly traced
-select distinct id, origin, annotation
+select distinct id
 from NonLeafRequirements
 where id not in (select id from HasUntracedChild);
 
@@ -209,17 +202,36 @@ from IndirectlyTracedRequirements ir, RequirementChildren c, Traces t
 where ir.id = c.id and c.child_id = t.req_id;
 
 create view TracedRequirements as
-select id, origin, annotation from DirectlyTracedRequirements
+select id from DirectlyTracedRequirements
 union
-select id, origin, annotation from IndirectlyTracedRequirements;
+select id from IndirectlyTracedRequirements;
+
+create view FullyTracedRequirements as
+with HasUntracedLeaf(id) as (
+    select rc.id
+    from RequirementChildren rc, LeafRequirements lr, UntracedRequirements ur
+    where rc.child_id = lr.id and lr.id = ur.id
+)
+select lr.id
+from LeafRequirements lr, DirectlyTracedRequirements dr
+where lr.id = dr.id
+union all
+select r.id
+from Requirements r, HasUntracedLeaf hu
+where r.id = hu.id;
 
 create view UntracedRequirements as
-select id, origin, annotation from Requirements
+select id from Requirements
 except
-select id, origin, annotation from TracedRequirements;
+select id from TracedRequirements;
+
+create view InvalidRequirements as
+select d.id
+from DeprecatedRequirements d, TracedRequirements t
+where d.id = t.id;
 
 create view DirectlyCoveredRequirements as
-select id, origin, annotation from Requirements
+select id from Requirements
 where id in (select req_id from TestCoverage);
 
 -- Indirectly covered requirements have the same constraint
@@ -251,7 +263,7 @@ HasUncoveredChild(id) as (
     where rh.child_id = u.id
 )
 -- Only non-leaf requirements can be indirectly uncovered
-select distinct id, origin, annotation
+select distinct id
 from NonLeafRequirements
 where id not in (select id from HasUncoveredChild);
 
@@ -263,21 +275,19 @@ from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v
 where r.id = c.id and c.child_id = v.req_id;
 
 create view CoveredRequirements as
-select id, origin, annotation from DirectlyCoveredRequirements
+select id from DirectlyCoveredRequirements
 union
-select id, origin, annotation from IndirectlyCoveredRequirements;
+select id from IndirectlyCoveredRequirements;
 
 create view UncoveredRequirements as
-select id, origin, annotation from Requirements
+select id from Requirements
 except
-select id, origin, annotation from CoveredRequirements;
+select id from CoveredRequirements;
 
 create view PassedCoveredRequirements as
-select r.id, r.origin, r.annotation
-from CoveredRequirements r
+select id from CoveredRequirements
 except
-select f.id, f.origin, f.annotation
-from FailedCoveredRequirements f;
+select id from FailedCoveredRequirements;
 
 -- Coverage of a requirement failed if either one of the following holds:
 --
@@ -288,11 +298,11 @@ with HasFailedChild(id, covered_id) as (
     select r.id, rc.child_id from Requirements r, RequirementChildren rc, FailedTestCoverage f
     where r.id = rc.id and rc.child_id = f.req_id
 )
-select c.id, c.origin, c.annotation, hf.covered_id
+select c.id, hf.covered_id
 from CoveredRequirements c, HasFailedChild hf
 where c.id = hf.id
 union all
-select c.id, c.origin, c.annotation, null as covered_id
+select c.id, null as covered_id
 from CoveredRequirements c, FailedTestCoverage f
 where c.id = f.req_id;
 
@@ -399,5 +409,4 @@ select sum(test_cnt) as test_cnt,
 from TestRunOverview;
 
 create view ManuallyVerifiedRequirements as
-select r.id, r.origin, r.annotation from Requirements r, ManuallyVerified m
-where r.id = m.req_id;
+select req_id from ManuallyVerified;
