@@ -487,17 +487,19 @@ pub struct RequirementTestCoverageInfo {
     pub fully_covered: bool,
     pub direct_coverage: Vec<DirectTestCoverageInfo>,
     pub indirect_coverage: Vec<IndirectTestCoverageInfo>,
-    pub failed_coverage: Vec<FailedTestCoverageInfo>,
 }
 
 impl RequirementTestCoverageInfo {
     pub async fn try_from(db: &MantraDb, id: &str) -> Result<Self, ReportError> {
         let records = sqlx::query!(
             r#"
-            select test_run_name, test_run_date, test_name, filepath, line as "line: u32"
-            from TestCoverage
+            select v.test_run_name, v.test_run_date, v.test_name,
+            v.trace_filepath, v.trace_line as "trace_line: u32", t.passed as "passed!: bool"
+            from TestCoverage v, Tests t
             where req_id = $1
-            order by test_run_name, test_run_date, test_name, filepath, line
+            and v.test_run_name = t.test_run_name and v.test_run_date = t.test_run_date
+            and v.test_name = t.name
+            order by v.test_run_name, v.test_run_date, v.test_name, v.trace_filepath, v.trace_line
         "#,
             id
         )
@@ -512,17 +514,20 @@ impl RequirementTestCoverageInfo {
                 test_run_name: record.test_run_name,
                 test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
                 test_name: record.test_name,
-                filepath: record.filepath,
-                line: record.line,
+                trace_filepath: record.trace_filepath,
+                trace_line: record.trace_line,
+                passed: record.passed,
             })
         }
 
         let records = sqlx::query!(
             r#"
-            select covered_id as "covered_id!", test_run_name, test_run_date, test_name, filepath, line as "line!: u32"
+            select covered_id as "covered_id!",
+            test_run_name, test_run_date, test_name,
+            trace_filepath, trace_line as "trace_line!: u32", passed as "passed!: bool"
             from IndirectRequirementTestCoverage
             where id = $1
-            order by test_run_name, test_run_date, test_name, filepath, line, covered_id
+            order by test_run_name, test_run_date, test_name, trace_filepath, trace_line, covered_id
         "#,
             id
         )
@@ -538,8 +543,9 @@ impl RequirementTestCoverageInfo {
                 test_run_name: record.test_run_name,
                 test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
                 test_name: record.test_name,
-                filepath: record.filepath,
-                line: record.line,
+                trace_filepath: record.trace_filepath,
+                trace_line: record.trace_line,
+                passed: record.passed,
             })
         }
 
@@ -555,31 +561,6 @@ impl RequirementTestCoverageInfo {
         .await
         .ok()
         .is_some();
-
-        let records = sqlx::query!(
-            r#"
-                select covered_id, test_run_name, test_run_date, test_name, filepath, line as "line: u32"
-                from FailedRequirementCoverage
-                where id = $1
-                order by test_run_name, test_run_date, test_name, filepath, line, covered_id
-            "#,
-            id
-        )
-        .fetch_all(db.pool())
-        .await
-        .map_err(ReportError::Db)?;
-
-        let mut failed_coverage = Vec::with_capacity(records.len());
-        for record in records {
-            failed_coverage.push(FailedTestCoverageInfo {
-                covered_id: record.covered_id,
-                test_run_name: record.test_run_name,
-                test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
-                test_name: record.test_name,
-                filepath: record.filepath,
-                line: record.line,
-            })
-        }
 
         let fully_covered = sqlx::query!(
             r#"
@@ -600,7 +581,6 @@ impl RequirementTestCoverageInfo {
             fully_covered,
             direct_coverage,
             indirect_coverage,
-            failed_coverage,
         })
     }
 }
@@ -614,8 +594,11 @@ pub struct DirectTestCoverageInfo {
     )]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
-    pub filepath: String,
-    pub line: u32,
+    /// The file the covered trace is set.
+    pub trace_filepath: String,
+    /// The line the covered trace is set.
+    pub trace_line: u32,
+    pub passed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -628,22 +611,11 @@ pub struct IndirectTestCoverageInfo {
     )]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
-    pub filepath: String,
-    pub line: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct FailedTestCoverageInfo {
-    pub covered_id: Option<String>,
-    pub test_run_name: String,
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
-    pub test_run_date: OffsetDateTime,
-    pub test_name: String,
-    pub filepath: String,
-    pub line: u32,
+    /// The file the covered trace is set.
+    pub trace_filepath: String,
+    /// The line the covered trace is set.
+    pub trace_line: u32,
+    pub passed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

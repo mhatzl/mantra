@@ -49,8 +49,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -92,8 +91,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -150,36 +148,29 @@
           {
             "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::indirect_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "trace_filepath": "hierarchy_test.yaml",
+            "trace_line": 1,
+            "passed": true
           },
           {
             "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::indirect_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "trace_filepath": "hierarchy_test.yaml",
+            "trace_line": 1,
+            "passed": true
           },
           {
             "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::other_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
-          }
-        ],
-        "failed_coverage": [
-          {
-            "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
-            "test_name": "usage::other_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "trace_filepath": "hierarchy_test.yaml",
+            "trace_line": 1,
+            "passed": false
           }
         ]
       },
@@ -219,14 +210,14 @@
         "direct_coverage": [
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::indirect_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "trace_filepath": "hierarchy_test.yaml",
+            "trace_line": 1,
+            "passed": true
           }
         ],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -264,30 +255,22 @@
         "direct_coverage": [
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::indirect_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "trace_filepath": "hierarchy_test.yaml",
+            "trace_line": 1,
+            "passed": true
           },
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::other_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "trace_filepath": "hierarchy_test.yaml",
+            "trace_line": 1,
+            "passed": false
           }
         ],
-        "indirect_coverage": [],
-        "failed_coverage": [
-          {
-            "covered_id": null,
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
-            "test_name": "usage::other_test",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
-          }
-        ]
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -318,8 +301,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -372,8 +354,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -420,8 +401,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": false
@@ -452,8 +432,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -484,8 +463,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -521,8 +499,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -569,8 +546,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -612,8 +588,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -644,8 +619,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -676,8 +650,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -708,8 +681,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -757,14 +729,14 @@
         "direct_coverage": [
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::test_fn",
-            "filepath": "traces.rs",
-            "line": 1
+            "trace_filepath": "traces.rs",
+            "trace_line": 1,
+            "passed": true
           }
         ],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -795,8 +767,7 @@
         "passed": false,
         "fully_covered": false,
         "direct_coverage": [],
-        "indirect_coverage": [],
-        "failed_coverage": []
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -838,23 +809,14 @@
         "direct_coverage": [
           {
             "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
+            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
             "test_name": "usage::other_test",
-            "filepath": "traces.yaml",
-            "line": 1
+            "trace_filepath": "traces.yaml",
+            "trace_line": 1,
+            "passed": false
           }
         ],
-        "indirect_coverage": [],
-        "failed_coverage": [
-          {
-            "covered_id": null,
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T16:24:42.692663600Z",
-            "test_name": "usage::other_test",
-            "filepath": "traces.yaml",
-            "line": 1
-          }
-        ]
+        "indirect_coverage": []
       },
       "verified_info": [],
       "valid": true
@@ -886,7 +848,7 @@
           "skipped_ratio": 0.25
         },
         "name": "test-run",
-        "date": "+002024-05-15T16:24:42.692663600Z",
+        "date": "+002024-05-15T19:48:24.122219700Z",
         "logs": "[{\"data\":\"(1/4) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(2/4) ignoring `skipped_test`...\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(3/4) running `indirect_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(4/4) running `other_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`other_id`; file='traces.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"}]",
         "tests": [
           {
@@ -936,7 +898,7 @@
   "reviews": [],
   "trace_criteria": "\nRequirements are traced if one of the following criteria is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n\nRequirements are fully traced if all of their leaf requirements are traced.\n",
   "test_coverage_criteria": "\nA requirement is covered through a test if any of the following criteria are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n\nA requirement is passed covered if all of the following criteria are met:\n\n- The requirement is covered at least once\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n\nRequirements are fully covered if all of their leaf requirements are passed covered.\n",
-  "creation_date": "+002024-05-15T16:24:43.013522000Z",
+  "creation_date": "+002024-05-15T19:48:24.375230600Z",
   "validation": {
     "is_valid": false,
     "criteria": "The collected data is valid if no *deprecated* requirement is traced.",
