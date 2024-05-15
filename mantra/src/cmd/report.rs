@@ -192,7 +192,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ValidationInfo {
     pub is_valid: bool,
-    pub validation_criteria: &'static str,
+    pub criteria: &'static str,
     pub invalid_reqs: Vec<String>,
 }
 
@@ -205,7 +205,7 @@ impl ValidationInfo {
         if is_valid {
             Ok(Self {
                 is_valid,
-                validation_criteria,
+                criteria: validation_criteria,
                 invalid_reqs: vec![],
             })
         } else {
@@ -216,7 +216,7 @@ impl ValidationInfo {
             let invalid_reqs = invalid_records.into_iter().map(|r| r.id).collect();
             Ok(Self {
                 is_valid,
-                validation_criteria,
+                criteria: validation_criteria,
                 invalid_reqs,
             })
         }
