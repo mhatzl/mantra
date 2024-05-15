@@ -232,6 +232,8 @@ pub struct RequirementsOverview {
     pub covered_ratio: f64,
     pub passed_cnt: i32,
     pub passed_ratio: f64,
+    pub verified_cnt: i32,
+    pub verified_ratio: f64,
 }
 
 impl RequirementsOverview {
@@ -249,6 +251,8 @@ impl RequirementsOverview {
             covered_ratio: record.covered_ratio.unwrap_or_default(),
             passed_cnt: record.passed_cnt.unwrap_or_default(),
             passed_ratio: record.passed_ratio.unwrap_or_default(),
+            verified_cnt: record.verified_cnt.unwrap_or_default(),
+            verified_ratio: record.verified_ratio.unwrap_or_default(),
         })
     }
 }
@@ -259,7 +263,7 @@ pub struct RequirementInfo {
     pub origin: RequirementOrigin,
     pub annotation: Option<String>,
     pub parent: Option<String>,
-    pub children: Vec<String>,
+    pub direct_children: Vec<String>,
     pub leaf_statistic: Option<LeafChildrenStatistic>,
     pub deprecated: bool,
     pub manual: bool,
@@ -352,7 +356,7 @@ impl RequirementInfo {
             origin,
             annotation,
             parent,
-            children,
+            direct_children: children,
             leaf_statistic,
             deprecated,
             manual,

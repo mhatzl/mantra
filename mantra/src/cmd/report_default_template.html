@@ -152,6 +152,7 @@
                 </ul>
             </div>
             {% endif %}
+            <h3>Overview</h3>
             <ul>
                 <li>
                     <p><strong>Existing requirements:</strong> {{ overview.req_cnt }}</p>
@@ -166,8 +167,7 @@
                     <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 }}%)</p>
                 </li>
                 <li>
-                    <!-- TODO: add verified cnt info -->
-                    <p><strong>Verified requirements:</strong> </p>
+                    <p><strong>Manually verified requirements:</strong> {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 }}%)</p>
                 </li>
             </ul>
 
@@ -273,10 +273,10 @@
                     
                     <div class="requirement-details">
                         <div class="requirement-children">
-                            <p class="requirement-details-header"><strong>Children ({{ req.children | length }})</strong></p>
-                            {% if req.children | length > 0 %}
+                            <p class="requirement-details-header"><strong>Direct Children ({{ req.direct_children | length }})</strong></p>
+                            {% if req.direct_children | length > 0 %}
                             <ul>
-                                {% for child_id in req.children %}
+                                {% for child_id in req.direct_children %}
                                 <li>{{ child_id }}</li>
                                 {% endfor %}
                             </ul>

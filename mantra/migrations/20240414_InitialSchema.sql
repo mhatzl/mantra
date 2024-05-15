@@ -195,7 +195,6 @@ from NonLeafRequirements
 where id not in (select id from HasUntracedChild);
 
 -- Traces to child requirements.
--- Also includes traces to non-leaf children.
 create view IndirectRequirementTraces as
 select ir.id, c.child_id as traced_id, t.filepath, t.line
 from IndirectlyTracedRequirements ir, RequirementChildren c, Traces t
@@ -270,7 +269,6 @@ from NonLeafRequirements
 where id not in (select id from HasUncoveredChild);
 
 -- Test coverage of child requirements.
--- Also includes test coverage of non-leaf children.
 create view IndirectRequirementTestCoverage as
 select r.id, c.child_id as covered_id, v.test_run_name, v.test_run_date, v.test_name, v.filepath, v.line
 from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v
@@ -341,11 +339,13 @@ create view RequirementCoverageOverview as
 with NrRequirements(cnt) as (select count(*) from Requirements),
 NrTraced(cnt) as (select count(*) from TracedRequirements),
 NrCovered(cnt) as (select count(*) from CoveredRequirements),
-NrPassed(cnt) as (select count(*) from PassedCoveredRequirements)
+NrPassed(cnt) as (select count(*) from PassedCoveredRequirements),
+NrVerified(cnt) as (select count(*) from ManuallyVerifiedRequirements)
 select r.cnt as req_cnt, t.cnt as traced_cnt, case when r.cnt = 0 then 0.0 else (t.cnt * 1.0 / r.cnt) end as traced_ratio,
     c.cnt as covered_cnt, case when r.cnt = 0 then 0.0 else (c.cnt * 1.0 / r.cnt) end as covered_ratio,
-    p.cnt as passed_cnt, case when r.cnt = 0 then 0.0 else (p.cnt * 1.0 / r.cnt) end as passed_ratio
-from NrRequirements r, NrTraced t, NrCovered c, NrPassed p;
+    p.cnt as passed_cnt, case when r.cnt = 0 then 0.0 else (p.cnt * 1.0 / r.cnt) end as passed_ratio,
+    v.cnt as verified_cnt, case when r.cnt = 0 then 0.0 else (v.cnt * 1.0 / r.cnt) end as verified_ratio
+from NrRequirements r, NrTraced t, NrCovered c, NrPassed p, NrVerified v;
 
 create view LeafChildOverview as
 with NrLeafs(id, cnt) as (
