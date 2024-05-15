@@ -521,20 +521,20 @@ impl MantraDb {
         &self,
         test_run: &TestRunConfig,
         test_name: &str,
-        filepath: &Path,
-        line: u32,
+        trace_filepath: &Path,
+        trace_line: u32,
         req_id: &str,
     ) -> Result<(), DbError> {
         // Note: filepath is already *fix* due to how the "file!()" macro works
-        let file = filepath.display().to_string();
+        let file = trace_filepath.display().to_string();
         let query_result = sqlx::query!(
-                "insert or ignore into TestCoverage (req_id, test_run_name, test_run_date, test_name, filepath, line) values ($1, $2, $3, $4, $5, $6)",
+                "insert or ignore into TestCoverage (req_id, test_run_name, test_run_date, test_name, trace_filepath, trace_line) values ($1, $2, $3, $4, $5, $6)",
                 req_id,
                 test_run.name,
                 test_run.date,
                 test_name,
                 file,
-                line,
+                trace_line,
             )
             .execute(&self.pool)
             .await;
@@ -550,7 +550,7 @@ impl MantraDb {
         query_result.map_err(|err| {
                 DbError::Insertion(format!(
                     "Adding coverage for id='{}', test-run='{}' at {}, test='{}', file='{}', line='{}' failed with error: {}",
-                    req_id, test_run.name, test_run.date, test_name, file, line, err
+                    req_id, test_run.name, test_run.date, test_name, file, trace_line, err
                 ))
             })?;
 

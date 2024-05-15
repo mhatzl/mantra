@@ -69,11 +69,11 @@ create table TestCoverage (
     test_run_name text not null,
     test_run_date text not null,
     test_name text not null,
-    filepath text not null,
-    line integer not null,
-    primary key (req_id, test_run_name, test_run_date, test_name, filepath, line),
+    trace_filepath text not null,
+    trace_line integer not null,
+    primary key (req_id, test_run_name, test_run_date, test_name, trace_filepath, trace_line),
     foreign key (test_run_name, test_run_date, test_name) references Tests(test_run_name, test_run_date, name) on delete cascade,
-    foreign key (req_id, filepath, line) references Traces(req_id, filepath, line) on delete cascade
+    foreign key (req_id, trace_filepath, trace_line) references Traces(req_id, filepath, line) on delete cascade
 );
 
 -- review to add manually verified requirements
@@ -270,9 +270,14 @@ where id not in (select id from HasUncoveredChild);
 
 -- Test coverage of child requirements.
 create view IndirectRequirementTestCoverage as
-select r.id, c.child_id as covered_id, v.test_run_name, v.test_run_date, v.test_name, v.filepath, v.line
-from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v
-where r.id = c.id and c.child_id = v.req_id;
+select r.id, c.child_id as covered_id,
+v.test_run_name, v.test_run_date, v.test_name,
+v.trace_filepath, v.trace_line,
+t.passed
+from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v, Tests t
+where r.id = c.id and c.child_id = v.req_id
+and v.test_run_name = t.test_run_name and v.test_run_date = t.test_run_date
+and v.test_name = t.name;
 
 create view CoveredRequirements as
 select id from DirectlyCoveredRequirements
@@ -394,7 +399,7 @@ from Tests
 where passed = 1;
 
 create view FailedTestCoverage as
-select tc.req_id, tc.test_run_name, tc.test_run_date, tc.test_name, tc.filepath, tc.line
+select tc.req_id, tc.test_run_name, tc.test_run_date, tc.test_name, tc.trace_filepath, tc.trace_line
 from TestCoverage tc, Tests t
 where tc.test_run_name = t.test_run_name and tc.test_run_date = t.test_run_date
     and tc.test_name = t.name and (t.passed <> 1 or t.passed is null);
