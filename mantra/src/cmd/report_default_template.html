@@ -42,6 +42,19 @@
             background-size: contain;
             display: inline-block;
         }
+
+
+        .requirement-info {
+            border-width: 1px;
+            border-style: solid;
+            border-color: lightgray;
+            padding: 5px;
+        }
+
+        #requirements-list {
+            display: grid;
+            gap: 3px;
+        }
     </style>
 </head>
 <body>
@@ -286,9 +299,9 @@
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces ({{ req.trace_info.direct_traces | length }})</strong></p>
                             {% if req.trace_info.direct_traces | length > 0 %}
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 {% for trace in req.trace_info.direct_traces %}
@@ -304,82 +317,112 @@
                         <div class="requirement-indirect-traces">
                             <p class="requirement-details-header"><strong>Indirect Traces ({{ req.trace_info.indirect_traces | length }})</strong></p>
                             {% if req.trace_info.indirect_traces | length > 0 %}
-                            <table>
-                                <tr>
-                                    <th class="req-id">traced-id</th>
-                                    <th class="filepath">filepath</th>
-                                    <th class="line">line</th>
-                                </tr>
-                                {% for trace in req.trace_info.indirect_traces %}
-                                <tr>
-                                    <td class="req-id"><a href="#{{ trace.traced_id }}">{{ trace.traced_id }}</a></td>
-                                    <td class="filepath">{{ trace.filepath }}</td>
-                                    <td class="line">{{ trace.line }}</td>
-                                </tr>
+                            <ul>
+                                {% for indirect_trace in req.trace_info.indirect_traces %}
+                                <li>
+                                    <p>Traced ID: {{ indirect_trace.traced_id }}</p>
+                                    <p>Traces</p>
+                                    <table class="file-location">
+                                        <tr>
+                                            <th class="filepath">file</th>
+                                            <th class="line">line</th>
+                                        </tr>
+                                        {% for trace in indirect_trace.traces %}
+                                        <tr>
+                                            <td id="{{ indirect_trace.traced_id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{ trace.filepath }}</td>
+                                            <td class="line">{{ trace.line }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </table>
+                                </li>
                                 {% endfor %}
-                            </table>
-                        {% endif %}
+                            </ul>
+                            {% endif %}
                         </div>
 
                         <div class="requirement-direct-coverage">
                             <p class="requirement-details-header"><strong>Direct Coverage ({{ req.test_coverage_info.direct_coverage | length }})</strong></p>
                             {% if req.test_coverage_info.direct_coverage | length > 0 %}
-                            <table>
-                                <tr>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
-                                {% for coverage in req.test_coverage_info.direct_coverage %}
-                                <tr>
-                                    <td class="test-run-name"><a href="#{{ coverage.test_run_name }}|{{ coverage.test_run_date }}">
-                                        {{ coverage.test_run_name }}
-                                    </a></td>
-                                    <td class="test-run-date">{{ coverage.test_run_date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</td>
-                                    <td class="test-name"><a href="#{{ coverage.test_run_name }}|{{ coverage.test_run_date }}|{{ coverage.test_name }}">
-                                        {{ coverage.test_name }}
-                                    </a></td>
-                                    <td class="trace"><a href="#{{ req.id }}|{{ coverage.trace_filepath }}|{{ coverage.trace_line }}">
-                                        {{ coverage.trace_filepath }}#{{ coverage.trace_line }}
-                                    </a></td>
-                                    <td class="coverage-state">{% if coverage.passed %}passed{% else %}failed{% endif %}</td>
-                                </tr>
+                            <ul>
+                                {% for test_run in req.test_coverage_info.direct_coverage %}
+                                <li>
+                                    <p><a class="test-run-name" href="#{{ test_run.name }}|{{ test_run.date }}">
+                                        {{ test_run.name }}
+                                    </a></p>
+                                    <p class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</p>
+                                    <p>Tests</p>
+                                    <ul>
+                                    {% for test in test_run.tests %}
+                                        <li>
+                                            <p><a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
+                                                {{ test.name }}
+                                            </a> ({% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %})</p>
+                                            <p>Traces</p>
+                                            <table class="file-location">
+                                                <tr>
+                                                    <th class="filepath">file</th>
+                                                    <th class="line">line</th>
+                                                </tr>
+                                                {% for trace in test.traces %}
+                                                <tr>
+                                                    <td id="{{ req.id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{ trace.filepath }}</td>
+                                                    <td class="line">{{ trace.line }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </table>
+                                        </li>
+                                    {% endfor %}
+                                    </ul>
+                                </li>
                                 {% endfor %}
-                            </table>
+                            </ul>
                         {% endif %}
                         </div>
 
                         <div class="requirement-indirect-coverage">
                             <p class="requirement-details-header"><strong>Indirect Coverage ({{ req.test_coverage_info.indirect_coverage | length }})</strong></p>
                             {% if req.test_coverage_info.indirect_coverage | length > 0 %}
-                            <table>
-                                <tr>
-                                    <th class="req-id">covered-id</th>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
+                            <ul>
                                 {% for coverage in req.test_coverage_info.indirect_coverage %}
-                                <tr>
-                                    <td class="req-id"><a href="#{{ coverage.covered_id }}">{{ coverage.covered_id }}</a></td>
-                                    <td class="test-run-name"><a href="#{{ coverage.test_run_name }}|{{ coverage.test_run_date }}">
-                                        {{ coverage.test_run_name }}
-                                    </a></td>
-                                    <td class="test-run-date">{{ coverage.test_run_date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</td>
-                                    <td class="test-name"><a href="#{{ coverage.test_run_name }}|{{ coverage.test_run_date }}|{{ coverage.test_name }}">
-                                        {{ coverage.test_name }}
-                                    </a></td>
-                                    <td class="trace"><a href="#{{ coverage.covered_id }}|{{ coverage.trace_filepath }}|{{ coverage.trace_line }}">
-                                        {{ coverage.trace_filepath }}#{{ coverage.trace_line }}
-                                    </a></td>
-                                    <td class="coverage-state">{% if coverage.passed %}passed{% else %}failed{% endif %}</td>
-                                </tr>
+                                <li>
+                                    <p>Covered ID: <a href="#{{ coverage.covered_id }}"></a>{{ coverage.covered_id }}</p>
+                                    <p>Test Runs</p>
+                                    <ul>
+                                        {% for test_run in coverage.test_runs %}
+                                        <li>
+                                            <p><a class="test-run-name" href="#{{ test_run.name }}|{{ test_run.date }}">
+                                                {{ test_run.name }}
+                                            </a></p>
+                                            <p class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</p>
+                                            <p>Tests</p>
+                                            <ul>
+                                            {% for test in test_run.tests %}
+                                                <li>
+                                                    <p><a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
+                                                        {{ test.name }}
+                                                    </a> ({% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %})</p>
+                                                    <p>Traces</p>
+                                                    <table class="file-location">
+                                                        <tr>
+                                                            <th class="filepath">file</th>
+                                                            <th class="line">line</th>
+                                                        </tr>
+                                                        {% for trace in test.traces %}
+                                                        <tr>
+                                                            <td id="{{ coverage.covered_id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{ trace.filepath }}</td>
+                                                            <td class="line">{{ trace.line }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </table>
+                                                </li>
+                                            {% endfor %}
+                                            </ul>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
                                 {% endfor %}
-                            </table>
+                            </ul>
                         {% endif %}
                         </div>
                

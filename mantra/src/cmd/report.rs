@@ -407,14 +407,14 @@ impl LeafChildrenStatistic {
 pub struct RequirementTraceInfo {
     pub traced: bool,
     pub fully_traced: bool,
-    pub direct_traces: Vec<DirectTraceInfo>,
+    pub direct_traces: Vec<TraceLocation>,
     pub indirect_traces: Vec<IndirectTraceInfo>,
 }
 
 impl RequirementTraceInfo {
     pub async fn try_from(db: &MantraDb, id: &str) -> Result<Self, ReportError> {
         let records = sqlx::query_as!(
-            DirectTraceInfo,
+            TraceLocation,
             r#"
             select filepath, line as "line: u32"
             from Traces
@@ -429,13 +429,12 @@ impl RequirementTraceInfo {
 
         let direct_traces = records;
 
-        let records = sqlx::query_as!(
-            IndirectTraceInfo,
+        let records = sqlx::query!(
             r#"
-            select traced_id as "traced_id!", filepath, line as "line!: u32"
-            from IndirectRequirementTraces
+            select traced_id as "traced_id!", traces as "traces!: String"
+            from IndirectTraceTree
             where id = $1
-            order by filepath, line, traced_id
+            order by traced_id
         "#,
             id
         )
@@ -443,7 +442,15 @@ impl RequirementTraceInfo {
         .await
         .map_err(ReportError::Db)?;
 
-        let indirect_traces = records;
+        let mut indirect_traces = Vec::with_capacity(records.len());
+
+        for record in records {
+            indirect_traces.push(IndirectTraceInfo {
+                traced_id: record.traced_id,
+                traces: serde_json::from_str(&record.traces)
+                    .expect("Traces extracted as JSON from DB."),
+            })
+        }
 
         let fully_traced = sqlx::query!(
             r#"
@@ -467,8 +474,8 @@ impl RequirementTraceInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct DirectTraceInfo {
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, sqlx::Type)]
+pub struct TraceLocation {
     pub filepath: String,
     pub line: u32,
 }
@@ -476,8 +483,7 @@ pub struct DirectTraceInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct IndirectTraceInfo {
     pub traced_id: String,
-    pub filepath: String,
-    pub line: u32,
+    pub traces: Vec<TraceLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -485,7 +491,7 @@ pub struct RequirementTestCoverageInfo {
     pub covered: bool,
     pub passed: bool,
     pub fully_covered: bool,
-    pub direct_coverage: Vec<DirectTestCoverageInfo>,
+    pub direct_coverage: Vec<TestCoverageTestRunInfo>,
     pub indirect_coverage: Vec<IndirectTestCoverageInfo>,
 }
 
@@ -493,14 +499,11 @@ impl RequirementTestCoverageInfo {
     pub async fn try_from(db: &MantraDb, id: &str) -> Result<Self, ReportError> {
         let records = sqlx::query!(
             r#"
-            select v.test_run_name, v.test_run_date, v.test_name,
-            v.trace_filepath, v.trace_line as "trace_line: u32", t.passed as "passed!: bool"
-            from TestCoverage v, Tests t
-            where req_id = $1
-            and v.test_run_name = t.test_run_name and v.test_run_date = t.test_run_date
-            and v.test_name = t.name
-            order by v.test_run_name, v.test_run_date, v.test_name, v.trace_filepath, v.trace_line
-        "#,
+                select test_run_name, test_run_date, tests as "tests!: String"
+                from DirectCoverageTree
+                where id = $1
+                order by test_run_name, test_run_date
+            "#,
             id
         )
         .fetch_all(db.pool())
@@ -510,25 +513,21 @@ impl RequirementTestCoverageInfo {
         let mut direct_coverage = Vec::with_capacity(records.len());
 
         for record in records {
-            direct_coverage.push(DirectTestCoverageInfo {
-                test_run_name: record.test_run_name,
-                test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
-                test_name: record.test_name,
-                trace_filepath: record.trace_filepath,
-                trace_line: record.trace_line,
-                passed: record.passed,
+            direct_coverage.push(TestCoverageTestRunInfo {
+                name: record.test_run_name,
+                date: iso8601_str_to_offsetdatetime(&record.test_run_date),
+                tests: serde_json::from_str(&record.tests)
+                    .expect("Tests extracted as JSON from DB."),
             })
         }
 
         let records = sqlx::query!(
             r#"
-            select covered_id as "covered_id!",
-            test_run_name, test_run_date, test_name,
-            trace_filepath, trace_line as "trace_line!: u32", passed as "passed!: bool"
-            from IndirectRequirementTestCoverage
-            where id = $1
-            order by test_run_name, test_run_date, test_name, trace_filepath, trace_line, covered_id
-        "#,
+                select covered_id, test_runs as "test_runs!: String"
+                from IndirectTestCoverageTree
+                where id = $1
+                order by covered_id
+            "#,
             id
         )
         .fetch_all(db.pool())
@@ -540,12 +539,8 @@ impl RequirementTestCoverageInfo {
         for record in records {
             indirect_coverage.push(IndirectTestCoverageInfo {
                 covered_id: record.covered_id,
-                test_run_name: record.test_run_name,
-                test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
-                test_name: record.test_name,
-                trace_filepath: record.trace_filepath,
-                trace_line: record.trace_line,
-                passed: record.passed,
+                test_runs: serde_json::from_str(&record.test_runs)
+                    .expect("Test runs extracted as JSON from DB."),
             })
         }
 
@@ -586,36 +581,27 @@ impl RequirementTestCoverageInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct DirectTestCoverageInfo {
-    pub test_run_name: String,
+pub struct TestCoverageTestRunInfo {
+    pub name: String,
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
-    pub test_run_date: OffsetDateTime,
-    pub test_name: String,
-    /// The file the covered trace is set.
-    pub trace_filepath: String,
-    /// The line the covered trace is set.
-    pub trace_line: u32,
+    pub date: OffsetDateTime,
+    pub tests: Vec<TestCoverageTestInfo>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct TestCoverageTestInfo {
+    pub name: String,
     pub passed: bool,
+    pub traces: Vec<TraceLocation>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct IndirectTestCoverageInfo {
     pub covered_id: String,
-    pub test_run_name: String,
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
-    pub test_run_date: OffsetDateTime,
-    pub test_name: String,
-    /// The file the covered trace is set.
-    pub trace_filepath: String,
-    /// The line the covered trace is set.
-    pub trace_line: u32,
-    pub passed: bool,
+    pub test_runs: Vec<TestCoverageTestRunInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
