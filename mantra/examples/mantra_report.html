@@ -42,6 +42,19 @@
             background-size: contain;
             display: inline-block;
         }
+
+
+        .requirement-info {
+            border-width: 1px;
+            border-style: solid;
+            border-color: lightgray;
+            padding: 5px;
+        }
+
+        #requirements-list {
+            display: grid;
+            gap: 3px;
+        }
     </style>
 </head>
 <body>
@@ -111,18 +124,18 @@
                     
                     <li>  
                         <a
-                            href="#test-run|+002024-05-15T19:48:24.122219700Z"
+                            href="#test-run|+002024-05-16T10:01:08.141221000Z"
                             class="nav-test-run-link"
                         >
                             <span class="test-run-name">test-run</span>
-                            <span class="test-run-date">2024-05-15 21:48:24</span>
+                            <span class="test-run-date">2024-05-16 12:01:08</span>
                         </a>
                         
                         <ul>
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::indirect_test"
+                                    href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::indirect_test"
                                     class="test-name"
                                 >
                                 usage::indirect_test
@@ -131,7 +144,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::other_test"
+                                    href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::other_test"
                                     class="test-name"
                                 >
                                 usage::other_test
@@ -140,7 +153,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::skipped_test"
+                                    href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::skipped_test"
                                     class="test-name"
                                 >
                                 usage::skipped_test
@@ -149,7 +162,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::test_fn"
+                                    href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::test_fn"
                                     class="test-name"
                                 >
                                 usage::test_fn
@@ -528,27 +541,44 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-indirect-traces">
                             <p class="requirement-details-header"><strong>Indirect Traces (2)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="req-id">traced-id</th>
-                                    <th class="filepath">filepath</th>
-                                    <th class="line">line</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</a></td>
-                                    <td class="filepath">hierarchy_test.yaml</td>
-                                    <td class="line">1</td>
-                                </tr>
+                                <li>
+                                    <p>Traced ID: id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</p>
+                                    <p>Traces</p>
+                                    <table class="file-location">
+                                        <tr>
+                                            <th class="filepath">file</th>
+                                            <th class="line">line</th>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                            <td class="line">1</td>
+                                        </tr>
+                                        
+                                    </table>
+                                </li>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</a></td>
-                                    <td class="filepath">hierarchy_test.yaml</td>
-                                    <td class="line">1</td>
-                                </tr>
+                                <li>
+                                    <p>Traced ID: id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</p>
+                                    <p>Traces</p>
+                                    <table class="file-location">
+                                        <tr>
+                                            <th class="filepath">file</th>
+                                            <th class="line">line</th>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                            <td class="line">1</td>
+                                        </tr>
+                                        
+                                    </table>
+                                </li>
                                 
-                            </table>
-                        
+                            </ul>
+                            
                         </div>
 
                         <div class="requirement-direct-coverage">
@@ -557,64 +587,106 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         </div>
 
                         <div class="requirement-indirect-coverage">
-                            <p class="requirement-details-header"><strong>Indirect Coverage (3)</strong></p>
+                            <p class="requirement-details-header"><strong>Indirect Coverage (2)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="req-id">covered-id</th>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</a></td>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
-                                        test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::indirect_test">
-                                        usage::indirect_test
-                                    </a></td>
-                                    <td class="trace"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1|hierarchy_test.yaml|1">
-                                        hierarchy_test.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">passed</td>
-                                </tr>
+                                <li>
+                                    <p>Covered ID: <a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1"></a>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1</p>
+                                    <p>Test Runs</p>
+                                    <ul>
+                                        
+                                        <li>
+                                            <p><a class="test-run-name" href="#test-run|+002024-05-16T10:01:08.141221000Z">
+                                                test-run
+                                            </a></p>
+                                            <p class="test-run-date">2024-05-16 12:01:08</p>
+                                            <p>Tests</p>
+                                            <ul>
+                                            
+                                                <li>
+                                                    <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::indirect_test">
+                                                        usage::indirect_test
+                                                    </a> (<span class="passed">passed</span>)</p>
+                                                    <p>Traces</p>
+                                                    <table class="file-location">
+                                                        <tr>
+                                                            <th class="filepath">file</th>
+                                                            <th class="line">line</th>
+                                                        </tr>
+                                                        
+                                                        <tr>
+                                                            <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                                            <td class="line">1</td>
+                                                        </tr>
+                                                        
+                                                    </table>
+                                                </li>
+                                            
+                                            </ul>
+                                        </li>
+                                        
+                                    </ul>
+                                </li>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</a></td>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
-                                        test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::indirect_test">
-                                        usage::indirect_test
-                                    </a></td>
-                                    <td class="trace"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1">
-                                        hierarchy_test.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">passed</td>
-                                </tr>
+                                <li>
+                                    <p>Covered ID: <a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2"></a>id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</p>
+                                    <p>Test Runs</p>
+                                    <ul>
+                                        
+                                        <li>
+                                            <p><a class="test-run-name" href="#test-run|+002024-05-16T10:01:08.141221000Z">
+                                                test-run
+                                            </a></p>
+                                            <p class="test-run-date">2024-05-16 12:01:08</p>
+                                            <p>Tests</p>
+                                            <ul>
+                                            
+                                                <li>
+                                                    <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::indirect_test">
+                                                        usage::indirect_test
+                                                    </a> (<span class="passed">passed</span>)</p>
+                                                    <p>Traces</p>
+                                                    <table class="file-location">
+                                                        <tr>
+                                                            <th class="filepath">file</th>
+                                                            <th class="line">line</th>
+                                                        </tr>
+                                                        
+                                                        <tr>
+                                                            <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                                            <td class="line">1</td>
+                                                        </tr>
+                                                        
+                                                    </table>
+                                                </li>
+                                            
+                                                <li>
+                                                    <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::other_test">
+                                                        usage::other_test
+                                                    </a> (<span class="failed">failed</span>)</p>
+                                                    <p>Traces</p>
+                                                    <table class="file-location">
+                                                        <tr>
+                                                            <th class="filepath">file</th>
+                                                            <th class="line">line</th>
+                                                        </tr>
+                                                        
+                                                        <tr>
+                                                            <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                                            <td class="line">1</td>
+                                                        </tr>
+                                                        
+                                                    </table>
+                                                </li>
+                                            
+                                            </ul>
+                                        </li>
+                                        
+                                    </ul>
+                                </li>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2">id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2</a></td>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
-                                        test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::other_test">
-                                        usage::other_test
-                                    </a></td>
-                                    <td class="trace"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1">
-                                        hierarchy_test.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">failed</td>
-                                </tr>
-                                
-                            </table>
+                            </ul>
                         
                         </div>
                
@@ -681,9 +753,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (1)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -704,30 +776,39 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-coverage">
                             <p class="requirement-details-header"><strong>Direct Coverage (1)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
+                                <li>
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-16T10:01:08.141221000Z">
                                         test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::indirect_test">
-                                        usage::indirect_test
-                                    </a></td>
-                                    <td class="trace"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1|hierarchy_test.yaml|1">
-                                        hierarchy_test.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">passed</td>
-                                </tr>
+                                    </a></p>
+                                    <p class="test-run-date">2024-05-16 12:01:08</p>
+                                    <p>Tests</p>
+                                    <ul>
+                                    
+                                        <li>
+                                            <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::indirect_test">
+                                                usage::indirect_test
+                                            </a> (<span class="passed">passed</span>)</p>
+                                            <p>Traces</p>
+                                            <table class="file-location">
+                                                <tr>
+                                                    <th class="filepath">file</th>
+                                                    <th class="line">line</th>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                                    <td class="line">1</td>
+                                                </tr>
+                                                
+                                            </table>
+                                        </li>
+                                    
+                                    </ul>
+                                </li>
                                 
-                            </table>
+                            </ul>
                         
                         </div>
 
@@ -799,9 +880,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (1)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -820,46 +901,60 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         </div>
 
                         <div class="requirement-direct-coverage">
-                            <p class="requirement-details-header"><strong>Direct Coverage (2)</strong></p>
+                            <p class="requirement-details-header"><strong>Direct Coverage (1)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
+                                <li>
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-16T10:01:08.141221000Z">
                                         test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::indirect_test">
-                                        usage::indirect_test
-                                    </a></td>
-                                    <td class="trace"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1">
-                                        hierarchy_test.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">passed</td>
-                                </tr>
+                                    </a></p>
+                                    <p class="test-run-date">2024-05-16 12:01:08</p>
+                                    <p>Tests</p>
+                                    <ul>
+                                    
+                                        <li>
+                                            <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::indirect_test">
+                                                usage::indirect_test
+                                            </a> (<span class="passed">passed</span>)</p>
+                                            <p>Traces</p>
+                                            <table class="file-location">
+                                                <tr>
+                                                    <th class="filepath">file</th>
+                                                    <th class="line">line</th>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                                    <td class="line">1</td>
+                                                </tr>
+                                                
+                                            </table>
+                                        </li>
+                                    
+                                        <li>
+                                            <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::other_test">
+                                                usage::other_test
+                                            </a> (<span class="failed">failed</span>)</p>
+                                            <p>Traces</p>
+                                            <table class="file-location">
+                                                <tr>
+                                                    <th class="filepath">file</th>
+                                                    <th class="line">line</th>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td id="id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1" class="filepath">hierarchy_test.yaml</td>
+                                                    <td class="line">1</td>
+                                                </tr>
+                                                
+                                            </table>
+                                        </li>
+                                    
+                                    </ul>
+                                </li>
                                 
-                                <tr>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
-                                        test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::other_test">
-                                        usage::other_test
-                                    </a></td>
-                                    <td class="trace"><a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2|hierarchy_test.yaml|1">
-                                        hierarchy_test.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">failed</td>
-                                </tr>
-                                
-                            </table>
+                            </ul>
                         
                         </div>
 
@@ -1035,27 +1130,44 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-indirect-traces">
                             <p class="requirement-details-header"><strong>Indirect Traces (2)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="req-id">traced-id</th>
-                                    <th class="filepath">filepath</th>
-                                    <th class="line">line</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_2.sub_sub_id_1">id.sub_id_2.sub_sub_id_1</a></td>
-                                    <td class="filepath">hierarchy_test.yaml</td>
-                                    <td class="line">7</td>
-                                </tr>
+                                <li>
+                                    <p>Traced ID: id.sub_id_2.sub_sub_id_1</p>
+                                    <p>Traces</p>
+                                    <table class="file-location">
+                                        <tr>
+                                            <th class="filepath">file</th>
+                                            <th class="line">line</th>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td id="id.sub_id_2.sub_sub_id_1|hierarchy_test.yaml|7" class="filepath">hierarchy_test.yaml</td>
+                                            <td class="line">7</td>
+                                        </tr>
+                                        
+                                    </table>
+                                </li>
                                 
-                                <tr>
-                                    <td class="req-id"><a href="#id.sub_id_2.sub_sub_id_2">id.sub_id_2.sub_sub_id_2</a></td>
-                                    <td class="filepath">hierarchy_test.yaml</td>
-                                    <td class="line">7</td>
-                                </tr>
+                                <li>
+                                    <p>Traced ID: id.sub_id_2.sub_sub_id_2</p>
+                                    <p>Traces</p>
+                                    <table class="file-location">
+                                        <tr>
+                                            <th class="filepath">file</th>
+                                            <th class="line">line</th>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td id="id.sub_id_2.sub_sub_id_2|hierarchy_test.yaml|7" class="filepath">hierarchy_test.yaml</td>
+                                            <td class="line">7</td>
+                                        </tr>
+                                        
+                                    </table>
+                                </li>
                                 
-                            </table>
-                        
+                            </ul>
+                            
                         </div>
 
                         <div class="requirement-direct-coverage">
@@ -1152,9 +1264,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (1)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -1404,9 +1516,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (1)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -1517,9 +1629,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (1)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -1955,9 +2067,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (1)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -1978,30 +2090,39 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-coverage">
                             <p class="requirement-details-header"><strong>Direct Coverage (1)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
+                                <li>
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-16T10:01:08.141221000Z">
                                         test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::test_fn">
-                                        usage::test_fn
-                                    </a></td>
-                                    <td class="trace"><a href="#main_id|traces.rs|1">
-                                        traces.rs#1
-                                    </a></td>
-                                    <td class="coverage-state">passed</td>
-                                </tr>
+                                    </a></p>
+                                    <p class="test-run-date">2024-05-16 12:01:08</p>
+                                    <p>Tests</p>
+                                    <ul>
+                                    
+                                        <li>
+                                            <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::test_fn">
+                                                usage::test_fn
+                                            </a> (<span class="passed">passed</span>)</p>
+                                            <p>Traces</p>
+                                            <table class="file-location">
+                                                <tr>
+                                                    <th class="filepath">file</th>
+                                                    <th class="line">line</th>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td id="main_id|traces.rs|1" class="filepath">traces.rs</td>
+                                                    <td class="line">1</td>
+                                                </tr>
+                                                
+                                            </table>
+                                        </li>
+                                    
+                                    </ul>
+                                </li>
                                 
-                            </table>
+                            </ul>
                         
                         </div>
 
@@ -2149,9 +2270,9 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-traces">
                             <p class="requirement-details-header"><strong>Direct Traces (2)</strong></p>
                             
-                            <table>
+                            <table class="file-location">
                                 <tr>
-                                    <th class="filepath">filepath</th>
+                                    <th class="filepath">file</th>
                                     <th class="line">line</th>
                                 </tr>
                                 
@@ -2177,30 +2298,39 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <div class="requirement-direct-coverage">
                             <p class="requirement-details-header"><strong>Direct Coverage (1)</strong></p>
                             
-                            <table>
-                                <tr>
-                                    <th class="test-run-name">test-run-name</th>
-                                    <th class="test-run-date">test-run-date</th>
-                                    <th class="test-name">test-name</th>
-                                    <th class="trace">trace</th>
-                                    <th class="coverage-state">state</th>
-                                </tr>
+                            <ul>
                                 
-                                <tr>
-                                    <td class="test-run-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z">
+                                <li>
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-16T10:01:08.141221000Z">
                                         test-run
-                                    </a></td>
-                                    <td class="test-run-date">2024-05-15 21:48:24</td>
-                                    <td class="test-name"><a href="#test-run|+002024-05-15T19:48:24.122219700Z|usage::other_test">
-                                        usage::other_test
-                                    </a></td>
-                                    <td class="trace"><a href="#other_id|traces.yaml|1">
-                                        traces.yaml#1
-                                    </a></td>
-                                    <td class="coverage-state">failed</td>
-                                </tr>
+                                    </a></p>
+                                    <p class="test-run-date">2024-05-16 12:01:08</p>
+                                    <p>Tests</p>
+                                    <ul>
+                                    
+                                        <li>
+                                            <p><a class="test-name" href="#test-run|+002024-05-16T10:01:08.141221000Z|usage::other_test">
+                                                usage::other_test
+                                            </a> (<span class="failed">failed</span>)</p>
+                                            <p>Traces</p>
+                                            <table class="file-location">
+                                                <tr>
+                                                    <th class="filepath">file</th>
+                                                    <th class="line">line</th>
+                                                </tr>
+                                                
+                                                <tr>
+                                                    <td id="other_id|traces.yaml|1" class="filepath">traces.yaml</td>
+                                                    <td class="line">1</td>
+                                                </tr>
+                                                
+                                            </table>
+                                        </li>
+                                    
+                                    </ul>
+                                </li>
                                 
-                            </table>
+                            </ul>
                         
                         </div>
 
@@ -2242,12 +2372,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
             <div class="test-runs">
                 <h3>Test Runs (1)</h3>
                 
-                    <div id="test-run|+002024-05-15T19:48:24.122219700Z" class="test-run">
+                    <div id="test-run|+002024-05-16T10:01:08.141221000Z" class="test-run">
                         <div class="test-run-header">
                             <span class="test-run-name">
                                 test-run
                                 at
-                                2024-05-15 21:48:24
+                                2024-05-16 12:01:08
                             </span>
                             <span class="test-run-state">
                                 
@@ -2279,7 +2409,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <strong>Tests</strong>
                         <div class="test-run-tests">
                             
-                                <div id="test-run|+002024-05-15T19:48:24.122219700Z|usage::indirect_test" class="test">
+                                <div id="test-run|+002024-05-16T10:01:08.141221000Z|usage::indirect_test" class="test">
                                     <div class="test-header">
                                         <p>usage::indirect_test</p>
                                         <p>
@@ -2305,7 +2435,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </details>
                                 </div>
                             
-                                <div id="test-run|+002024-05-15T19:48:24.122219700Z|usage::other_test" class="test">
+                                <div id="test-run|+002024-05-16T10:01:08.141221000Z|usage::other_test" class="test">
                                     <div class="test-header">
                                         <p>usage::other_test</p>
                                         <p>
@@ -2331,7 +2461,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </details>
                                 </div>
                             
-                                <div id="test-run|+002024-05-15T19:48:24.122219700Z|usage::skipped_test" class="test">
+                                <div id="test-run|+002024-05-16T10:01:08.141221000Z|usage::skipped_test" class="test">
                                     <div class="test-header">
                                         <p>usage::skipped_test</p>
                                         <p>
@@ -2353,7 +2483,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </details>
                                 </div>
                             
-                                <div id="test-run|+002024-05-15T19:48:24.122219700Z|usage::test_fn" class="test">
+                                <div id="test-run|+002024-05-16T10:01:08.141221000Z|usage::test_fn" class="test">
                                     <div class="test-header">
                                         <p>usage::test_fn</p>
                                         <p>
@@ -2395,7 +2525,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
     </main>
 
     <footer>
-        Report generated at 2024-05-15 21:48:24
+        Report generated at 2024-05-16 12:01:08
     </footer>
 </body>
 </html>

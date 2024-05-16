@@ -200,6 +200,18 @@ select ir.id, c.child_id as traced_id, t.filepath, t.line
 from IndirectlyTracedRequirements ir, RequirementChildren c, Traces t
 where ir.id = c.id and c.child_id = t.req_id;
 
+create view IndirectTraceTree as
+with CompactTraceEntry(id, traced_id, trace) as (
+	select id, traced_id, json_object('filepath', filepath, 'line', line)
+	from IndirectRequirementTraces
+), GroupedTraceEntry(id, traced_id, trace_list) as (
+	select id, traced_id, '[' || group_concat(json(trace)) || ']'
+	from CompactTraceEntry
+	group by id, traced_id
+)
+select id, traced_id, json(trace_list) as traces
+from GroupedTraceEntry;
+
 create view TracedRequirements as
 select id from DirectlyTracedRequirements
 union
@@ -234,6 +246,34 @@ where d.id = t.id;
 create view DirectlyCoveredRequirements as
 select id from Requirements
 where id in (select req_id from TestCoverage);
+
+create view DirectRequirementCoverage as
+select v.req_id as id, v.test_run_name, v.test_run_date, v.test_name,
+v.trace_filepath, v.trace_line, coalesce(t.passed, 0) as test_passed
+from TestCoverage v, Tests t
+where v.test_run_name = t.test_run_name and v.test_run_date = t.test_run_date
+and v.test_name = t.name;
+
+create view DirectCoverageTree as
+with CompactTraceEntry(id, test_run_name, test_run_date, test_name, test_passed, trace) as (
+	select id, test_run_name, test_run_date, test_name, test_passed,
+	json_object('filepath', trace_filepath, 'line', trace_line)
+	from DirectRequirementCoverage
+), GroupedTraceEntry(id, test_run_name, test_run_date, test_name, test_passed, trace_list) as (
+	select id, test_run_name, test_run_date, test_name, test_passed, '[' || group_concat(trace) || ']'
+	from CompactTraceEntry
+	group by id, test_run_name, test_run_date, test_name
+), CompactTestEntry(id, test_run_name, test_run_date, test) as (
+	select id, test_run_name, test_run_date,
+	json_object('name', test_name, 'passed', case when test_passed = 1 then json('true') else json('false') end, 'traces', json(trace_list))
+	from GroupedTraceEntry
+), GroupedTestEntry(id, test_run_name, test_run_date, test_list) as (
+	select id, test_run_name, test_run_date, '[' || group_concat(test) || ']'
+	from CompactTestEntry
+	group by id, test_run_name, test_run_date
+)
+select id, test_run_name, test_run_date, json(test_list) as tests from GroupedTestEntry;
+
 
 -- Indirectly covered requirements have the same constraint
 -- as indirectly traced requirements.
@@ -273,11 +313,41 @@ create view IndirectRequirementTestCoverage as
 select r.id, c.child_id as covered_id,
 v.test_run_name, v.test_run_date, v.test_name,
 v.trace_filepath, v.trace_line,
-t.passed
+coalesce(t.passed, 0) as test_passed
 from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v, Tests t
 where r.id = c.id and c.child_id = v.req_id
 and v.test_run_name = t.test_run_name and v.test_run_date = t.test_run_date
 and v.test_name = t.name;
+
+-- Groups all coverage information by id and covered_id
+-- creating a JSON tree of covered_id->test_runs->tests->traces 
+create view IndirectTestCoverageTree as
+with CompactTraceEntry(id, covered_id, test_run_name, test_run_date, test_name, test_passed, trace) as (
+	select id, covered_id, test_run_name, test_run_date, test_name, test_passed,
+	json_object('filepath', trace_filepath, 'line', trace_line)
+	from IndirectRequirementTestCoverage
+), GroupedTraceEntry(id, covered_id, test_run_name, test_run_date, test_name, test_passed, trace_list) as (
+	select id, covered_id, test_run_name, test_run_date, test_name, test_passed, '[' || group_concat(trace) || ']'
+	from CompactTraceEntry
+	group by id, covered_id, test_run_name, test_run_date, test_name
+), CompactTestEntry(id, covered_id, test_run_name, test_run_date, test) as (
+	select id, covered_id, test_run_name, test_run_date,
+	json_object('name', test_name, 'passed', case when test_passed = 1 then json('true') else json('false') end, 'traces', json(trace_list))
+	from GroupedTraceEntry
+), GroupedTestEntry(id, covered_id, test_run_name, test_run_date, test_list) as (
+	select id, covered_id, test_run_name, test_run_date, '[' || group_concat(test) || ']'
+	from CompactTestEntry
+	group by id, covered_id, test_run_name, test_run_date
+), CompactTestRunEntry(id, covered_id, test_run) as (
+	select id, covered_id,
+	json_object('name', test_run_name, 'date', test_run_date, 'tests', json(test_list))
+	from GroupedTestEntry
+), GroupedTestRunEntry(id, covered_id, test_run_list) as (
+	select id, covered_id, '[' || group_concat(test_run) || ']'
+	from CompactTestRunEntry
+	group by id, covered_id
+)
+select id, covered_id, json(test_run_list) as test_runs from GroupedTestRunEntry;
 
 create view CoveredRequirements as
 select id from DirectlyCoveredRequirements

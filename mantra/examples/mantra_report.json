@@ -129,13 +129,21 @@
         "indirect_traces": [
           {
             "traced_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "traces": [
+              {
+                "filepath": "hierarchy_test.yaml",
+                "line": 1
+              }
+            ]
           },
           {
             "traced_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
-            "filepath": "hierarchy_test.yaml",
-            "line": 1
+            "traces": [
+              {
+                "filepath": "hierarchy_test.yaml",
+                "line": 1
+              }
+            ]
           }
         ]
       },
@@ -147,30 +155,55 @@
         "indirect_coverage": [
           {
             "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::indirect_test",
-            "trace_filepath": "hierarchy_test.yaml",
-            "trace_line": 1,
-            "passed": true
+            "test_runs": [
+              {
+                "name": "test-run",
+                "date": "+002024-05-16T10:01:08.141221000Z",
+                "tests": [
+                  {
+                    "name": "usage::indirect_test",
+                    "passed": true,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           },
           {
             "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::indirect_test",
-            "trace_filepath": "hierarchy_test.yaml",
-            "trace_line": 1,
-            "passed": true
-          },
-          {
-            "covered_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::other_test",
-            "trace_filepath": "hierarchy_test.yaml",
-            "trace_line": 1,
-            "passed": false
+            "test_runs": [
+              {
+                "name": "test-run",
+                "date": "+002024-05-16T10:01:08.141221000Z",
+                "tests": [
+                  {
+                    "name": "usage::indirect_test",
+                    "passed": true,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  },
+                  {
+                    "name": "usage::other_test",
+                    "passed": false,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -209,12 +242,20 @@
         "fully_covered": true,
         "direct_coverage": [
           {
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::indirect_test",
-            "trace_filepath": "hierarchy_test.yaml",
-            "trace_line": 1,
-            "passed": true
+            "name": "test-run",
+            "date": "+002024-05-16T10:01:08.141221000Z",
+            "tests": [
+              {
+                "name": "usage::indirect_test",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
           }
         ],
         "indirect_coverage": []
@@ -254,20 +295,30 @@
         "fully_covered": false,
         "direct_coverage": [
           {
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::indirect_test",
-            "trace_filepath": "hierarchy_test.yaml",
-            "trace_line": 1,
-            "passed": true
-          },
-          {
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::other_test",
-            "trace_filepath": "hierarchy_test.yaml",
-            "trace_line": 1,
-            "passed": false
+            "name": "test-run",
+            "date": "+002024-05-16T10:01:08.141221000Z",
+            "tests": [
+              {
+                "name": "usage::indirect_test",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "name": "usage::other_test",
+                "passed": false,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
           }
         ],
         "indirect_coverage": []
@@ -339,13 +390,21 @@
         "indirect_traces": [
           {
             "traced_id": "id.sub_id_2.sub_sub_id_1",
-            "filepath": "hierarchy_test.yaml",
-            "line": 7
+            "traces": [
+              {
+                "filepath": "hierarchy_test.yaml",
+                "line": 7
+              }
+            ]
           },
           {
             "traced_id": "id.sub_id_2.sub_sub_id_2",
-            "filepath": "hierarchy_test.yaml",
-            "line": 7
+            "traces": [
+              {
+                "filepath": "hierarchy_test.yaml",
+                "line": 7
+              }
+            ]
           }
         ]
       },
@@ -728,12 +787,20 @@
         "fully_covered": false,
         "direct_coverage": [
           {
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::test_fn",
-            "trace_filepath": "traces.rs",
-            "trace_line": 1,
-            "passed": true
+            "name": "test-run",
+            "date": "+002024-05-16T10:01:08.141221000Z",
+            "tests": [
+              {
+                "name": "usage::test_fn",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "traces.rs",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
           }
         ],
         "indirect_coverage": []
@@ -808,12 +875,20 @@
         "fully_covered": false,
         "direct_coverage": [
           {
-            "test_run_name": "test-run",
-            "test_run_date": "+002024-05-15T19:48:24.122219700Z",
-            "test_name": "usage::other_test",
-            "trace_filepath": "traces.yaml",
-            "trace_line": 1,
-            "passed": false
+            "name": "test-run",
+            "date": "+002024-05-16T10:01:08.141221000Z",
+            "tests": [
+              {
+                "name": "usage::other_test",
+                "passed": false,
+                "traces": [
+                  {
+                    "filepath": "traces.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
           }
         ],
         "indirect_coverage": []
@@ -848,7 +923,7 @@
           "skipped_ratio": 0.25
         },
         "name": "test-run",
-        "date": "+002024-05-15T19:48:24.122219700Z",
+        "date": "+002024-05-16T10:01:08.141221000Z",
         "logs": "[{\"data\":\"(1/4) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(2/4) ignoring `skipped_test`...\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(3/4) running `indirect_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(4/4) running `other_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`other_id`; file='traces.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"}]",
         "tests": [
           {
@@ -898,7 +973,7 @@
   "reviews": [],
   "trace_criteria": "\nRequirements are traced if one of the following criteria is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n\nRequirements are fully traced if all of their leaf requirements are traced.\n",
   "test_coverage_criteria": "\nA requirement is covered through a test if any of the following criteria are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n\nA requirement is passed covered if all of the following criteria are met:\n\n- The requirement is covered at least once\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n\nRequirements are fully covered if all of their leaf requirements are passed covered.\n",
-  "creation_date": "+002024-05-15T19:48:24.375230600Z",
+  "creation_date": "+002024-05-16T10:01:08.412796500Z",
   "validation": {
     "is_valid": false,
     "criteria": "The collected data is valid if no *deprecated* requirement is traced.",
