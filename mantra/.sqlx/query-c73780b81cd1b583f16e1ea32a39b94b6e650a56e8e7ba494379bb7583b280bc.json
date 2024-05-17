@@ -37,12 +37,24 @@
         "name": "passed_ratio",
         "ordinal": 6,
         "type_info": "Float"
+      },
+      {
+        "name": "verified_cnt",
+        "ordinal": 7,
+        "type_info": "Int"
+      },
+      {
+        "name": "verified_ratio",
+        "ordinal": 8,
+        "type_info": "Float"
       }
     ],
     "parameters": {
       "Right": 0
     },
     "nullable": [
+      null,
+      null,
       null,
       null,
       null,

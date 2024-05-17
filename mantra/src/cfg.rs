@@ -7,8 +7,26 @@ use crate::{
 pub struct Config {
     #[command(flatten)]
     pub db: db::Config,
+
+    #[arg(long)]
+    pub project_name: Option<String>,
+    #[arg(long)]
+    pub project_version: Option<String>,
+    #[arg(long)]
+    pub project_link: Option<String>,
+    #[arg(long)]
+    pub cargo: bool,
+
     #[command(subcommand)]
     pub cmd: Cmd,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Project {
+    pub name: String,
+    pub full_version: String,
+    pub major_version: Option<usize>,
+    pub link: Option<String>,
 }
 
 #[derive(clap::Args)]
