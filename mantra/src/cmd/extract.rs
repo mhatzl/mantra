@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use crate::db::{GitHubReqOrigin, MantraDb, Requirement, RequirementChanges};
+use crate::{
+    cfg::Project,
+    db::{GitHubReqOrigin, MantraDb, Requirement, RequirementChanges},
+};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use regex::Regex;
@@ -31,8 +34,12 @@ pub enum ExtractError {
     DbError(crate::db::DbError),
 }
 
-pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<RequirementChanges, ExtractError> {
-    let version = get_version_nr(cfg.version.as_deref());
+pub async fn extract(
+    db: &MantraDb,
+    project: &Project,
+    cfg: &Config,
+) -> Result<RequirementChanges, ExtractError> {
+    let version = project.major_version;
 
     match cfg.origin {
         ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link, version).await,

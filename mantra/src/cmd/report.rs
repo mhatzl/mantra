@@ -2,7 +2,10 @@ use std::{collections::HashSet, path::PathBuf};
 
 use time::OffsetDateTime;
 
-use crate::db::{MantraDb, RequirementOrigin};
+use crate::{
+    cfg::Project,
+    db::{MantraDb, RequirementOrigin},
+};
 
 use super::coverage::iso8601_str_to_offsetdatetime;
 
@@ -31,7 +34,11 @@ pub enum ReportFormat {
     Json,
 }
 
-pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError> {
+pub async fn report(
+    db: &MantraDb,
+    project: &Project,
+    cfg: ReportConfig,
+) -> Result<(), ReportError> {
     let mut filepath = if cfg.path.extension().is_some() {
         cfg.path
     } else {
@@ -57,12 +64,12 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
                         let template_content = tokio::fs::read_to_string(template)
                             .await
                             .map_err(|_| ReportError::Template)?;
-                        create_tera_report(db, &template_content).await?
+                        create_tera_report(db, project, &template_content).await?
                     }
                     None => {
                         let template_content =
                             include_str!("report_default_template.html").to_string();
-                        create_tera_report(db, &template_content).await?
+                        create_tera_report(db, project, &template_content).await?
                     }
                 };
 
@@ -72,7 +79,7 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
             }
             ReportFormat::Json => {
                 filepath.set_extension("json");
-                let report = create_json_report(db).await?;
+                let report = create_json_report(db, project).await?;
 
                 tokio::fs::write(&filepath, report)
                     .await
@@ -84,9 +91,13 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
     Ok(())
 }
 
-pub async fn create_tera_report(db: &MantraDb, template: &str) -> Result<String, ReportError> {
-    let context =
-        tera::Context::from_serialize(ReportContext::try_from(db).await?).map_err(|err| {
+pub async fn create_tera_report(
+    db: &MantraDb,
+    project: &Project,
+    template: &str,
+) -> Result<String, ReportError> {
+    let context = tera::Context::from_serialize(ReportContext::try_from(db, project).await?)
+        .map_err(|err| {
             log::error!("{}", err);
             ReportError::Tera
         })?;
@@ -96,13 +107,14 @@ pub async fn create_tera_report(db: &MantraDb, template: &str) -> Result<String,
     })
 }
 
-pub async fn create_json_report(db: &MantraDb) -> Result<String, ReportError> {
-    let report = ReportContext::try_from(db).await?;
+pub async fn create_json_report(db: &MantraDb, project: &Project) -> Result<String, ReportError> {
+    let report = ReportContext::try_from(db, project).await?;
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ReportContext {
+    pub project: Project,
     pub overview: RequirementsOverview,
     pub requirements: Vec<RequirementInfo>,
     pub tests: TestStatistics,
@@ -118,7 +130,7 @@ pub struct ReportContext {
 }
 
 impl ReportContext {
-    pub async fn try_from(db: &MantraDb) -> Result<Self, ReportError> {
+    pub async fn try_from(db: &MantraDb, project: &Project) -> Result<Self, ReportError> {
         let overview = RequirementsOverview::try_from(db).await?;
 
         let req_records = sqlx::query!("select id from Requirements order by id")
@@ -177,6 +189,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
         let validation = ValidationInfo::try_from(db).await?;
 
         Ok(Self {
+            project: project.clone(),
             overview,
             requirements,
             tests,

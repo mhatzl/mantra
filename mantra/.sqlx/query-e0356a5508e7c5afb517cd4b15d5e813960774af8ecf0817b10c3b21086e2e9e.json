@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or ignore into TestCoverage (req_id, test_run_name, test_run_date, test_name, trace_filepath, trace_line) values ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "e0356a5508e7c5afb517cd4b15d5e813960774af8ecf0817b10c3b21086e2e9e"
+}
