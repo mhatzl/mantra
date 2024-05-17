@@ -16,7 +16,7 @@ async fn main() {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Extract(mantra::cmd::extract::Config {
             root: root.clone(),
-            link: "local".to_string(),
+            link: "https://github.com/mhatzl/mantra/tree/macros".to_string(),
             origin: mantra::cmd::extract::ExtractOrigin::GitHub,
             version: Some("cargo".to_string()),
         }),
