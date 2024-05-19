@@ -58,7 +58,7 @@
             display: inline-block;
         }
 
-        .requirement-info, .test-runs {
+        .requirement-info, .test-run {
             border-width: 1px;
             border-style: solid;
             border-color: lightgray;
@@ -108,6 +108,10 @@
             text-overflow: ellipsis;
         }
 
+        .test-name {
+            overflow-wrap: break-word;
+        }
+
         .requirement-status {
             width: var(--status-width);
 
@@ -139,7 +143,7 @@
 
         .test-run-tests {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(auto, 300px));
+            grid-template-columns: repeat(auto-fit, minmax(auto, 450px));
             gap: 20px;
             justify-content: center;
 
@@ -202,6 +206,10 @@
             padding: 5px;
             background-color: orange;
             color: white;
+        }
+
+        .requirement-status td {
+            width: 50%;
         }
     </style>
 </head>
@@ -342,6 +350,57 @@
                 </li>
             </ul>
 
+            <h3>Status</h3>
+            <table class="requirements-table">
+                <tr>
+                    <th>ID</th>
+                    <th>Tracing</th>
+                    <th>Coverage</th>
+                    <th>Manual</th>
+                </tr>
+                {% for req in requirements %}
+                <tr>
+                    <td>
+                        <a href="#{{ req.id }}">{{ self::break_id(id=req.id) }}</a>
+                        {% if req.manual %} (manual{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
+                        {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
+                        {% elif not req.valid %} <span class="invalid">(invalid)</span>
+                        {% endif %}
+                    </td>
+                    <td class="txt-center">
+                        {% if req.trace_info.fully_traced %}
+                        <div class="fully-traced">fully-traced</div>
+                        {% elif req.trace_info.traced %}
+                        <div class="traced">traced</div>
+                        {% else %}
+                        <div class="untraced">untraced</div>
+                        {% endif %}
+                    </td>
+                    <td class="txt-center">
+                        {% if req.test_coverage_info.fully_covered %}
+                        <div class="fully-covered">fully-covered</div>
+                        {% elif req.test_coverage_info.passed %}
+                        <div class="passed-covered">passed-covered</div>
+                        {% elif req.test_coverage_info.covered %}
+                        <div class="covered">covered</div>
+                        {% else %}
+                        <div class="uncovered">uncovered</div>
+                        {% endif %}
+                    </td>
+                    <td class="txt-center">
+                        {% if req.verified_info | length > 0 %}
+                        <div class="verified">verified</div>
+                        {% elif not req.manual %}
+                        <div>-</div>
+                        {% else %}
+                        <div class="unverified">unverified</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <h3>Details</h3>
             <div id="requirements-list">
             {% for req in requirements %}
                 <div id="{{ req.id }}" class="requirement-info">
@@ -369,9 +428,9 @@
                                 <tr>
                                     <td class="txt-center">
                                         {% if req.verified_info | length > 0 %}
-                                        <span class="verified">verified</span>
+                                        <div class="verified">verified</div>
                                         {% else %}
-                                        <span class="unverified">unverified</span>
+                                        <div class="unverified">unverified</div>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -382,22 +441,22 @@
                                 <tr>
                                     <td class="txt-center">
                                         {% if req.trace_info.fully_traced %}
-                                        <span class="fully-traced">fully-traced</span>
+                                        <div class="fully-traced">fully-traced</div>
                                         {% elif req.trace_info.traced %}
-                                        <span class="traced">traced</span>
+                                        <div class="traced">traced</div>
                                         {% else %}
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         {% endif %}
                                     </td>
                                     <td class="txt-center">
                                         {% if req.test_coverage_info.fully_covered %}
-                                        <span class="fully-covered">fully-covered</span>
+                                        <div class="fully-covered">fully-covered</div>
                                         {% elif req.test_coverage_info.passed %}
-                                        <span class="passed-covered">passed-covered</span>
+                                        <div class="passed-covered">passed-covered</div>
                                         {% elif req.test_coverage_info.covered %}
-                                        <span class="covered">covered</span>
+                                        <div class="covered">covered</div>
                                         {% else %}
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -406,16 +465,16 @@
                                 <tr>
                                     <td>
                                         {% if req.leaf_statistic.traced_leaf_cnt == req.leaf_statistic.leaf_cnt %}
-                                        <span class="all-leafs-traced">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</span>
+                                        <div class="all-leafs-traced">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
                                         {% else %}
-                                        <span class="leaf-traces">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</span>
+                                        <div class="leaf-traces">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if req.leaf_statistic.passed_covered_leaf_cnt == req.leaf_statistic.leaf_cnt %}
-                                        <span class="all-leafs-passed">leafs-passed: {{ req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</span>
+                                        <div class="all-leafs-passed">leafs-passed: {{ req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
                                         {% else %}
-                                        <span class="leaf-passed">leafs-passed: {{ req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</span>
+                                        <div class="leaf-passed">leafs-passed: {{ req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -513,9 +572,12 @@
                                     <ul>
                                     {% for test in test_run.tests %}
                                         <li>
-                                            <p><a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
+                                            <p>
+                                                {% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %}
+                                                <a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
                                                 &lrm;{{ test.name }}
-                                            </a> ({% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %})</p>
+                                                </a>
+                                            </p>
                                             <table class="file-location">
                                                 <tr>
                                                     <th class="filepath">file</th>
@@ -555,9 +617,13 @@
                                             <ul>
                                             {% for test in test_run.tests %}
                                                 <li>
-                                                    <p><a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
-                                                        &lrm;{{ test.name }}
-                                                    </a> ({% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %})</p>
+                                                    <p>
+                                                        {% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %}
+                                                        <a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
+                                                            &lrm;{{ test.name }}
+                                                        </a>
+                                                    </p>
+
                                                     <table class="file-location">
                                                         <tr>
                                                             <th class="filepath">file</th>
@@ -712,12 +778,12 @@
                                 </div>
                             {% endfor %}
                         </div>
-                    </div>
 
-                    <details class="test-run-logs">
-                        <summary><strong>Logs during test run...</strong></summary>
-                        <p>{{ test_run.logs }}</p>
-                    </details>
+                        <details class="test-run-logs">
+                            <summary><strong>Logs during test run...</strong></summary>
+                            <p>{{ test_run.logs }}</p>
+                        </details>
+                    </div>
                 {% endfor %}
             </div>
         
