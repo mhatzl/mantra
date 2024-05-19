@@ -58,7 +58,7 @@
             display: inline-block;
         }
 
-        .requirement-info, .test-runs {
+        .requirement-info, .test-run {
             border-width: 1px;
             border-style: solid;
             border-color: lightgray;
@@ -108,6 +108,10 @@
             text-overflow: ellipsis;
         }
 
+        .test-name {
+            overflow-wrap: break-word;
+        }
+
         .requirement-status {
             width: var(--status-width);
 
@@ -139,7 +143,7 @@
 
         .test-run-tests {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(auto, 300px));
+            grid-template-columns: repeat(auto-fit, minmax(auto, 450px));
             gap: 20px;
             justify-content: center;
 
@@ -203,6 +207,11 @@
             background-color: orange;
             color: white;
         }
+
+        .requirement-status td {
+            width: 50%;
+        }
+
     </style>
 </head>
 <body>
@@ -274,18 +283,18 @@
                     
                     <li>  
                         <a
-                            href="#test-run|+002024-05-19T13:24:59.813533900Z"
+                            href="#test-run|+002024-05-19T15:02:52.705132400Z"
                             class="nav-test-run-link"
                         >
                             <span class="test-run-name">test-run</span>
-                            <span class="test-run-date">2024-05-19 15:24:59</span>
+                            <span class="test-run-date">2024-05-19 17:02:52</span>
                         </a>
                         
                         <ul>
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::indirect_test"
+                                    href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::indirect_test"
                                     class="test-name"
                                 >
                                 usage::indirect_test
@@ -294,7 +303,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::other_test"
+                                    href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::other_test"
                                     class="test-name"
                                 >
                                 usage::other_test
@@ -303,7 +312,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::skipped_test"
+                                    href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::skipped_test"
                                     class="test-name"
                                 >
                                 usage::skipped_test
@@ -312,7 +321,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::test_fn"
+                                    href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::test_fn"
                                     class="test-name"
                                 >
                                 usage::test_fn
@@ -413,6 +422,481 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                 </li>
             </ul>
 
+            <h3>Status</h3>
+            <table class="requirements-table">
+                <tr>
+                    <th>ID</th>
+                    <th>Tracing</th>
+                    <th>Coverage</th>
+                    <th>Manual</th>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id">
+        id
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_1">
+        id.<wbr>sub_id_1
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_1.sub_sub_id_1">
+        id.<wbr>sub_id_1.<wbr>sub_sub_id_1
+    </a>
+                         (manual)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="fully-traced">fully-traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="covered">covered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="unverified">unverified</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1">
+        id.<wbr>sub_id_1.<wbr>sub_sub_id_1.<wbr>sub_sub_sub_id_1
+    </a>
+                         (manual)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="fully-traced">fully-traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="fully-covered">fully-covered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="unverified">unverified</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2">
+        id.<wbr>sub_id_1.<wbr>sub_sub_id_1.<wbr>sub_sub_sub_id_2
+    </a>
+                         (manual)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="fully-traced">fully-traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="covered">covered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="unverified">unverified</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_1.sub_sub_id_2">
+        id.<wbr>sub_id_1.<wbr>sub_sub_id_2
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_2">
+        id.<wbr>sub_id_2
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="traced">traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_2.sub_sub_id_1">
+        id.<wbr>sub_id_2.<wbr>sub_sub_id_1
+    </a>
+                         (deprecated, <span class="invalid">invalid</span>)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="traced">traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_1">
+        id.<wbr>sub_id_2.<wbr>sub_sub_id_1.<wbr>sub_sub_sub_id_1
+    </a>
+                         (deprecated)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_2.sub_sub_id_1.sub_sub_sub_id_2">
+        id.<wbr>sub_id_2.<wbr>sub_sub_id_1.<wbr>sub_sub_sub_id_2
+    </a>
+                         (deprecated)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_2.sub_sub_id_2">
+        id.<wbr>sub_id_2.<wbr>sub_sub_id_2
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="fully-traced">fully-traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_3">
+        id.<wbr>sub_id_3
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="traced">traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_3.sub_sub_id_1">
+        id.<wbr>sub_id_3.<wbr>sub_sub_id_1
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1">
+        id.<wbr>sub_id_3.<wbr>sub_sub_id_1.<wbr>sub_sub_sub_id_1
+    </a>
+                         (manual)
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="unverified">unverified</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_2">
+        id.<wbr>sub_id_3.<wbr>sub_sub_id_1.<wbr>sub_sub_sub_id_2
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#id.sub_id_3.sub_sub_id_2">
+        id.<wbr>sub_id_3.<wbr>sub_sub_id_2
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#main_id">
+        main_id
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="traced">traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="passed-covered">passed-covered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#main_id.sub_id">
+        main_id.<wbr>sub_id
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="untraced">untraced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="uncovered">uncovered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="#other_id">
+        other_id
+    </a>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="fully-traced">fully-traced</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div class="covered">covered</div>
+                        
+                    </td>
+                    <td class="txt-center">
+                        
+                        <div>-</div>
+                        
+                    </td>
+                </tr>
+                
+            </table>
+
+            <h3>Details</h3>
             <div id="requirements-list">
             
                 <div id="id" class="requirement-info">
@@ -435,12 +919,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -449,12 +933,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 3/9</span>
+                                        <div class="leaf-traces">leafs-traced: 3/9</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 1/9</span>
+                                        <div class="leaf-passed">leafs-passed: 1/9</div>
                                         
                                     </td>
                                 </tr>
@@ -553,12 +1037,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -567,12 +1051,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 2/3</span>
+                                        <div class="leaf-traces">leafs-traced: 2/3</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 1/3</span>
+                                        <div class="leaf-passed">leafs-passed: 1/3</div>
                                         
                                     </td>
                                 </tr>
@@ -668,12 +1152,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="fully-traced">fully-traced</span>
+                                        <div class="fully-traced">fully-traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="covered">covered</span>
+                                        <div class="covered">covered</div>
                                         
                                     </td>
                                 </tr>
@@ -682,12 +1166,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="all-leafs-traced">leafs-traced: 2/2</span>
+                                        <div class="all-leafs-traced">leafs-traced: 2/2</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 1/2</span>
+                                        <div class="leaf-passed">leafs-passed: 1/2</div>
                                         
                                     </td>
                                 </tr>
@@ -795,17 +1279,21 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     <ul>
                                         
                                         <li>
-                                            <p><a class="test-run-name" href="#test-run|+002024-05-19T13:24:59.813533900Z">
+                                            <p><a class="test-run-name" href="#test-run|+002024-05-19T15:02:52.705132400Z">
                                                 &lrm;test-run
                                             </a><br>
-                                            <span class="test-run-date">2024-05-19 15:24:59</span>
+                                            <span class="test-run-date">2024-05-19 17:02:52</span>
                                             </p>
                                             <ul>
                                             
                                                 <li>
-                                                    <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::indirect_test">
-                                                        &lrm;usage::indirect_test
-                                                    </a> (<span class="passed">passed</span>)</p>
+                                                    <p>
+                                                        <span class="passed">passed</span>
+                                                        <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::indirect_test">
+                                                            &lrm;usage::indirect_test
+                                                        </a>
+                                                    </p>
+
                                                     <table class="file-location">
                                                         <tr>
                                                             <th class="filepath">file</th>
@@ -833,17 +1321,21 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     <ul>
                                         
                                         <li>
-                                            <p><a class="test-run-name" href="#test-run|+002024-05-19T13:24:59.813533900Z">
+                                            <p><a class="test-run-name" href="#test-run|+002024-05-19T15:02:52.705132400Z">
                                                 &lrm;test-run
                                             </a><br>
-                                            <span class="test-run-date">2024-05-19 15:24:59</span>
+                                            <span class="test-run-date">2024-05-19 17:02:52</span>
                                             </p>
                                             <ul>
                                             
                                                 <li>
-                                                    <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::indirect_test">
-                                                        &lrm;usage::indirect_test
-                                                    </a> (<span class="passed">passed</span>)</p>
+                                                    <p>
+                                                        <span class="passed">passed</span>
+                                                        <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::indirect_test">
+                                                            &lrm;usage::indirect_test
+                                                        </a>
+                                                    </p>
+
                                                     <table class="file-location">
                                                         <tr>
                                                             <th class="filepath">file</th>
@@ -859,9 +1351,13 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                                 </li>
                                             
                                                 <li>
-                                                    <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::other_test">
-                                                        &lrm;usage::other_test
-                                                    </a> (<span class="failed">failed</span>)</p>
+                                                    <p>
+                                                        <span class="failed">failed</span>
+                                                        <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::other_test">
+                                                            &lrm;usage::other_test
+                                                        </a>
+                                                    </p>
+
                                                     <table class="file-location">
                                                         <tr>
                                                             <th class="filepath">file</th>
@@ -921,12 +1417,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="fully-traced">fully-traced</span>
+                                        <div class="fully-traced">fully-traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="fully-covered">fully-covered</span>
+                                        <div class="fully-covered">fully-covered</div>
                                         
                                     </td>
                                 </tr>
@@ -985,18 +1481,21 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T13:24:59.813533900Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T15:02:52.705132400Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-19 15:24:59</span>
+                                    <span class="test-run-date">2024-05-19 17:02:52</span>
                                     </p>
                                     
                                     <ul>
                                     
                                         <li>
-                                            <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::indirect_test">
+                                            <p>
+                                                <span class="passed">passed</span>
+                                                <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::indirect_test">
                                                 &lrm;usage::indirect_test
-                                            </a> (<span class="passed">passed</span>)</p>
+                                                </a>
+                                            </p>
                                             <table class="file-location">
                                                 <tr>
                                                     <th class="filepath">file</th>
@@ -1058,12 +1557,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="fully-traced">fully-traced</span>
+                                        <div class="fully-traced">fully-traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="covered">covered</span>
+                                        <div class="covered">covered</div>
                                         
                                     </td>
                                 </tr>
@@ -1122,18 +1621,21 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T13:24:59.813533900Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T15:02:52.705132400Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-19 15:24:59</span>
+                                    <span class="test-run-date">2024-05-19 17:02:52</span>
                                     </p>
                                     
                                     <ul>
                                     
                                         <li>
-                                            <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::indirect_test">
+                                            <p>
+                                                <span class="passed">passed</span>
+                                                <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::indirect_test">
                                                 &lrm;usage::indirect_test
-                                            </a> (<span class="passed">passed</span>)</p>
+                                                </a>
+                                            </p>
                                             <table class="file-location">
                                                 <tr>
                                                     <th class="filepath">file</th>
@@ -1149,9 +1651,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                         </li>
                                     
                                         <li>
-                                            <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::other_test">
+                                            <p>
+                                                <span class="failed">failed</span>
+                                                <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::other_test">
                                                 &lrm;usage::other_test
-                                            </a> (<span class="failed">failed</span>)</p>
+                                                </a>
+                                            </p>
                                             <table class="file-location">
                                                 <tr>
                                                     <th class="filepath">file</th>
@@ -1212,12 +1717,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1301,12 +1806,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="traced">traced</span>
+                                        <div class="traced">traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1315,12 +1820,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 1/3</span>
+                                        <div class="leaf-traces">leafs-traced: 1/3</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 0/3</span>
+                                        <div class="leaf-passed">leafs-passed: 0/3</div>
                                         
                                     </td>
                                 </tr>
@@ -1456,12 +1961,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="traced">traced</span>
+                                        <div class="traced">traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1470,12 +1975,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 0/2</span>
+                                        <div class="leaf-traces">leafs-traced: 0/2</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 0/2</span>
+                                        <div class="leaf-passed">leafs-passed: 0/2</div>
                                         
                                     </td>
                                 </tr>
@@ -1584,12 +2089,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1674,12 +2179,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1763,12 +2268,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="fully-traced">fully-traced</span>
+                                        <div class="fully-traced">fully-traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1865,12 +2370,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="traced">traced</span>
+                                        <div class="traced">traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -1879,12 +2384,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 0/3</span>
+                                        <div class="leaf-traces">leafs-traced: 0/3</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 0/3</span>
+                                        <div class="leaf-passed">leafs-passed: 0/3</div>
                                         
                                     </td>
                                 </tr>
@@ -1992,12 +2497,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -2006,12 +2511,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 0/2</span>
+                                        <div class="leaf-traces">leafs-traced: 0/2</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 0/2</span>
+                                        <div class="leaf-passed">leafs-passed: 0/2</div>
                                         
                                     </td>
                                 </tr>
@@ -2107,7 +2612,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="unverified">unverified</span>
+                                        <div class="unverified">unverified</div>
                                         
                                     </td>
                                 </tr>
@@ -2187,12 +2692,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -2276,12 +2781,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -2359,12 +2864,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="traced">traced</span>
+                                        <div class="traced">traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="passed-covered">passed-covered</span>
+                                        <div class="passed-covered">passed-covered</div>
                                         
                                     </td>
                                 </tr>
@@ -2373,12 +2878,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td>
                                         
-                                        <span class="leaf-traces">leafs-traced: 0/1</span>
+                                        <div class="leaf-traces">leafs-traced: 0/1</div>
                                         
                                     </td>
                                     <td>
                                         
-                                        <span class="leaf-passed">leafs-passed: 0/1</span>
+                                        <div class="leaf-passed">leafs-passed: 0/1</div>
                                         
                                     </td>
                                 </tr>
@@ -2444,18 +2949,21 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T13:24:59.813533900Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T15:02:52.705132400Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-19 15:24:59</span>
+                                    <span class="test-run-date">2024-05-19 17:02:52</span>
                                     </p>
                                     
                                     <ul>
                                     
                                         <li>
-                                            <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::test_fn">
+                                            <p>
+                                                <span class="passed">passed</span>
+                                                <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::test_fn">
                                                 &lrm;usage::test_fn
-                                            </a> (<span class="passed">passed</span>)</p>
+                                                </a>
+                                            </p>
                                             <table class="file-location">
                                                 <tr>
                                                     <th class="filepath">file</th>
@@ -2516,12 +3024,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="untraced">untraced</span>
+                                        <div class="untraced">untraced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="uncovered">uncovered</span>
+                                        <div class="uncovered">uncovered</div>
                                         
                                     </td>
                                 </tr>
@@ -2599,12 +3107,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 <tr>
                                     <td class="txt-center">
                                         
-                                        <span class="fully-traced">fully-traced</span>
+                                        <div class="fully-traced">fully-traced</div>
                                         
                                     </td>
                                     <td class="txt-center">
                                         
-                                        <span class="covered">covered</span>
+                                        <div class="covered">covered</div>
                                         
                                     </td>
                                 </tr>
@@ -2668,18 +3176,21 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T13:24:59.813533900Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-19T15:02:52.705132400Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-19 15:24:59</span>
+                                    <span class="test-run-date">2024-05-19 17:02:52</span>
                                     </p>
                                     
                                     <ul>
                                     
                                         <li>
-                                            <p><a class="test-name" href="#test-run|+002024-05-19T13:24:59.813533900Z|usage::other_test">
+                                            <p>
+                                                <span class="failed">failed</span>
+                                                <a class="test-name" href="#test-run|+002024-05-19T15:02:52.705132400Z|usage::other_test">
                                                 &lrm;usage::other_test
-                                            </a> (<span class="failed">failed</span>)</p>
+                                                </a>
+                                            </p>
                                             <table class="file-location">
                                                 <tr>
                                                     <th class="filepath">file</th>
@@ -2739,14 +3250,14 @@ Requirements are fully covered if all of their leaf requirements are passed cove
 
             <div class="test-runs">
                 
-                    <div id="test-run|+002024-05-19T13:24:59.813533900Z" class="test-run">
+                    <div id="test-run|+002024-05-19T15:02:52.705132400Z" class="test-run">
                         <div class="test-run-header">
                             <h3>
                                 <span class="test-run-name">
                                     &lrm;test-run
                                 </span><br>
                                 <span>
-                                    2024-05-19 15:24:59
+                                    2024-05-19 17:02:52
                                 </span>
                             </h3>
                             <p class="header-right-part">
@@ -2779,7 +3290,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <p><strong>Tests</strong></p>
                         <div class="test-run-tests">
                             
-                                <div id="test-run|+002024-05-19T13:24:59.813533900Z|usage::indirect_test" class="test">
+                                <div id="test-run|+002024-05-19T15:02:52.705132400Z|usage::indirect_test" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::indirect_test</strong></p>
                                         <p class="header-right-part">
@@ -2814,7 +3325,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </div>
                                 </div>
                             
-                                <div id="test-run|+002024-05-19T13:24:59.813533900Z|usage::other_test" class="test">
+                                <div id="test-run|+002024-05-19T15:02:52.705132400Z|usage::other_test" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::other_test</strong></p>
                                         <p class="header-right-part">
@@ -2849,7 +3360,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </div>
                                 </div>
                             
-                                <div id="test-run|+002024-05-19T13:24:59.813533900Z|usage::skipped_test" class="test">
+                                <div id="test-run|+002024-05-19T15:02:52.705132400Z|usage::skipped_test" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::skipped_test</strong></p>
                                         <p class="header-right-part">
@@ -2876,7 +3387,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </div>
                                 </div>
                             
-                                <div id="test-run|+002024-05-19T13:24:59.813533900Z|usage::test_fn" class="test">
+                                <div id="test-run|+002024-05-19T15:02:52.705132400Z|usage::test_fn" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::test_fn</strong></p>
                                         <p class="header-right-part">
@@ -2908,12 +3419,12 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                 </div>
                             
                         </div>
-                    </div>
 
-                    <details class="test-run-logs">
-                        <summary><strong>Logs during test run...</strong></summary>
-                        <p>[{&quot;data&quot;:&quot;(1&#x2F;4) running `test_fn`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`main_id`; file=&#x27;traces.rs&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848722,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(2&#x2F;4) ignoring `skipped_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848723,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(3&#x2F;4) running `indirect_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(4&#x2F;4) running `other_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`other_id`; file=&#x27;traces.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;}]</p>
-                    </details>
+                        <details class="test-run-logs">
+                            <summary><strong>Logs during test run...</strong></summary>
+                            <p>[{&quot;data&quot;:&quot;(1&#x2F;4) running `test_fn`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`main_id`; file=&#x27;traces.rs&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848722,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(2&#x2F;4) ignoring `skipped_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848723,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(3&#x2F;4) running `indirect_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;(4&#x2F;4) running `other_test`...&quot;,&quot;host_timestamp&quot;:1642698490360848721,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:7,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;test_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`other_id`; file=&#x27;traces.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;},{&quot;data&quot;:&quot;mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file=&#x27;hierarchy_test.yaml&#x27;; line=&#x27;1&#x27;;&quot;,&quot;host_timestamp&quot;:1642698490360848724,&quot;level&quot;:null,&quot;location&quot;:{&quot;file&quot;:&quot;traces.rs&quot;,&quot;line&quot;:1,&quot;module_path&quot;:{&quot;crate_name&quot;:&quot;usage&quot;,&quot;modules&quot;:[],&quot;function&quot;:&quot;traced_fn&quot;}},&quot;target_timestamp&quot;:&quot;0&quot;}]</p>
+                        </details>
+                    </div>
                 
             </div>
         
@@ -2925,7 +3436,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
     </main>
 
     <footer>
-        Report generated at 2024-05-19 15:25:00
+        Report generated at 2024-05-19 17:02:52
     </footer>
 </body>
 </html>
