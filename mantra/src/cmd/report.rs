@@ -2,10 +2,7 @@ use std::{collections::HashSet, path::PathBuf};
 
 use time::OffsetDateTime;
 
-use crate::{
-    cfg::Project,
-    db::{MantraDb, RequirementOrigin},
-};
+use crate::db::{MantraDb, RequirementOrigin};
 
 use super::coverage::iso8601_str_to_offsetdatetime;
 
@@ -26,6 +23,18 @@ pub struct ReportConfig {
     pub template: Option<PathBuf>,
     #[arg(long)]
     pub formats: Vec<ReportFormat>,
+    #[command(flatten)]
+    pub project: Project,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
+pub struct Project {
+    #[arg(long)]
+    pub project_name: Option<String>,
+    #[arg(long)]
+    pub project_version: Option<String>,
+    #[arg(long)]
+    pub project_link: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, clap::ValueEnum)]
@@ -34,11 +43,7 @@ pub enum ReportFormat {
     Json,
 }
 
-pub async fn report(
-    db: &MantraDb,
-    project: &Project,
-    cfg: ReportConfig,
-) -> Result<(), ReportError> {
+pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError> {
     let mut filepath = if cfg.path.extension().is_some() {
         cfg.path
     } else {
@@ -64,12 +69,12 @@ pub async fn report(
                         let template_content = tokio::fs::read_to_string(template)
                             .await
                             .map_err(|_| ReportError::Template)?;
-                        create_tera_report(db, project, &template_content).await?
+                        create_tera_report(db, &cfg.project, &template_content).await?
                     }
                     None => {
                         let template_content =
                             include_str!("report_default_template.html").to_string();
-                        create_tera_report(db, project, &template_content).await?
+                        create_tera_report(db, &cfg.project, &template_content).await?
                     }
                 };
 
@@ -79,7 +84,7 @@ pub async fn report(
             }
             ReportFormat::Json => {
                 filepath.set_extension("json");
-                let report = create_json_report(db, project).await?;
+                let report = create_json_report(db, &cfg.project).await?;
 
                 tokio::fs::write(&filepath, report)
                     .await

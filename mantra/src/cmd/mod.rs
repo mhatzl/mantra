@@ -9,7 +9,7 @@ pub mod report;
 pub mod review;
 pub mod trace;
 
-#[derive(clap::Subcommand)]
+#[derive(Debug, Clone, clap::Subcommand)]
 pub enum Cmd {
     Trace(trace::Config),
     Extract(extract::Config),

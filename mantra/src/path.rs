@@ -6,6 +6,7 @@ pub enum PathError {
     ExecutingCargo(std::io::Error),
     LocatingWorkspaceRoot(std::process::ExitStatus),
     InvalidPath(std::string::FromUtf8Error),
+    CurrentDir,
 }
 
 /// Returns the path to the workspace directory of a Cargo workspace.
@@ -16,7 +17,12 @@ pub fn get_cargo_root() -> Result<PathBuf, PathError> {
         .arg("--workspace")
         .arg("--quiet")
         .arg("--message-format=plain")
-        .current_dir(std::env::var("CARGO_MANIFEST_DIR").map_err(PathError::MissingManifestDir)?)
+        .current_dir(
+            std::env::var("CARGO_MANIFEST_DIR")
+                .map(PathBuf::from)
+                .or(std::env::current_dir())
+                .map_err(|_| PathError::CurrentDir)?,
+        )
         .output()
         .map_err(PathError::ExecutingCargo)?;
 
