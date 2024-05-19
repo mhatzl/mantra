@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 
 use crate::db::{DbError, MantraDb};
 
-#[derive(Debug, clap::Args)]
+#[derive(Debug, Clone, clap::Args)]
 pub struct CliConfig {
     /// Data containing coverage logs to retrieve coverage information.
     pub data_file: PathBuf,
@@ -14,7 +14,7 @@ pub struct CliConfig {
     pub cfg: Config,
 }
 
-#[derive(Debug, clap::Args)]
+#[derive(Debug, Clone, clap::Args)]
 pub struct Config {
     #[arg(long)]
     pub test_run: String,

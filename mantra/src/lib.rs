@@ -35,8 +35,6 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         .await
         .map_err(MantraError::DbSetup)?;
 
-    let project = get_project(&cfg);
-
     match cfg.cmd {
         cmd::Cmd::Trace(trace_cfg) => {
             let changes = cmd::trace::trace(&db, &trace_cfg)
@@ -48,7 +46,7 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             Ok(())
         }
         cmd::Cmd::Extract(extract_cfg) => {
-            let changes = cmd::extract::extract(&db, &project, &extract_cfg)
+            let changes = cmd::extract::extract(&db, &extract_cfg)
                 .await
                 .map_err(MantraError::Extract)?;
 
@@ -77,37 +75,9 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             .delete_reviews(delete_reviews_cfg)
             .await
             .map_err(MantraError::Delete),
-        cmd::Cmd::Report(report_cfg) => cmd::report::report(&db, &project, report_cfg)
+        cmd::Cmd::Report(report_cfg) => cmd::report::report(&db, report_cfg)
             .await
             .map_err(MantraError::Report),
         cmd::Cmd::Clean => db.clean().await.map_err(MantraError::Clean),
-    }
-}
-
-fn get_project(cfg: &cfg::Config) -> cfg::Project {
-    if cfg.cargo {
-        cfg::Project {
-            name: std::env::var("CARGO_PKG_NAME").unwrap_or("unknown".to_string()),
-            full_version: std::env::var("CARGO_PKG_VERSION").unwrap_or("unknown".to_string()),
-            major_version: std::env::var("CARGO_PKG_VERSION_MAJOR")
-                .ok()
-                .map(|s| s.parse().expect("Major version must be integer.")),
-            link: std::env::var("CARGO_PKG_REPOSITORY").ok(),
-        }
-    } else {
-        let major_version = match &cfg.project_version {
-            Some(version) => match version.split_once('.') {
-                Some((mv, _)) => mv.parse().ok(),
-                None => None,
-            },
-            None => None,
-        };
-
-        cfg::Project {
-            name: cfg.project_name.clone().unwrap_or("unknown".to_string()),
-            full_version: cfg.project_version.clone().unwrap_or("unknown".to_string()),
-            major_version,
-            link: cfg.project_link.clone(),
-        }
     }
 }

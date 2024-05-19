@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use mantra::cmd::report::ReportFormat;
+use mantra::cmd::report::{Project, ReportFormat};
 
 #[tokio::main]
 async fn main() {
@@ -14,23 +14,15 @@ async fn main() {
 
     let extract_cfg = mantra::cfg::Config {
         db: db.clone(),
-        cargo: true,
-        project_name: None,
-        project_version: None,
-        project_link: None,
         cmd: mantra::cmd::Cmd::Extract(mantra::cmd::extract::Config {
             root: root.clone(),
             link: "https://github.com/mhatzl/mantra/tree/macros".to_string(),
             origin: mantra::cmd::extract::ExtractOrigin::GitHub,
-            version: Some("cargo".to_string()),
+            major_version: Some(0),
         }),
     };
     let trace_cfg = mantra::cfg::Config {
         db: db.clone(),
-        cargo: true,
-        project_name: None,
-        project_version: None,
-        project_link: None,
         cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::Config {
             root,
             keep_root_absolute: false,
@@ -38,10 +30,6 @@ async fn main() {
     };
     let coverage_cfg = mantra::cfg::Config {
         db: db.clone(),
-        cargo: true,
-        project_name: None,
-        project_version: None,
-        project_link: None,
         cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::CliConfig {
             data_file: PathBuf::from("mantra/examples/usage/defmt_test.log"),
             cfg: mantra::cmd::coverage::Config {
@@ -52,14 +40,15 @@ async fn main() {
     };
     let report_cfg = mantra::cfg::Config {
         db,
-        cargo: true,
-        project_name: None,
-        project_version: None,
-        project_link: None,
         cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
             path: PathBuf::from("mantra/examples/mantra_report.html"),
             template: None,
             formats: vec![ReportFormat::Json, ReportFormat::Html],
+            project: Project {
+                project_name: Some("mantra".to_string()),
+                project_version: Some("1.0.1".to_string()),
+                project_link: Some("https://github.com/mhatzl/mantra".to_string()),
+            },
         }),
     };
 

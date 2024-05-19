@@ -1,9 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::{
-    cfg::Project,
-    db::{GitHubReqOrigin, MantraDb, Requirement, RequirementChanges},
-};
+use crate::db::{GitHubReqOrigin, MantraDb, Requirement, RequirementChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use regex::Regex;
@@ -16,8 +13,8 @@ pub struct Config {
     pub link: String,
     #[arg(value_enum)]
     pub origin: ExtractOrigin,
-    #[arg(long)]
-    pub version: Option<String>,
+    #[arg(long, alias = "version")]
+    pub major_version: Option<usize>,
 }
 
 #[derive(Debug, Clone, clap::ValueEnum, serde::Deserialize)]
@@ -34,43 +31,10 @@ pub enum ExtractError {
     DbError(crate::db::DbError),
 }
 
-pub async fn extract(
-    db: &MantraDb,
-    project: &Project,
-    cfg: &Config,
-) -> Result<RequirementChanges, ExtractError> {
-    let version = project.major_version;
-
+pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<RequirementChanges, ExtractError> {
     match cfg.origin {
-        ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link, version).await,
+        ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link, cfg.major_version).await,
         ExtractOrigin::Jira => todo!(),
-    }
-}
-
-pub fn get_version_nr(version: Option<&str>) -> Option<usize> {
-    let version = version?;
-
-    if version.to_lowercase() == "cargo" {
-        if let Ok(major_version) = std::env::var("CARGO_PKG_VERSION_MAJOR") {
-            match major_version.parse() {
-                Ok(nr) => Some(nr),
-                Err(_) => {
-                    log::error!(
-                        "Could not parse major package version '{}' to a number.",
-                        major_version
-                    );
-                    None
-                }
-            }
-        } else {
-            log::error!("Could not get major version from cargo.");
-            None
-        }
-    } else if let Ok(nr) = version.parse() {
-        Some(nr)
-    } else {
-        log::error!("Could not convert given version '{}' to a number.", version);
-        None
     }
 }
 

@@ -21,3 +21,6 @@ version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
