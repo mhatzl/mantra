@@ -20,11 +20,11 @@ pub enum MantraError {
     Coverage(CoverageError),
     #[error("Failed to deprecate requirements. Cause: {}", .0)]
     DeprecateReq(DbError),
-    #[error("Failed to add untraceable requirements. Cause: {}", .0)]
+    #[error("Failed to add manual requirements. Cause: {}", .0)]
     AddManualReq(DbError),
     #[error("Failed to delete database entries. Cause: {}", .0)]
     Delete(DbError),
-    #[error("Failed to create the report.")]
+    #[error("Failed to create the report. Cuase: {}", .0)]
     Report(ReportError),
     #[error("Failed to clean the database. Cause: {}", .0)]
     Clean(DbError),

@@ -27,7 +27,7 @@ pub enum ExtractOrigin {
 pub enum ExtractError {
     #[error("Could not access file '{}'.", .0)]
     CouldNotAccessFile(String),
-    #[error("Database error while extracting requirements. Cause: {}", .0)]
+    #[error("{}", .0)]
     DbError(crate::db::DbError),
 }
 
@@ -89,7 +89,8 @@ async fn extract_github(
     }
 
     if reqs.is_empty() {
-        // warn that no reqs were found
+        log::warn!("No requirements were found.");
+
         let changes = RequirementChanges {
             new_generation: db.max_req_generation().await,
             ..Default::default()
