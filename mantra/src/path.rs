@@ -1,11 +1,14 @@
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum PathError {
-    MissingManifestDir(std::env::VarError),
+    #[error("Could not execute Cargo to find the project root directory.")]
     ExecutingCargo(std::io::Error),
-    LocatingWorkspaceRoot(std::process::ExitStatus),
-    InvalidPath(std::string::FromUtf8Error),
+    #[error("Cargo could not locate the project root directory.")]
+    LocatingWorkspaceRoot,
+    #[error("Path to the project root directory is not valid UTF8.")]
+    InvalidPath,
+    #[error("Could not get the current directory.")]
     CurrentDir,
 }
 
@@ -28,16 +31,14 @@ pub fn get_cargo_root() -> Result<PathBuf, PathError> {
 
     if locate_project_output.status.success() {
         let workspace_root = PathBuf::from(
-            String::from_utf8(locate_project_output.stdout).map_err(PathError::InvalidPath)?,
+            String::from_utf8(locate_project_output.stdout).map_err(|_| PathError::InvalidPath)?,
         );
         Ok(workspace_root
             .parent()
             .map(|p| p.to_path_buf())
             .unwrap_or_default())
     } else {
-        Err(PathError::LocatingWorkspaceRoot(
-            locate_project_output.status,
-        ))
+        Err(PathError::LocatingWorkspaceRoot)
     }
 }
 
