@@ -6,13 +6,19 @@ use crate::db::{MantraDb, RequirementOrigin};
 
 use super::coverage::iso8601_str_to_offsetdatetime;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ReportError {
+    #[error("{}", .0)]
     Db(sqlx::Error),
+    #[error("Failed to serialize report data.")]
     Serialize,
+    #[error("Failed to generate the report. Make sure the report template is valid.")]
     Tera,
+    #[error("Failed to format date/time for the report name.")]
     Format,
+    #[error("Failed to write the report.")]
     Write,
+    #[error("Failed to read the given template.")]
     Template,
 }
 
@@ -102,14 +108,8 @@ pub async fn create_tera_report(
     template: &str,
 ) -> Result<String, ReportError> {
     let context = tera::Context::from_serialize(ReportContext::try_from(db, project).await?)
-        .map_err(|err| {
-            log::error!("{}", err);
-            ReportError::Tera
-        })?;
-    tera::Tera::one_off(template, &context, true).map_err(|err| {
-        log::error!("{}", err);
-        ReportError::Tera
-    })
+        .map_err(|_| ReportError::Tera)?;
+    tera::Tera::one_off(template, &context, true).map_err(|_| ReportError::Tera)
 }
 
 pub async fn create_json_report(db: &MantraDb, project: &Project) -> Result<String, ReportError> {

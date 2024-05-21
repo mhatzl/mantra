@@ -17,7 +17,7 @@ pub struct Config {
 pub enum TraceError {
     #[error("Could not access file '{}'.", .0)]
     CouldNotAccessFile(String),
-    #[error("Database error while updating trace data. Cause: {}", .0)]
+    #[error("{}", .0)]
     DbError(crate::db::DbError),
 }
 
@@ -106,7 +106,10 @@ fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError
                 return Ok(collector.collect(&()));
             }
             None => {
-                // warn: failed parsing Rust code => content will be parsed as plain text
+                log::warn!(
+                    "Failed parsing Rust code. File content taken as plain text: {}",
+                    filepath.display()
+                );
             }
         }
     }

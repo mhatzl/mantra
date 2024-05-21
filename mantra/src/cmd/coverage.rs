@@ -44,11 +44,11 @@ pub enum LogFormat {
 
 #[derive(Debug, thiserror::Error)]
 pub enum CoverageError {
-    #[error("Failed to read coverage data. Cause: {}", .0)]
+    #[error("{}", .0)]
     ReadingData(String),
-    #[error("Failed to extract coverage data from defmt logs. Cause: {}", .0)]
+    #[error("{}", .0)]
     DefmtJson(String),
-    #[error("Database error while updating coverage data. Cause: {}", .0)]
+    #[error("{}", .0)]
     Db(DbError),
 }
 
@@ -57,11 +57,10 @@ pub async fn coverage_from_path(
     db: &MantraDb,
     cfg: &Config,
 ) -> Result<(), CoverageError> {
-    let data_str = std::fs::read_to_string(data).map_err(|err| {
+    let data_str = std::fs::read_to_string(data).map_err(|_| {
         CoverageError::ReadingData(format!(
-            "Could not read coverage data from '{}'. Cause: {}",
-            data.display(),
-            err
+            "Could not read coverage data from '{}'.",
+            data.display()
         ))
     })?;
 
@@ -235,7 +234,12 @@ async fn add_frame_to_db(
 
             // mantra logs might be set in external crates, but the matching traces are likely missing
             if let Err(DbError::ForeignKeyViolation(_)) = &db_result {
-                log::debug!("Foreign key violation while inserting coverage for reg-id=`{}`, file='{}', line='{}'.", covered_req.id, covered_req.file.display(), covered_req.line);
+                log::debug!(
+                    "Skipping unrelated coverage for reg-id=`{}`, file='{}', line='{}'.",
+                    covered_req.id,
+                    covered_req.file.display(),
+                    covered_req.line
+                );
             } else {
                 db_result.map_err(CoverageError::Db)?;
             }

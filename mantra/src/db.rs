@@ -1,5 +1,3 @@
-// setup db (migrate macro verwenden)
-
 use std::path::{Path, PathBuf};
 
 use mantra_lang_tracing::TraceEntry;
@@ -223,7 +221,7 @@ pub enum DbError {
     Update(String),
     #[error("The database contains invalid data. Cause: {}", .0)]
     Validate(String),
-    #[error("Foreign key violation: {}", .0)]
+    #[error("{}", .0)]
     ForeignKeyViolation(String),
 }
 
@@ -276,7 +274,7 @@ impl MantraDb {
                     changes.unchanged_cnt += 1;
                 }
 
-                sqlx::query!(
+                let _ = sqlx::query!(
                     "update Requirements set generation = $2, origin = $3, annotation = $4 where id = $1",
                     req.id,
                     new_generation,
@@ -286,8 +284,6 @@ impl MantraDb {
                 .execute(&self.pool)
                 .await;
             } else {
-                changes.inserted.push(req.clone());
-
                 let res = sqlx::query!(
                     "insert into Requirements (id, generation, origin, annotation) values ($1, $2, $3, $4)",
                     req.id,
@@ -299,10 +295,13 @@ impl MantraDb {
                 .await;
 
                 if let Err(err) = res {
-                    return Err(DbError::Insertion(format!(
+                    log::error!(
                         "Adding requirement '{}' failed with error: {}",
-                        &req.id, err
-                    )));
+                        &req.id,
+                        err
+                    );
+                } else {
+                    changes.inserted.push(req.clone());
                 }
             }
         }
@@ -369,7 +368,7 @@ impl MantraDb {
             }
         }
 
-        sqlx::query!("delete from Requirements where generation < $1", before)
+        let _ = sqlx::query!("delete from Requirements where generation < $1", before)
             .execute(&self.pool)
             .await;
 
@@ -392,7 +391,7 @@ impl MantraDb {
     }
 
     pub async fn reset_req_generation(&self) {
-        sqlx::query!("update Requirements set generation = 0")
+        let _ = sqlx::query!("update Requirements set generation = 0")
             .execute(&self.pool)
             .await;
     }
@@ -440,12 +439,10 @@ impl MantraDb {
 
             for id in ids {
                 if (sqlx::query!("select req_id, filepath, line from Traces where req_id = $1 and filepath = $2 and line = $3", id, file, line).fetch_one(&self.pool).await).is_ok() {
-                    sqlx::query!("update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3", id, file, line, new_generation).execute(&self.pool).await;
+                    let _ = sqlx::query!("update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3", id, file, line, new_generation).execute(&self.pool).await;
                     changes.unchanged_cnt += 1;
                 } else {
-                    changes.inserted.push(Trace{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
-
-                    let _ = sqlx::query!(
+                    let res = sqlx::query!(
                         "insert into Traces (req_id, filepath, line, generation) values ($1, $2, $3, $4)",
                         id,
                         file,
@@ -453,13 +450,19 @@ impl MantraDb {
                         new_generation,
                     )
                     .execute(&self.pool)
-                    .await
-                    .map_err(|err| {
-                        DbError::Insertion(format!(
-                            "Adding trace for id='{}', file='{}', line='{}' failed with error: {}",
-                            id, file, line, err
-                        ))
-                    })?;
+                    .await;
+
+                    if let Err(sqlx::Error::Database(err)) = res {
+                        if err.kind() == sqlx::error::ErrorKind::ForeignKeyViolation {
+                            log::warn!("Skipping trace. No requirement with id `{}` found for trace at file='{}', line='{}",
+                                id, file, line);
+                        } else {
+                            log::error!("Adding trace for id=`{}`, file='{}', line='{}' failed with error: {}",
+                                id, file, line, err);
+                        }
+                    } else {
+                        changes.inserted.push(Trace{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
+                    }
                 }
             }
         }
@@ -479,7 +482,7 @@ impl MantraDb {
     }
 
     pub async fn reset_trace_generation(&self) {
-        sqlx::query!("update Traces set generation = 0")
+        let _ = sqlx::query!("update Traces set generation = 0")
             .execute(&self.pool)
             .await;
     }
@@ -506,7 +509,7 @@ impl MantraDb {
             }
         }
 
-        sqlx::query!("delete from Traces where generation < $1", before)
+        let _ = sqlx::query!("delete from Traces where generation < $1", before)
             .execute(&self.pool)
             .await;
 
