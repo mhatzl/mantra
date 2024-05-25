@@ -25,6 +25,18 @@ create table Traces (
     primary key (req_id, filepath, line)
 );
 
+-- traces may have multiple contiguous lines in source code that are affected by the trace.
+-- e.g. function body for traces set in the doc-comments of a function 
+create table TraceSpans (
+    req_id text not null,
+    filepath text not null,
+    line integer not null,
+    start integer not null,
+    end integer not null,
+    primary key (req_id, filepath, line),
+    foreign key (req_id, filepath, line) references Traces(req_id, filepath, line) on delete cascade
+);
+
 -- test runs that executed tests
 --
 -- NOTE: `nr_of_tests` is the number of expected tests in one run.
