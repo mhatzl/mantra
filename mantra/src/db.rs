@@ -828,6 +828,50 @@ impl MantraDb {
         Ok(())
     }
 
+    pub async fn add_review(&self, review: crate::cmd::review::Review) -> Result<(), DbError> {
+        sqlx::query!(
+            "insert or replace into Reviews (name, date, reviewer, comment) values ($1, $2, $3, $4)",
+            review.name,
+            review.date,
+            review.reviewer,
+            review.comment,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DbError::Insertion(err.to_string()))?;
+
+        for req in review.requirements {
+            let res = sqlx::query!(
+                "insert or replace into ManuallyVerified (req_id, review_name, review_date, comment) values ($1, $2, $3, $4)",
+                req.id,
+                review.name,
+                review.date,
+                req.comment,
+            )
+            .execute(&self.pool)
+            .await;
+
+            if let Err(sqlx::Error::Database(err)) = res {
+                if err.kind() == sqlx::error::ErrorKind::ForeignKeyViolation {
+                    log::error!(
+                        "Requirement '{}' in review '{}' not in database.",
+                        req.id,
+                        review.name
+                    );
+                } else {
+                    log::error!(
+                        "Failed to insert requirement '{}' from review '{}'. Cause: {}",
+                        req.id,
+                        review.name,
+                        err
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn delete_reviews(&self, cfg: DeleteReviewsConfig) -> Result<(), DbError> {
         match cfg.before {
             Some(before) => {

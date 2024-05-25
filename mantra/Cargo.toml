@@ -19,6 +19,7 @@ clap = { version = "4.5.4", features = ["derive"] }
 sqlx = { version = "0.7.4", features = ["sqlite", "json", "runtime-tokio", "time"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
+toml = { version = "0.8.13", features = ["parse"] }
 ignore = "0.4.20"
 mime_guess = "2.0.4"
 defmt-json-schema = "0.1.0"

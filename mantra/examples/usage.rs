@@ -40,6 +40,12 @@ async fn main() {
             },
         }),
     };
+    let review_cfg = mantra::cfg::Config {
+        db: db.clone(),
+        cmd: mantra::cmd::Cmd::Review(mantra::cmd::review::ReviewConfig {
+            reviews: vec![PathBuf::from("mantra/examples/my_review.toml")],
+        }),
+    };
     let report_cfg = mantra::cfg::Config {
         db,
         cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
@@ -59,6 +65,8 @@ async fn main() {
     mantra::run(trace_cfg).await.unwrap();
 
     mantra::run(coverage_cfg).await.unwrap();
+
+    mantra::run(review_cfg).await.unwrap();
 
     mantra::run(report_cfg).await.unwrap();
 }

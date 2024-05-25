@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into TraceSpans (req_id, filepath, line, start, end) values ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "ff0d1616eefc6cdf7e6b7df7004661d9c7ceb12f28e998768fde150eb9ccfdaa"
+}

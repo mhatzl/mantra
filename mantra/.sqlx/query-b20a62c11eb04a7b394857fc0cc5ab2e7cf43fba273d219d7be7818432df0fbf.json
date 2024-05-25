@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into Reviews (name, date, reviewer, comment) values ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "b20a62c11eb04a7b394857fc0cc5ab2e7cf43fba273d219d7be7818432df0fbf"
+}

@@ -278,11 +278,11 @@
                     {% for review in reviews %}
                     <li>
                         <a
-                            id="{{ review.name }}|{{ review.date }}"
+                            href="#{{ review.name }}|{{ review.date }}"
                             class="review-link"
                         >
                             <span class="review-name">{{ review.name }}</span>
-                            <span class="review-date">{{ review.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</span>
+                            <span class="review-date">{{ review.date }}</span>
                         </a>
                     </li>
                     {% endfor %}
@@ -372,6 +372,8 @@
                         <div class="fully-traced">fully-traced</div>
                         {% elif req.trace_info.traced %}
                         <div class="traced">traced</div>
+                        {% elif req.manual %}
+                        <div>-</div>
                         {% else %}
                         <div class="untraced">untraced</div>
                         {% endif %}
@@ -383,6 +385,8 @@
                         <div class="passed-covered">passed-covered</div>
                         {% elif req.test_coverage_info.covered %}
                         <div class="covered">covered</div>
+                        {% elif req.manual %}
+                        <div>-</div>
                         {% else %}
                         <div class="uncovered">uncovered</div>
                         {% endif %}
@@ -662,7 +666,7 @@
                                     <td class="review-name"><a href="#{{ info.review_name }}|{{ info.review_date }}">
                                         {{ info.review_name }}
                                     </a></td>
-                                    <td class="review-date">{{ info.review_date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</td>
+                                    <td class="review-date">{{ info.review_date }}</td>
                                     <td class="comment">{{ info.comment }}</td>
                                 </tr>
                                 {% endfor %}
@@ -793,23 +797,21 @@
             {% for review in reviews %}
             <div id="{{ review.name }}|{{ review.date }}" class="review">
                 <div class="review-header">
-                    <p>{{ review.name }}</p>
-                    <p>{{ review.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</p>
+                    <p class="review-name">{{ review.name }}</p>
+                    <p class="review-date">{{ review.date }}</p>
                 </div>
                 <div class="review-content">
                     <div class="review-reviewer">
-                        <p><strong>Reviewer</strong></p>
-                        <p>{{ review.reviewer }}</p>
+                        <p><strong>Reviewer:</strong> {{ review.reviewer }}</p>
                     </div>
                     <div class="review-comment">
-                        <p>Comment</p>
                         <p>{{ review.comment }}</p>
                     </div>
                     <div class="review-requirements">
-                        <p><strong>Verified Requirements ({{ review.verified_reqs | length }})</strong></p>
-                        {% if review.verified_reqs | length > 0 %}
+                        <p><strong>Verified Requirements ({{ review.requirements | length }})</strong></p>
+                        {% if review.requirements | length > 0 %}
                         <ul>
-                            {% for req in review.verified_reqs %}
+                            {% for req in review.requirements %}
                             <li class="verified-requirement">
                                 <p><a class="req" href="#{{req.id}}">{{ self::break_id(id=req.id) }}</a></p>
                                 <p class="verified-requirement-comment">{{ req.comment }}</p>

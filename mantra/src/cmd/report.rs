@@ -1,10 +1,13 @@
 use std::{collections::HashSet, path::PathBuf};
 
-use time::OffsetDateTime;
+use time::{OffsetDateTime, PrimitiveDateTime};
 
-use crate::db::{MantraDb, RequirementOrigin};
+use crate::{
+    cmd::review::VerifiedRequirement,
+    db::{MantraDb, RequirementOrigin},
+};
 
-use super::coverage::iso8601_str_to_offsetdatetime;
+use super::{coverage::iso8601_str_to_offsetdatetime, review::Review};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReportError {
@@ -157,11 +160,8 @@ impl ReportContext {
 
         let mut reviews = Vec::new();
         for review in review_records {
-            let date = OffsetDateTime::parse(
-                &review.date,
-                &time::format_description::well_known::Iso8601::DEFAULT,
-            )
-            .expect("Test run date was added to db in ISO8601 format.");
+            let date = PrimitiveDateTime::parse(&review.date, &super::REVIEW_DATE_FORMAT)
+                .expect("Review date was added to db in custom review-date format.");
             reviews.push(Review::try_from(db, review.name, date).await?);
         }
 
@@ -343,8 +343,8 @@ impl RequirementInfo {
 
         let trace_info = RequirementTraceInfo::try_from(db, &id).await?;
         let test_coverage_info = RequirementTestCoverageInfo::try_from(db, &id).await?;
-        let verified_info = sqlx::query_as!(
-            VerifiedRequirementInfo,
+
+        let records = sqlx::query!(
             r#"
                 select review_name, review_date, comment
                 from ManuallyVerified
@@ -356,6 +356,19 @@ impl RequirementInfo {
         .fetch_all(db.pool())
         .await
         .map_err(ReportError::Db)?;
+
+        let mut verified_info = Vec::with_capacity(records.len());
+        for record in records {
+            verified_info.push(VerifiedRequirementInfo {
+                review_name: record.review_name,
+                review_date: PrimitiveDateTime::parse(
+                    &record.review_date,
+                    super::REVIEW_DATE_FORMAT,
+                )
+                .expect("Review date was added to db in custom review-date format."),
+                comment: record.comment,
+            });
+        }
 
         let valid = sqlx::query!(
             r#"
@@ -625,7 +638,8 @@ pub struct IndirectTestCoverageInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VerifiedRequirementInfo {
     pub review_name: String,
-    pub review_date: String,
+    #[serde(with = "super::review_date_format")]
+    pub review_date: PrimitiveDateTime,
     pub comment: Option<String>,
 }
 
@@ -879,28 +893,15 @@ pub enum TestState {
     Skipped { reason: Option<String> },
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct Review {
-    pub name: String,
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
-    pub date: OffsetDateTime,
-    pub reviewer: String,
-    pub comment: Option<String>,
-    pub verified_reqs: Vec<VerifiedRequirement>,
-}
-
 impl Review {
     pub async fn try_from(
         db: &MantraDb,
         name: impl Into<String>,
-        date: OffsetDateTime,
+        date: PrimitiveDateTime,
     ) -> Result<Self, ReportError> {
         let name: String = name.into();
 
-        let verified_reqs = sqlx::query_as!(
+        let requirements = sqlx::query_as!(
             VerifiedRequirement,
             "
                 select req_id as id, comment
@@ -933,13 +934,7 @@ impl Review {
             date,
             reviewer: record.reviewer,
             comment: record.comment,
-            verified_reqs,
+            requirements,
         })
     }
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct VerifiedRequirement {
-    pub id: String,
-    pub comment: Option<String>,
 }
