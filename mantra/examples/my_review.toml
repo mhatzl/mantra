@@ -1,0 +1,16 @@
+name = "Some Review"
+date = "2024-05-25 22:00"
+reviewer = "Manuel Hatzl"
+
+comment = "This is a test review."
+
+[[requirements]]
+id = "other_id"
+comment = "What could go wrong?"
+
+[[requirements]]
+id = "id.sub_id_1.sub_sub_id_1"
+comment = "This one was tough."
+
+[[requirements]]
+id = "id.sub_id_3.sub_sub_id_1.sub_sub_sub_id_1"

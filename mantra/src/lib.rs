@@ -1,4 +1,7 @@
-use cmd::{coverage::CoverageError, extract::ExtractError, report::ReportError, trace::TraceError};
+use cmd::{
+    coverage::CoverageError, extract::ExtractError, report::ReportError, review::ReviewError,
+    trace::TraceError,
+};
 use db::DbError;
 
 pub mod cfg;
@@ -24,7 +27,9 @@ pub enum MantraError {
     AddManualReq(DbError),
     #[error("Failed to delete database entries. Cause: {}", .0)]
     Delete(DbError),
-    #[error("Failed to create the report. Cuase: {}", .0)]
+    #[error("Failed to add reviews. Cause: {}", .0)]
+    Review(ReviewError),
+    #[error("Failed to create the report. Cause: {}", .0)]
     Report(ReportError),
     #[error("Failed to clean the database. Cause: {}", .0)]
     Clean(DbError),
@@ -78,6 +83,15 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         cmd::Cmd::Report(report_cfg) => cmd::report::report(&db, report_cfg)
             .await
             .map_err(MantraError::Report),
+        cmd::Cmd::Review(review_cfg) => {
+            let added_review_cnt = cmd::review::review(&db, review_cfg)
+                .await
+                .map_err(MantraError::Review)?;
+
+            println!("Added '{}' reviews.", added_review_cnt);
+
+            Ok(())
+        }
         cmd::Cmd::Clean => db.clean().await.map_err(MantraError::Clean),
     }
 }

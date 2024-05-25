@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into ManuallyVerified (req_id, review_name, review_date, comment) values ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "e633e6e6cf7f3d1405cf63ff81e3b3a96a6b00b5bd67aca534c71a08797d2385"
+}

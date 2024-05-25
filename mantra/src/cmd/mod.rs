@@ -9,6 +9,12 @@ pub mod report;
 pub mod review;
 pub mod trace;
 
+const REVIEW_DATE_FORMAT: &[time::format_description::BorrowedFormatItem<'static>] = time::macros::format_description!(
+    "[year]-[month]-[day] [hour]:[minute][optional [:[second][optional [.[subsecond]]]]]"
+);
+
+time::serde::format_description!(review_date_format, PrimitiveDateTime, REVIEW_DATE_FORMAT);
+
 #[derive(Debug, Clone, clap::Subcommand)]
 pub enum Cmd {
     Trace(trace::Config),
@@ -18,6 +24,7 @@ pub enum Cmd {
     DeleteTraces(DeleteTracesConfig),
     DeleteTestRuns(DeleteTestRunsConfig),
     DeleteReviews(DeleteReviewsConfig),
+    Review(review::ReviewConfig),
     Report(ReportConfig),
     Clean,
 }
