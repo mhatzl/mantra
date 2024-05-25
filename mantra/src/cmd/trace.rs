@@ -99,7 +99,7 @@ fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError
     if extension_str == Some("rs") {
         match AstCollector::new(
             content.as_bytes(),
-            tree_sitter_rust::language(),
+            &tree_sitter_rust::language(),
             Box::new(mantra_rust_trace::collect_traces_in_rust),
         ) {
             Some(mut collector) => {

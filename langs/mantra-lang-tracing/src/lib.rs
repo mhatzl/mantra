@@ -6,14 +6,43 @@ use tree_sitter::{Language, Node, Parser, Tree};
 
 pub type ReqId = String;
 
+#[derive(Debug, Clone, Copy)]
+pub struct LineSpan {
+    start: u32,
+    end: u32,
+}
+
+impl LineSpan {
+    pub fn new(start: u32, end: u32) -> Self {
+        Self { start, end }
+    }
+    pub fn start(&self) -> u32 {
+        self.start
+    }
+
+    pub fn end(&self) -> u32 {
+        self.end
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct TraceEntry {
     ids: Vec<ReqId>,
+    /// The line the trace is defined
     line: u32,
+    /// Optional span of lines this entry affects in the source.
+    ///
+    /// e.g. lines of a function body for a trace set at start of the function.
+    line_span: Option<LineSpan>,
 }
 
 impl TraceEntry {
-    pub fn new(ids: Vec<ReqId>, line: u32) -> Self {
-        Self { ids, line }
+    pub fn new(ids: Vec<ReqId>, line: u32, line_span: Option<LineSpan>) -> Self {
+        Self {
+            ids,
+            line,
+            line_span,
+        }
     }
 
     pub fn ids(&self) -> &[ReqId] {
@@ -23,25 +52,40 @@ impl TraceEntry {
     pub fn line(&self) -> u32 {
         self.line
     }
+
+    pub fn line_span(&self) -> &Option<LineSpan> {
+        &self.line_span
+    }
 }
 
-impl TryFrom<(&str, usize)> for TraceEntry {
+impl TryFrom<(&str, usize, Option<LineSpan>)> for TraceEntry {
     type Error = String;
 
-    fn try_from(value: (&str, usize)) -> Result<Self, Self::Error> {
+    fn try_from(value: (&str, usize, Option<LineSpan>)) -> Result<Self, Self::Error> {
         let ids = extract_req_ids_from_str(value.0).map_err(|err| err.to_string())?;
         let line = value
             .1
             .try_into()
             .map_err(|err: <u32 as std::convert::TryFrom<usize>>::Error| err.to_string())?;
+        let line_span = value.2;
 
-        Ok(Self { ids, line })
+        Ok(Self {
+            ids,
+            line,
+            line_span,
+        })
     }
 }
 
 impl std::fmt::Display for TraceEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "req({}) at '{}'", self.ids.join(","), self.line)
+        write!(f, "req({}) at '{}'", self.ids.join(","), self.line)?;
+
+        if let Some(span) = self.line_span {
+            write!(f, " spans lines '{}:{}'", span.start, span.end)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -67,7 +111,9 @@ impl TraceCollector<()> for PlainCollector<'_> {
 
         for (i, line_content) in lines.enumerate() {
             for capture in trace_matcher.captures_iter(line_content) {
-                traces.push(TraceEntry::try_from((capture.name("ids")?.as_str(), (i + 1))).ok()?)
+                traces.push(
+                    TraceEntry::try_from((capture.name("ids")?.as_str(), (i + 1), None)).ok()?,
+                )
             }
         }
 
@@ -84,7 +130,7 @@ pub struct AstCollector<'a, T> {
 pub type AstCollectorFn<'a, T> = Box<dyn FnMut(&Node, &'a [u8], &T) -> Option<Vec<TraceEntry>>>;
 
 impl<'a, T> AstCollector<'a, T> {
-    pub fn new(src: &'a [u8], lang: Language, collect_fn: AstCollectorFn<'a, T>) -> Option<Self> {
+    pub fn new(src: &'a [u8], lang: &Language, collect_fn: AstCollectorFn<'a, T>) -> Option<Self> {
         let mut parser = Parser::new();
 
         parser.set_language(lang).ok()?;
