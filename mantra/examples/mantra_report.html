@@ -211,6 +211,10 @@
         .requirement-status td {
             width: 50%;
         }
+
+        .criteria-content {
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -282,18 +286,18 @@
                     
                     <li>  
                         <a
-                            href="#test-run|+002024-05-25T23:12:20.850506700Z"
+                            href="#test-run|+002024-05-26T18:31:51.692389300Z"
                             class="nav-test-run-link"
                         >
                             <span class="test-run-name">test-run</span>
-                            <span class="test-run-date">2024-05-26 01:12:20</span>
+                            <span class="test-run-date">2024-05-26 20:31:51</span>
                         </a>
                         
                         <ul>
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::indirect_test"
+                                    href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::indirect_test"
                                     class="test-name"
                                 >
                                 usage::indirect_test
@@ -302,7 +306,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::other_test"
+                                    href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::other_test"
                                     class="test-name"
                                 >
                                 usage::other_test
@@ -311,7 +315,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::skipped_test"
+                                    href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::skipped_test"
                                     class="test-name"
                                 >
                                 usage::skipped_test
@@ -320,7 +324,7 @@
                             
                             <li>
                                 <a
-                                    href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::test_fn"
+                                    href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::test_fn"
                                     class="test-name"
                                 >
                                 usage::test_fn
@@ -366,19 +370,16 @@
             <ul>
                 <li>
                     <p><strong>Tracing</strong></p>
-                    <p class="criteria-content">
-Requirements are traced if one of the following criteria is met:
+                    <p class="criteria-content">Requirements are traced if one of the following criteria is met:
 
 - A trace directly referring to the requirement exists (Directly traced)
 - All of the leaf requirements of the requirement have direct traces (Indirectly traced)
 
-Requirements are fully traced if all of their leaf requirements are traced.
-</p>
+Requirements are fully traced if all of their leaf requirements are traced.</p>
                 </li>
                 <li>
                     <p><strong>Test Coverage</strong></p>
-                    <p class="criteria-content">
-A requirement is covered through a test if any of the following criteria are met:
+                    <p class="criteria-content">A requirement is covered through a test if any of the following criteria are met:
 
 - At least one direct trace to the requirement was reached during test execution
 - All leaf requirements of the requirement were covered by the test
@@ -389,8 +390,7 @@ A requirement is passed covered if all of the following criteria are met:
 - All tests covering the requirement passed
 - All tests covering the child requirements of the requirement passed
 
-Requirements are fully covered if all of their leaf requirements are passed covered.
-</p>
+Requirements are fully covered if all of their leaf requirements are passed covered.</p>
                 </li>
                 <li>
                     <p><strong>Validation</strong></p>
@@ -422,16 +422,16 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                     <p><strong>Existing requirements:</strong> 19</p>
                 </li>
                 <li>
-                    <p><strong>Traced requirements:</strong> 9 (47.368421052631575%)</p>
+                    <p><strong>Traced requirements:</strong> 9 (47.37%)</p>
                 </li>
                 <li>
-                    <p><strong>Covered requirements:</strong> 5 (26.31578947368421%)</p>
+                    <p><strong>Covered requirements:</strong> 5 (26.32%)</p>
                 </li>
                 <li>
-                    <p><strong>Passed requirements:</strong> 2 (10.526315789473683%)</p>
+                    <p><strong>Passed requirements:</strong> 2 (10.53%)</p>
                 </li>
                 <li>
-                    <p><strong>Manually verified requirements:</strong> 3 (15.789473684210526%)</p>
+                    <p><strong>Manually verified requirements:</strong> 3 (15.79%)</p>
                 </li>
             </ul>
 
@@ -1297,17 +1297,17 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     <ul>
                                         
                                         <li>
-                                            <p><a class="test-run-name" href="#test-run|+002024-05-25T23:12:20.850506700Z">
+                                            <p><a class="test-run-name" href="#test-run|+002024-05-26T18:31:51.692389300Z">
                                                 &lrm;test-run
                                             </a><br>
-                                            <span class="test-run-date">2024-05-26 01:12:20</span>
+                                            <span class="test-run-date">2024-05-26 20:31:51</span>
                                             </p>
                                             <ul>
                                             
                                                 <li>
                                                     <p>
                                                         <span class="passed">passed</span>
-                                                        <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::indirect_test">
+                                                        <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::indirect_test">
                                                             &lrm;usage::indirect_test
                                                         </a>
                                                     </p>
@@ -1339,17 +1339,17 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     <ul>
                                         
                                         <li>
-                                            <p><a class="test-run-name" href="#test-run|+002024-05-25T23:12:20.850506700Z">
+                                            <p><a class="test-run-name" href="#test-run|+002024-05-26T18:31:51.692389300Z">
                                                 &lrm;test-run
                                             </a><br>
-                                            <span class="test-run-date">2024-05-26 01:12:20</span>
+                                            <span class="test-run-date">2024-05-26 20:31:51</span>
                                             </p>
                                             <ul>
                                             
                                                 <li>
                                                     <p>
                                                         <span class="passed">passed</span>
-                                                        <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::indirect_test">
+                                                        <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::indirect_test">
                                                             &lrm;usage::indirect_test
                                                         </a>
                                                     </p>
@@ -1371,7 +1371,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                                 <li>
                                                     <p>
                                                         <span class="failed">failed</span>
-                                                        <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::other_test">
+                                                        <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::other_test">
                                                             &lrm;usage::other_test
                                                         </a>
                                                     </p>
@@ -1516,10 +1516,10 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-25T23:12:20.850506700Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-26T18:31:51.692389300Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-26 01:12:20</span>
+                                    <span class="test-run-date">2024-05-26 20:31:51</span>
                                     </p>
                                     
                                     <ul>
@@ -1527,7 +1527,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                         <li>
                                             <p>
                                                 <span class="passed">passed</span>
-                                                <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::indirect_test">
+                                                <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::indirect_test">
                                                 &lrm;usage::indirect_test
                                                 </a>
                                             </p>
@@ -1656,10 +1656,10 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-25T23:12:20.850506700Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-26T18:31:51.692389300Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-26 01:12:20</span>
+                                    <span class="test-run-date">2024-05-26 20:31:51</span>
                                     </p>
                                     
                                     <ul>
@@ -1667,7 +1667,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                         <li>
                                             <p>
                                                 <span class="passed">passed</span>
-                                                <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::indirect_test">
+                                                <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::indirect_test">
                                                 &lrm;usage::indirect_test
                                                 </a>
                                             </p>
@@ -1688,7 +1688,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                         <li>
                                             <p>
                                                 <span class="failed">failed</span>
-                                                <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::other_test">
+                                                <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::other_test">
                                                 &lrm;usage::other_test
                                                 </a>
                                             </p>
@@ -3001,10 +3001,10 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-25T23:12:20.850506700Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-26T18:31:51.692389300Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-26 01:12:20</span>
+                                    <span class="test-run-date">2024-05-26 20:31:51</span>
                                     </p>
                                     
                                     <ul>
@@ -3012,7 +3012,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                         <li>
                                             <p>
                                                 <span class="passed">passed</span>
-                                                <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::test_fn">
+                                                <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::test_fn">
                                                 &lrm;usage::test_fn
                                                 </a>
                                             </p>
@@ -3233,10 +3233,10 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                             <ul>
                                 
                                 <li>
-                                    <p><a class="test-run-name" href="#test-run|+002024-05-25T23:12:20.850506700Z">
+                                    <p><a class="test-run-name" href="#test-run|+002024-05-26T18:31:51.692389300Z">
                                         &lrm;test-run
                                     </a><br>
-                                    <span class="test-run-date">2024-05-26 01:12:20</span>
+                                    <span class="test-run-date">2024-05-26 20:31:51</span>
                                     </p>
                                     
                                     <ul>
@@ -3244,7 +3244,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                         <li>
                                             <p>
                                                 <span class="failed">failed</span>
-                                                <a class="test-name" href="#test-run|+002024-05-25T23:12:20.850506700Z|usage::other_test">
+                                                <a class="test-name" href="#test-run|+002024-05-26T18:31:51.692389300Z|usage::other_test">
                                                 &lrm;usage::other_test
                                                 </a>
                                             </p>
@@ -3324,14 +3324,14 @@ Requirements are fully covered if all of their leaf requirements are passed cove
 
             <div class="test-runs">
                 
-                    <div id="test-run|+002024-05-25T23:12:20.850506700Z" class="test-run">
+                    <div id="test-run|+002024-05-26T18:31:51.692389300Z" class="test-run">
                         <div class="test-run-header">
                             <h3>
                                 <span class="test-run-name">
                                     &lrm;test-run
                                 </span><br>
                                 <span>
-                                    2024-05-26 01:12:20
+                                    2024-05-26 20:31:51
                                 </span>
                             </h3>
                             <p class="header-right-part">
@@ -3364,7 +3364,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                         <p><strong>Tests</strong></p>
                         <div class="test-run-tests">
                             
-                                <div id="test-run|+002024-05-25T23:12:20.850506700Z|usage::indirect_test" class="test">
+                                <div id="test-run|+002024-05-26T18:31:51.692389300Z|usage::indirect_test" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::indirect_test</strong></p>
                                         <p class="header-right-part">
@@ -3399,7 +3399,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </div>
                                 </div>
                             
-                                <div id="test-run|+002024-05-25T23:12:20.850506700Z|usage::other_test" class="test">
+                                <div id="test-run|+002024-05-26T18:31:51.692389300Z|usage::other_test" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::other_test</strong></p>
                                         <p class="header-right-part">
@@ -3434,7 +3434,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </div>
                                 </div>
                             
-                                <div id="test-run|+002024-05-25T23:12:20.850506700Z|usage::skipped_test" class="test">
+                                <div id="test-run|+002024-05-26T18:31:51.692389300Z|usage::skipped_test" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::skipped_test</strong></p>
                                         <p class="header-right-part">
@@ -3461,7 +3461,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
                                     </div>
                                 </div>
                             
-                                <div id="test-run|+002024-05-25T23:12:20.850506700Z|usage::test_fn" class="test">
+                                <div id="test-run|+002024-05-26T18:31:51.692389300Z|usage::test_fn" class="test">
                                     <div class="test-header">
                                         <p><strong class="test-name">&lrm;usage::test_fn</strong></p>
                                         <p class="header-right-part">
@@ -3554,7 +3554,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
     </main>
 
     <footer>
-        Report generated at 2024-05-26 01:12:21
+        Report generated at 2024-05-26 20:31:52
     </footer>
 </body>
 </html>
