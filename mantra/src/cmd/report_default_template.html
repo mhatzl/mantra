@@ -211,6 +211,10 @@
         .requirement-status td {
             width: 50%;
         }
+
+        .criteria-content {
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -337,16 +341,16 @@
                     <p><strong>Existing requirements:</strong> {{ overview.req_cnt }}</p>
                 </li>
                 <li>
-                    <p><strong>Traced requirements:</strong> {{ overview.traced_cnt }} ({{ overview.traced_ratio * 100 }}%)</p>
+                    <p><strong>Traced requirements:</strong> {{ overview.traced_cnt }} ({{ overview.traced_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Covered requirements:</strong> {{ overview.covered_cnt }} ({{ overview.covered_ratio * 100 }}%)</p>
+                    <p><strong>Covered requirements:</strong> {{ overview.covered_cnt }} ({{ overview.covered_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 }}%)</p>
+                    <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Manually verified requirements:</strong> {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 }}%)</p>
+                    <p><strong>Manually verified requirements:</strong> {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
             </ul>
 
@@ -687,16 +691,16 @@
                     <p><strong>Existing tests:</strong> {{ tests.overview.test_cnt }}</p>
                 </li>
                 <li>
-                    <p><strong>Ran tests:</strong> {{ tests.overview.ran_cnt }} ({{ tests.overview.ran_ratio * 100 }}%)</p>
+                    <p><strong>Ran tests:</strong> {{ tests.overview.ran_cnt }} ({{ tests.overview.ran_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Passed tests:</strong> {{ tests.overview.passed_cnt }} ({{ tests.overview.passed_ratio * 100 }}%)</p>
+                    <p><strong>Passed tests:</strong> {{ tests.overview.passed_cnt }} ({{ tests.overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Failed tests:</strong> {{ tests.overview.failed_cnt }} ({{ tests.overview.failed_ratio * 100 }}%)</p>
+                    <p><strong>Failed tests:</strong> {{ tests.overview.failed_cnt }} ({{ tests.overview.failed_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Skipped tests:</strong> {{ tests.overview.skipped_cnt }} ({{ tests.overview.skipped_ratio * 100 }}%)</p>
+                    <p><strong>Skipped tests:</strong> {{ tests.overview.skipped_cnt }} ({{ tests.overview.skipped_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
             </ul>
 
@@ -731,16 +735,16 @@
                                     <p><strong>Existing Tests:</strong> {{ test_run.overview.test_cnt }}</p>
                                 </li>
                                 <li>
-                                    <p><strong>Ran tests:</strong> {{ test_run.overview.ran_cnt }} ({{ test_run.overview.ran_ratio * 100 }}%)</p>
+                                    <p><strong>Ran tests:</strong> {{ test_run.overview.ran_cnt }} ({{ test_run.overview.ran_ratio * 100 | round(precision = 2) }}%)</p>
                                 </li>
                                 <li>
-                                    <p><strong>Passed tests:</strong> {{ test_run.overview.passed_cnt }} ({{ test_run.overview.passed_ratio * 100 }}%)</p>
+                                    <p><strong>Passed tests:</strong> {{ test_run.overview.passed_cnt }} ({{ test_run.overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
                                 </li>
                                 <li>
-                                    <p><strong>Failed tests:</strong> {{ test_run.overview.failed_cnt }} ({{ test_run.overview.failed_ratio * 100 }}%)</p>
+                                    <p><strong>Failed tests:</strong> {{ test_run.overview.failed_cnt }} ({{ test_run.overview.failed_ratio * 100 | round(precision = 2) }}%)</p>
                                 </li>
                                 <li>
-                                    <p><strong>Skipped tests:</strong> {{ test_run.overview.skipped_cnt }} ({{ test_run.overview.skipped_ratio * 100 }}%)</p>
+                                    <p><strong>Skipped tests:</strong> {{ test_run.overview.skipped_cnt }} ({{ test_run.overview.skipped_ratio * 100 | round(precision = 2) }}%)</p>
                                 </li>
                             </ul>
                         </div>

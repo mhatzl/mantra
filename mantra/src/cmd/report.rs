@@ -165,17 +165,15 @@ impl ReportContext {
             reviews.push(Review::try_from(db, review.name, date).await?);
         }
 
-        let trace_criteria = "
-Requirements are traced if one of the following criteria is met:
+        let trace_criteria = "Requirements are traced if one of the following criteria is met:
 
 - A trace directly referring to the requirement exists (Directly traced)
 - All of the leaf requirements of the requirement have direct traces (Indirectly traced)
 
-Requirements are fully traced if all of their leaf requirements are traced.
-";
+Requirements are fully traced if all of their leaf requirements are traced.";
 
-        let test_coverage_criteria = "
-A requirement is covered through a test if any of the following criteria are met:
+        let test_coverage_criteria =
+            "A requirement is covered through a test if any of the following criteria are met:
 
 - At least one direct trace to the requirement was reached during test execution
 - All leaf requirements of the requirement were covered by the test
@@ -186,8 +184,7 @@ A requirement is passed covered if all of the following criteria are met:
 - All tests covering the requirement passed
 - All tests covering the child requirements of the requirement passed
 
-Requirements are fully covered if all of their leaf requirements are passed covered.
-";
+Requirements are fully covered if all of their leaf requirements are passed covered.";
 
         let creation_date = OffsetDateTime::now_utc();
 
