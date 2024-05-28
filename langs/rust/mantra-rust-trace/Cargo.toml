@@ -1,7 +1,7 @@
 [package]
 name = "mantra-rust-trace"
 description = "Collects requirement traces from rust code for the `mantra` framework."
-version = "0.1.0"
+version.workspace = true
 edition.workspace = true
 repository.workspace = true 
 license.workspace = true
