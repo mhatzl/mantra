@@ -1,2 +1,3 @@
 [env]
 DATABASE_URL = "sqlite://mantra.db"
+SQLX_OFFLINE = "true"
