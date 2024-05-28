@@ -36,7 +36,7 @@ async fn main() {
             data_file: PathBuf::from("mantra/examples/usage/defmt_test.log"),
             cfg: mantra::cmd::coverage::Config {
                 test_run: "test-run".to_string(),
-                fmt: mantra::cmd::coverage::LogFormat::DefmtJson,
+                fmt: mantra::cmd::coverage::CoverageFormat::DefmtJson,
             },
         }),
     };

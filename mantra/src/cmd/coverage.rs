@@ -19,7 +19,7 @@ pub struct Config {
     #[arg(long)]
     pub test_run: String,
     #[arg(value_enum)]
-    pub fmt: LogFormat,
+    pub fmt: CoverageFormat,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
@@ -38,7 +38,7 @@ pub fn iso8601_str_to_offsetdatetime(time_str: &str) -> OffsetDateTime {
 }
 
 #[derive(Debug, Clone, clap::ValueEnum)]
-pub enum LogFormat {
+pub enum CoverageFormat {
     DefmtJson,
 }
 
@@ -73,7 +73,7 @@ pub async fn coverage_from_str(
     cfg: &Config,
 ) -> Result<(), CoverageError> {
     match cfg.fmt {
-        LogFormat::DefmtJson => {
+        CoverageFormat::DefmtJson => {
             let mut frames = Vec::new();
             for line in data.lines() {
                 frames.push(serde_json::from_str::<JsonFrame>(line).map_err(|err| {
@@ -244,12 +244,6 @@ async fn add_frame_to_db(
                 db_result.map_err(CoverageError::Db)?;
             }
         };
-    } else if frame.data == "all tests passed!" {
-        if let Some(passed_test) = current_test_fn {
-            db.test_passed(test_run, passed_test)
-                .await
-                .map_err(CoverageError::Db)?;
-        }
     }
 
     Ok(new_test_fn)
