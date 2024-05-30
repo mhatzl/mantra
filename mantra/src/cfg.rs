@@ -13,6 +13,13 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, clap::Args)]
+pub struct DeleteOldConfig {
+    /// Delete test runs and reviews that have no linked requirement or coverage remaining.
+    #[arg(long)]
+    pub clean: bool,
+}
+
+#[derive(Debug, Clone, clap::Args)]
 pub struct DeleteReqsConfig {
     #[arg(long)]
     pub ids: Option<Vec<String>>,

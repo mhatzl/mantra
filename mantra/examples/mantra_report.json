@@ -5,15 +5,15 @@
     "project_link": "https://github.com/mhatzl/mantra"
   },
   "overview": {
-    "req_cnt": 19,
+    "req_cnt": 20,
     "traced_cnt": 9,
-    "traced_ratio": 0.47368421052631576,
+    "traced_ratio": 0.45,
     "covered_cnt": 5,
-    "covered_ratio": 0.2631578947368421,
+    "covered_ratio": 0.25,
     "passed_cnt": 2,
-    "passed_ratio": 0.10526315789473684,
+    "passed_ratio": 0.1,
     "verified_cnt": 3,
-    "verified_ratio": 0.15789473684210525
+    "verified_ratio": 0.15
   },
   "requirements": [
     {
@@ -163,7 +163,39 @@
             "test_runs": [
               {
                 "name": "test-run",
-                "date": "+002024-05-26T18:31:51.692389300Z",
+                "date": "+002024-05-30T13:32:13.902988100Z",
+                "tests": [
+                  {
+                    "name": "usage::indirect_test",
+                    "passed": true,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "test-run",
+                "date": "+002024-05-30T13:33:03.256437400Z",
+                "tests": [
+                  {
+                    "name": "usage::indirect_test",
+                    "passed": true,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "test-run",
+                "date": "+002024-05-30T13:33:27.145864800Z",
                 "tests": [
                   {
                     "name": "usage::indirect_test",
@@ -184,7 +216,59 @@
             "test_runs": [
               {
                 "name": "test-run",
-                "date": "+002024-05-26T18:31:51.692389300Z",
+                "date": "+002024-05-30T13:32:13.902988100Z",
+                "tests": [
+                  {
+                    "name": "usage::indirect_test",
+                    "passed": true,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  },
+                  {
+                    "name": "usage::other_test",
+                    "passed": false,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "test-run",
+                "date": "+002024-05-30T13:33:03.256437400Z",
+                "tests": [
+                  {
+                    "name": "usage::indirect_test",
+                    "passed": true,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  },
+                  {
+                    "name": "usage::other_test",
+                    "passed": false,
+                    "traces": [
+                      {
+                        "filepath": "hierarchy_test.yaml",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "test-run",
+                "date": "+002024-05-30T13:33:27.145864800Z",
                 "tests": [
                   {
                     "name": "usage::indirect_test",
@@ -254,7 +338,39 @@
         "direct_coverage": [
           {
             "name": "test-run",
-            "date": "+002024-05-26T18:31:51.692389300Z",
+            "date": "+002024-05-30T13:32:13.902988100Z",
+            "tests": [
+              {
+                "name": "usage::indirect_test",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:03.256437400Z",
+            "tests": [
+              {
+                "name": "usage::indirect_test",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:27.145864800Z",
             "tests": [
               {
                 "name": "usage::indirect_test",
@@ -307,7 +423,59 @@
         "direct_coverage": [
           {
             "name": "test-run",
-            "date": "+002024-05-26T18:31:51.692389300Z",
+            "date": "+002024-05-30T13:32:13.902988100Z",
+            "tests": [
+              {
+                "name": "usage::indirect_test",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "name": "usage::other_test",
+                "passed": false,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:03.256437400Z",
+            "tests": [
+              {
+                "name": "usage::indirect_test",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "name": "usage::other_test",
+                "passed": false,
+                "traces": [
+                  {
+                    "filepath": "hierarchy_test.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:27.145864800Z",
             "tests": [
               {
                 "name": "usage::indirect_test",
@@ -805,7 +973,39 @@
         "direct_coverage": [
           {
             "name": "test-run",
-            "date": "+002024-05-26T18:31:51.692389300Z",
+            "date": "+002024-05-30T13:32:13.902988100Z",
+            "tests": [
+              {
+                "name": "usage::test_fn",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "traces.rs",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:03.256437400Z",
+            "tests": [
+              {
+                "name": "usage::test_fn",
+                "passed": true,
+                "traces": [
+                  {
+                    "filepath": "traces.rs",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:27.145864800Z",
             "tests": [
               {
                 "name": "usage::test_fn",
@@ -836,6 +1036,37 @@
       },
       "annotation": null,
       "parent": "main_id",
+      "direct_children": [],
+      "leaf_statistic": null,
+      "deprecated": false,
+      "manual": false,
+      "trace_info": {
+        "traced": false,
+        "fully_traced": false,
+        "direct_traces": [],
+        "indirect_traces": []
+      },
+      "test_coverage_info": {
+        "covered": false,
+        "passed": false,
+        "fully_covered": false,
+        "direct_coverage": [],
+        "indirect_coverage": []
+      },
+      "verified_info": [],
+      "valid": true
+    },
+    {
+      "id": "old_id",
+      "origin": {
+        "GitHub": {
+          "link": "https://github.com/mhatzl/mantra/tree/macros",
+          "path": "mantra/examples/usage/reqs.md",
+          "line": 23
+        }
+      },
+      "annotation": null,
+      "parent": null,
       "direct_children": [],
       "leaf_statistic": null,
       "deprecated": false,
@@ -893,7 +1124,39 @@
         "direct_coverage": [
           {
             "name": "test-run",
-            "date": "+002024-05-26T18:31:51.692389300Z",
+            "date": "+002024-05-30T13:32:13.902988100Z",
+            "tests": [
+              {
+                "name": "usage::other_test",
+                "passed": false,
+                "traces": [
+                  {
+                    "filepath": "traces.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:03.256437400Z",
+            "tests": [
+              {
+                "name": "usage::other_test",
+                "passed": false,
+                "traces": [
+                  {
+                    "filepath": "traces.yaml",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "test-run",
+            "date": "+002024-05-30T13:33:27.145864800Z",
             "tests": [
               {
                 "name": "usage::other_test",
@@ -922,14 +1185,14 @@
   ],
   "tests": {
     "overview": {
-      "test_cnt": 4,
-      "ran_cnt": 3,
+      "test_cnt": 12,
+      "ran_cnt": 9,
       "ran_ratio": 0.75,
-      "passed_cnt": 2,
+      "passed_cnt": 6,
       "passed_ratio": 0.5,
-      "failed_cnt": 1,
+      "failed_cnt": 3,
       "failed_ratio": 0.25,
-      "skipped_cnt": 1,
+      "skipped_cnt": 3,
       "skipped_ratio": 0.25
     },
     "test_runs": [
@@ -946,7 +1209,123 @@
           "skipped_ratio": 0.25
         },
         "name": "test-run",
-        "date": "+002024-05-26T18:31:51.692389300Z",
+        "date": "+002024-05-30T13:32:13.902988100Z",
+        "logs": "[{\"data\":\"(1/4) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(2/4) ignoring `skipped_test`...\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(3/4) running `indirect_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(4/4) running `other_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`other_id`; file='traces.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"}]",
+        "tests": [
+          {
+            "covers": [
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2"
+            ],
+            "name": "usage::indirect_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Passed"
+          },
+          {
+            "covers": [
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+              "other_id"
+            ],
+            "name": "usage::other_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Failed"
+          },
+          {
+            "covers": [],
+            "name": "usage::skipped_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": {
+              "Skipped": {
+                "reason": null
+              }
+            }
+          },
+          {
+            "covers": [
+              "main_id"
+            ],
+            "name": "usage::test_fn",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Passed"
+          }
+        ]
+      },
+      {
+        "overview": {
+          "test_cnt": 4,
+          "ran_cnt": 3,
+          "ran_ratio": 0.75,
+          "passed_cnt": 2,
+          "passed_ratio": 0.5,
+          "failed_cnt": 1,
+          "failed_ratio": 0.25,
+          "skipped_cnt": 1,
+          "skipped_ratio": 0.25
+        },
+        "name": "test-run",
+        "date": "+002024-05-30T13:33:03.256437400Z",
+        "logs": "[{\"data\":\"(1/4) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(2/4) ignoring `skipped_test`...\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(3/4) running `indirect_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(4/4) running `other_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`other_id`; file='traces.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"}]",
+        "tests": [
+          {
+            "covers": [
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2"
+            ],
+            "name": "usage::indirect_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Passed"
+          },
+          {
+            "covers": [
+              "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
+              "other_id"
+            ],
+            "name": "usage::other_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Failed"
+          },
+          {
+            "covers": [],
+            "name": "usage::skipped_test",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": {
+              "Skipped": {
+                "reason": null
+              }
+            }
+          },
+          {
+            "covers": [
+              "main_id"
+            ],
+            "name": "usage::test_fn",
+            "filepath": "traces.rs",
+            "line": 7,
+            "state": "Passed"
+          }
+        ]
+      },
+      {
+        "overview": {
+          "test_cnt": 4,
+          "ran_cnt": 3,
+          "ran_ratio": 0.75,
+          "passed_cnt": 2,
+          "passed_ratio": 0.5,
+          "failed_cnt": 1,
+          "failed_ratio": 0.25,
+          "skipped_cnt": 1,
+          "skipped_ratio": 0.25
+        },
+        "name": "test-run",
+        "date": "+002024-05-30T13:33:27.145864800Z",
         "logs": "[{\"data\":\"(1/4) running `test_fn`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`main_id`; file='traces.rs'; line='1';\",\"host_timestamp\":1642698490360848722,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(2/4) ignoring `skipped_test`...\",\"host_timestamp\":1642698490360848723,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(3/4) running `indirect_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"(4/4) running `other_test`...\",\"host_timestamp\":1642698490360848721,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":7,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"test_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`other_id`; file='traces.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"},{\"data\":\"mantra: req-id=`id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2`; file='hierarchy_test.yaml'; line='1';\",\"host_timestamp\":1642698490360848724,\"level\":null,\"location\":{\"file\":\"traces.rs\",\"line\":1,\"module_path\":{\"crate_name\":\"usage\",\"modules\":[],\"function\":\"traced_fn\"}},\"target_timestamp\":\"0\"}]",
         "tests": [
           {
@@ -1017,7 +1396,7 @@
   ],
   "trace_criteria": "Requirements are traced if one of the following criteria is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n\nRequirements are fully traced if all of their leaf requirements are traced.",
   "test_coverage_criteria": "A requirement is covered through a test if any of the following criteria are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n\nA requirement is passed covered if all of the following criteria are met:\n\n- The requirement is covered at least once\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n\nRequirements are fully covered if all of their leaf requirements are passed covered.",
-  "creation_date": "+002024-05-26T18:31:52.276413500Z",
+  "creation_date": "+002024-05-30T13:33:27.688910900Z",
   "validation": {
     "is_valid": false,
     "criteria": "The collected data is valid if no *deprecated* requirement is traced.",

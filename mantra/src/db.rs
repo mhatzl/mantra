@@ -734,6 +734,27 @@ impl MantraDb {
         &self.pool
     }
 
+    pub async fn delete_old_generations(&self, clean: bool) -> Result<(), DbError> {
+        let _ = sqlx::query!(
+            "delete from Requirements where generation < (select max(generation) from Requirements)"
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DbError::Delete(err.to_string()))?;
+        let _ = sqlx::query!(
+            "delete from Traces where generation < (select max(generation) from Traces)"
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DbError::Delete(err.to_string()))?;
+
+        if clean {
+            self.clean().await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn delete_reqs(&self, cfg: &DeleteReqsConfig) -> Result<(), DbError> {
         let ids = cfg.ids.as_deref().unwrap_or_default();
 

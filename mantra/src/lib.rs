@@ -64,6 +64,10 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
                 .await
                 .map_err(MantraError::Coverage)
         }
+        cmd::Cmd::DeleteOld(delete_old_cfg) => db
+            .delete_old_generations(delete_old_cfg.clean)
+            .await
+            .map_err(MantraError::Delete),
         cmd::Cmd::DeleteReqs(delete_req_cfg) => db
             .delete_reqs(&delete_req_cfg)
             .await

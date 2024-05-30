@@ -1,4 +1,7 @@
-use crate::cfg::{DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig, DeleteTracesConfig};
+use crate::cfg::{
+    DeleteOldConfig, DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig,
+    DeleteTracesConfig,
+};
 
 use self::report::ReportConfig;
 
@@ -20,11 +23,15 @@ pub enum Cmd {
     Trace(trace::Config),
     Extract(extract::Config),
     Coverage(coverage::CliConfig),
+    /// Delete requirements and traces that have not been added or updated
+    /// with the latest `extract` or `trace` command.
+    DeleteOld(DeleteOldConfig),
     DeleteReqs(DeleteReqsConfig),
     DeleteTraces(DeleteTracesConfig),
     DeleteTestRuns(DeleteTestRunsConfig),
     DeleteReviews(DeleteReviewsConfig),
     Review(review::ReviewConfig),
     Report(ReportConfig),
+    /// Delete test runs and reviews that have no linked requirement or coverage remaining.
     Clean,
 }
