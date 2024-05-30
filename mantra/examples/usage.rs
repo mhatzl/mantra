@@ -8,7 +8,7 @@ async fn main() {
         .filter_level(log::LevelFilter::Warn)
         .init();
 
-    // let _ = std::fs::remove_file("mantra/examples/usage.db");
+    let _ = std::fs::remove_file("mantra/examples/usage.db");
     let db = mantra::db::Config {
         url: Some("sqlite://mantra/examples/usage.db?mode=rwc".to_string()),
     };
