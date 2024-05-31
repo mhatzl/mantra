@@ -200,7 +200,7 @@ pub struct GitHubReqOrigin {
 #[group(id = "db")]
 pub struct Config {
     /// URL to connect to a SQL database.
-    /// Default is a SQLite file named `mantra.db` that is located at the workspace root.
+    /// Default is a SQLite file named `mantra.db` that is located in the current directory.
     #[arg(long, alias = "db-url")]
     pub url: Option<String>,
 }
