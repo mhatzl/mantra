@@ -427,12 +427,23 @@ with NrRequirements(cnt) as (select count(*) from Requirements),
 NrTraced(cnt) as (select count(*) from TracedRequirements),
 NrCovered(cnt) as (select count(*) from CoveredRequirements),
 NrPassed(cnt) as (select count(*) from PassedCoveredRequirements),
-NrVerified(cnt) as (select count(*) from ManuallyVerifiedRequirements)
+VerifiedOverview(cnt, ratio) as (
+    -- Only consider manual requirements for verified cnt and ratio
+    select c.cnt, case when m.nr_manuals = 0 then 0.0 else (c.cnt * 1.0 / m.nr_manuals) end as ratio
+    from (
+        select count(*) as cnt
+        from ManuallyVerifiedRequirements m, ManualRequirements r
+        where m.req_id = r.id
+    ) as c, (
+        select count(*) as nr_manuals
+        from ManualRequirements
+    ) as m
+)
 select r.cnt as req_cnt, t.cnt as traced_cnt, case when r.cnt = 0 then 0.0 else (t.cnt * 1.0 / r.cnt) end as traced_ratio,
     c.cnt as covered_cnt, case when r.cnt = 0 then 0.0 else (c.cnt * 1.0 / r.cnt) end as covered_ratio,
     p.cnt as passed_cnt, case when r.cnt = 0 then 0.0 else (p.cnt * 1.0 / r.cnt) end as passed_ratio,
-    v.cnt as verified_cnt, case when r.cnt = 0 then 0.0 else (v.cnt * 1.0 / r.cnt) end as verified_ratio
-from NrRequirements r, NrTraced t, NrCovered c, NrPassed p, NrVerified v;
+    v.cnt as verified_cnt, v.ratio as verified_ratio
+from NrRequirements r, NrTraced t, NrCovered c, NrPassed p, VerifiedOverview v;
 
 create view LeafChildOverview as
 with NrLeafs(id, cnt) as (

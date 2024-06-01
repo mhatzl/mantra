@@ -350,7 +350,7 @@
                     <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Manually verified requirements:</strong> {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Manual requirements verified:</strong> {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
             </ul>
 
@@ -491,6 +491,11 @@
                                 {% if req.verified_info | length > 0 %}
                                 <tr>
                                     <td class="verified txt-center">verified</td>
+                                    <td></td>
+                                </tr>
+                                {% elif req.manual %}
+                                <tr>
+                                    <td class="unverified txt-center">unverified</td>
                                     <td></td>
                                 </tr>
                                 {% endif %}
