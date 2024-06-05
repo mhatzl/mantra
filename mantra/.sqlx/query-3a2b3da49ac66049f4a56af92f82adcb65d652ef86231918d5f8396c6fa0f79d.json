@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "select * from RequirementCoverageOverview",
+  "query": "select\n                req_cnt,\n                traced_cnt,\n                traced_ratio,\n                covered_cnt,\n                covered_ratio,\n                passed_cnt,\n                passed_ratio,\n                verified_cnt as \"verified_cnt?: i32\",\n                verified_ratio\n             from RequirementCoverageOverview",
   "describe": {
     "columns": [
       {
@@ -39,9 +39,9 @@
         "type_info": "Float"
       },
       {
-        "name": "verified_cnt",
+        "name": "verified_cnt?: i32",
         "ordinal": 7,
-        "type_info": "Int"
+        "type_info": "Null"
       },
       {
         "name": "verified_ratio",
@@ -64,5 +64,5 @@
       null
     ]
   },
-  "hash": "c73780b81cd1b583f16e1ea32a39b94b6e650a56e8e7ba494379bb7583b280bc"
+  "hash": "3a2b3da49ac66049f4a56af92f82adcb65d652ef86231918d5f8396c6fa0f79d"
 }

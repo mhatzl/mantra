@@ -429,7 +429,9 @@ NrCovered(cnt) as (select count(*) from CoveredRequirements),
 NrPassed(cnt) as (select count(*) from PassedCoveredRequirements),
 VerifiedOverview(cnt, ratio) as (
     -- Only consider manual requirements for verified cnt and ratio
-    select c.cnt, case when m.nr_manuals = 0 then 0.0 else (c.cnt * 1.0 / m.nr_manuals) end as ratio
+    select 
+        case when m.nr_manuals = 0 then null else c.cnt end as cnt,
+        case when m.nr_manuals = 0 then 0.0 else (c.cnt * 1.0 / m.nr_manuals) end as ratio
     from (
         select count(*) as cnt
         from ManuallyVerifiedRequirements m, ManualRequirements r

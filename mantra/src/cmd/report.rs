@@ -247,16 +247,28 @@ pub struct RequirementsOverview {
     pub covered_ratio: f64,
     pub passed_cnt: i32,
     pub passed_ratio: f64,
-    pub verified_cnt: i32,
+    pub verified_cnt: Option<i32>,
     pub verified_ratio: f64,
 }
 
 impl RequirementsOverview {
     pub async fn try_from(db: &MantraDb) -> Result<Self, ReportError> {
-        let record = sqlx::query!("select * from RequirementCoverageOverview")
-            .fetch_one(db.pool())
-            .await
-            .map_err(ReportError::Db)?;
+        let record = sqlx::query!(
+            r#"select
+                req_cnt,
+                traced_cnt,
+                traced_ratio,
+                covered_cnt,
+                covered_ratio,
+                passed_cnt,
+                passed_ratio,
+                verified_cnt as "verified_cnt?: i32",
+                verified_ratio
+             from RequirementCoverageOverview"#
+        )
+        .fetch_one(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
 
         Ok(Self {
             req_cnt: record.req_cnt.unwrap_or_default(),
@@ -266,7 +278,7 @@ impl RequirementsOverview {
             covered_ratio: record.covered_ratio.unwrap_or_default(),
             passed_cnt: record.passed_cnt.unwrap_or_default(),
             passed_ratio: record.passed_ratio.unwrap_or_default(),
-            verified_cnt: record.verified_cnt.unwrap_or_default(),
+            verified_cnt: record.verified_cnt,
             verified_ratio: record.verified_ratio.unwrap_or_default(),
         })
     }

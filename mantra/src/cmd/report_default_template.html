@@ -350,7 +350,13 @@
                     <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Manual requirements verified:</strong> {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Manual requirements verified:</strong>
+                        {% if overview.verified_cnt %}
+                        {{ overview.verified_cnt }} ({{ overview.verified_ratio * 100 | round(precision = 2) }}%)
+                        {% else %}
+                        -
+                        {% endif %}
+                    </p>
                 </li>
             </ul>
 
