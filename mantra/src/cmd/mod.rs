@@ -7,8 +7,8 @@ use self::report::ReportConfig;
 
 pub mod analyze;
 pub mod coverage;
-pub mod extract;
 pub mod report;
+pub mod requirements;
 pub mod review;
 pub mod trace;
 
@@ -20,9 +20,11 @@ time::serde::format_description!(review_date_format, PrimitiveDateTime, REVIEW_D
 
 #[derive(Debug, Clone, clap::Subcommand)]
 pub enum Cmd {
-    Trace(trace::Config),
-    Extract(extract::Config),
-    Coverage(coverage::CliConfig),
+    #[command(subcommand)]
+    Trace(trace::TraceKind),
+    #[command(subcommand)]
+    Requirements(requirements::Format),
+    Coverage(coverage::Config),
     /// Delete requirements and traces that have not been added or updated
     /// with the latest `extract` or `trace` command.
     DeleteOld(DeleteOldConfig),

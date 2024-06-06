@@ -1,11 +1,14 @@
 -- requirements that may be traced.
 -- generation is used to show changes for "--dry-run" and to delete non-existing requirements.
--- annotation might be "manual" or "deprecated"
+-- annotation might be custom JSON data
 create table Requirements (
     id text not null primary key,
     generation integer not null,
-    origin text not null,
-    annotation text
+    title text not null,
+    link text not null,
+    annotation text,
+    manual bool not null,
+    deprecated bool not null
 );
 
 -- hierarchy
@@ -137,7 +140,7 @@ from LeafRequirements;
 create view DeprecatedRequirements as
 with MarkedDeprecated(id) as (
     select id from Requirements
-    where lower(annotation) = 'deprecated'
+    where deprecated = true
 ),
 ParentMarkedDeprecated(id) as (
     select rc.child_id
@@ -155,7 +158,7 @@ from Deprecated d;
 create view ManualRequirements as
 with MarkedManual(id) as (
     select id from Requirements
-    where lower(annotation) = 'manual'
+    where manual = true
 ),
 ParentMarkedManual(id) as (
     select rc.child_id

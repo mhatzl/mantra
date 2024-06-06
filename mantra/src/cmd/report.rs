@@ -1,11 +1,10 @@
 use std::{collections::HashSet, path::PathBuf};
 
+use mantra_lang_tracing::ReqId;
+use mantra_schema::requirements::Requirement;
 use time::{OffsetDateTime, PrimitiveDateTime};
 
-use crate::{
-    cmd::review::VerifiedRequirement,
-    db::{MantraDb, RequirementOrigin},
-};
+use crate::{cmd::review::VerifiedRequirement, db::MantraDb};
 
 use super::{coverage::iso8601_str_to_offsetdatetime, review::Review};
 
@@ -34,6 +33,8 @@ pub struct ReportConfig {
     pub formats: Vec<ReportFormat>,
     #[command(flatten)]
     pub project: Project,
+    #[command(flatten)]
+    pub tag: Tag,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
@@ -44,6 +45,14 @@ pub struct Project {
     pub project_version: Option<String>,
     #[arg(long)]
     pub project_link: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
+pub struct Tag {
+    #[arg(long = "tag-name")]
+    pub name: Option<String>,
+    #[arg(long = "tag-link")]
+    pub link: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, clap::ValueEnum)]
@@ -78,12 +87,12 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
                         let template_content = tokio::fs::read_to_string(template)
                             .await
                             .map_err(|_| ReportError::Template)?;
-                        create_tera_report(db, &cfg.project, &template_content).await?
+                        create_tera_report(db, &cfg.project, &cfg.tag, &template_content).await?
                     }
                     None => {
                         let template_content =
                             include_str!("report_default_template.html").to_string();
-                        create_tera_report(db, &cfg.project, &template_content).await?
+                        create_tera_report(db, &cfg.project, &cfg.tag, &template_content).await?
                     }
                 };
 
@@ -93,7 +102,7 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
             }
             ReportFormat::Json => {
                 filepath.set_extension("json");
-                let report = create_json_report(db, &cfg.project).await?;
+                let report = create_json_report(db, &cfg.project, &cfg.tag).await?;
 
                 tokio::fs::write(&filepath, report)
                     .await
@@ -108,21 +117,27 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
 pub async fn create_tera_report(
     db: &MantraDb,
     project: &Project,
+    tag: &Tag,
     template: &str,
 ) -> Result<String, ReportError> {
-    let context = tera::Context::from_serialize(ReportContext::try_from(db, project).await?)
+    let context = tera::Context::from_serialize(ReportContext::try_from(db, project, tag).await?)
         .map_err(|_| ReportError::Tera)?;
     tera::Tera::one_off(template, &context, true).map_err(|_| ReportError::Tera)
 }
 
-pub async fn create_json_report(db: &MantraDb, project: &Project) -> Result<String, ReportError> {
-    let report = ReportContext::try_from(db, project).await?;
+pub async fn create_json_report(
+    db: &MantraDb,
+    project: &Project,
+    tag: &Tag,
+) -> Result<String, ReportError> {
+    let report = ReportContext::try_from(db, project, tag).await?;
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ReportContext {
     pub project: Project,
+    pub tag: Tag,
     pub overview: RequirementsOverview,
     pub requirements: Vec<RequirementInfo>,
     pub tests: TestStatistics,
@@ -138,7 +153,11 @@ pub struct ReportContext {
 }
 
 impl ReportContext {
-    pub async fn try_from(db: &MantraDb, project: &Project) -> Result<Self, ReportError> {
+    pub async fn try_from(
+        db: &MantraDb,
+        project: &Project,
+        tag: &Tag,
+    ) -> Result<Self, ReportError> {
         let overview = RequirementsOverview::try_from(db).await?;
 
         let req_records = sqlx::query!("select id from Requirements order by id")
@@ -192,6 +211,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
 
         Ok(Self {
             project: project.clone(),
+            tag: tag.clone(),
             overview,
             requirements,
             tests,
@@ -286,14 +306,11 @@ impl RequirementsOverview {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RequirementInfo {
-    pub id: String,
-    pub origin: RequirementOrigin,
-    pub annotation: Option<String>,
+    #[serde(flatten)]
+    pub meta: Requirement,
     pub parent: Option<String>,
     pub direct_children: Vec<String>,
     pub leaf_statistic: Option<LeafChildrenStatistic>,
-    pub deprecated: bool,
-    pub manual: bool,
     pub trace_info: RequirementTraceInfo,
     pub test_coverage_info: RequirementTestCoverageInfo,
     pub verified_info: Vec<VerifiedRequirementInfo>,
@@ -301,13 +318,14 @@ pub struct RequirementInfo {
 }
 
 impl RequirementInfo {
-    pub async fn try_from(db: &MantraDb, id: impl Into<String>) -> Result<Self, ReportError> {
-        let id: String = id.into();
+    pub async fn try_from(db: &MantraDb, id: impl Into<ReqId>) -> Result<Self, ReportError> {
+        let id: ReqId = id.into();
 
         // get base info
         let record = sqlx::query!(r#"
             select 
-                origin,
+                title,
+                link,
                 annotation,
                 case when id in (select id from DeprecatedRequirements) then true else false end as "deprecated!: bool",
                 case when id in (select id from ManualRequirements) then true else false end as "manual!: bool"
@@ -315,8 +333,11 @@ impl RequirementInfo {
             where id = $1
         "#, id).fetch_one(db.pool()).await.map_err(ReportError::Db)?;
 
-        let origin = serde_json::from_str(&record.origin).expect("Origin was serialized into db.");
-        let annotation = record.annotation;
+        let title = record.title;
+        let link = record.link;
+        let annotation = record
+            .annotation
+            .map(|a| serde_json::to_value(a).expect("Requirement annotation must be valid JSON."));
         let deprecated = record.deprecated;
         let manual = record.manual;
 
@@ -392,14 +413,17 @@ impl RequirementInfo {
         .is_none();
 
         Ok(Self {
-            id,
-            origin,
-            annotation,
+            meta: Requirement {
+                id,
+                title,
+                link,
+                manual,
+                deprecated,
+                annotation,
+            },
             parent,
             direct_children: children,
             leaf_statistic,
-            deprecated,
-            manual,
             trace_info,
             test_coverage_info,
             verified_info,

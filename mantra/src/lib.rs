@@ -1,6 +1,6 @@
 use cmd::{
-    coverage::CoverageError, extract::ExtractError, report::ReportError, review::ReviewError,
-    trace::TraceError,
+    coverage::CoverageError, report::ReportError, requirements::RequirementsError,
+    review::ReviewError, trace::TraceError,
 };
 use db::DbError;
 
@@ -16,7 +16,7 @@ pub enum MantraError {
     #[error("Failed to update trace data. Cause: {}", .0)]
     Trace(TraceError),
     #[error("Failed to extract requirements. Cause: {}", .0)]
-    Extract(ExtractError),
+    Extract(RequirementsError),
     #[error("Failed to add a new project. Cause: {}", .0)]
     AddProject(DbError),
     #[error("Failed to update coverage data. Cause: {}", .0)]
@@ -41,8 +41,8 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         .map_err(MantraError::DbSetup)?;
 
     match cfg.cmd {
-        cmd::Cmd::Trace(trace_cfg) => {
-            let changes = cmd::trace::trace(&db, &trace_cfg)
+        cmd::Cmd::Trace(trace_kind) => {
+            let changes = cmd::trace::collect(&db, trace_kind)
                 .await
                 .map_err(MantraError::Trace)?;
 
@@ -50,8 +50,8 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
 
             Ok(())
         }
-        cmd::Cmd::Extract(extract_cfg) => {
-            let changes = cmd::extract::extract(&db, &extract_cfg)
+        cmd::Cmd::Requirements(extract_cfg) => {
+            let changes = cmd::requirements::collect(&db, &extract_cfg)
                 .await
                 .map_err(MantraError::Extract)?;
 
@@ -60,7 +60,7 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             Ok(())
         }
         cmd::Cmd::Coverage(coverage_cfg) => {
-            cmd::coverage::coverage_from_path(&coverage_cfg.data_file, &db, &coverage_cfg.cfg)
+            cmd::coverage::collect_from_path(&coverage_cfg.data_file, &db)
                 .await
                 .map_err(MantraError::Coverage)
         }
@@ -88,7 +88,7 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             .await
             .map_err(MantraError::Report),
         cmd::Cmd::Review(review_cfg) => {
-            let added_review_cnt = cmd::review::review(&db, review_cfg)
+            let added_review_cnt = cmd::review::collect(&db, review_cfg)
                 .await
                 .map_err(MantraError::Review)?;
 
