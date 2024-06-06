@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::PathBuf};
 
 use mantra_lang_tracing::ReqId;
-use mantra_schema::requirements::Requirement;
+use mantra_schema::{coverage::TestState, requirements::Requirement};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::{cmd::review::VerifiedRequirement, db::MantraDb};
@@ -757,7 +757,8 @@ pub struct TestRunInfo {
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
     pub date: OffsetDateTime,
-    pub logs: Option<String>,
+    pub meta: Option<serde_json::Value>,
+    pub log_file: Option<PathBuf>,
     pub tests: Vec<TestInfo>,
 }
 
@@ -843,7 +844,7 @@ impl TestRunInfo {
 
         let record = sqlx::query!(
             r#"
-            select logs from TestRuns
+            select meta, log_file from TestRuns
             where name = $1 and date = $2
             "#,
             name,
@@ -853,13 +854,17 @@ impl TestRunInfo {
         .await
         .map_err(ReportError::Db)?;
 
-        let logs = record.logs;
+        let log_file = record.log_file.map(PathBuf::from);
+        let meta = record
+            .meta
+            .map(|m| serde_json::from_str(&m).expect("Test run meta data must be valid JSON."));
 
         Ok(Self {
             overview,
             name,
             date,
-            logs,
+            meta,
+            log_file,
             tests: test_info,
         })
     }
@@ -917,13 +922,6 @@ pub struct TestInfo {
     pub filepath: PathBuf,
     pub line: u32,
     pub state: TestState,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub enum TestState {
-    Passed,
-    Failed,
-    Skipped { reason: Option<String> },
 }
 
 impl Review {

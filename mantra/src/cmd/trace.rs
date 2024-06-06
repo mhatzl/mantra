@@ -16,7 +16,7 @@ pub enum TraceKind {
 pub struct SourceConfig {
     pub root: PathBuf,
     #[arg(long)]
-    pub keep_root_absolute: bool,
+    pub keep_path_absolute: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -62,12 +62,7 @@ pub async fn trace_from_schema(
 
     for file_traces in &schema.traces {
         let mut trace_changes = db
-            .add_traces(
-                &file_traces.filepath,
-                None,
-                &file_traces.traces,
-                new_generation,
-            )
+            .add_traces(&file_traces.filepath, &file_traces.traces, new_generation)
             .await
             .map_err(TraceError::DbError)?;
 
@@ -81,12 +76,6 @@ pub async fn trace_from_source(
     db: &MantraDb,
     cfg: &SourceConfig,
 ) -> Result<TraceChanges, TraceError> {
-    let root_path = if cfg.keep_root_absolute {
-        None
-    } else {
-        Some(cfg.root.as_path())
-    };
-
     let old_generation = db.max_trace_generation().await;
     let new_generation = old_generation + 1;
 
@@ -118,10 +107,18 @@ pub async fn trace_from_source(
                 .is_file()
             {
                 if let Some(traces) = collect_traces(dir_entry.path())? {
+                    let filepath = if cfg.keep_path_absolute {
+                        mantra_lang_tracing::path::make_relative(dir_entry.path(), &cfg.root)
+                            .unwrap_or(dir_entry.into_path())
+                    } else {
+                        dir_entry.into_path()
+                    };
+
                     let mut trace_changes = db
-                        .add_traces(dir_entry.path(), root_path, &traces, new_generation)
+                        .add_traces(&filepath, &traces, new_generation)
                         .await
                         .map_err(TraceError::DbError)?;
+
                     changes.merge(&mut trace_changes);
                 }
             }
@@ -129,7 +126,14 @@ pub async fn trace_from_source(
 
         Ok(changes)
     } else if let Some(traces) = collect_traces(&cfg.root)? {
-        db.add_traces(&cfg.root, root_path, &traces, new_generation)
+        let filepath = if cfg.keep_path_absolute {
+            mantra_lang_tracing::path::make_relative(&cfg.root, &cfg.root)
+                .unwrap_or(cfg.root.to_path_buf())
+        } else {
+            cfg.root.to_path_buf()
+        };
+
+        db.add_traces(&filepath, &traces, new_generation)
             .await
             .map_err(TraceError::DbError)
     } else {

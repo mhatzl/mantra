@@ -47,8 +47,9 @@ create table TraceSpans (
 create table TestRuns (
     name text not null,
     date text not null,
-    nr_of_tests integer,
-    logs text,
+    nr_of_tests integer not null,
+    meta text,
+    log_file text,
     primary key (name, date)
 );
 
@@ -61,7 +62,7 @@ create table Tests (
     name text not null,
     filepath text not null,
     line integer not null,
-    passed integer,
+    passed integer not null,
     primary key (test_run_name, test_run_date, name),
     foreign key (test_run_name, test_run_date) references TestRuns(name, date) on delete cascade
 );

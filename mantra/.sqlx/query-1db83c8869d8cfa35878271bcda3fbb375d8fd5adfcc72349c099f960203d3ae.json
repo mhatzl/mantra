@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select meta, log_file from TestRuns\n            where name = $1 and date = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "meta",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "log_file",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "1db83c8869d8cfa35878271bcda3fbb375d8fd5adfcc72349c099f960203d3ae"
+}

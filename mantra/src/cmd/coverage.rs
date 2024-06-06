@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use mantra_schema::coverage::CoverageSchema;
+use mantra_schema::coverage::{CoverageSchema, TestRunPk};
 use time::OffsetDateTime;
 
 use crate::db::{DbError, MantraDb};
@@ -10,13 +10,6 @@ pub struct Config {
     /// File containing coverage data according to the *mantra* CoverageSchema.
     /// The file format may either be JSON or TOML.
     pub data_file: PathBuf,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
-pub struct TestRunConfig {
-    pub name: String,
-    #[serde(serialize_with = "time::serde::iso8601::serialize")]
-    pub date: time::OffsetDateTime,
 }
 
 pub fn iso8601_str_to_offsetdatetime(time_str: &str) -> OffsetDateTime {
@@ -53,38 +46,36 @@ pub async fn collect_from_str(data: &str, db: &MantraDb) -> Result<(), CoverageE
         serde_json::from_str::<CoverageSchema>(data).map_err(CoverageError::Deserialize)?;
 
     for test_run in coverage.test_runs {
-        let run = TestRunConfig {
+        db.add_test_run(
+            &test_run.name,
+            &test_run.date,
+            test_run.nr_of_tests,
+            test_run.meta,
+            test_run.log_file,
+        )
+        .await
+        .map_err(CoverageError::Db)?;
+
+        let test_run_pk = TestRunPk {
             name: test_run.name,
             date: test_run.date,
         };
 
-        db.add_test_run(&run, &test_run.logs.display().to_string())
+        for test in test_run.tests {
+            db.add_test(
+                &test_run_pk,
+                &test.name,
+                &test.filepath,
+                test.line,
+                test.state,
+            )
             .await
             .map_err(CoverageError::Db)?;
-
-        for test in test_run.tests {
-            match test.state {
-                mantra_schema::coverage::TestState::Passed => {
-                    db.add_test(&run, &test.name, &test.filepath, test.line, Some(true))
-                        .await
-                        .map_err(CoverageError::Db)?;
-                }
-                mantra_schema::coverage::TestState::Failed => {
-                    db.add_test(&run, &test.name, &test.filepath, test.line, Some(false))
-                        .await
-                        .map_err(CoverageError::Db)?;
-                }
-                mantra_schema::coverage::TestState::Skipped { reason } => {
-                    db.add_skipped_test(&run, &test.name, &test.filepath, test.line, reason)
-                        .await
-                        .map_err(CoverageError::Db)?;
-                }
-            }
 
             for coverage in test.covered_traces {
                 let db_result = db
                     .add_coverage(
-                        &run,
+                        &test_run_pk,
                         &test.name,
                         &coverage.filepath,
                         coverage.line,
