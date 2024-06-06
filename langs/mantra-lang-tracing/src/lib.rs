@@ -4,9 +4,11 @@ use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use regex::Regex;
 use tree_sitter::{Language, Node, Parser, Tree};
 
+pub mod path;
+
 pub type ReqId = String;
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct LineSpan {
     start: u32,
     end: u32,
@@ -25,7 +27,7 @@ impl LineSpan {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TraceEntry {
     ids: Vec<ReqId>,
     /// The line the trace is defined

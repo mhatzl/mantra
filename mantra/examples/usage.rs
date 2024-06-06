@@ -29,7 +29,7 @@ async fn main() {
         cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::TraceKind::FromSource(
             mantra::cmd::trace::SourceConfig {
                 root,
-                keep_root_absolute: false,
+                keep_path_absolute: false,
             },
         )),
     };

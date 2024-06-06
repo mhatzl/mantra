@@ -1,15 +1,17 @@
 use std::path::{Path, PathBuf};
 
 use mantra_lang_tracing::TraceEntry;
-use mantra_schema::{requirements::Requirement, reviews::ReviewSchema};
+use mantra_schema::{
+    coverage::{TestRunPk, TestState},
+    requirements::Requirement,
+    reviews::ReviewSchema,
+    traces::TracePk,
+};
 use sqlx::Pool;
 
 pub use sqlx;
 
-use crate::{
-    cfg::{DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig, DeleteTracesConfig},
-    cmd::coverage::TestRunConfig,
-};
+use crate::cfg::{DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig, DeleteTracesConfig};
 
 pub type DB = sqlx::sqlite::Sqlite;
 
@@ -18,30 +20,11 @@ pub struct MantraDb {
     pool: Pool<DB>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Trace {
-    req_id: String,
-    filepath: PathBuf,
-    line: u32,
-}
-
-impl std::fmt::Display for Trace {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "id=`{}`, file='{}', line='{}'",
-            self.req_id,
-            self.filepath.display(),
-            self.line
-        )
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct DeletedTraces(Vec<Trace>);
+pub struct DeletedTraces(Vec<TracePk>);
 
 impl std::ops::Deref for DeletedTraces {
-    type Target = Vec<Trace>;
+    type Target = Vec<TracePk>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -71,7 +54,7 @@ impl std::fmt::Display for DeletedTraces {
 
 #[derive(Debug, Default, Clone)]
 pub struct TraceChanges {
-    pub inserted: Vec<Trace>,
+    pub inserted: Vec<TracePk>,
     pub unchanged_cnt: usize,
     pub new_generation: i64,
 }
@@ -101,13 +84,6 @@ impl std::fmt::Display for TraceChanges {
         Ok(())
     }
 }
-
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct Requirement {
-//     pub id: String,
-//     pub origin: sqlx::types::Json<RequirementOrigin>,
-//     pub annotation: Option<String>,
-// }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DeletedRequirements(Vec<Requirement>);
@@ -183,19 +159,6 @@ impl std::fmt::Display for RequirementChanges {
     }
 }
 
-// #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-// pub enum RequirementOrigin {
-//     GitHub(GitHubReqOrigin),
-//     Jira(String),
-// }
-
-// #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-// pub struct GitHubReqOrigin {
-//     pub link: String,
-//     pub path: PathBuf,
-//     pub line: usize,
-// }
-
 #[derive(Debug, Clone, clap::Args)]
 #[group(id = "db")]
 pub struct Config {
@@ -208,13 +171,11 @@ pub struct Config {
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum DbError {
     #[error("Could not get connection to database. Cause: {}", .0)]
-    Connection(String),
+    Connect(String),
     #[error("Could not run migration on database. Cause: {}", .0)]
-    Migration(String),
+    Migrate(String),
     #[error("Could not insert data into database. Cause: {}", .0)]
-    Insertion(String),
-    #[error("Failed to make filepath relative to root. Cause: {}", .0)]
-    RelativeFilepath(String),
+    Insert(String),
     #[error("Failed to delete table content. Cause: {}", .0)]
     Delete(String),
     #[error("Failed to update table content. Cause: {}", .0)]
@@ -235,12 +196,12 @@ impl MantraDb {
             .unwrap_or("sqlite://mantra.db?mode=rwc".to_string());
         let pool = Pool::<DB>::connect(&url)
             .await
-            .map_err(|err| DbError::Connection(err.to_string()))?;
+            .map_err(|err| DbError::Connect(err.to_string()))?;
 
         MIGRATOR
             .run(&pool)
             .await
-            .map_err(|err| DbError::Migration(err.to_string()))?;
+            .map_err(|err| DbError::Migrate(err.to_string()))?;
 
         Ok(Self { pool })
     }
@@ -328,7 +289,7 @@ impl MantraDb {
                 } else {
                     self.get_req_parent(parent)
                         .await
-                        .ok_or(DbError::Insertion(format!(
+                        .ok_or(DbError::Insert(format!(
                             "Parent is missing for child='{}'.",
                             req.id
                         )))?
@@ -343,7 +304,7 @@ impl MantraDb {
                 .await;
 
                 if let Err(err) = res {
-                    return Err(DbError::Insertion(format!(
+                    return Err(DbError::Insert(format!(
                         "Adding requirement hierarchy for parent='{}' and child='{}' failed with error: {}",
                         existing_parent, req.id, err
                     )));
@@ -428,7 +389,6 @@ impl MantraDb {
     pub async fn add_traces(
         &self,
         filepath: &Path,
-        root: Option<&Path>,
         traces: &[TraceEntry],
         new_generation: i64,
     ) -> Result<TraceChanges, DbError> {
@@ -437,13 +397,7 @@ impl MantraDb {
             ..Default::default()
         };
 
-        let file = if let Some(root_path) = root {
-            get_relative_path(root_path, filepath)?
-                .display()
-                .to_string()
-        } else {
-            filepath.display().to_string()
-        };
+        let file = filepath.display().to_string();
 
         for trace in traces {
             let ids = trace.ids();
@@ -487,7 +441,7 @@ impl MantraDb {
                                 id, file, line, err);
                         }
                     } else {
-                        changes.inserted.push(Trace{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
+                        changes.inserted.push(TracePk{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
 
                         if let Some(span) = line_span {
                             let start = span.start();
@@ -540,7 +494,7 @@ impl MantraDb {
         .await
         {
             for old_trace in old_traces {
-                deleted_traces.push(Trace {
+                deleted_traces.push(TracePk {
                     req_id: old_trace.req_id,
                     filepath: PathBuf::from(old_trace.filepath),
                     line: old_trace.line.try_into().expect("Line must be u32."),
@@ -561,7 +515,7 @@ impl MantraDb {
 
     pub async fn add_coverage(
         &self,
-        test_run: &TestRunConfig,
+        test_run: &TestRunPk,
         test_name: &str,
         trace_filepath: &Path,
         trace_line: u32,
@@ -590,7 +544,7 @@ impl MantraDb {
         }
 
         query_result.map_err(|err| {
-                DbError::Insertion(format!(
+                DbError::Insert(format!(
                     "Adding coverage for id='{}', test-run='{}' at {}, test='{}', file='{}', line='{}' failed with error: {}",
                     req_id, test_run.name, test_run.date, test_name, file, trace_line, err
                 ))
@@ -601,129 +555,143 @@ impl MantraDb {
 
     pub async fn add_test(
         &self,
-        test_run: &TestRunConfig,
+        test_run: &TestRunPk,
         name: &str,
         filepath: &Path,
         line: u32,
-        passed: Option<bool>,
+        state: TestState,
     ) -> Result<(), DbError> {
         let file = filepath.display().to_string();
-        let _ = sqlx::query!(
-                "insert or ignore into Tests (name, test_run_name, test_run_date, filepath, line, passed) values ($1, $2, $3, $4, $5, $6)",
-                name,
-                test_run.name,
-                test_run.date,
-                file,
-                line,
-                passed,
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| {
-                DbError::Insertion(format!(
-                    "Adding test for test='{}', test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
-                    name, test_run.name, test_run.date, file, line, err
-                ))
-            })?;
+
+        match state {
+            TestState::Passed | TestState::Failed => {
+                let passed = state == TestState::Passed;
+
+                let _ = sqlx::query!(
+                    "insert or ignore into Tests (name, test_run_name, test_run_date, filepath, line, passed) values ($1, $2, $3, $4, $5, $6)",
+                    name,
+                    test_run.name,
+                    test_run.date,
+                    file,
+                    line,
+                    passed,
+                )
+                .execute(&self.pool)
+                .await
+                .map_err(|err| {
+                    DbError::Insert(format!(
+                        "Adding test for test='{}', test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
+                        name, test_run.name, test_run.date, file, line, err
+                    ))
+                })?;
+            }
+            TestState::Skipped { reason } => {
+                let file = filepath.display().to_string();
+                sqlx::query!(
+                        "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
+                        name,
+                        test_run.name,
+                        test_run.date,
+                        file,
+                        line,
+                        reason,
+                    )
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|err| {
+                        DbError::Insert(format!(
+                            "Adding skipped test '{}' for test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
+                            name, test_run.name, test_run.date, file, line, err
+                        ))
+                    })?;
+            }
+        }
 
         Ok(())
     }
 
-    pub async fn test_passed(&self, test_run: &TestRunConfig, name: &str) -> Result<(), DbError> {
-        let _ = sqlx::query!(
-            "update Tests set passed = $1 where name = $2 and test_run_name = $3 and test_run_date = $4",
-            Some(true),
-            name,
-            test_run.name,
-            test_run.date,
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|err| {
-            DbError::Update(format!(
-                "Could not set 'passed = true' for test='{}' in test-run='{}' at {}. Cause: {}",
-                name, test_run.name, test_run.date, err
-            ))
-        })?;
+    // pub async fn add_skipped_test(
+    //     &self,
+    //     test_run: &TestRunConfig,
+    //     name: &str,
+    //     filepath: &Path,
+    //     line: u32,
+    //     reason: Option<String>,
+    // ) -> Result<(), DbError> {
+    //     let file = filepath.display().to_string();
+    //     sqlx::query!(
+    //             "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
+    //             name,
+    //             test_run.name,
+    //             test_run.date,
+    //             file,
+    //             line,
+    //             reason,
+    //         )
+    //         .execute(&self.pool)
+    //         .await
+    //         .map_err(|err| {
+    //             DbError::Insert(format!(
+    //                 "Adding skipped test '{}' for test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
+    //                 name, test_run.name, test_run.date, file, line, err
+    //             ))
+    //         })?;
 
-        Ok(())
-    }
-
-    pub async fn add_skipped_test(
-        &self,
-        test_run: &TestRunConfig,
-        name: &str,
-        filepath: &Path,
-        line: u32,
-        reason: Option<String>,
-    ) -> Result<(), DbError> {
-        let file = filepath.display().to_string();
-        sqlx::query!(
-                "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
-                name,
-                test_run.name,
-                test_run.date,
-                file,
-                line,
-                reason,
-            )
-            .execute(&self.pool)
-            .await
-            .map_err(|err| {
-                DbError::Insertion(format!(
-                    "Adding skipped test '{}' for test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
-                    name, test_run.name, test_run.date, file, line, err
-                ))
-            })?;
-
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub async fn add_test_run(
         &self,
-        test_run: &TestRunConfig,
-        ser_logs: &str,
-    ) -> Result<(), DbError> {
-        let _ = sqlx::query!(
-            "insert or ignore into TestRuns (name, date, logs) values ($1, $2, $3)",
-            test_run.name,
-            test_run.date,
-            ser_logs
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|err| {
-            DbError::Insertion(format!(
-                "Adding test-run with name='{}' and date='{}' failed with error: {}",
-                test_run.name, test_run.date, err
-            ))
-        })?;
-
-        Ok(())
-    }
-
-    pub async fn update_nr_of_tests(
-        &self,
-        test_run: &TestRunConfig,
+        name: &str,
+        date: &time::OffsetDateTime,
         nr_of_tests: u32,
+        meta: Option<serde_json::Value>,
+        log_file: Option<PathBuf>,
     ) -> Result<(), DbError> {
+        let log_file_str = log_file.map(|f| f.display().to_string());
+
         let _ = sqlx::query!(
-            "update TestRuns set nr_of_tests = $1 where name = $2 and date = $3 and nr_of_tests is null",
+            "insert or ignore into TestRuns (name, date, nr_of_tests, meta, log_file) values ($1, $2, $3, $4, $5)",
+            name,
+            date,
             nr_of_tests,
-            test_run.name,
-            test_run.date,
+            meta,
+            log_file_str,
         )
         .execute(&self.pool)
         .await
         .map_err(|err| {
-            DbError::Update(format!(
-                "Could not set 'nr_of_tests' for test-run='{}' at {}. Cause: {}",
-                test_run.name, test_run.date, err
+            DbError::Insert(format!(
+                "Adding test-run with name='{}' and date='{}' failed with error: {}",
+                name, date, err
             ))
         })?;
 
         Ok(())
     }
+
+    // pub async fn update_nr_of_tests(
+    //     &self,
+    //     test_run: &TestRunConfig,
+    //     nr_of_tests: u32,
+    // ) -> Result<(), DbError> {
+    //     let _ = sqlx::query!(
+    //         "update TestRuns set nr_of_tests = $1 where name = $2 and date = $3 and nr_of_tests is null",
+    //         nr_of_tests,
+    //         test_run.name,
+    //         test_run.date,
+    //     )
+    //     .execute(&self.pool)
+    //     .await
+    //     .map_err(|err| {
+    //         DbError::Update(format!(
+    //             "Could not set 'nr_of_tests' for test-run='{}' at {}. Cause: {}",
+    //             test_run.name, test_run.date, err
+    //         ))
+    //     })?;
+
+    //     Ok(())
+    // }
 
     pub async fn is_valid(&self) -> Result<(), DbError> {
         let record = sqlx::query!("select count(*) as invalid_cnt from InvalidRequirements")
@@ -871,7 +839,7 @@ impl MantraDb {
         )
         .execute(&self.pool)
         .await
-        .map_err(|err| DbError::Insertion(err.to_string()))?;
+        .map_err(|err| DbError::Insert(err.to_string()))?;
 
         for req in review.requirements {
             let res = sqlx::query!(
@@ -946,64 +914,5 @@ impl MantraDb {
             .map_err(|err| DbError::Delete(err.to_string()))?;
 
         Ok(())
-    }
-}
-
-pub fn get_relative_path(root: &Path, filepath: &Path) -> Result<PathBuf, DbError> {
-    if root == filepath {
-        match filepath.file_name() {
-            Some(filename) => {
-                return Ok(PathBuf::from(filename));
-            }
-            None => {
-                return Err(DbError::RelativeFilepath(format!(
-                    "Invalid filepath '{}' given relative to root path '{}'.",
-                    filepath.display(),
-                    root.display()
-                )))
-            }
-        }
-    }
-
-    match filepath.strip_prefix(root) {
-        Ok(relative_path) => Ok(relative_path.to_path_buf()),
-        Err(_) => Err(DbError::RelativeFilepath(format!(
-            "Root path '{}' is not the root of the given filepath '{}'.",
-            root.display(),
-            filepath.display()
-        ))),
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn valid_relative_filepath() {
-        let root = PathBuf::from("src/");
-        let filepath = PathBuf::from("src/cmd/mod.rs");
-
-        let relative_path = get_relative_path(&root, &filepath).unwrap();
-
-        assert_eq!(
-            relative_path,
-            PathBuf::from("cmd/mod.rs"),
-            "Relative filepath not extracted correctly."
-        )
-    }
-
-    #[test]
-    fn filepath_is_root() {
-        let root = PathBuf::from("src/main.rs");
-        let filepath = PathBuf::from("src/main.rs");
-
-        let relative_path = get_relative_path(&root, &filepath).unwrap();
-
-        assert_eq!(
-            relative_path,
-            PathBuf::from("main.rs"),
-            "Filename not used for root file."
-        )
     }
 }

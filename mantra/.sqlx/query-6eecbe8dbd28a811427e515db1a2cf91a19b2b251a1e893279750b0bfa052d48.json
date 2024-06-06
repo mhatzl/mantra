@@ -53,15 +53,15 @@
       "Right": 2
     },
     "nullable": [
-      true,
       false,
-      true,
       false,
-      true,
       false,
-      true,
       false,
-      true
+      false,
+      false,
+      false,
+      false,
+      false
     ]
   },
   "hash": "6eecbe8dbd28a811427e515db1a2cf91a19b2b251a1e893279750b0bfa052d48"
