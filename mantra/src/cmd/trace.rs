@@ -4,10 +4,16 @@ use crate::db::{MantraDb, TraceChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector, TraceEntry};
+use mantra_schema::traces::TraceSchema;
+
+#[derive(Debug, Clone, clap::Subcommand)]
+pub enum TraceKind {
+    FromSource(SourceConfig),
+    FromSchema { filepath: PathBuf },
+}
 
 #[derive(Debug, Clone, clap::Args)]
-#[group(id = "trace")]
-pub struct Config {
+pub struct SourceConfig {
     pub root: PathBuf,
     #[arg(long)]
     pub keep_root_absolute: bool,
@@ -19,9 +25,62 @@ pub enum TraceError {
     CouldNotAccessFile(String),
     #[error("{}", .0)]
     DbError(crate::db::DbError),
+    #[error("{}", .0)]
+    Deserialize(serde_json::Error),
 }
 
-pub async fn trace(db: &MantraDb, cfg: &Config) -> Result<TraceChanges, TraceError> {
+pub async fn collect(db: &MantraDb, kind: TraceKind) -> Result<TraceChanges, TraceError> {
+    match kind {
+        TraceKind::FromSource(source_cfg) => trace_from_source(db, &source_cfg).await,
+        TraceKind::FromSchema { filepath } => trace_from_schema_file(db, &filepath).await,
+    }
+}
+
+pub async fn trace_from_schema_file(
+    db: &MantraDb,
+    filepath: &Path,
+) -> Result<TraceChanges, TraceError> {
+    let content = tokio::fs::read_to_string(filepath)
+        .await
+        .map_err(|_| TraceError::CouldNotAccessFile(filepath.to_string_lossy().to_string()))?;
+    let schema = serde_json::from_str::<TraceSchema>(&content).map_err(TraceError::Deserialize)?;
+
+    trace_from_schema(db, &schema).await
+}
+
+pub async fn trace_from_schema(
+    db: &MantraDb,
+    schema: &TraceSchema,
+) -> Result<TraceChanges, TraceError> {
+    let old_generation = db.max_trace_generation().await;
+    let new_generation = old_generation + 1;
+
+    let mut changes = TraceChanges {
+        new_generation,
+        ..Default::default()
+    };
+
+    for file_traces in &schema.traces {
+        let mut trace_changes = db
+            .add_traces(
+                &file_traces.filepath,
+                None,
+                &file_traces.traces,
+                new_generation,
+            )
+            .await
+            .map_err(TraceError::DbError)?;
+
+        changes.merge(&mut trace_changes);
+    }
+
+    Ok(changes)
+}
+
+pub async fn trace_from_source(
+    db: &MantraDb,
+    cfg: &SourceConfig,
+) -> Result<TraceChanges, TraceError> {
     let root_path = if cfg.keep_root_absolute {
         None
     } else {

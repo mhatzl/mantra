@@ -6,7 +6,7 @@ members = [
     "langs/rust/mantra-rust-procm",
     "langs/rust/mantra-rust-macros",
     "langs/rust/mantra-rust-trace",
-    "langs/rust/examples/*",
+    "langs/rust/examples/*", "schema",
 ]
 
 [workspace.dependencies]

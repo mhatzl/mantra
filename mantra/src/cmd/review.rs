@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use mantra_lang_tracing::ReqId;
+use mantra_schema::reviews::ReviewSchema;
 use time::PrimitiveDateTime;
 
 use crate::db::{DbError, MantraDb};
@@ -36,7 +37,7 @@ pub struct ReviewConfig {
     pub reviews: Vec<PathBuf>,
 }
 
-pub async fn review(db: &MantraDb, cfg: ReviewConfig) -> Result<usize, ReviewError> {
+pub async fn collect(db: &MantraDb, cfg: ReviewConfig) -> Result<usize, ReviewError> {
     let mut review_cnt = 0;
 
     for review_file in &cfg.reviews {
@@ -53,7 +54,7 @@ pub async fn review(db: &MantraDb, cfg: ReviewConfig) -> Result<usize, ReviewErr
 
         let file_content = std::fs::read_to_string(review_file)
             .map_err(|_| ReviewError::ReadingFile(review_file.to_path_buf()))?;
-        let review: Review = toml::from_str(&file_content).map_err(|err| {
+        let review: ReviewSchema = toml::from_str(&file_content).map_err(|err| {
             log::error!(
                 "Failed parsing review file '{}': {}",
                 review_file.display(),
@@ -72,4 +73,8 @@ pub async fn review(db: &MantraDb, cfg: ReviewConfig) -> Result<usize, ReviewErr
     }
 
     Ok(review_cnt)
+}
+
+pub async fn collect_from_schema(db: &MantraDb, review: ReviewSchema) -> Result<(), ReviewError> {
+    db.add_review(review).await.map_err(ReviewError::Db)
 }

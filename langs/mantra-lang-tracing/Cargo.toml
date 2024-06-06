@@ -12,7 +12,8 @@ license.workspace = true
 proc-macro2.workspace = true
 regex.workspace = true
 tree-sitter.workspace = true
-tree-sitter-rust.workspace = true 
+tree-sitter-rust.workspace = true
+serde = { version = "1.0.197", features = ["derive"] }
 
 [build-dependencies]
 cc.workspace = true

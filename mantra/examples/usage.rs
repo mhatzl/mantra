@@ -16,28 +16,27 @@ async fn main() {
 
     let extract_cfg = mantra::cfg::Config {
         db: db.clone(),
-        cmd: mantra::cmd::Cmd::Extract(mantra::cmd::extract::Config {
-            root: root.clone(),
-            link: "https://github.com/mhatzl/mantra/tree/macros".to_string(),
-            origin: mantra::cmd::extract::ExtractOrigin::GitHub,
-            major_version: Some(0),
-        }),
+        cmd: mantra::cmd::Cmd::Requirements(mantra::cmd::requirements::Format::FromWiki(
+            mantra::cmd::requirements::WikiConfig {
+                root: root.clone(),
+                link: "https://github.com/mhatzl/mantra/tree/main".to_string(),
+                major_version: Some(0),
+            },
+        )),
     };
     let trace_cfg = mantra::cfg::Config {
         db: db.clone(),
-        cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::Config {
-            root,
-            keep_root_absolute: false,
-        }),
+        cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::TraceKind::FromSource(
+            mantra::cmd::trace::SourceConfig {
+                root,
+                keep_root_absolute: false,
+            },
+        )),
     };
     let coverage_cfg = mantra::cfg::Config {
         db: db.clone(),
-        cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::CliConfig {
-            data_file: PathBuf::from("mantra/examples/usage/defmt_test.log"),
-            cfg: mantra::cmd::coverage::Config {
-                test_run: "test-run".to_string(),
-                fmt: mantra::cmd::coverage::CoverageFormat::DefmtJson,
-            },
+        cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::Config {
+            data_file: PathBuf::from("mantra/examples/usage/coverage.json"),
         }),
     };
     let review_cfg = mantra::cfg::Config {
@@ -56,6 +55,10 @@ async fn main() {
                 project_name: Some("mantra".to_string()),
                 project_version: Some("1.0.1".to_string()),
                 project_link: Some("https://github.com/mhatzl/mantra".to_string()),
+            },
+            tag: mantra::cmd::report::Tag {
+                name: Some("0.1.0".to_string()),
+                link: Some("https://github.com/mhatzl/mantra-wiki".to_string()),
             },
         }),
     };

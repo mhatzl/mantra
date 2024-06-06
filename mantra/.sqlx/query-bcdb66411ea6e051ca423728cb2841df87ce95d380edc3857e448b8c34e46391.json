@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "select id, title, link, annotation, manual, deprecated from Requirements where generation < $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "link",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "annotation",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "manual",
+        "ordinal": 4,
+        "type_info": "Bool"
+      },
+      {
+        "name": "deprecated",
+        "ordinal": 5,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "bcdb66411ea6e051ca423728cb2841df87ce95d380edc3857e448b8c34e46391"
+}

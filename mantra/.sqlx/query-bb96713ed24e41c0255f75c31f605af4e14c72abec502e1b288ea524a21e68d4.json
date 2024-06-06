@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update Requirements set generation = $2, title = $3, link = $4, annotation = $5, manual = $6, deprecated = $7 where id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "bb96713ed24e41c0255f75c31f605af4e14c72abec502e1b288ea524a21e68d4"
+}

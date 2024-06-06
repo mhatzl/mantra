@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use mantra_lang_tracing::TraceEntry;
-use serde::{Deserialize, Serialize};
+use mantra_schema::{requirements::Requirement, reviews::ReviewSchema};
 use sqlx::Pool;
 
 pub use sqlx;
@@ -102,12 +102,12 @@ impl std::fmt::Display for TraceChanges {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Requirement {
-    pub id: String,
-    pub origin: sqlx::types::Json<RequirementOrigin>,
-    pub annotation: Option<String>,
-}
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub struct Requirement {
+//     pub id: String,
+//     pub origin: sqlx::types::Json<RequirementOrigin>,
+//     pub annotation: Option<String>,
+// }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DeletedRequirements(Vec<Requirement>);
@@ -183,18 +183,18 @@ impl std::fmt::Display for RequirementChanges {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub enum RequirementOrigin {
-    GitHub(GitHubReqOrigin),
-    Jira(String),
-}
+// #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+// pub enum RequirementOrigin {
+//     GitHub(GitHubReqOrigin),
+//     Jira(String),
+// }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct GitHubReqOrigin {
-    pub link: String,
-    pub path: PathBuf,
-    pub line: usize,
-}
+// #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+// pub struct GitHubReqOrigin {
+//     pub link: String,
+//     pub path: PathBuf,
+//     pub line: usize,
+// }
 
 #[derive(Debug, Clone, clap::Args)]
 #[group(id = "db")]
@@ -253,7 +253,7 @@ impl MantraDb {
 
         for req in &reqs {
             if let Ok(existing_record) = sqlx::query!(
-                "select id, origin, annotation from Requirements where id = $1",
+                "select id, title, link, annotation, manual, deprecated from Requirements where id = $1",
                 req.id
             )
             .fetch_one(&self.pool)
@@ -261,9 +261,12 @@ impl MantraDb {
             {
                 let existing_req = Requirement {
                     id: existing_record.id,
-                    origin: serde_json::from_str(&existing_record.origin)
-                        .expect("Origin was serialized before."),
-                    annotation: existing_record.annotation,
+                    title: existing_record.title,
+                    link: existing_record.link,
+                    annotation: existing_record.annotation.map(|a| serde_json::to_value(a)
+                        .expect("Requirement annotation must be valid JSON.")),
+                    manual: existing_record.manual,
+                    deprecated: existing_record.deprecated,
                 };
                 if req != &existing_req {
                     changes.updated.push(RequirementUpdate {
@@ -275,21 +278,27 @@ impl MantraDb {
                 }
 
                 let _ = sqlx::query!(
-                    "update Requirements set generation = $2, origin = $3, annotation = $4 where id = $1",
+                    "update Requirements set generation = $2, title = $3, link = $4, annotation = $5, manual = $6, deprecated = $7 where id = $1",
                     req.id,
                     new_generation,
-                    req.origin,
+                    req.title,
+                    req.link,
                     req.annotation,
+                    req.manual,
+                    req.deprecated,
                 )
                 .execute(&self.pool)
                 .await;
             } else {
                 let res = sqlx::query!(
-                    "insert into Requirements (id, generation, origin, annotation) values ($1, $2, $3, $4)",
+                    "insert into Requirements (id, generation, title, link, annotation, manual, deprecated) values ($1, $2, $3, $4, $5, $6, $7)",
                     req.id,
                     new_generation,
-                    req.origin,
+                    req.title,
+                    req.link,
                     req.annotation,
+                    req.manual,
+                    req.deprecated,
                 )
                 .execute(&self.pool)
                 .await;
@@ -352,7 +361,7 @@ impl MantraDb {
         let mut deleted = DeletedRequirements::default();
 
         if let Ok(old_reqs) = sqlx::query!(
-            "select id, origin, annotation from Requirements where generation < $1",
+            "select id, title, link, annotation, manual, deprecated from Requirements where generation < $1",
             before
         )
         .fetch_all(&self.pool)
@@ -361,9 +370,12 @@ impl MantraDb {
             for old_req in old_reqs {
                 deleted.push(Requirement {
                     id: old_req.id,
-                    origin: serde_json::from_str(&old_req.origin)
-                        .expect("Origin was serialized before."),
-                    annotation: old_req.annotation,
+                    title: old_req.title,
+                    link: old_req.link,
+                    annotation: old_req.annotation.map(|a| serde_json::to_value(a)
+                        .expect("Requirement annotation must be valid JSON.")),
+                    manual: old_req.manual,
+                    deprecated: old_req.deprecated,
                 })
             }
         }
@@ -849,7 +861,7 @@ impl MantraDb {
         Ok(())
     }
 
-    pub async fn add_review(&self, review: crate::cmd::review::Review) -> Result<(), DbError> {
+    pub async fn add_review(&self, review: ReviewSchema) -> Result<(), DbError> {
         sqlx::query!(
             "insert or replace into Reviews (name, date, reviewer, comment) values ($1, $2, $3, $4)",
             review.name,

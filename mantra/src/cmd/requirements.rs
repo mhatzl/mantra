@@ -1,49 +1,66 @@
 use std::path::{Path, PathBuf};
 
-use crate::db::{GitHubReqOrigin, MantraDb, Requirement, RequirementChanges};
+use crate::db::{MantraDb, RequirementChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
+use mantra_schema::requirements::{Requirement, RequirementSchema};
 use regex::Regex;
 
+#[derive(Debug, Clone, clap::Subcommand)]
+pub enum Format {
+    FromWiki(WikiConfig),
+    FromSchema { filepath: PathBuf },
+}
+
 #[derive(Debug, Clone, clap::Args, serde::Deserialize)]
-#[group(id = "extract")]
-pub struct Config {
+pub struct WikiConfig {
     #[arg(alias = "local-path")]
     pub root: PathBuf,
     pub link: String,
-    #[arg(value_enum)]
-    pub origin: ExtractOrigin,
     #[arg(long, alias = "version")]
     pub major_version: Option<usize>,
 }
 
-#[derive(Debug, Clone, clap::ValueEnum, serde::Deserialize)]
-pub enum ExtractOrigin {
-    GitHub,
-    Jira,
-}
-
 #[derive(Debug, thiserror::Error)]
-pub enum ExtractError {
+pub enum RequirementsError {
     #[error("Could not access file '{}'.", .0)]
     CouldNotAccessFile(String),
+    #[error("{}", .0)]
+    Deserialize(serde_json::Error),
     #[error("{}", .0)]
     DbError(crate::db::DbError),
 }
 
-pub async fn extract(db: &MantraDb, cfg: &Config) -> Result<RequirementChanges, ExtractError> {
-    match cfg.origin {
-        ExtractOrigin::GitHub => extract_github(db, &cfg.root, &cfg.link, cfg.major_version).await,
-        ExtractOrigin::Jira => todo!(),
+pub async fn collect(db: &MantraDb, fmt: &Format) -> Result<RequirementChanges, RequirementsError> {
+    match fmt {
+        Format::FromWiki(wiki_cfg) => {
+            collect_from_wiki(db, &wiki_cfg.root, &wiki_cfg.link, wiki_cfg.major_version).await
+        }
+        Format::FromSchema { filepath } => {
+            let content = tokio::fs::read_to_string(filepath).await.map_err(|_| {
+                RequirementsError::CouldNotAccessFile(filepath.display().to_string())
+            })?;
+            let schema = serde_json::from_str(&content).map_err(RequirementsError::Deserialize)?;
+            collect_from_schema(db, schema).await
+        }
     }
 }
 
-async fn extract_github(
+pub async fn collect_from_schema(
+    db: &MantraDb,
+    schema: RequirementSchema,
+) -> Result<RequirementChanges, RequirementsError> {
+    db.add_reqs(schema.requirements)
+        .await
+        .map_err(RequirementsError::DbError)
+}
+
+async fn collect_from_wiki(
     db: &MantraDb,
     root: &Path,
     link: &str,
     version: Option<usize>,
-) -> Result<RequirementChanges, ExtractError> {
+) -> Result<RequirementChanges, RequirementsError> {
     let mut reqs = Vec::new();
 
     if root.is_dir() {
@@ -68,24 +85,28 @@ async fn extract_github(
                 .expect("No file type found for given entry. Note: stdin is not supported.")
                 .is_file()
             {
-                let filepath = dir_entry.path().to_string_lossy().to_string();
-                let content = std::fs::read_to_string(dir_entry.path())
-                    .map_err(|_| ExtractError::CouldNotAccessFile(filepath))?;
+                let content = std::fs::read_to_string(dir_entry.path()).map_err(|_| {
+                    RequirementsError::CouldNotAccessFile(dir_entry.path().display().to_string())
+                })?;
 
-                reqs.append(&mut extract_from_wiki_content(
-                    &content,
-                    dir_entry.path(),
-                    link,
-                    version,
+                let file_stem = dir_entry
+                    .path()
+                    .file_stem()
+                    .expect("Filepath is valid filename.")
+                    .to_string_lossy()
+                    .replace(char::is_whitespace, "-");
+                let link = format!("{}/{}", link, file_stem);
+
+                reqs.append(&mut requirements_from_wiki_content(
+                    &content, &link, version,
                 ));
             }
         }
     } else {
-        let filepath = root.to_string_lossy().to_string();
         let content = std::fs::read_to_string(root)
-            .map_err(|_| ExtractError::CouldNotAccessFile(filepath))?;
+            .map_err(|_| RequirementsError::CouldNotAccessFile(root.display().to_string()))?;
 
-        reqs = extract_from_wiki_content(&content, root, link, version);
+        reqs = requirements_from_wiki_content(&content, link, version);
     }
 
     if reqs.is_empty() {
@@ -97,15 +118,14 @@ async fn extract_github(
         };
         Ok(changes)
     } else {
-        db.add_reqs(reqs).await.map_err(ExtractError::DbError)
+        db.add_reqs(reqs).await.map_err(RequirementsError::DbError)
     }
 }
 
 static REQ_ID_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
-fn extract_from_wiki_content(
+fn requirements_from_wiki_content(
     content: &str,
-    filepath: &Path,
     link: &str,
     version: Option<usize>,
 ) -> Vec<Requirement> {
@@ -116,12 +136,12 @@ fn extract_from_wiki_content(
 
     let regex = REQ_ID_MATCHER.get_or_init(|| {
         Regex::new(
-            r"^#{1,6}\s`(?<id>[^\s:]+)`(?:\((?:v(?<version>\d{1,7}):)?(?<annotation>[^\)]+)\))?:\s.+",
+            r"^#{1,6}\s`(?<id>[^\s:]+)`(?:\((?:v(?<version>\d{1,7}):)?(?<marker>[^\)]+)\))?:\s+(?<title>\S+)",
         )
         .expect("Regex to match the requirement ID could **not** be created.")
     });
 
-    for (line_nr, line) in lines.enumerate() {
+    for line in lines {
         if line.trim_start().starts_with("```") || line.trim_start().starts_with("~~~") {
             in_verbatim_context = !in_verbatim_context;
         }
@@ -134,7 +154,7 @@ fn extract_from_wiki_content(
                     .as_str()
                     .to_string();
 
-                let mut annotation = captures.name("annotation").map(|c| c.as_str().to_string());
+                let mut marker = captures.name("marker").map(|c| c.as_str().to_string());
                 let extracted_version: Option<usize> = captures.name("version").map(|c| {
                     c.as_str()
                         .parse()
@@ -144,20 +164,27 @@ fn extract_from_wiki_content(
                 if let Some(version) = version {
                     if let Some(extracted_version) = extracted_version {
                         if version < extracted_version {
-                            annotation = None;
+                            marker = None;
                         }
                     }
                 }
 
+                let manual = marker == Some("manual".to_string());
+                let deprecated = marker == Some("deprecated".to_string());
+
+                let title = captures
+                    .name("title")
+                    .expect("`title` capture group was not in heading match.")
+                    .as_str()
+                    .to_string();
+
                 reqs.push(Requirement {
                     id,
-                    origin: crate::db::RequirementOrigin::GitHub(GitHubReqOrigin {
-                        link: link.to_string(),
-                        path: filepath.to_path_buf(),
-                        line: line_nr + 1,
-                    })
-                    .into(),
-                    annotation,
+                    title,
+                    link: link.to_string(),
+                    annotation: None,
+                    manual,
+                    deprecated,
                 });
             }
         }

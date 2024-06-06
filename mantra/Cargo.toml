@@ -13,6 +13,7 @@ license.workspace = true
 mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0" }
 mantra-rust-trace = { path = "../langs/rust/mantra-rust-trace", version = "0" }
 mantra-rust-macros = { path = "../langs/rust/mantra-rust-macros", version = "0", features = ["extract"] }
+mantra-schema = { path = "../schema", version = "0" }
 regex.workspace = true
 tree-sitter-rust.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
