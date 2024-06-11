@@ -17,7 +17,7 @@ pub struct TestRun {
     pub date: time::OffsetDateTime,
     pub nr_of_tests: u32,
     pub meta: Option<serde_json::Value>,
-    pub log_file: Option<PathBuf>,
+    pub logs: Option<String>,
     pub tests: Vec<Test>,
 }
 

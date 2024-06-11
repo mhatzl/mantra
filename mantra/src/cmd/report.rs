@@ -758,7 +758,7 @@ pub struct TestRunInfo {
     )]
     pub date: OffsetDateTime,
     pub meta: Option<serde_json::Value>,
-    pub log_file: Option<PathBuf>,
+    pub logs: Option<String>,
     pub tests: Vec<TestInfo>,
 }
 
@@ -844,7 +844,7 @@ impl TestRunInfo {
 
         let record = sqlx::query!(
             r#"
-            select meta, log_file from TestRuns
+            select meta, logs from TestRuns
             where name = $1 and date = $2
             "#,
             name,
@@ -854,7 +854,6 @@ impl TestRunInfo {
         .await
         .map_err(ReportError::Db)?;
 
-        let log_file = record.log_file.map(PathBuf::from);
         let meta = record
             .meta
             .map(|m| serde_json::from_str(&m).expect("Test run meta data must be valid JSON."));
@@ -864,7 +863,7 @@ impl TestRunInfo {
             name,
             date,
             meta,
-            log_file,
+            logs: record.logs,
             tests: test_info,
         })
     }

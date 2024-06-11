@@ -51,7 +51,7 @@ pub async fn collect_from_str(data: &str, db: &MantraDb) -> Result<(), CoverageE
             &test_run.date,
             test_run.nr_of_tests,
             test_run.meta,
-            test_run.log_file,
+            test_run.logs,
         )
         .await
         .map_err(CoverageError::Db)?;
