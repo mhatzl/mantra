@@ -49,7 +49,7 @@ create table TestRuns (
     date text not null,
     nr_of_tests integer not null,
     meta text,
-    log_file text,
+    logs text,
     primary key (name, date)
 );
 

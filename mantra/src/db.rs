@@ -646,17 +646,15 @@ impl MantraDb {
         date: &time::OffsetDateTime,
         nr_of_tests: u32,
         meta: Option<serde_json::Value>,
-        log_file: Option<PathBuf>,
+        logs: Option<String>,
     ) -> Result<(), DbError> {
-        let log_file_str = log_file.map(|f| f.display().to_string());
-
         let _ = sqlx::query!(
-            "insert or ignore into TestRuns (name, date, nr_of_tests, meta, log_file) values ($1, $2, $3, $4, $5)",
+            "insert or ignore into TestRuns (name, date, nr_of_tests, meta, logs) values ($1, $2, $3, $4, $5)",
             name,
             date,
             nr_of_tests,
             meta,
-            log_file_str,
+            logs,
         )
         .execute(&self.pool)
         .await

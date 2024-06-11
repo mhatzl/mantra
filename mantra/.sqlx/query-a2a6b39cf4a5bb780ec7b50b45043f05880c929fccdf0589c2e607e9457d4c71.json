@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            select meta, log_file from TestRuns\n            where name = $1 and date = $2\n            ",
+  "query": "\n            select meta, logs from TestRuns\n            where name = $1 and date = $2\n            ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Text"
       },
       {
-        "name": "log_file",
+        "name": "logs",
         "ordinal": 1,
         "type_info": "Text"
       }
@@ -22,5 +22,5 @@
       true
     ]
   },
-  "hash": "1db83c8869d8cfa35878271bcda3fbb375d8fd5adfcc72349c099f960203d3ae"
+  "hash": "a2a6b39cf4a5bb780ec7b50b45043f05880c929fccdf0589c2e607e9457d4c71"
 }
