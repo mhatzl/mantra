@@ -39,19 +39,19 @@ pub struct ReportConfig {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
 pub struct Project {
-    #[arg(long)]
-    pub project_name: Option<String>,
-    #[arg(long)]
-    pub project_version: Option<String>,
-    #[arg(long)]
-    pub project_link: Option<String>,
+    #[arg(id = "project-name", long = "project-name")]
+    pub name: Option<String>,
+    #[arg(id = "project-version", long = "project-version")]
+    pub version: Option<String>,
+    #[arg(id = "project-link", long = "project-link")]
+    pub link: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
 pub struct Tag {
-    #[arg(long = "tag-name")]
+    #[arg(id = "tag-name", long = "tag-name")]
     pub name: Option<String>,
-    #[arg(long = "tag-link")]
+    #[arg(id = "tag-link", long = "tag-link")]
     pub link: Option<String>,
 }
 
