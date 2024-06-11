@@ -6,16 +6,18 @@ use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector, TraceEntry};
 use mantra_schema::traces::TraceSchema;
 
-#[derive(Debug, Clone, clap::Subcommand)]
+#[derive(Debug, Clone, clap::Subcommand, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum TraceKind {
     FromSource(SourceConfig),
     FromSchema { filepath: PathBuf },
 }
 
-#[derive(Debug, Clone, clap::Args)]
+#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
 pub struct SourceConfig {
     pub root: PathBuf,
     #[arg(long)]
+    #[serde(default, alias = "keep-path-absolute")]
     pub keep_path_absolute: bool,
 }
 

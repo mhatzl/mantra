@@ -1,3 +1,4 @@
+use cfg::CollectConfig;
 use cmd::{
     coverage::CoverageError, report::ReportError, requirements::RequirementsError,
     review::ReviewError, trace::TraceError,
@@ -30,6 +31,8 @@ pub enum MantraError {
     Review(ReviewError),
     #[error("Failed to create the report. Cause: {}", .0)]
     Report(ReportError),
+    #[error("Failed to collect mantra data. Cause: {}", .0)]
+    Collect(String),
     #[error("Failed to clean the database. Cause: {}", .0)]
     Clean(DbError),
 }
@@ -59,7 +62,7 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             Ok(())
         }
         cmd::Cmd::Coverage(coverage_cfg) => {
-            cmd::coverage::collect_from_path(&coverage_cfg.data_file, &db)
+            cmd::coverage::collect_from_path(&db, &coverage_cfg.data_file)
                 .await
                 .map_err(MantraError::Coverage)
         }
@@ -95,6 +98,46 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
 
             Ok(())
         }
+        cmd::Cmd::Collect(collect_cfg) => collect(&db, collect_cfg).await,
         cmd::Cmd::Clean => db.clean().await.map_err(MantraError::Clean),
     }
+}
+
+async fn collect(db: &db::MantraDb, cfg: CollectConfig) -> Result<(), MantraError> {
+    let collect_cfg = tokio::fs::read_to_string(&cfg.filepath)
+        .await
+        .map_err(|_| {
+            MantraError::Collect(format!("Could not read file '{}'.", cfg.filepath.display()))
+        })?;
+    let collect_file: cfg::CollectFile = toml::from_str(&collect_cfg).map_err(|err| {
+        MantraError::Collect(format!(
+            "Could not read the TOML configuration. Cause: {}",
+            err
+        ))
+    })?;
+
+    let req_changes = cmd::requirements::collect(db, &collect_file.requirements)
+        .await
+        .map_err(MantraError::Extract)?;
+    println!("{req_changes}");
+
+    let trace_changes = cmd::trace::collect(db, collect_file.traces)
+        .await
+        .map_err(MantraError::Trace)?;
+    println!("{trace_changes}");
+
+    if let Some(coverage) = collect_file.coverage {
+        cmd::coverage::collect_from_path(db, &coverage.data_file)
+            .await
+            .map_err(MantraError::Coverage)?;
+    }
+
+    if let Some(review) = collect_file.reviews {
+        let added_review_cnt = cmd::review::collect(db, review)
+            .await
+            .map_err(MantraError::Review)?;
+        println!("Added '{}' reviews.", added_review_cnt);
+    }
+
+    Ok(())
 }

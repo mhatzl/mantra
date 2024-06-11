@@ -32,8 +32,9 @@ pub enum ReviewError {
     Db(DbError),
 }
 
-#[derive(Debug, Clone, clap::Args)]
+#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
 pub struct ReviewConfig {
+    #[serde(alias = "files")]
     pub reviews: Vec<PathBuf>,
 }
 

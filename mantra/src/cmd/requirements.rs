@@ -6,18 +6,20 @@ use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_schema::requirements::{Requirement, RequirementSchema};
 use regex::Regex;
 
-#[derive(Debug, Clone, clap::Subcommand)]
+#[derive(Debug, Clone, clap::Subcommand, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Format {
     FromWiki(WikiConfig),
     FromSchema { filepath: PathBuf },
 }
 
-#[derive(Debug, Clone, clap::Args, serde::Deserialize)]
+#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
 pub struct WikiConfig {
     #[arg(alias = "local-path")]
     pub root: PathBuf,
     pub link: String,
     #[arg(long, alias = "version")]
+    #[serde(alias = "version", alias = "major-version")]
     pub major_version: Option<usize>,
 }
 

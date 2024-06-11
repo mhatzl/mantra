@@ -5,10 +5,11 @@ use time::OffsetDateTime;
 
 use crate::db::{DbError, MantraDb};
 
-#[derive(Debug, Clone, clap::Args)]
+#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     /// File containing coverage data according to the *mantra* CoverageSchema.
     /// The file format may either be JSON or TOML.
+    #[serde(alias = "filepath", alias = "data-file")]
     pub data_file: PathBuf,
 }
 
@@ -30,7 +31,7 @@ pub enum CoverageError {
     Db(DbError),
 }
 
-pub async fn collect_from_path(data_file: &Path, db: &MantraDb) -> Result<(), CoverageError> {
+pub async fn collect_from_path(db: &MantraDb, data_file: &Path) -> Result<(), CoverageError> {
     let data = std::fs::read_to_string(data_file).map_err(|_| {
         CoverageError::ReadingData(format!(
             "Could not read coverage data from '{}'.",
@@ -38,10 +39,10 @@ pub async fn collect_from_path(data_file: &Path, db: &MantraDb) -> Result<(), Co
         ))
     })?;
 
-    collect_from_str(&data, db).await
+    collect_from_str(db, &data).await
 }
 
-pub async fn collect_from_str(data: &str, db: &MantraDb) -> Result<(), CoverageError> {
+pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<(), CoverageError> {
     let coverage =
         serde_json::from_str::<CoverageSchema>(data).map_err(CoverageError::Deserialize)?;
 
