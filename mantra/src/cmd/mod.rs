@@ -1,5 +1,5 @@
 use crate::cfg::{
-    DeleteOldConfig, DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig,
+    CollectConfig, DeleteOldConfig, DeleteReqsConfig, DeleteReviewsConfig, DeleteTestRunsConfig,
     DeleteTracesConfig,
 };
 
@@ -34,6 +34,7 @@ pub enum Cmd {
     DeleteReviews(DeleteReviewsConfig),
     Review(review::ReviewConfig),
     Report(ReportConfig),
+    Collect(CollectConfig),
     /// Delete test runs and reviews that have no linked requirement or coverage remaining.
     Clean,
 }

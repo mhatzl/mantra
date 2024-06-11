@@ -164,7 +164,7 @@ impl std::fmt::Display for RequirementChanges {
 pub struct Config {
     /// URL to connect to a SQL database.
     /// Default is a SQLite file named `mantra.db` that is located in the current directory.
-    #[arg(long, alias = "db-url")]
+    #[arg(long, alias = "db-url", env = "MANTRA_DB")]
     pub url: Option<String>,
 }
 
