@@ -86,8 +86,14 @@ pub async fn trace_from_source(
         ..Default::default()
     };
 
-    if cfg.root.is_dir() {
-        let walk = WalkBuilder::new(&cfg.root)
+    if cfg.root.is_dir() || cfg.root == PathBuf::from("") || cfg.root == PathBuf::from("./") {
+        let root = if cfg.root == PathBuf::from("") || cfg.root == PathBuf::from("./") {
+            std::env::current_dir().expect("Current directory must be valid.")
+        } else {
+            cfg.root.clone()
+        };
+
+        let walk = WalkBuilder::new(&root)
             .types(
                 TypesBuilder::new()
                     .add_defaults()
@@ -110,10 +116,10 @@ pub async fn trace_from_source(
             {
                 if let Some(traces) = collect_traces(dir_entry.path())? {
                     let filepath = if cfg.keep_path_absolute {
-                        mantra_lang_tracing::path::make_relative(dir_entry.path(), &cfg.root)
-                            .unwrap_or(dir_entry.into_path())
-                    } else {
                         dir_entry.into_path()
+                    } else {
+                        mantra_lang_tracing::path::make_relative(dir_entry.path(), &root)
+                            .unwrap_or(dir_entry.into_path())
                     };
 
                     let mut trace_changes = db

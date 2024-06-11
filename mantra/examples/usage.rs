@@ -52,9 +52,9 @@ async fn main() {
             template: None,
             formats: vec![ReportFormat::Json, ReportFormat::Html],
             project: Project {
-                project_name: Some("mantra".to_string()),
-                project_version: Some("1.0.1".to_string()),
-                project_link: Some("https://github.com/mhatzl/mantra".to_string()),
+                name: Some("mantra".to_string()),
+                version: Some("1.0.1".to_string()),
+                link: Some("https://github.com/mhatzl/mantra".to_string()),
             },
             tag: mantra::cmd::report::Tag {
                 name: Some("0.1.0".to_string()),
