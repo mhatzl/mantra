@@ -1,4 +1,7 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use mantra_lang_tracing::ReqId;
 use mantra_schema::{coverage::TestState, requirements::Requirement};
@@ -35,6 +38,12 @@ pub struct ReportConfig {
     pub project: Project,
     #[command(flatten)]
     pub tag: Tag,
+    /// Path to a Tera template that is used to render the custom info of requirements.
+    #[arg(long)]
+    pub info_template: Option<PathBuf>,
+    /// Path to a Tera template that is used to render the custom metadata of test-runs.
+    #[arg(long)]
+    pub test_run_template: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
@@ -78,37 +87,44 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
     let formats: HashSet<ReportFormat> = HashSet::from_iter(cfg.formats.into_iter());
 
     for format in formats {
-        match format {
+        let report = match format {
             ReportFormat::Html => {
                 filepath.set_extension("html");
 
-                let report = match &cfg.template {
-                    Some(template) => {
-                        let template_content = tokio::fs::read_to_string(template)
-                            .await
-                            .map_err(|_| ReportError::Template)?;
-                        create_tera_report(db, &cfg.project, &cfg.tag, &template_content).await?
-                    }
-                    None => {
-                        let template_content =
-                            include_str!("report_default_template.html").to_string();
-                        create_tera_report(db, &cfg.project, &cfg.tag, &template_content).await?
-                    }
+                let template_content = match &cfg.template {
+                    Some(template) => tokio::fs::read_to_string(template)
+                        .await
+                        .map_err(|_| ReportError::Template)?,
+                    None => include_str!("report_default_template.html").to_string(),
                 };
 
-                tokio::fs::write(&filepath, report)
-                    .await
-                    .map_err(|_| ReportError::Write)?;
+                create_tera_report(
+                    db,
+                    &cfg.project,
+                    &cfg.tag,
+                    cfg.info_template.as_deref(),
+                    cfg.test_run_template.as_deref(),
+                    &template_content,
+                )
+                .await?
             }
             ReportFormat::Json => {
                 filepath.set_extension("json");
-                let report = create_json_report(db, &cfg.project, &cfg.tag).await?;
 
-                tokio::fs::write(&filepath, report)
-                    .await
-                    .map_err(|_| ReportError::Write)?;
+                create_json_report(
+                    db,
+                    &cfg.project,
+                    &cfg.tag,
+                    cfg.info_template.as_deref(),
+                    cfg.test_run_template.as_deref(),
+                )
+                .await?
             }
-        }
+        };
+
+        tokio::fs::write(&filepath, report)
+            .await
+            .map_err(|_| ReportError::Write)?;
     }
 
     Ok(())
@@ -118,10 +134,14 @@ pub async fn create_tera_report(
     db: &MantraDb,
     project: &Project,
     tag: &Tag,
+    info_template: Option<&Path>,
+    test_run_template: Option<&Path>,
     template: &str,
 ) -> Result<String, ReportError> {
-    let context = tera::Context::from_serialize(ReportContext::try_from(db, project, tag).await?)
-        .map_err(|_| ReportError::Tera)?;
+    let context = tera::Context::from_serialize(
+        ReportContext::try_from(db, project, tag, info_template, test_run_template).await?,
+    )
+    .map_err(|_| ReportError::Tera)?;
     tera::Tera::one_off(template, &context, true).map_err(|_| ReportError::Tera)
 }
 
@@ -129,8 +149,11 @@ pub async fn create_json_report(
     db: &MantraDb,
     project: &Project,
     tag: &Tag,
+    info_template: Option<&Path>,
+    test_run_template: Option<&Path>,
 ) -> Result<String, ReportError> {
-    let report = ReportContext::try_from(db, project, tag).await?;
+    let report =
+        ReportContext::try_from(db, project, tag, info_template, test_run_template).await?;
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
@@ -157,6 +180,8 @@ impl ReportContext {
         db: &MantraDb,
         project: &Project,
         tag: &Tag,
+        info_template: Option<&Path>,
+        test_run_template: Option<&Path>,
     ) -> Result<Self, ReportError> {
         let overview = RequirementsOverview::try_from(db).await?;
 
@@ -167,10 +192,10 @@ impl ReportContext {
 
         let mut requirements = Vec::new();
         for req in req_records {
-            requirements.push(RequirementInfo::try_from(db, req.id).await?);
+            requirements.push(RequirementInfo::try_from(db, req.id, info_template).await?);
         }
 
-        let tests = TestStatistics::try_from(db).await?;
+        let tests = TestStatistics::try_from(db, test_run_template).await?;
 
         let review_records = sqlx::query!("select name, date from Reviews order by name, date")
             .fetch_all(db.pool())
@@ -308,6 +333,7 @@ impl RequirementsOverview {
 pub struct RequirementInfo {
     #[serde(flatten)]
     pub meta: Requirement,
+    pub rendered_info: Option<String>,
     pub parent: Option<String>,
     pub direct_children: Vec<String>,
     pub leaf_statistic: Option<LeafChildrenStatistic>,
@@ -318,7 +344,11 @@ pub struct RequirementInfo {
 }
 
 impl RequirementInfo {
-    pub async fn try_from(db: &MantraDb, id: impl Into<ReqId>) -> Result<Self, ReportError> {
+    pub async fn try_from(
+        db: &MantraDb,
+        id: impl Into<ReqId>,
+        info_template: Option<&Path>,
+    ) -> Result<Self, ReportError> {
         let id: ReqId = id.into();
 
         // get base info
@@ -412,6 +442,24 @@ impl RequirementInfo {
         .map_err(ReportError::Db)?
         .is_none();
 
+        let rendered_info = if let Some(template) = info_template {
+            let template_content = tokio::fs::read_to_string(template)
+                .await
+                .map_err(|_| ReportError::Template)?;
+
+            if let Some(value) = &annotation {
+                let context = tera::Context::from_serialize(value)
+                    .expect("Requirement info value is valid JSON.");
+                let rendered = tera::Tera::one_off(&template_content, &context, true)
+                    .map_err(|_| ReportError::Tera)?;
+                Some(rendered)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         Ok(Self {
             meta: Requirement {
                 id,
@@ -422,6 +470,7 @@ impl RequirementInfo {
                 info,
             },
             parent,
+            rendered_info,
             direct_children: children,
             leaf_statistic,
             trace_info,
@@ -683,7 +732,10 @@ pub struct TestStatistics {
 }
 
 impl TestStatistics {
-    pub async fn try_from(db: &MantraDb) -> Result<Self, ReportError> {
+    pub async fn try_from(
+        db: &MantraDb,
+        test_run_template: Option<&Path>,
+    ) -> Result<Self, ReportError> {
         let overview = TestsOverview::try_from(db).await?;
 
         let test_run_records = sqlx::query!(
@@ -701,7 +753,8 @@ impl TestStatistics {
 
         for test_run in test_run_records {
             let date = iso8601_str_to_offsetdatetime(&test_run.date);
-            test_runs.push(TestRunInfo::try_from(db, test_run.name, date).await?);
+            test_runs
+                .push(TestRunInfo::try_from(db, test_run.name, date, test_run_template).await?);
         }
 
         Ok(Self {
@@ -758,6 +811,7 @@ pub struct TestRunInfo {
     )]
     pub date: OffsetDateTime,
     pub meta: Option<serde_json::Value>,
+    pub rendered_meta: Option<String>,
     pub logs: Option<String>,
     pub tests: Vec<TestInfo>,
 }
@@ -767,6 +821,7 @@ impl TestRunInfo {
         db: &MantraDb,
         name: impl Into<String>,
         date: OffsetDateTime,
+        test_run_template: Option<&Path>,
     ) -> Result<Self, ReportError> {
         let name: String = name.into();
         let overview = TestRunOverview::try_from(db, &name, &date).await?;
@@ -858,11 +913,30 @@ impl TestRunInfo {
             .meta
             .map(|m| serde_json::from_str(&m).expect("Test run meta data must be valid JSON."));
 
+        let rendered_meta = if let Some(template) = test_run_template {
+            let template_content = tokio::fs::read_to_string(template)
+                .await
+                .map_err(|_| ReportError::Template)?;
+
+            if let Some(value) = &meta {
+                let context = tera::Context::from_serialize(value)
+                    .expect("Test-run meta value is valid JSON.");
+                let rendered = tera::Tera::one_off(&template_content, &context, true)
+                    .map_err(|_| ReportError::Tera)?;
+                Some(rendered)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         Ok(Self {
             overview,
             name,
             date,
             meta,
+            rendered_meta,
             logs: record.logs,
             tests: test_info,
         })
