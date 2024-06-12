@@ -100,19 +100,10 @@
             overflow-wrap: break-word;
         }
 
-        .requirement-status-origin {
+        .requirement-status-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(var(--status-width), auto));
-            gap: 3px;
-        }
-
-        .requirement-origin {
-            grid-column: span 2;
-
-            text-align: left;
-            overflow: hidden;
-            direction: rtl;
-            text-overflow: ellipsis;
+            grid-template-columns: var(--status-width) auto;
+            gap: 5px;
         }
 
         .test-name {
@@ -449,7 +440,7 @@
                         </p>
                     </div>
 
-                    <div class="requirement-status-origin">
+                    <div class="requirement-status-info">
                         <div class="requirement-status">
                             {% if req.manual and not req.trace_info.traced %}
                             <p><strong>Status (manual)</strong></p>
@@ -532,11 +523,13 @@
                             {% endif %}
                         </div>
 
-                        <div class="requirement-origin">
+                        <div class="requirement-custom-info">
                             <p><strong>{{ req.title }}</strong></p>
                             <a class="external-link" href="{{ req.link }}">{{ req.link }}</a>
-                            {% if req.info %}
-                            <!-- TODO: add custom info rendering -->
+                            {% if req.rendered_info %}
+                            <div class="rendered-info">
+                                {{ req.rendered_info | safe }}
+                            </div>
                             {% endif %}
                         </div>
 
@@ -813,9 +806,9 @@
                         </ul>
                     </div>
 
-                    {% if test_run.meta %}
+                    {% if test_run.rendered_meta %}
                     <div class="test-run-meta">
-                        <!-- TODO: custom test-run meta rendering -->
+                        {{ test_run.rendered_meta | safe }}
                     </div>
                     {% endif %}
 

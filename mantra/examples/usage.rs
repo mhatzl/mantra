@@ -14,7 +14,7 @@ async fn main() {
     };
     let root = PathBuf::from("mantra/examples/usage/");
 
-    let extract_cfg = mantra::cfg::Config {
+    let wiki_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Requirements(mantra::cmd::requirements::Format::FromWiki(
             mantra::cmd::requirements::WikiConfig {
@@ -23,6 +23,12 @@ async fn main() {
                 major_version: Some(0),
             },
         )),
+    };
+    let req_schema_cfg = mantra::cfg::Config {
+        db: db.clone(),
+        cmd: mantra::cmd::Cmd::Requirements(mantra::cmd::requirements::Format::FromSchema {
+            filepath: PathBuf::from("mantra/examples/reqs.json"),
+        }),
     };
     let trace_cfg = mantra::cfg::Config {
         db: db.clone(),
@@ -36,7 +42,7 @@ async fn main() {
     let coverage_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::Config {
-            data_file: PathBuf::from("mantra/examples/usage/coverage.json"),
+            data_file: PathBuf::from("mantra/examples/coverage.json"),
         }),
     };
     let review_cfg = mantra::cfg::Config {
@@ -60,12 +66,14 @@ async fn main() {
                 name: Some("0.1.0".to_string()),
                 link: Some("https://github.com/mhatzl/mantra-wiki".to_string()),
             },
-            info_template: None,
-            test_run_template: None,
+            info_template: Some(PathBuf::from("mantra/examples/custom_info.html")),
+            test_run_template: Some(PathBuf::from("mantra/examples/test_run_meta.html")),
         }),
     };
 
-    mantra::run(extract_cfg).await.unwrap();
+    mantra::run(wiki_cfg).await.unwrap();
+
+    mantra::run(req_schema_cfg).await.unwrap();
 
     mantra::run(trace_cfg).await.unwrap();
 
