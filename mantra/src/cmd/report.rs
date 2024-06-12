@@ -367,7 +367,7 @@ impl RequirementInfo {
         let link = record.link;
         let info = record
             .info
-            .map(|a| serde_json::to_value(a).expect("Requirement info must be valid JSON."));
+            .map(|a| serde_json::from_str(&a).expect("Requirement info must be valid JSON."));
         let deprecated = record.deprecated;
         let manual = record.manual;
 

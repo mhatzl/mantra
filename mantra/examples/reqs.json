@@ -1,0 +1,14 @@
+{
+    "requirements": [
+        {
+            "id": "id_from_schema",
+            "title": "Some req added from JSON.",
+            "link": "local",
+            "manual": false,
+            "deprecated": false,
+            "info": {
+                "custom_field": "some data"
+            }
+        }
+    ]
+}
