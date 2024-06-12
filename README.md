@@ -67,35 +67,120 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
 
 **Note:** Only SQLite is supported for now, because some SQL queries contain SQLite specific syntax.
 
-- Adding requirements
+- Collect all data at once
 
-  `mantra extract --origin=[GitHub or Jira] <local-path> <link>`
+  `mantra collect [<filepath>]`
 
-  The `local-path` argument must point to an existing file/folder containing requirements.
-  The extraction format depends on the `origin`.
-  The `link` is the URL pointing to the origin of the requirements.
+  This will look for a TOML file at the given path.
+  By default, the path is set to `mantra.toml`.
+
+  **File structure:**
+
+  ```toml
+  # Collect requirements from local Markdown files.
+  #
+  # **Note:** Only one option to collect requirements may be given.
+  [requirements.from-wiki]
+
+  # Root path to start looking for requirements.
+  # Empty means current directory.
+  root = ""
+
+  # Base URL for all requirements
+  link = "https://github.com/mhatzl/mantra-wiki/tree/main/5-Requirements/"
+
+
+  # Collect requirements from a JSON file adhering to the `RequirementSchema`.
+  #
+  # **Note:** Only one option to collect requirements may be given.
+  [requirements.from-schema]
+
+  # The path to a JSON file containing requirements.
+  filepath = "requirements.json"
+
+
+  # Collect traces from local files
+  #
+  # **Note:** Only one option to collect traces may be given.
+  [traces.from-source]
+
+  # Root path to start looking for traces.
+  # Empty means current directory.
+  root = ""
+
+  # If 'false', the filepath will be stored relativ to the root path.
+  keep-path-absolute = false
+
+
+  # Collect traces from a JSON file adhering to the `TraceSchema`.
+  #
+  # **Note:** Only one option to collect traces may be given.
+  [trace.from-schema]
+
+  # The path to a JSON file containing traces.
+  filepath = "traces.json"
+
+
+  # Collect coverage from a JSON file adhering to the `CoverageSchema`.
+  [coverage]
+
+  # Path to a JSON file containing coverage.
+  filepath = "coverage.json"
+
+
+  # Collect reviews from TOML files adhering to the `ReviewSchema`.
+  [reviews]
+
+  # List of review files to add.
+  files = ["first_review.toml"]
+  ```
+
+- Generate a report
+
+  `mantra report --formats=html,json <file path>`
+
+  This will create an HTML and JSON report at the given file path.
+  Optionally, a template file may be given via `--template`.
+  Templates may use the [Tera](https://keats.github.io/tera/docs/) template language.
+  The JSON form is passed to the template.
+  If no template is given, the [report_default_template](/mantra/src/cmd/report_default_template.html) is used.
+
+  To render custom data like requirement info and test-run metadata,
+  the arguments `--info-template` and `--test-run-template` may be set to template files.
+  These templates are then pre-rendered using [Tera](https://keats.github.io/tera/docs/),
+  and the rendered content is made available as `rendered_info` and `rendered_meta` next to the regular `info` and `meta` fields.
+
+  Project name, version, and link may be set using the arguments `--project_name`, `--project_version`, and `--project_link`.
+  A tag name and link may also be set using the arguments `--tag-name` and `--tag-link`.
+  Tags should be used to indicate the requirements-snapshot/tag the report was generated with.
+
+- Adding requirements from local Markdown files
+
+  `mantra requirements from-wiki <root> <link>`
+
+  The `root` argument must point to an existing file/folder containing requirements.
+  The `link` is the base URL of the requirements.
 
   This command does **not** delete requirements that were already stored in the database.
   *Generation* counter are used to detect if an existing requirement was not present
   in the latest *extraction*.
 
-  Use `mantra delete-old` to remove all requirements not added/updated in the latest *extraction*.
+  Use `mantra delete-old` to remove all requirements not added/updated in the latest call.
 
-- Adding traces
+- Adding traces from local sources
 
-  `mantra trace [--keep-root-absolute] <root>`
+  `mantra trace from-source [--keep-path-absolute] <root>`
 
   The `root` argument must point to a file or folder to search for traces in text files.
   By default, file paths for traces are added as relative paths to the given root.
-  This may be changed by setting `--keep-root-absolute`.
+  This may be changed by setting `--keep-path-absolute`.
 
 - Adding coverage
 
-  Because JSON or JUnit test output of regular Rust tests is unstable,
-  *mantra* for now only supports coverage from [defmt-test logs](https://crates.io/crates/defmt-test).
-  Those logs may be added using the function `mantra::cmd::coverage::coverage_from_defmt_frames`.
+  Because coverage output from tests highly depends on the language and tooling,
+  *mantra* only provides to add coverage data via files adhering to the `RequirementSchema`.
 
-  The `defmt` feature for `mantra-rust-macros` must be enabled to get *mantra* coverage logs.
+  `mantra coverage --data-file <path to JSON file>`
 
 - Adding reviews
 
@@ -105,7 +190,7 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
 
   **Note:** Only TOML is supported as review format for now.
 
-  **TOML syntax:**
+  **File structure:**
 
   ```toml
   name = <review name>
@@ -121,17 +206,6 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
   id = <verified requirement ID>
   comment = <optional comment for this specific ID>
   ```
-
-- Generate report
-
-  `mantra report --formats=html,json <file path>`
-
-  This will create an HTML and JSON report at the given file path.
-  Optionally, a template file may be given using the [Tera](https://keats.github.io/tera/docs/)
-  template language. The JSON form is passed to the template.
-  If no template is given, the [report_default_template](/mantra/src/cmd/report_default_template.html) is used.
-
-  Project name, version, and link may be set using the arguments `project_name`, `project_version`, and `project_link`.
 
 # License
 
