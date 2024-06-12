@@ -161,6 +161,9 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
   The `root` argument must point to an existing file/folder containing requirements.
   The `link` is the base URL of the requirements.
 
+  See [req(extract.wiki)](https://github.com/mhatzl/mantra-wiki/blob/main/5-Requirements/5-REQ-extract.md#extractwiki-extract-requirement-ids-defined-in-markdown-based-wikis)
+  in the mantra wiki on how to define requirements in Markdown files.
+
   This command does **not** delete requirements that were already stored in the database.
   *Generation* counter are used to detect if an existing requirement was not present
   in the latest *extraction*.
