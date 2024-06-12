@@ -27,7 +27,7 @@ async fn main() {
     let req_schema_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Requirements(mantra::cmd::requirements::Format::FromSchema {
-            filepath: PathBuf::from("mantra/examples/reqs.json"),
+            filepath: PathBuf::from("mantra/examples/usage/reqs.json"),
         }),
     };
     let trace_cfg = mantra::cfg::Config {
@@ -42,13 +42,13 @@ async fn main() {
     let coverage_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::Config {
-            data_file: PathBuf::from("mantra/examples/coverage.json"),
+            data_file: PathBuf::from("mantra/examples/usage/coverage.json"),
         }),
     };
     let review_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Review(mantra::cmd::review::ReviewConfig {
-            reviews: vec![PathBuf::from("mantra/examples/my_review.toml")],
+            reviews: vec![PathBuf::from("mantra/examples/usage/my_review.toml")],
         }),
     };
     let report_cfg = mantra::cfg::Config {
@@ -66,8 +66,8 @@ async fn main() {
                 name: Some("0.1.0".to_string()),
                 link: Some("https://github.com/mhatzl/mantra-wiki".to_string()),
             },
-            info_template: Some(PathBuf::from("mantra/examples/custom_info.html")),
-            test_run_template: Some(PathBuf::from("mantra/examples/test_run_meta.html")),
+            info_template: Some(PathBuf::from("mantra/examples/usage/custom_info.html")),
+            test_run_template: Some(PathBuf::from("mantra/examples/usage/test_run_meta.html")),
         }),
     };
 

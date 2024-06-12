@@ -851,7 +851,7 @@
   ],
   "trace_criteria": "Requirements are traced if one of the following criteria is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n\nRequirements are fully traced if all of their leaf requirements are traced.",
   "test_coverage_criteria": "A requirement is covered through a test if any of the following criteria are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n\nA requirement is passed covered if all of the following criteria are met:\n\n- The requirement is covered at least once\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n\nRequirements are fully covered if all of their leaf requirements are passed covered.",
-  "creation_date": "+002024-06-12T16:12:26.071685900Z",
+  "creation_date": "+002024-06-12T16:48:00.063765200Z",
   "validation": {
     "is_valid": false,
     "criteria": "The collected data is valid if no *deprecated* requirement is traced.",
