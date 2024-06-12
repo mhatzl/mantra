@@ -60,6 +60,8 @@ async fn main() {
                 name: Some("0.1.0".to_string()),
                 link: Some("https://github.com/mhatzl/mantra-wiki".to_string()),
             },
+            info_template: None,
+            test_run_template: None,
         }),
     };
 
