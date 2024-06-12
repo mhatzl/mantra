@@ -447,7 +447,7 @@ impl RequirementInfo {
                 .await
                 .map_err(|_| ReportError::Template)?;
 
-            if let Some(value) = &annotation {
+            if let Some(value) = &info {
                 let context = tera::Context::from_serialize(value)
                     .expect("Requirement info value is valid JSON.");
                 let rendered = tera::Tera::one_off(&template_content, &context, true)
