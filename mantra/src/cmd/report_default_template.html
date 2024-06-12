@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,23 +31,25 @@
             }
         }
 
-        body > header {
+        body>header {
             grid-area: h;
         }
-        body > nav {
+
+        body>nav {
             grid-area: n;
             padding-right: 50px;
         }
-        body > main {
+
+        body>main {
             grid-area: m;
         }
-        body > footer {
+
+        body>footer {
             grid-area: f;
         }
 
         /* from: https://christianoliff.com/blog/styling-external-links-with-an-icon-in-css/ */
-        a.external-link::after
-        {
+        a.external-link::after {
             content: "";
             width: 11px;
             height: 11px;
@@ -58,7 +61,8 @@
             display: inline-block;
         }
 
-        .requirement-info, .test-run {
+        .requirement-info,
+        .test-run {
             border-width: 1px;
             border-style: solid;
             border-color: lightgray;
@@ -73,11 +77,14 @@
             grid-template-columns: 1fr 1fr;
         }
 
-        .test-run-header, .test-header {
+        .test-run-header,
+        .test-header {
             grid-template-columns: 80% 20%;
         }
 
-        .requirement-header, .test-run-header, .test-header {
+        .requirement-header,
+        .test-run-header,
+        .test-header {
             display: grid;
 
             border-bottom-style: solid;
@@ -115,11 +122,11 @@
         .requirement-status {
             width: var(--status-width);
 
-            & > p {
+            &>p {
                 text-align: center;
             }
 
-            & > table {
+            &>table {
                 width: 100%;
             }
         }
@@ -136,7 +143,7 @@
         .requirement-details {
             margin-top: 20px;
 
-            & > div {
+            &>div {
                 margin-left: 5px;
             }
         }
@@ -163,7 +170,7 @@
             border-color: lightgray;
         }
 
-        .test > * {
+        .test>* {
             margin: 0 10px 10px 10px;
         }
 
@@ -200,8 +207,7 @@
         .skipped,
         .failed-covered,
         .leaf-passed,
-        .leaf-traces
-         {
+        .leaf-traces {
             margin: 0;
             padding: 5px;
             background-color: orange;
@@ -217,10 +223,11 @@
         }
     </style>
 </head>
+
 <body>
     {% macro break_id(id) %}
-        {% for id_part in id | split(pat=".") %}
-        {%- if loop.index > 1 %}.<wbr>{% endif -%}{{- id_part -}}
+    {% for id_part in id | split(pat=".") %}
+    {%- if loop.index > 1 %}.<wbr>{% endif -%}{{- id_part -}}
         {% endfor %}
     {% endmacro break_id %}
 
@@ -235,8 +242,10 @@
                 {% if requirements | length > 0 %}
                 <ul>
                     {% for req in requirements %}
-                    <li><a href="#{{ req.id }}">{{ req.id }}</a>{% if req.manual %} (manual{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
-                        {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
+                    <li><a href="#{{ req.id }}">{{ req.id }}</a>{% if req.manual %} (manual{% if not req.valid %}, <span
+                            class="invalid">invalid</span>{% endif %})
+                        {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span
+                            class="invalid">invalid</span>{% endif %})
                         {% elif not req.valid %} <span class="invalid">(invalid)</span>
                         {% endif %}</li>
                     {% endfor %}
@@ -248,23 +257,18 @@
                 {% if tests.test_runs | length > 0 %}
                 <ul>
                     {% for test_run in tests.test_runs %}
-                    <li>  
-                        <a
-                            href="#{{ test_run.name }}|{{ test_run.date }}"
-                            class="nav-test-run-link"
-                        >
+                    <li>
+                        <a href="#{{ test_run.name }}|{{ test_run.date }}" class="nav-test-run-link">
                             <span class="test-run-name">{{ test_run.name }}</span>
-                            <span class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</span>
+                            <span class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d %H:%M:%S",
+                                timezone="Europe/Berlin") }}</span>
                         </a>
                         {% if test_run.tests | length > 0 %}
                         <ul>
                             {% for test in test_run.tests %}
                             <li>
-                                <a
-                                    href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}"
-                                    class="test-name"
-                                >
-                                {{ test.name }}
+                                <a href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}" class="test-name">
+                                    {{ test.name }}
                                 </a>
                             </li>
                             {% endfor %}
@@ -281,10 +285,7 @@
                 <ul>
                     {% for review in reviews %}
                     <li>
-                        <a
-                            href="#{{ review.name }}|{{ review.date }}"
-                            class="review-link"
-                        >
+                        <a href="#{{ review.name }}|{{ review.date }}" class="review-link">
                             <span class="review-name">{{ review.name }}</span>
                             <span class="review-date">{{ review.date }}</span>
                         </a>
@@ -297,14 +298,15 @@
     </nav>
 
     <header>
-        <h1>Mantra Report for 
-            <a class="external-link" {% if project.link %}href="{{ project.link }}"{% endif %}>
+        <h1>Mantra Report for
+            <a class="external-link" {% if project.link %}href="{{ project.link }}" {% endif %}>
                 {%if project.name %}{{ project.name }}{% else %}unknown{% endif %}
-                 {%if project.version %}v{{ project.version }}{% endif %}</a>
+                {%if project.version %}v{{ project.version }}{% endif %}</a>
         </h1>
 
         {% if tag %}
-        <p><strong>Tag:</strong> {%if tag.link %}<a href="{{ tag.link }}">{{ tag.name }}</a>{% else %}{{ tag.name }}{% endif %}</p>
+        <p><strong>Tag:</strong> {%if tag.link %}<a href="{{ tag.link }}">{{ tag.name }}</a>{% else %}{{ tag.name }}{%
+            endif %}</p>
         {% endif %}
 
         <section id="criteria">
@@ -331,11 +333,12 @@
             <h2>Requirements</h2>
             {%if not validation.is_valid %}
             <div id="invalid-requirements">
-                <p>This report has {{ validation.invalid_reqs | length }} <strong>invalid</strong> requirement{% if validation.invalid_reqs | length != 1 %}s{% endif %}:</p>
+                <p>This report has {{ validation.invalid_reqs | length }} <strong>invalid</strong> requirement{% if
+                    validation.invalid_reqs | length != 1 %}s{% endif %}:</p>
                 <ul>
                     {% for invalid_req in validation.invalid_reqs %}
                     <li><a class="req" href="#{{ invalid_req }}">
-                        {{ self::break_id(id=invalid_req) }}</a></li>
+                            {{ self::break_id(id=invalid_req) }}</a></li>
                     {% endfor %}
                 </ul>
             </div>
@@ -346,13 +349,16 @@
                     <p><strong>Existing requirements:</strong> {{ overview.req_cnt }}</p>
                 </li>
                 <li>
-                    <p><strong>Traced requirements:</strong> {{ overview.traced_cnt }} ({{ overview.traced_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Traced requirements:</strong> {{ overview.traced_cnt }} ({{ overview.traced_ratio * 100 |
+                        round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Covered requirements:</strong> {{ overview.covered_cnt }} ({{ overview.covered_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Covered requirements:</strong> {{ overview.covered_cnt }} ({{ overview.covered_ratio *
+                        100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Passed requirements:</strong> {{ overview.passed_cnt }} ({{ overview.passed_ratio * 100 |
+                        round(precision = 2) }}%)</p>
                 </li>
                 <li>
                     <p><strong>Manual requirements verified:</strong>
@@ -377,8 +383,10 @@
                 <tr>
                     <td>
                         <a href="#{{ req.id }}">{{ self::break_id(id=req.id) }}</a>
-                        {% if req.manual %} (manual{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
-                        {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
+                        {% if req.manual %} (manual{% if not req.valid %}, <span class="invalid">invalid</span>{% endif
+                        %})
+                        {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span
+                            class="invalid">invalid</span>{% endif %})
                         {% elif not req.valid %} <span class="invalid">(invalid)</span>
                         {% endif %}
                     </td>
@@ -421,13 +429,15 @@
 
             <h3>Details</h3>
             <div id="requirements-list">
-            {% for req in requirements %}
+                {% for req in requirements %}
                 <div id="{{ req.id }}" class="requirement-info">
                     <div class="requirement-header">
                         <h3 class="req">
                             {{ self::break_id(id=req.id) }}
-                            {% if req.manual %} (manual{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
-                            {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span class="invalid">invalid</span>{% endif %})
+                            {% if req.manual %} (manual{% if not req.valid %}, <span class="invalid">invalid</span>{%
+                            endif %})
+                            {% elif req.deprecated %} (deprecated{% if not req.valid %}, <span
+                                class="invalid">invalid</span>{% endif %})
                             {% elif not req.valid %} <span class="invalid">(invalid)</span>
                             {% endif %}
                         </h3>
@@ -438,7 +448,7 @@
                             {% else %}none{% endif %}
                         </p>
                     </div>
-                
+
                     <div class="requirement-status-origin">
                         <div class="requirement-status">
                             {% if req.manual and not req.trace_info.traced %}
@@ -484,16 +494,24 @@
                                 <tr>
                                     <td>
                                         {% if req.leaf_statistic.traced_leaf_cnt == req.leaf_statistic.leaf_cnt %}
-                                        <div class="all-leafs-traced">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
+                                        <div class="all-leafs-traced">leafs-traced: {{
+                                            req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}
+                                        </div>
                                         {% else %}
-                                        <div class="leaf-traces">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
+                                        <div class="leaf-traces">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt
+                                            }}/{{ req.leaf_statistic.leaf_cnt }}</div>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if req.leaf_statistic.passed_covered_leaf_cnt == req.leaf_statistic.leaf_cnt %}
-                                        <div class="all-leafs-passed">leafs-passed: {{ req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
+                                        {% if req.leaf_statistic.passed_covered_leaf_cnt == req.leaf_statistic.leaf_cnt
+                                        %}
+                                        <div class="all-leafs-passed">leafs-passed: {{
+                                            req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt
+                                            }}</div>
                                         {% else %}
-                                        <div class="leaf-passed">leafs-passed: {{ req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}</div>
+                                        <div class="leaf-passed">leafs-passed: {{
+                                            req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt
+                                            }}</div>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -513,191 +531,211 @@
                             </table>
                             {% endif %}
                         </div>
-                        
+
                         <div class="requirement-origin">
                             <p><strong>{{ req.title }}</strong></p>
                             <a class="external-link" href="{{ req.link }}">{{ req.link }}</a>
-                            {% if req.annotation %}
-                            <!-- TODO: add custom annotation rendering -->
+                            {% if req.info %}
+                            <!-- TODO: add custom info rendering -->
                             {% endif %}
                         </div>
-                        
+
                     </div>
-                    
+
                     <details class="requirement-details">
                         <summary>Details</summary>
                         <div class="requirement-details-content">
 
-                        <div class="requirement-children">
-                            <p class="requirement-details-header"><strong>Direct Children ({{ req.direct_children | length }})</strong></p>
-                            {% if req.direct_children | length > 0 %}
-                            <ul>
-                                {% for child_id in req.direct_children %}
-                                <li><a class="req" href="#{{ child_id }}">{{ self::break_id(id=child_id) }}</a></li>
-                                {% endfor %}
-                            </ul>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="requirement-direct-traces">
-                            <p class="requirement-details-header"><strong>Direct Traces ({{ req.trace_info.direct_traces | length }})</strong></p>
-                            {% if req.trace_info.direct_traces | length > 0 %}
-                            <table class="file-location">
-                                <tr>
-                                    <th class="filepath">file</th>
-                                    <th class="line">line</th>
-                                </tr>
-                                {% for trace in req.trace_info.direct_traces %}
-                                <tr>
-                                    <td id="{{ req.id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{ trace.filepath }}</td>
-                                    <td class="line">{{ trace.line }}</td>
-                                </tr>
-                                {% endfor %}
-                            </table>
-                        {% endif %}
-                        </div>
-                        
-                        <div class="requirement-indirect-traces">
-                            <p class="requirement-details-header"><strong>Indirect Traces ({{ req.trace_info.indirect_traces | length }})</strong></p>
-                            {% if req.trace_info.indirect_traces | length > 0 %}
-                            <ul>
-                                {% for indirect_trace in req.trace_info.indirect_traces %}
-                                <li>
-                                    <p>Traced ID: <a class="req" href="#{{ indirect_trace.traced_id }}">{{ self::break_id(id=indirect_trace.traced_id) }}</a></p>
-                                    <table class="file-location">
-                                        <tr>
-                                            <th class="filepath">file</th>
-                                            <th class="line">line</th>
-                                        </tr>
-                                        {% for trace in indirect_trace.traces %}
-                                        <tr>
-                                            <td id="{{ indirect_trace.traced_id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{ trace.filepath }}</td>
-                                            <td class="line">{{ trace.line }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </table>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% endif %}
-                        </div>
-
-                        <div class="requirement-direct-coverage">
-                            <p class="requirement-details-header"><strong>Direct Coverage ({{ req.test_coverage_info.direct_coverage | length }})</strong></p>
-                            {% if req.test_coverage_info.direct_coverage | length > 0 %}
-                            <ul>
-                                {% for test_run in req.test_coverage_info.direct_coverage %}
-                                <li>
-                                    <p><a class="test-run-name" href="#{{ test_run.name }}|{{ test_run.date }}">
-                                        &lrm;{{ test_run.name }}
-                                    </a><br>
-                                    <span class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</span>
-                                    </p>
-                                    
-                                    <ul>
-                                    {% for test in test_run.tests %}
-                                        <li>
-                                            <p>
-                                                {% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %}
-                                                <a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
-                                                &lrm;{{ test.name }}
-                                                </a>
-                                            </p>
-                                            <table class="file-location">
-                                                <tr>
-                                                    <th class="filepath">file</th>
-                                                    <th class="line">line</th>
-                                                </tr>
-                                                {% for trace in test.traces %}
-                                                <tr>
-                                                    <td id="{{ req.id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">&lrm;{{ trace.filepath }}</td>
-                                                    <td class="line">{{ trace.line }}</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </table>
-                                        </li>
+                            <div class="requirement-children">
+                                <p class="requirement-details-header"><strong>Direct Children ({{ req.direct_children |
+                                        length }})</strong></p>
+                                {% if req.direct_children | length > 0 %}
+                                <ul>
+                                    {% for child_id in req.direct_children %}
+                                    <li><a class="req" href="#{{ child_id }}">{{ self::break_id(id=child_id) }}</a></li>
                                     {% endfor %}
-                                    </ul>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                        </div>
+                                </ul>
+                                {% endif %}
+                            </div>
 
-                        <div class="requirement-indirect-coverage">
-                            <p class="requirement-details-header"><strong>Indirect Coverage ({{ req.test_coverage_info.indirect_coverage | length }})</strong></p>
-                            {% if req.test_coverage_info.indirect_coverage | length > 0 %}
-                            <ul>
-                                {% for coverage in req.test_coverage_info.indirect_coverage %}
-                                <li>
-                                    <p>Covered ID: <a class="req" href="#{{ coverage.covered_id }}">{{ self::break_id(id=coverage.covered_id) }}</a></p>
-                                    <ul>
-                                        {% for test_run in coverage.test_runs %}
-                                        <li>
-                                            <p><a class="test-run-name" href="#{{ test_run.name }}|{{ test_run.date }}">
+                            <div class="requirement-direct-traces">
+                                <p class="requirement-details-header"><strong>Direct Traces ({{
+                                        req.trace_info.direct_traces | length }})</strong></p>
+                                {% if req.trace_info.direct_traces | length > 0 %}
+                                <table class="file-location">
+                                    <tr>
+                                        <th class="filepath">file</th>
+                                        <th class="line">line</th>
+                                    </tr>
+                                    {% for trace in req.trace_info.direct_traces %}
+                                    <tr>
+                                        <td id="{{ req.id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{
+                                            trace.filepath }}</td>
+                                        <td class="line">{{ trace.line }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                                {% endif %}
+                            </div>
+
+                            <div class="requirement-indirect-traces">
+                                <p class="requirement-details-header"><strong>Indirect Traces ({{
+                                        req.trace_info.indirect_traces | length }})</strong></p>
+                                {% if req.trace_info.indirect_traces | length > 0 %}
+                                <ul>
+                                    {% for indirect_trace in req.trace_info.indirect_traces %}
+                                    <li>
+                                        <p>Traced ID: <a class="req" href="#{{ indirect_trace.traced_id }}">{{
+                                                self::break_id(id=indirect_trace.traced_id) }}</a></p>
+                                        <table class="file-location">
+                                            <tr>
+                                                <th class="filepath">file</th>
+                                                <th class="line">line</th>
+                                            </tr>
+                                            {% for trace in indirect_trace.traces %}
+                                            <tr>
+                                                <td id="{{ indirect_trace.traced_id }}|{{ trace.filepath }}|{{ trace.line }}"
+                                                    class="filepath">{{ trace.filepath }}</td>
+                                                <td class="line">{{ trace.line }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </div>
+
+                            <div class="requirement-direct-coverage">
+                                <p class="requirement-details-header"><strong>Direct Coverage ({{
+                                        req.test_coverage_info.direct_coverage | length }})</strong></p>
+                                {% if req.test_coverage_info.direct_coverage | length > 0 %}
+                                <ul>
+                                    {% for test_run in req.test_coverage_info.direct_coverage %}
+                                    <li>
+                                        <p><a class="test-run-name" href="#{{ test_run.name }}|{{ test_run.date }}">
                                                 &lrm;{{ test_run.name }}
                                             </a><br>
-                                            <span class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}</span>
-                                            </p>
-                                            <ul>
-                                            {% for test in test_run.tests %}
-                                                <li>
-                                                    <p>
-                                                        {% if test.passed %}<span class="passed">passed</span>{% else %}<span class="failed">failed</span>{% endif %}
-                                                        <a class="test-name" href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
-                                                            &lrm;{{ test.name }}
-                                                        </a>
-                                                    </p>
+                                            <span class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d
+                                                %H:%M:%S", timezone="Europe/Berlin") }}</span>
+                                        </p>
 
-                                                    <table class="file-location">
-                                                        <tr>
-                                                            <th class="filepath">file</th>
-                                                            <th class="line">line</th>
-                                                        </tr>
-                                                        {% for trace in test.traces %}
-                                                        <tr>
-                                                            <td id="{{ coverage.covered_id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">&lrm;{{ trace.filepath }}</td>
-                                                            <td class="line">{{ trace.line }}</td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </table>
-                                                </li>
+                                        <ul>
+                                            {% for test in test_run.tests %}
+                                            <li>
+                                                <p>
+                                                    {% if test.passed %}<span class="passed">passed</span>{% else
+                                                    %}<span class="failed">failed</span>{% endif %}
+                                                    <a class="test-name"
+                                                        href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
+                                                        &lrm;{{ test.name }}
+                                                    </a>
+                                                </p>
+                                                <table class="file-location">
+                                                    <tr>
+                                                        <th class="filepath">file</th>
+                                                        <th class="line">line</th>
+                                                    </tr>
+                                                    {% for trace in test.traces %}
+                                                    <tr>
+                                                        <td id="{{ req.id }}|{{ trace.filepath }}|{{ trace.line }}"
+                                                            class="filepath">&lrm;{{ trace.filepath }}</td>
+                                                        <td class="line">{{ trace.line }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </table>
+                                            </li>
                                             {% endfor %}
-                                            </ul>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+                                        </ul>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </div>
+
+                            <div class="requirement-indirect-coverage">
+                                <p class="requirement-details-header"><strong>Indirect Coverage ({{
+                                        req.test_coverage_info.indirect_coverage | length }})</strong></p>
+                                {% if req.test_coverage_info.indirect_coverage | length > 0 %}
+                                <ul>
+                                    {% for coverage in req.test_coverage_info.indirect_coverage %}
+                                    <li>
+                                        <p>Covered ID: <a class="req" href="#{{ coverage.covered_id }}">{{
+                                                self::break_id(id=coverage.covered_id) }}</a></p>
+                                        <ul>
+                                            {% for test_run in coverage.test_runs %}
+                                            <li>
+                                                <p><a class="test-run-name"
+                                                        href="#{{ test_run.name }}|{{ test_run.date }}">
+                                                        &lrm;{{ test_run.name }}
+                                                    </a><br>
+                                                    <span class="test-run-date">{{ test_run.date | date(format="%Y-%m-%d
+                                                        %H:%M:%S", timezone="Europe/Berlin") }}</span>
+                                                </p>
+                                                <ul>
+                                                    {% for test in test_run.tests %}
+                                                    <li>
+                                                        <p>
+                                                            {% if test.passed %}<span class="passed">passed</span>{%
+                                                            else %}<span class="failed">failed</span>{% endif %}
+                                                            <a class="test-name"
+                                                                href="#{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}">
+                                                                &lrm;{{ test.name }}
+                                                            </a>
+                                                        </p>
+
+                                                        <table class="file-location">
+                                                            <tr>
+                                                                <th class="filepath">file</th>
+                                                                <th class="line">line</th>
+                                                            </tr>
+                                                            {% for trace in test.traces %}
+                                                            <tr>
+                                                                <td id="{{ coverage.covered_id }}|{{ trace.filepath }}|{{ trace.line }}"
+                                                                    class="filepath">&lrm;{{ trace.filepath }}</td>
+                                                                <td class="line">{{ trace.line }}</td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </table>
+                                                    </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </div>
+
+                            <div class="requirement-reviewed">
+                                <p class="requirement-details-header"><strong>Verified in Reviews ({{ req.verified_info
+                                        | length }})</strong></p>
+                                {% if req.verified_info | length > 0 %}
+                                <table>
+                                    <tr>
+                                        <th class="review-name">review-name</th>
+                                        <th class="review-date">review-date</th>
+                                        <th class="comment">comment</th>
+                                    </tr>
+                                    {% for info in req.verified_info %}
+                                    <tr>
+                                        <td class="review-name"><a
+                                                href="#{{ info.review_name }}|{{ info.review_date }}">
+                                                {{ info.review_name }}
+                                            </a></td>
+                                        <td class="review-date">{{ info.review_date }}</td>
+                                        <td class="comment">{{ info.comment }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                                {% endif %}
+                            </div>
                         </div>
-               
-                        <div class="requirement-reviewed">
-                            <p class="requirement-details-header"><strong>Verified in Reviews ({{ req.verified_info | length }})</strong></p>
-                            {% if req.verified_info | length > 0 %}
-                            <table>
-                                <tr>
-                                    <th class="review-name">review-name</th>
-                                    <th class="review-date">review-date</th>
-                                    <th class="comment">comment</th>
-                                </tr>
-                                {% for info in req.verified_info %}
-                                <tr>
-                                    <td class="review-name"><a href="#{{ info.review_name }}|{{ info.review_date }}">
-                                        {{ info.review_name }}
-                                    </a></td>
-                                    <td class="review-date">{{ info.review_date }}</td>
-                                    <td class="comment">{{ info.comment }}</td>
-                                </tr>
-                                {% endfor %}
-                            </table>
-                        {% endif %}
-                        </div>
-                    </div>
                     </details>
                 </div>
-            {% endfor %}
+                {% endfor %}
             </div>
         </section>
         <section id="tests">
@@ -708,116 +746,126 @@
                     <p><strong>Existing tests:</strong> {{ tests.overview.test_cnt }}</p>
                 </li>
                 <li>
-                    <p><strong>Ran tests:</strong> {{ tests.overview.ran_cnt }} ({{ tests.overview.ran_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Ran tests:</strong> {{ tests.overview.ran_cnt }} ({{ tests.overview.ran_ratio * 100 |
+                        round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Passed tests:</strong> {{ tests.overview.passed_cnt }} ({{ tests.overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Passed tests:</strong> {{ tests.overview.passed_cnt }} ({{ tests.overview.passed_ratio *
+                        100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Failed tests:</strong> {{ tests.overview.failed_cnt }} ({{ tests.overview.failed_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Failed tests:</strong> {{ tests.overview.failed_cnt }} ({{ tests.overview.failed_ratio *
+                        100 | round(precision = 2) }}%)</p>
                 </li>
                 <li>
-                    <p><strong>Skipped tests:</strong> {{ tests.overview.skipped_cnt }} ({{ tests.overview.skipped_ratio * 100 | round(precision = 2) }}%)</p>
+                    <p><strong>Skipped tests:</strong> {{ tests.overview.skipped_cnt }} ({{ tests.overview.skipped_ratio
+                        * 100 | round(precision = 2) }}%)</p>
                 </li>
             </ul>
 
             <div class="test-runs">
                 {% for test_run in tests.test_runs %}
-                    <div id="{{ test_run.name }}|{{ test_run.date }}" class="test-run">
-                        <div class="test-run-header">
-                            <h3>
-                                <span class="test-run-name">
-                                    &lrm;{{ test_run.name }}
-                                </span><br>
-                                <span>
-                                    {{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}
-                                </span>
-                            </h3>
-                            <p class="header-right-part">
-                                {% if test_run.overview.failed_cnt > 0 or test_run.overview.ran_cnt != test_run.overview.test_cnt %}
-                                <span class="failed">failed</span>
-                                {% elif test_run.overview.skipped_cnt == test_run.overview.test_cnt %}
-                                <span class="skipped">skipped</span>
-                                {% elif test_run.overview.passed_cnt == test_run.overview.test_cnt %}
-                                <span class="passed">passed</span>
-                                {% else %}
-                                <span class="partial-passed">partial-passed</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div class="test-run-overview">
-                            <p><strong>Overview</strong></p>
-                            <ul>
-                                <li>
-                                    <p><strong>Existing Tests:</strong> {{ test_run.overview.test_cnt }}</p>
-                                </li>
-                                <li>
-                                    <p><strong>Ran tests:</strong> {{ test_run.overview.ran_cnt }} ({{ test_run.overview.ran_ratio * 100 | round(precision = 2) }}%)</p>
-                                </li>
-                                <li>
-                                    <p><strong>Passed tests:</strong> {{ test_run.overview.passed_cnt }} ({{ test_run.overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
-                                </li>
-                                <li>
-                                    <p><strong>Failed tests:</strong> {{ test_run.overview.failed_cnt }} ({{ test_run.overview.failed_ratio * 100 | round(precision = 2) }}%)</p>
-                                </li>
-                                <li>
-                                    <p><strong>Skipped tests:</strong> {{ test_run.overview.skipped_cnt }} ({{ test_run.overview.skipped_ratio * 100 | round(precision = 2) }}%)</p>
-                                </li>
-                            </ul>
-                        </div>
-
-                        {% if test_run.meta %}
-                        <div class="test-run-meta">
-                            <!-- TODO: custom test-run meta rendering -->
-                        </div>
-                        {% endif %}
-
-                        <p><strong>Tests</strong></p>
-                        <div class="test-run-tests">
-                            {% for test in test_run.tests %}
-                                <div id="{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}" class="test">
-                                    <div class="test-header">
-                                        <p><strong class="test-name">&lrm;{{ test.name }}</strong></p>
-                                        <p class="header-right-part">
-                                            {% if test.state == 'Passed'%}
-                                            <span class="passed">passed</span>
-                                            {% elif 'Skipped' in test.state %}
-                                            <span class="skipped">skipped</span>
-                                            {% else %}
-                                            <span class="failed">failed</span>
-                                            {% endif %}
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="test-body">
-                                        <p>
-                                            <strong>File:</strong> <span class="filepath">{{ test.filepath }}</span><br>
-                                            <strong>Line:</strong> <span class="line">{{ test.line }}</span>
-                                        </p>
-    
-                                        <details class="test-covers">
-                                            <summary>
-                                                <strong>Covers {{ test.covers | length }} requirement{% if test.covers | length != 1 %}s{% endif %}</strong>
-                                            </summary>
-                                            <ul>
-                                                {% for id in test.covers %}
-                                                <li><a class="req" href="#{{ id }}">{{ self::break_id(id=id) }}</a></li>
-                                                {% endfor %}
-                                            </ul>
-                                        </details>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-
-                        <details class="test-run-logs">
-                            <summary><strong>Logs during test run...</strong></summary>
-                            <p>{{ test_run.logs }}</p>
-                        </details>
+                <div id="{{ test_run.name }}|{{ test_run.date }}" class="test-run">
+                    <div class="test-run-header">
+                        <h3>
+                            <span class="test-run-name">
+                                &lrm;{{ test_run.name }}
+                            </span><br>
+                            <span>
+                                {{ test_run.date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}
+                            </span>
+                        </h3>
+                        <p class="header-right-part">
+                            {% if test_run.overview.failed_cnt > 0 or test_run.overview.ran_cnt !=
+                            test_run.overview.test_cnt %}
+                            <span class="failed">failed</span>
+                            {% elif test_run.overview.skipped_cnt == test_run.overview.test_cnt %}
+                            <span class="skipped">skipped</span>
+                            {% elif test_run.overview.passed_cnt == test_run.overview.test_cnt %}
+                            <span class="passed">passed</span>
+                            {% else %}
+                            <span class="partial-passed">partial-passed</span>
+                            {% endif %}
+                        </p>
                     </div>
+                    <div class="test-run-overview">
+                        <p><strong>Overview</strong></p>
+                        <ul>
+                            <li>
+                                <p><strong>Existing Tests:</strong> {{ test_run.overview.test_cnt }}</p>
+                            </li>
+                            <li>
+                                <p><strong>Ran tests:</strong> {{ test_run.overview.ran_cnt }} ({{
+                                    test_run.overview.ran_ratio * 100 | round(precision = 2) }}%)</p>
+                            </li>
+                            <li>
+                                <p><strong>Passed tests:</strong> {{ test_run.overview.passed_cnt }} ({{
+                                    test_run.overview.passed_ratio * 100 | round(precision = 2) }}%)</p>
+                            </li>
+                            <li>
+                                <p><strong>Failed tests:</strong> {{ test_run.overview.failed_cnt }} ({{
+                                    test_run.overview.failed_ratio * 100 | round(precision = 2) }}%)</p>
+                            </li>
+                            <li>
+                                <p><strong>Skipped tests:</strong> {{ test_run.overview.skipped_cnt }} ({{
+                                    test_run.overview.skipped_ratio * 100 | round(precision = 2) }}%)</p>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {% if test_run.meta %}
+                    <div class="test-run-meta">
+                        <!-- TODO: custom test-run meta rendering -->
+                    </div>
+                    {% endif %}
+
+                    <p><strong>Tests</strong></p>
+                    <div class="test-run-tests">
+                        {% for test in test_run.tests %}
+                        <div id="{{ test_run.name }}|{{ test_run.date }}|{{ test.name }}" class="test">
+                            <div class="test-header">
+                                <p><strong class="test-name">&lrm;{{ test.name }}</strong></p>
+                                <p class="header-right-part">
+                                    {% if test.state == 'Passed'%}
+                                    <span class="passed">passed</span>
+                                    {% elif 'Skipped' in test.state %}
+                                    <span class="skipped">skipped</span>
+                                    {% else %}
+                                    <span class="failed">failed</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+
+                            <div class="test-body">
+                                <p>
+                                    <strong>File:</strong> <span class="filepath">{{ test.filepath }}</span><br>
+                                    <strong>Line:</strong> <span class="line">{{ test.line }}</span>
+                                </p>
+
+                                <details class="test-covers">
+                                    <summary>
+                                        <strong>Covers {{ test.covers | length }} requirement{% if test.covers | length
+                                            != 1 %}s{% endif %}</strong>
+                                    </summary>
+                                    <ul>
+                                        {% for id in test.covers %}
+                                        <li><a class="req" href="#{{ id }}">{{ self::break_id(id=id) }}</a></li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <details class="test-run-logs">
+                        <summary><strong>Logs during test run...</strong></summary>
+                        <p>{{ test_run.logs }}</p>
+                    </details>
+                </div>
                 {% endfor %}
             </div>
-        
+
         </section>
         <section id="reviews">
             <h2>Reviews ({{ reviews | length }})</h2>
@@ -847,7 +895,7 @@
                         </ul>
                         {% endif %}
                     </div>
-                </div>                
+                </div>
             </div>
             {% endfor %}
         </section>
@@ -857,4 +905,5 @@
         Report generated at {{ creation_date | date(format="%Y-%m-%d %H:%M:%S", timezone="Europe/Berlin") }}
     </footer>
 </body>
+
 </html>

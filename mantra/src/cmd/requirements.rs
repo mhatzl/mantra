@@ -184,7 +184,7 @@ fn requirements_from_wiki_content(
                     id,
                     title,
                     link: link.to_string(),
-                    annotation: None,
+                    info: None,
                     manual,
                     deprecated,
                 });

@@ -12,5 +12,5 @@ pub struct Requirement {
     pub link: String,
     pub manual: bool,
     pub deprecated: bool,
-    pub annotation: Option<serde_json::Value>,
+    pub info: Option<serde_json::Value>,
 }
