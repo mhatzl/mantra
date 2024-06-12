@@ -356,7 +356,7 @@ impl RequirementInfo {
             select 
                 title,
                 link,
-                annotation,
+                info,
                 case when id in (select id from DeprecatedRequirements) then true else false end as "deprecated!: bool",
                 case when id in (select id from ManualRequirements) then true else false end as "manual!: bool"
             from Requirements
@@ -365,9 +365,9 @@ impl RequirementInfo {
 
         let title = record.title;
         let link = record.link;
-        let annotation = record
-            .annotation
-            .map(|a| serde_json::to_value(a).expect("Requirement annotation must be valid JSON."));
+        let info = record
+            .info
+            .map(|a| serde_json::to_value(a).expect("Requirement info must be valid JSON."));
         let deprecated = record.deprecated;
         let manual = record.manual;
 
@@ -467,7 +467,7 @@ impl RequirementInfo {
                 link,
                 manual,
                 deprecated,
-                annotation,
+                info,
             },
             parent,
             rendered_info,

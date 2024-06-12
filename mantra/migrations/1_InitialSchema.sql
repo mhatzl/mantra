@@ -1,12 +1,12 @@
 -- requirements that may be traced.
 -- generation is used to show changes for "--dry-run" and to delete non-existing requirements.
--- annotation might be custom JSON data
+-- info might be custom JSON data
 create table Requirements (
     id text not null primary key,
     generation integer not null,
     title text not null,
     link text not null,
-    annotation text,
+    info text,
     manual bool not null,
     deprecated bool not null
 );

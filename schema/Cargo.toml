@@ -9,4 +9,4 @@ license.workspace = true
 mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0" }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0" }
-time = { version = "0.3.36", features = ["serde", "formatting", "parsing"] }
+time = { version = "0.3.36", features = ["serde", "formatting", "parsing", "macros"] }

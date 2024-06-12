@@ -214,7 +214,7 @@ impl MantraDb {
 
         for req in &reqs {
             if let Ok(existing_record) = sqlx::query!(
-                "select id, title, link, annotation, manual, deprecated from Requirements where id = $1",
+                "select id, title, link, info, manual, deprecated from Requirements where id = $1",
                 req.id
             )
             .fetch_one(&self.pool)
@@ -224,8 +224,9 @@ impl MantraDb {
                     id: existing_record.id,
                     title: existing_record.title,
                     link: existing_record.link,
-                    annotation: existing_record.annotation.map(|a| serde_json::to_value(a)
-                        .expect("Requirement annotation must be valid JSON.")),
+                    info: existing_record.info.map(|a| {
+                        serde_json::to_value(a).expect("Requirement info must be valid JSON.")
+                    }),
                     manual: existing_record.manual,
                     deprecated: existing_record.deprecated,
                 };
@@ -239,12 +240,12 @@ impl MantraDb {
                 }
 
                 let _ = sqlx::query!(
-                    "update Requirements set generation = $2, title = $3, link = $4, annotation = $5, manual = $6, deprecated = $7 where id = $1",
+                    "update Requirements set generation = $2, title = $3, link = $4, info = $5, manual = $6, deprecated = $7 where id = $1",
                     req.id,
                     new_generation,
                     req.title,
                     req.link,
-                    req.annotation,
+                    req.info,
                     req.manual,
                     req.deprecated,
                 )
@@ -252,12 +253,12 @@ impl MantraDb {
                 .await;
             } else {
                 let res = sqlx::query!(
-                    "insert into Requirements (id, generation, title, link, annotation, manual, deprecated) values ($1, $2, $3, $4, $5, $6, $7)",
+                    "insert into Requirements (id, generation, title, link, info, manual, deprecated) values ($1, $2, $3, $4, $5, $6, $7)",
                     req.id,
                     new_generation,
                     req.title,
                     req.link,
-                    req.annotation,
+                    req.info,
                     req.manual,
                     req.deprecated,
                 )
@@ -322,7 +323,7 @@ impl MantraDb {
         let mut deleted = DeletedRequirements::default();
 
         if let Ok(old_reqs) = sqlx::query!(
-            "select id, title, link, annotation, manual, deprecated from Requirements where generation < $1",
+            "select id, title, link, info, manual, deprecated from Requirements where generation < $1",
             before
         )
         .fetch_all(&self.pool)
@@ -333,8 +334,8 @@ impl MantraDb {
                     id: old_req.id,
                     title: old_req.title,
                     link: old_req.link,
-                    annotation: old_req.annotation.map(|a| serde_json::to_value(a)
-                        .expect("Requirement annotation must be valid JSON.")),
+                    info: old_req.info.map(|a| serde_json::to_value(a)
+                        .expect("Requirement info must be valid JSON.")),
                     manual: old_req.manual,
                     deprecated: old_req.deprecated,
                 })
