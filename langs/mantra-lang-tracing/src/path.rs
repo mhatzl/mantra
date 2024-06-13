@@ -27,7 +27,7 @@ mod test {
         let root = PathBuf::from("src/");
         let filepath = PathBuf::from("src/cmd/mod.rs");
 
-        let relative_path = make_relative(&root, &filepath).unwrap();
+        let relative_path = make_relative(&filepath, &root).unwrap();
 
         assert_eq!(
             relative_path,
@@ -41,7 +41,7 @@ mod test {
         let root = PathBuf::from("src/main.rs");
         let filepath = PathBuf::from("src/main.rs");
 
-        let relative_path = make_relative(&root, &filepath).unwrap();
+        let relative_path = make_relative(&filepath, &root).unwrap();
 
         assert_eq!(
             relative_path,
