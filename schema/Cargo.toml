@@ -1,5 +1,6 @@
 [package]
 name = "mantra-schema"
+description = "Schemas for *mantra*."
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
