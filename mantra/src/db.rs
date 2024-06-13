@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use mantra_lang_tracing::TraceEntry;
+use mantra_lang_tracing::{Line, TraceEntry};
 use mantra_schema::{
     coverage::{TestRunPk, TestState},
     requirements::Requirement,
@@ -174,6 +174,8 @@ pub enum DbError {
     Connect(String),
     #[error("Could not run migration on database. Cause: {}", .0)]
     Migrate(String),
+    #[error("Could query database. Cause: {}", .0)]
+    Query(String),
     #[error("Could not insert data into database. Cause: {}", .0)]
     Insert(String),
     #[error("Failed to delete table content. Cause: {}", .0)]
@@ -519,7 +521,7 @@ impl MantraDb {
         test_run: &TestRunPk,
         test_name: &str,
         trace_filepath: &Path,
-        trace_line: u32,
+        trace_line: Line,
         req_id: &str,
     ) -> Result<(), DbError> {
         // Note: filepath is already *fix* due to how the "file!()" macro works
@@ -559,7 +561,7 @@ impl MantraDb {
         test_run: &TestRunPk,
         name: &str,
         filepath: &Path,
-        line: u32,
+        line: Line,
         state: TestState,
     ) -> Result<(), DbError> {
         let file = filepath.display().to_string();
@@ -611,36 +613,6 @@ impl MantraDb {
         Ok(())
     }
 
-    // pub async fn add_skipped_test(
-    //     &self,
-    //     test_run: &TestRunConfig,
-    //     name: &str,
-    //     filepath: &Path,
-    //     line: u32,
-    //     reason: Option<String>,
-    // ) -> Result<(), DbError> {
-    //     let file = filepath.display().to_string();
-    //     sqlx::query!(
-    //             "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
-    //             name,
-    //             test_run.name,
-    //             test_run.date,
-    //             file,
-    //             line,
-    //             reason,
-    //         )
-    //         .execute(&self.pool)
-    //         .await
-    //         .map_err(|err| {
-    //             DbError::Insert(format!(
-    //                 "Adding skipped test '{}' for test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
-    //                 name, test_run.name, test_run.date, file, line, err
-    //             ))
-    //         })?;
-
-    //     Ok(())
-    // }
-
     pub async fn add_test_run(
         &self,
         name: &str,
@@ -668,29 +640,6 @@ impl MantraDb {
 
         Ok(())
     }
-
-    // pub async fn update_nr_of_tests(
-    //     &self,
-    //     test_run: &TestRunConfig,
-    //     nr_of_tests: u32,
-    // ) -> Result<(), DbError> {
-    //     let _ = sqlx::query!(
-    //         "update TestRuns set nr_of_tests = $1 where name = $2 and date = $3 and nr_of_tests is null",
-    //         nr_of_tests,
-    //         test_run.name,
-    //         test_run.date,
-    //     )
-    //     .execute(&self.pool)
-    //     .await
-    //     .map_err(|err| {
-    //         DbError::Update(format!(
-    //             "Could not set 'nr_of_tests' for test-run='{}' at {}. Cause: {}",
-    //             test_run.name, test_run.date, err
-    //         ))
-    //     })?;
-
-    //     Ok(())
-    // }
 
     pub async fn is_valid(&self) -> Result<(), DbError> {
         let record = sqlx::query!("select count(*) as invalid_cnt from InvalidRequirements")

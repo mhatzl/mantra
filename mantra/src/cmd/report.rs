@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use mantra_lang_tracing::ReqId;
+use mantra_lang_tracing::{Line, ReqId};
 use mantra_schema::{coverage::TestState, requirements::Requirement};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
@@ -529,7 +529,7 @@ impl RequirementTraceInfo {
         let records = sqlx::query_as!(
             TraceLocation,
             r#"
-            select filepath, line as "line: u32"
+            select filepath, line as "line: Line"
             from Traces
             where req_id = $1
             order by filepath, line
@@ -590,7 +590,7 @@ impl RequirementTraceInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, sqlx::Type)]
 pub struct TraceLocation {
     pub filepath: String,
-    pub line: u32,
+    pub line: Line,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -828,7 +828,7 @@ impl TestRunInfo {
 
         let test_records = sqlx::query!(
             r#"
-            select name, passed as "passed!: bool", skipped as "skipped!: bool", reason as "reason?: String", filepath, line as "line: u32" from (
+            select name, passed as "passed!: bool", skipped as "skipped!: bool", reason as "reason?: String", filepath, line as "line: Line" from (
                 select
                 name, filepath, line,
                 passed,
@@ -993,7 +993,7 @@ pub struct TestInfo {
     pub covers: Vec<String>,
     pub name: String,
     pub filepath: PathBuf,
-    pub line: u32,
+    pub line: Line,
     pub state: TestState,
 }
 

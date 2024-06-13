@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use mantra_lang_tracing::Line;
 use once_cell::unsync::Lazy;
 use regex::bytes::Regex;
 
@@ -15,7 +16,7 @@ thread_local! {
 pub struct CoveredReq {
     pub id: String,
     pub file: PathBuf,
-    pub line: u32,
+    pub line: Line,
 }
 
 pub fn extract_first_coverage(content: &str) -> Option<CoveredReq> {
@@ -24,7 +25,7 @@ pub fn extract_first_coverage(content: &str) -> Option<CoveredReq> {
             let id = String::from_utf8(coverage_capture[REQ_ID_MATCH_NAME].to_vec()).ok()?;
             let file =
                 PathBuf::from(String::from_utf8(coverage_capture[FILE_MATCH_NAME].to_vec()).ok()?);
-            let line: u32 = String::from_utf8(coverage_capture[LINE_MATCH_NAME].to_vec())
+            let line: Line = String::from_utf8(coverage_capture[LINE_MATCH_NAME].to_vec())
                 .ok()?
                 .parse()
                 .ok()?;
@@ -43,7 +44,7 @@ pub fn extract_covered_reqs(content: &[u8]) -> Option<Vec<CoveredReq>> {
         for cap in captures {
             let id = String::from_utf8(cap[REQ_ID_MATCH_NAME].to_vec()).ok()?;
             let file = PathBuf::from(String::from_utf8(cap[FILE_MATCH_NAME].to_vec()).ok()?);
-            let line: u32 = String::from_utf8(cap[LINE_MATCH_NAME].to_vec())
+            let line: Line = String::from_utf8(cap[LINE_MATCH_NAME].to_vec())
                 .ok()?
                 .parse()
                 .ok()?;

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            select filepath, line as \"line: u32\"\n            from Traces\n            where req_id = $1\n            order by filepath, line\n        ",
+  "query": "\n            select filepath, line as \"line: Line\"\n            from Traces\n            where req_id = $1\n            order by filepath, line\n        ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Text"
       },
       {
-        "name": "line: u32",
+        "name": "line: Line",
         "ordinal": 1,
         "type_info": "Int64"
       }
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "f7ab4ca81b43b18922c43c6cd3e033b1367e5bd2a614d94d3ce4acb34afb27c6"
+  "hash": "44939f1cab228c8948da9e9c41c4124de9152e98e9cf14a019b8aa8a9acd7b1b"
 }

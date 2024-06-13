@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use mantra_lang_tracing::Line;
 pub use mantra_rust_procm::req;
 pub use mantra_rust_procm::reqcov;
 
@@ -32,7 +33,7 @@ macro_rules! mr_reqcov {
 pub struct ReqCovStatic {
     pub id: &'static str,
     pub file: &'static str,
-    pub line: u32,
+    pub line: Line,
 }
 
 #[cfg(feature = "defmt")]

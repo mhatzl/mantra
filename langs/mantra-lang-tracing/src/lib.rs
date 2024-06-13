@@ -8,30 +8,32 @@ pub mod path;
 
 pub type ReqId = String;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub type Line = u32;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct LineSpan {
-    start: u32,
-    end: u32,
+    start: Line,
+    end: Line,
 }
 
 impl LineSpan {
-    pub fn new(start: u32, end: u32) -> Self {
+    pub fn new(start: Line, end: Line) -> Self {
         Self { start, end }
     }
-    pub fn start(&self) -> u32 {
+    pub fn start(&self) -> Line {
         self.start
     }
 
-    pub fn end(&self) -> u32 {
+    pub fn end(&self) -> Line {
         self.end
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct TraceEntry {
     ids: Vec<ReqId>,
     /// The line the trace is defined
-    line: u32,
+    line: Line,
     /// Optional span of lines this entry affects in the source.
     ///
     /// e.g. lines of a function body for a trace set at start of the function.
@@ -39,7 +41,7 @@ pub struct TraceEntry {
 }
 
 impl TraceEntry {
-    pub fn new(ids: Vec<ReqId>, line: u32, line_span: Option<LineSpan>) -> Self {
+    pub fn new(ids: Vec<ReqId>, line: Line, line_span: Option<LineSpan>) -> Self {
         Self {
             ids,
             line,
@@ -51,7 +53,7 @@ impl TraceEntry {
         &self.ids
     }
 
-    pub fn line(&self) -> u32 {
+    pub fn line(&self) -> Line {
         self.line
     }
 
@@ -68,7 +70,7 @@ impl TryFrom<(&str, usize, Option<LineSpan>)> for TraceEntry {
         let line = value
             .1
             .try_into()
-            .map_err(|err: <u32 as std::convert::TryFrom<usize>>::Error| err.to_string())?;
+            .map_err(|err: <Line as std::convert::TryFrom<usize>>::Error| err.to_string())?;
         let line_span = value.2;
 
         Ok(Self {

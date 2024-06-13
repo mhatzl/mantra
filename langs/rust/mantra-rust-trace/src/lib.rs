@@ -1,4 +1,4 @@
-use mantra_lang_tracing::{LineSpan, TraceEntry};
+use mantra_lang_tracing::{Line, LineSpan, TraceEntry};
 use tree_sitter::Node;
 
 pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec<TraceEntry>> {
@@ -69,8 +69,8 @@ fn associated_item_span(mut node: Node) -> Option<LineSpan> {
         let sibling_kind = sibling.kind();
 
         if sibling_kind.ends_with("_item") {
-            let start = u32::try_from(sibling.start_position().row + 1).ok()?;
-            let end = u32::try_from(sibling.end_position().row + 1).ok()?;
+            let start = Line::try_from(sibling.start_position().row + 1).ok()?;
+            let end = Line::try_from(sibling.end_position().row + 1).ok()?;
 
             return Some(LineSpan::new(start, end));
         } else if sibling_kind.ends_with("comment") && !is_doc_comment(&sibling) {
