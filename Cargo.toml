@@ -17,7 +17,7 @@ tree-sitter-rust = "0.21.0"
 cc = "1.0.90"
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"
