@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select name, passed as \"passed!: bool\", skipped as \"skipped!: bool\", reason as \"reason?: String\", filepath, line as \"line: Line\" from (\n                select\n                name, filepath, line,\n                passed,\n                false as skipped,\n                null as reason\n                from Tests\n                where test_run_name = $1 and test_run_date = $2\n                \n                union all\n                \n                select\n                name, filepath, line,\n                false as passed,\n                true as skipped,\n                reason\n                from SkippedTests\n                where test_run_name = $1 and test_run_date = $2\n            )\n            order by name, filepath, line\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "passed!: bool",
+        "ordinal": 1,
+        "type_info": "Int"
+      },
+      {
+        "name": "skipped!: bool",
+        "ordinal": 2,
+        "type_info": "Int"
+      },
+      {
+        "name": "reason?: String",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "filepath",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "line: Line",
+        "ordinal": 5,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d5600ecb6785b3c8b481b3cee9b8037d9f3ef9d42ef3e4abd9b9d907cfe366a4"
+}

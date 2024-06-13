@@ -8,7 +8,7 @@ const REVIEW_DATE_FORMAT: &[time::format_description::BorrowedFormatItem<'static
 
 time::serde::format_description!(review_date_format, PrimitiveDateTime, REVIEW_DATE_FORMAT);
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct ReviewSchema {
     pub name: String,
     #[serde(with = "review_date_format")]
@@ -18,7 +18,7 @@ pub struct ReviewSchema {
     pub requirements: Vec<VerifiedRequirement>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct VerifiedRequirement {
     pub id: ReqId,
     pub comment: Option<String>,
