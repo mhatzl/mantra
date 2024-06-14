@@ -1,4 +1,8 @@
-use mantra_lang_tracing::{Line, LineSpan, TraceEntry};
+use mantra_lang_tracing::RawTraceEntry;
+use mantra_schema::{
+    traces::{LineSpan, TraceEntry},
+    Line,
+};
 use tree_sitter::Node;
 
 pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec<TraceEntry>> {
@@ -25,13 +29,13 @@ pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec
                 None
             };
 
-            return Some(vec![TraceEntry::try_from((
+            return Some(vec![TraceEntry::try_from(RawTraceEntry::new(
                 macro_content
                     .utf8_text(src)
                     .ok()?
                     .strip_prefix('(')
                     .and_then(|s| s.strip_suffix(')'))?,
-                (ident.start_position().row + 1),
+                ident.start_position().row + 1,
                 span,
             ))
             .ok()?]);
@@ -48,9 +52,9 @@ pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec
             let mut traces = Vec::new();
             for capture in captures {
                 traces.push(
-                    TraceEntry::try_from((
+                    TraceEntry::try_from(RawTraceEntry::new(
                         capture.name("ids")?.as_str(),
-                        (node.start_position().row + 1),
+                        node.start_position().row + 1,
                         span,
                     ))
                     .ok()?,
@@ -72,7 +76,7 @@ fn associated_item_span(mut node: Node) -> Option<LineSpan> {
             let start = Line::try_from(sibling.start_position().row + 1).ok()?;
             let end = Line::try_from(sibling.end_position().row + 1).ok()?;
 
-            return Some(LineSpan::new(start, end));
+            return Some(LineSpan { start, end });
         } else if sibling_kind.ends_with("comment") && !is_doc_comment(&sibling) {
             return None;
         }

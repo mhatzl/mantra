@@ -1,11 +1,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use mantra_lang_tracing::Line;
 pub use mantra_rust_procm::req;
 pub use mantra_rust_procm::reqcov;
 
 #[cfg(feature = "extract")]
 pub mod extract;
+
+/// Type alias that must be in sync with `mantra_schema::Line`.
+/// Adding `mantra-schema` as dependency is not feasible due to `no_std` usage for this macro crate.
+type Line = u32;
 
 #[inline]
 #[allow(unused)]

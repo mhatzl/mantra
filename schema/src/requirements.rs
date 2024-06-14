@@ -3,7 +3,7 @@ pub struct RequirementSchema {
     pub requirements: Vec<Requirement>,
 }
 
-pub use mantra_lang_tracing::ReqId;
+pub type ReqId = String;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Requirement {

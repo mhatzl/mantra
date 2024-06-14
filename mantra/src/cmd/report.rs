@@ -3,8 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use mantra_lang_tracing::{Line, ReqId};
-use mantra_schema::{coverage::TestState, requirements::Requirement};
+use mantra_schema::{
+    coverage::TestState,
+    requirements::{ReqId, Requirement},
+    Line,
+};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::{cmd::review::VerifiedRequirement, db::MantraDb};

@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
-use mantra_lang_tracing::ReqId;
-use mantra_schema::reviews::ReviewSchema;
+use mantra_schema::{requirements::ReqId, reviews::ReviewSchema};
 use time::PrimitiveDateTime;
 
 use crate::db::{DbError, MantraDb};

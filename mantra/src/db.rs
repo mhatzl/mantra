@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use mantra_lang_tracing::{Line, TraceEntry};
 use mantra_schema::{
     coverage::{TestRunPk, TestState},
     requirements::Requirement,
     reviews::ReviewSchema,
-    traces::TracePk,
+    traces::{TraceEntry, TracePk},
+    Line,
 };
 use sqlx::Pool;
 
@@ -403,18 +403,17 @@ impl MantraDb {
         let file = filepath.display().to_string();
 
         for trace in traces {
-            let ids = trace.ids();
-            let line = trace.line();
-            let line_span = trace.line_span();
+            let line = trace.line;
+            let line_span = trace.line_span;
 
-            for id in ids {
+            for id in &trace.ids {
                 if (sqlx::query!("select req_id, filepath, line from Traces where req_id = $1 and filepath = $2 and line = $3", id, file, line).fetch_one(&self.pool).await).is_ok() {
                     let _ = sqlx::query!("update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3", id, file, line, new_generation).execute(&self.pool).await;
                     changes.unchanged_cnt += 1;
 
                     if let Some(span) = line_span {
-                        let start = span.start();
-                        let end = span.end();
+                        let start = span.start;
+                        let end = span.end;
 
                         let _ = sqlx::query!("insert or replace into TraceSpans (req_id, filepath, line, start, end) values ($1, $2, $3, $4, $5)",
                             id,
@@ -447,8 +446,8 @@ impl MantraDb {
                         changes.inserted.push(TracePk{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
 
                         if let Some(span) = line_span {
-                            let start = span.start();
-                            let end = span.end();
+                            let start = span.start;
+                            let end = span.end;
 
                             let _ = sqlx::query!("insert into TraceSpans (req_id, filepath, line, start, end) values ($1, $2, $3, $4, $5)",
                                 id,

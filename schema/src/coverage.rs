@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use mantra_lang_tracing::Line;
+use crate::Line;
 
 use super::traces::TracePk;
 

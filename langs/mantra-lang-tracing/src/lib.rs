@@ -1,95 +1,55 @@
 use std::str::FromStr;
 
+use mantra_schema::{
+    requirements::ReqId,
+    traces::{LineSpan, TraceEntry},
+    Line,
+};
 use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use regex::Regex;
 use tree_sitter::{Language, Node, Parser, Tree};
 
 pub mod path;
 
-pub type ReqId = String;
-
-pub type Line = u32;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct LineSpan {
-    start: Line,
-    end: Line,
-}
-
-impl LineSpan {
-    pub fn new(start: Line, end: Line) -> Self {
-        Self { start, end }
-    }
-    pub fn start(&self) -> Line {
-        self.start
-    }
-
-    pub fn end(&self) -> Line {
-        self.end
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct TraceEntry {
-    ids: Vec<ReqId>,
+pub struct RawTraceEntry<'a> {
+    /// String containing requirement IDs.
+    /// The format is defined in the README section [specifying requirement IDs](https://github.com/mhatzl/mantra/tree/main/langs/mantra-lang-tracing#specifying-requirement-ids).
+    ids: &'a str,
     /// The line the trace is defined
-    line: Line,
+    line: usize,
     /// Optional span of lines this entry affects in the source.
     ///
     /// e.g. lines of a function body for a trace set at start of the function.
     line_span: Option<LineSpan>,
 }
 
-impl TraceEntry {
-    pub fn new(ids: Vec<ReqId>, line: Line, line_span: Option<LineSpan>) -> Self {
+impl<'a> RawTraceEntry<'a> {
+    pub fn new(ids: &'a str, line: usize, line_span: Option<LineSpan>) -> Self {
         Self {
             ids,
             line,
             line_span,
         }
     }
-
-    pub fn ids(&self) -> &[ReqId] {
-        &self.ids
-    }
-
-    pub fn line(&self) -> Line {
-        self.line
-    }
-
-    pub fn line_span(&self) -> &Option<LineSpan> {
-        &self.line_span
-    }
 }
 
-impl TryFrom<(&str, usize, Option<LineSpan>)> for TraceEntry {
+impl TryFrom<RawTraceEntry<'_>> for TraceEntry {
     type Error = String;
 
-    fn try_from(value: (&str, usize, Option<LineSpan>)) -> Result<Self, Self::Error> {
-        let ids = extract_req_ids_from_str(value.0).map_err(|err| err.to_string())?;
+    fn try_from(value: RawTraceEntry) -> Result<Self, Self::Error> {
+        let ids = extract_req_ids_from_str(value.ids).map_err(|err| err.to_string())?;
         let line = value
-            .1
+            .line
             .try_into()
             .map_err(|err: <Line as std::convert::TryFrom<usize>>::Error| err.to_string())?;
-        let line_span = value.2;
+        let line_span = value.line_span;
 
         Ok(Self {
             ids,
             line,
             line_span,
         })
-    }
-}
-
-impl std::fmt::Display for TraceEntry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "req({}) at '{}'", self.ids.join(","), self.line)?;
-
-        if let Some(span) = self.line_span {
-            write!(f, " spans lines '{}:{}'", span.start, span.end)?;
-        }
-
-        Ok(())
     }
 }
 
@@ -116,7 +76,12 @@ impl TraceCollector<()> for PlainCollector<'_> {
         for (i, line_content) in lines.enumerate() {
             for capture in trace_matcher.captures_iter(line_content) {
                 traces.push(
-                    TraceEntry::try_from((capture.name("ids")?.as_str(), (i + 1), None)).ok()?,
+                    TraceEntry::try_from(RawTraceEntry::new(
+                        capture.name("ids")?.as_str(),
+                        i + 1,
+                        None,
+                    ))
+                    .ok()?,
                 )
             }
         }

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use mantra_lang_tracing::Line;
+// use mantra_lang_tracing::Line;
+type Line = u32;
 use once_cell::unsync::Lazy;
 use regex::bytes::Regex;
 

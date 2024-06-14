@@ -3,10 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use mantra_lang_tracing::Line;
 use mantra_schema::{
     coverage::{CoverageSchema, LineCoverage, TestRunPk},
     traces::TracePk,
+    Line,
 };
 use time::OffsetDateTime;
 
