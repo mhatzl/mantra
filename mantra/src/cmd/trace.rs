@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::db::{MantraDb, TraceChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
-use mantra_lang_tracing::{AstCollector, PlainCollector, TraceCollector};
+use mantra_lang_tracing::collect::{AstCollector, PlainCollector, TraceCollector};
 use mantra_schema::traces::{TraceEntry, TraceSchema};
 
 #[derive(Debug, Clone, clap::Subcommand, serde::Serialize, serde::Deserialize)]

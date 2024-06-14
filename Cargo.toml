@@ -14,7 +14,6 @@ proc-macro2 = "1.0.81"
 regex = "1.10.4"
 tree-sitter = "0.22.0"
 tree-sitter-rust = "0.21.0"
-cc = "1.0.90"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0" }
 time = { version = "0.3.36", features = ["serde", "formatting", "parsing", "macros"] }

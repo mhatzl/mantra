@@ -5,7 +5,7 @@ use syn::{parse_quote, ItemFn, Stmt};
 #[proc_macro_attribute]
 pub fn req(attr: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(mut wrapped_fn) = syn::parse::<ItemFn>(item.clone()) {
-        let mut req_ids = mantra_lang_tracing::extract_req_ids(attr.into())
+        let mut req_ids = mantra_lang_tracing::extract::extract_req_ids(attr.into())
             .map_err(|err| panic!("{err}"))
             .unwrap();
         req_ids.reverse();
@@ -26,7 +26,7 @@ pub fn req(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn reqcov(input: TokenStream) -> TokenStream {
-    let req_ids = mantra_lang_tracing::extract_req_ids(input.into())
+    let req_ids = mantra_lang_tracing::extract::extract_req_ids(input.into())
         .map_err(|err| panic!("{err}"))
         .unwrap();
 

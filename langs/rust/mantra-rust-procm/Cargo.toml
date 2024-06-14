@@ -9,7 +9,7 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0" }
+mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0", default-features = false, features = ["extract"] }
 proc-macro2.workspace = true
 syn = { version = "2.0", features = ["full"] }
 quote = "1.0"

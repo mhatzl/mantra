@@ -1,4 +1,4 @@
-use mantra_lang_tracing::extract_req_ids_from_str;
+use mantra_lang_tracing::extract::extract_req_ids_from_str;
 use mantra_rust_macros::req;
 
 #[test]

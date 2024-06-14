@@ -1,11 +1,9 @@
-use mantra_lang_tracing::RawTraceEntry;
-use mantra_schema::{
-    traces::{LineSpan, TraceEntry},
-    Line,
+use mantra_lang_tracing::{
+    collect::{AstNode, Line, LineSpan, TraceEntry},
+    RawTraceEntry,
 };
-use tree_sitter::Node;
 
-pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec<TraceEntry>> {
+pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<Vec<TraceEntry>> {
     let node_kind = node.kind();
 
     if node_kind == "attribute_item" || node_kind == "macro_invocation" {
@@ -41,7 +39,7 @@ pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec
             .ok()?]);
         }
     } else if node_kind == "line_comment" && is_doc_comment(node) {
-        let trace_matcher = mantra_lang_tracing::req_trace_matcher();
+        let trace_matcher = mantra_lang_tracing::extract::req_trace_matcher();
         let comment_content = node.utf8_text(src).ok()?;
 
         let captures: Vec<_> = trace_matcher.captures_iter(comment_content).collect();
@@ -68,7 +66,7 @@ pub fn collect_traces_in_rust(node: &Node, src: &[u8], _args: &()) -> Option<Vec
     None
 }
 
-fn associated_item_span(mut node: Node) -> Option<LineSpan> {
+fn associated_item_span(mut node: AstNode) -> Option<LineSpan> {
     while let Some(sibling) = node.next_named_sibling() {
         let sibling_kind = sibling.kind();
 
@@ -87,7 +85,7 @@ fn associated_item_span(mut node: Node) -> Option<LineSpan> {
     None
 }
 
-fn is_doc_comment(node: &Node) -> bool {
+fn is_doc_comment(node: &AstNode) -> bool {
     if let Some(doc_node) = node.named_child(1) {
         doc_node.kind() == "doc_comment"
     } else {
