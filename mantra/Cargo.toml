@@ -16,18 +16,17 @@ mantra-rust-macros = { path = "../langs/rust/mantra-rust-macros", version = "0",
 mantra-schema = { path = "../schema", version = "0" }
 regex.workspace = true
 tree-sitter-rust.workspace = true
+log.workspace = true
+time.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
 sqlx = { version = "0.7.4", features = ["sqlite", "json", "runtime-tokio", "time"] }
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = { version = "1.0" }
 toml = { version = "0.8.13", features = ["parse"] }
 ignore = "0.4.20"
 mime_guess = "2.0.4"
-defmt-json-schema = "0.1.0"
 thiserror = "1.0.59"
-log = "0.4.21"
-time = { version = "0.3.36", features = ["serde", "formatting", "parsing"] }
 tera = "1.19.1"
 env_logger = "0.11.3"
 intervaltree = "0.2.7"

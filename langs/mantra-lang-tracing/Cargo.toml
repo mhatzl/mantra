@@ -10,19 +10,14 @@ license.workspace = true
 
 [dependencies]
 mantra-schema = { path = "../../schema", version = "0" }
-proc-macro2 = { workspace = true, optional = true }
-regex = { workspace = true, optional = true }
-tree-sitter = { workspace = true, optional = true }
-tree-sitter-rust = { workspace = true, optional = true }
-serde = { version = "1.0.197", features = ["derive"] }
+proc-macro2.workspace = true
+regex.workspace = true
+tree-sitter.workspace = true
+tree-sitter-rust.workspace = true
+serde.workspace = true
 
 [build-dependencies]
 cc.workspace = true
 
 [dev-dependencies]
 mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0" }
-
-[features]
-default = ["collector", "path"]
-collector = ["dep:proc-macro2", "dep:regex", "dep:tree-sitter", "dep:tree-sitter-rust"]
-path = []
