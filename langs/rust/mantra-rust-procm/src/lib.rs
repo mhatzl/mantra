@@ -10,11 +10,23 @@ pub fn req(attr: TokenStream, item: TokenStream) -> TokenStream {
             .unwrap();
         req_ids.reverse();
 
+        let attrb: syn::Attribute = parse_quote!(#[doc = "# Requirements"]);
+        wrapped_fn.attrs.push(attrb);
+
         for req in req_ids {
             let req_literal = syn::LitStr::new(&req, proc_macro2::Span::call_site());
             let macro_stmt: Stmt = parse_quote!(mantra_rust_macros::mr_reqcov!(#req_literal););
 
             wrapped_fn.block.stmts.insert(0, macro_stmt);
+            let attrb: syn::Attribute;
+
+            if let Ok(url) = std::env::var("MANTRA_REQUIREMENT_BASE_URL") {
+                let url_literal = syn::LitStr::new(&url, proc_macro2::Span::call_site());
+                attrb = parse_quote!(#[doc = concat!("- [", #req_literal, "](", #url_literal, #req_literal, ")")]);
+            } else {
+                attrb = parse_quote!(#[doc = concat!("- ", #req_literal)]);
+            }
+            wrapped_fn.attrs.push(attrb);
         }
 
         quote!(#wrapped_fn).into()
