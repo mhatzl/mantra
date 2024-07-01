@@ -42,7 +42,7 @@ async fn main() {
     let coverage_cfg = mantra::cfg::Config {
         db: db.clone(),
         cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::Config {
-            data_file: PathBuf::from("mantra/examples/usage/coverage.json"),
+            data: vec![PathBuf::from("mantra/examples/usage/coverage.json")],
         }),
     };
     let review_cfg = mantra::cfg::Config {

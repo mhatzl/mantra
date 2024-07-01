@@ -34,10 +34,10 @@ impl std::fmt::Display for CoverageChanges {
 
 #[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
 pub struct Config {
-    /// File containing coverage data according to the *mantra* CoverageSchema.
+    /// Files containing coverage data according to the *mantra* CoverageSchema.
     /// The file format may either be JSON or TOML.
-    #[serde(alias = "filepath", alias = "data-file")]
-    pub data_file: PathBuf,
+    #[serde(alias = "data-paths")]
+    pub data: Vec<PathBuf>,
 }
 
 pub fn iso8601_str_to_offsetdatetime(time_str: &str) -> OffsetDateTime {

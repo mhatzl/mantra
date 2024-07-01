@@ -86,7 +86,7 @@ mod test {
                             root = "./"
 
                             [coverage]
-                            data-file = "coverage.json"
+                            data = ["coverage.json"]
 
                             [reviews]
                             files = ["first_review.toml"]
@@ -95,8 +95,8 @@ mod test {
         let file: crate::cfg::CollectFile = toml::from_str(content).unwrap();
 
         assert_eq!(
-            file.coverage.unwrap().data_file,
-            PathBuf::from("coverage.json"),
+            file.coverage.unwrap().data.first().unwrap(),
+            &PathBuf::from("coverage.json"),
             "Coverage info not correctly extracted."
         );
     }
