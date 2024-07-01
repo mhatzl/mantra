@@ -40,6 +40,14 @@ create table TraceSpans (
     foreign key (req_id, filepath, line) references Traces(req_id, filepath, line) on delete cascade
 );
 
+-- traces to requirements that were not part of the database when the trace was added.
+create table UnrelatedTraces (
+    req_id text not null,
+    filepath text not null,
+    line integer not null,
+    primary key (req_id, filepath, line)
+);
+
 -- test runs that executed tests
 --
 -- NOTE: `nr_of_tests` is the number of expected tests in one run.
@@ -92,6 +100,18 @@ create table TestCoverage (
     foreign key (req_id, trace_filepath, trace_line) references Traces(req_id, filepath, line) on delete cascade
 );
 
+-- coverage to requirement traces that were not in the database when adding the coverage
+create table UnrelatedTestCoverage (
+    req_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    test_name text not null,
+    trace_filepath text not null,
+    trace_line integer not null,
+    primary key (req_id, test_run_name, test_run_date, test_name, trace_filepath, trace_line),
+    foreign key (test_run_name, test_run_date, test_name) references Tests(test_run_name, test_run_date, name) on delete cascade
+);
+
 -- review to add manually verified requirements
 create table Reviews (
     name text not null,
@@ -104,6 +124,16 @@ create table Reviews (
 -- manually verified requirements
 create table ManuallyVerified (
     req_id text not null references Requirements(id) on delete cascade,
+    review_name text not null,    
+    review_date text not null,
+    comment text,
+    primary key (req_id, review_name, review_date),
+    foreign key (review_name, review_date) references Reviews(name, date) on delete cascade
+);
+
+-- manually verified requirements
+create table UnrelatedManuallyVerified (
+    req_id text not null,
     review_name text not null,    
     review_date text not null,
     comment text,

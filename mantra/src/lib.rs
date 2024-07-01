@@ -62,9 +62,13 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             Ok(())
         }
         cmd::Cmd::Coverage(coverage_cfg) => {
-            cmd::coverage::collect_from_path(&db, &coverage_cfg.data_file)
+            let changes = cmd::coverage::collect_from_path(&db, &coverage_cfg.data_file)
                 .await
-                .map_err(MantraError::Coverage)
+                .map_err(MantraError::Coverage)?;
+
+            println!("{changes}");
+
+            Ok(())
         }
         cmd::Cmd::DeleteOld(delete_old_cfg) => db
             .delete_old_generations(delete_old_cfg.clean)
@@ -127,9 +131,11 @@ async fn collect(db: &db::MantraDb, cfg: CollectConfig) -> Result<(), MantraErro
     println!("{trace_changes}");
 
     if let Some(coverage) = collect_file.coverage {
-        cmd::coverage::collect_from_path(db, &coverage.data_file)
+        let coverage_changes = cmd::coverage::collect_from_path(db, &coverage.data_file)
             .await
             .map_err(MantraError::Coverage)?;
+
+        println!("{coverage_changes}");
     }
 
     if let Some(review) = collect_file.reviews {

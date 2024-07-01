@@ -6,6 +6,7 @@ use std::{
 use mantra_schema::{
     coverage::TestState,
     requirements::{ReqId, Requirement},
+    traces::TracePk,
     Line,
 };
 use time::{OffsetDateTime, PrimitiveDateTime};
@@ -176,6 +177,7 @@ pub struct ReportContext {
     )]
     pub creation_date: OffsetDateTime,
     pub validation: ValidationInfo,
+    pub unrelated: Unrelated,
 }
 
 impl ReportContext {
@@ -237,6 +239,8 @@ Requirements are fully covered if all of their leaf requirements are passed cove
 
         let validation = ValidationInfo::try_from(db).await?;
 
+        let unrelated = Unrelated::try_from(db).await?;
+
         Ok(Self {
             project: project.clone(),
             tag: tag.clone(),
@@ -248,6 +252,7 @@ Requirements are fully covered if all of their leaf requirements are passed cove
             test_coverage_criteria,
             creation_date,
             validation,
+            unrelated,
         })
     }
 }
@@ -1043,5 +1048,130 @@ impl Review {
             comment: record.comment,
             requirements,
         })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Unrelated {
+    pub traces: Vec<TracePk>,
+    pub coverage: Vec<UnrelatedCoverage>,
+    pub verified_requirements: Vec<UnrelatedVerified>,
+}
+
+impl Unrelated {
+    pub async fn try_from(db: &MantraDb) -> Result<Self, ReportError> {
+        let traces = sqlx::query_as!(
+            TracePk,
+            r#"
+                select
+                req_id,
+                filepath,
+                line as "line!: u32"
+                from UnrelatedTraces
+            "#
+        )
+        .fetch_all(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
+
+        let coverage = UnrelatedCoverage::try_from(db).await?;
+        let verified = UnrelatedVerified::try_from(db).await?;
+
+        Ok(Self {
+            traces,
+            coverage,
+            verified_requirements: verified,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct UnrelatedCoverage {
+    pub test_run_name: String,
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
+    pub test_run_date: OffsetDateTime,
+    pub test_name: String,
+    pub req_id: String,
+    pub trace_filepath: PathBuf,
+    pub trace_line: Line,
+}
+
+impl UnrelatedCoverage {
+    pub async fn try_from(db: &MantraDb) -> Result<Vec<Self>, ReportError> {
+        let records = sqlx::query!(
+            r#"
+                select
+                test_run_name,
+                test_run_date,
+                test_name,
+                req_id,
+                trace_filepath,
+                trace_line as "trace_line!: u32"
+                from UnrelatedTestCoverage
+            "#,
+        )
+        .fetch_all(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
+
+        let mut unrelated = Vec::new();
+
+        for record in records {
+            unrelated.push(UnrelatedCoverage {
+                test_run_name: record.test_run_name,
+                test_run_date: iso8601_str_to_offsetdatetime(&record.test_run_date),
+                test_name: record.test_name,
+                req_id: record.req_id,
+                trace_filepath: PathBuf::from(record.trace_filepath),
+                trace_line: record.trace_line,
+            })
+        }
+
+        Ok(unrelated)
+    }
+}
+
+time::serde::format_description!(
+    review_date_format,
+    PrimitiveDateTime,
+    mantra_schema::reviews::REVIEW_DATE_FORMAT
+);
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct UnrelatedVerified {
+    pub review_name: String,
+    #[serde(with = "review_date_format")]
+    pub review_date: PrimitiveDateTime,
+    pub req_id: String,
+    pub comment: Option<String>,
+}
+
+impl UnrelatedVerified {
+    pub async fn try_from(db: &MantraDb) -> Result<Vec<Self>, ReportError> {
+        let records = sqlx::query!(
+            r#"
+                select * from UnrelatedManuallyVerified
+            "#,
+        )
+        .fetch_all(db.pool())
+        .await
+        .map_err(ReportError::Db)?;
+
+        let mut unrelated = Vec::new();
+
+        for record in records {
+            unrelated.push(UnrelatedVerified {
+                review_name: record.review_name,
+                review_date: mantra_schema::reviews::date_from_str(&record.review_date)
+                    .expect("Review date was serialized before."),
+                req_id: record.req_id,
+                comment: record.comment,
+            });
+        }
+
+        Ok(unrelated)
     }
 }

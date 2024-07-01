@@ -185,8 +185,8 @@ pub enum DbError {
     Update(String),
     #[error("The database contains invalid data. Cause: {}", .0)]
     Validate(String),
-    #[error("{}", .0)]
-    ForeignKeyViolation(String),
+    // #[error("{}", .0)]
+    // ForeignKeyViolation(String),
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
@@ -438,8 +438,22 @@ impl MantraDb {
 
                     if let Err(sqlx::Error::Database(err)) = res {
                         if err.kind() == sqlx::error::ErrorKind::ForeignKeyViolation {
-                            log::warn!("Skipping trace. No requirement with id `{}` found for trace at file='{}', line='{}",
+                            log::warn!("Unrelated trace. No requirement with id `{}` found for trace at file='{}', line='{}",
                                 id, file_str, line);
+                            
+                                let res = sqlx::query!(
+                                    "insert into UnrelatedTraces (req_id, filepath, line) values ($1, $2, $3)",
+                                    id,
+                                    file_str,
+                                    line,
+                                )
+                                .execute(&self.pool)
+                                .await;
+
+                            if let Err(err) = res {
+                                log::error!("Adding unrelated trace for id=`{}`, file='{}', line='{}' failed with error: {}",
+                                id, file_str, line, err);
+                            }
                         } else {
                             log::error!("Adding trace for id=`{}`, file='{}', line='{}' failed with error: {}",
                                 id, file_str, line, err);
@@ -524,8 +538,8 @@ impl MantraDb {
         trace_filepath: &Path,
         trace_line: Line,
         req_id: &str,
-    ) -> Result<(), DbError> {
-        // Note: filepath is already *fix* due to how the "file!()" macro works
+    ) -> Result<bool, DbError> {
+        // Note: absolute or relative filepath must match with how the trace paths were added
         let file = SlashPathBuf::from(trace_filepath);
         let file_str = file.to_string();
 
@@ -543,9 +557,27 @@ impl MantraDb {
 
         if let Err(sqlx::Error::Database(sqlx_db_error)) = &query_result {
             if sqlx_db_error.kind() == sqlx::error::ErrorKind::ForeignKeyViolation {
-                return Err(DbError::ForeignKeyViolation(
-                    sqlx_db_error.message().to_string(),
-                ));
+                let query_result = sqlx::query!(
+                    "insert or ignore into UnrelatedTestCoverage (req_id, test_run_name, test_run_date, test_name, trace_filepath, trace_line) values ($1, $2, $3, $4, $5, $6)",
+                    req_id,
+                    test_run.name,
+                    test_run.date,
+                    test_name,
+                    file_str,
+                    trace_line,
+                )
+                .execute(&self.pool)
+                .await;
+
+                match query_result {
+                    Ok(_) => return Ok(false),
+                    Err(err) => return Err(
+                        DbError::Insert(format!(
+                            "Adding unrelated coverage for id='{}', test-run='{}' at {}, test='{}', file='{}', line='{}' failed with error: {}",
+                            req_id, test_run.name, test_run.date, test_name, file_str, trace_line, err
+                        ))
+                    )
+                }
             }
         }
 
@@ -556,7 +588,7 @@ impl MantraDb {
                 ))
             })?;
 
-        Ok(())
+        Ok(true)
     }
 
     pub async fn add_test(
@@ -810,6 +842,25 @@ impl MantraDb {
                         req.id,
                         review.name
                     );
+
+                    let res = sqlx::query!(
+                        "insert or replace into UnrelatedManuallyVerified (req_id, review_name, review_date, comment) values ($1, $2, $3, $4)",
+                        req.id,
+                        review.name,
+                        review.date,
+                        req.comment,
+                    )
+                    .execute(&self.pool)
+                    .await;
+
+                    if let Err(err) = res {
+                        log::error!(
+                            "Failed to insert unrelated requirement '{}' from review '{}'. Cause: {}",
+                            req.id,
+                            review.name,
+                            err
+                        );
+                    }
                 } else {
                     log::error!(
                         "Failed to insert requirement '{}' from review '{}'. Cause: {}",
