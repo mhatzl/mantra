@@ -11,23 +11,23 @@
             "tests": [
                 {
                     "name": "traces::test::test_fn",
-                    "filepath": "traces.rs",
+                    "filepath": "src/traces.rs",
                     "line": 8,
                     "state": "Passed",
                     "covered_traces": [
                         {
                             "req_id": "other_id",
-                            "filepath": "traces.rs",
+                            "filepath": "src/traces.rs",
                             "line": 7
                         },
                         {
                             "req_id": "bad_id",
-                            "filepath": "traces.rs",
+                            "filepath": "src/traces.rs",
                             "line": 7
                         },
                         {
                             "req_id": "main_id",
-                            "filepath": "traces.rs",
+                            "filepath": "src/traces.rs",
                             "line": 1
                         }
                     ],

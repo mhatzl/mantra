@@ -128,7 +128,7 @@
             "traced_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_1",
             "traces": [
               {
-                "filepath": "hierarchy_test.yaml",
+                "filepath": "src/hierarchy_test.yaml",
                 "line": 1
               }
             ]
@@ -137,7 +137,7 @@
             "traced_id": "id.sub_id_1.sub_sub_id_1.sub_sub_sub_id_2",
             "traces": [
               {
-                "filepath": "hierarchy_test.yaml",
+                "filepath": "src/hierarchy_test.yaml",
                 "line": 1
               }
             ]
@@ -176,7 +176,7 @@
         "fully_traced": true,
         "direct_traces": [
           {
-            "filepath": "hierarchy_test.yaml",
+            "filepath": "src/hierarchy_test.yaml",
             "line": 1
           }
         ],
@@ -208,7 +208,7 @@
         "fully_traced": true,
         "direct_traces": [
           {
-            "filepath": "hierarchy_test.yaml",
+            "filepath": "src/hierarchy_test.yaml",
             "line": 1
           }
         ],
@@ -282,7 +282,7 @@
             "traced_id": "id.sub_id_2.sub_sub_id_1",
             "traces": [
               {
-                "filepath": "hierarchy_test.yaml",
+                "filepath": "src/hierarchy_test.yaml",
                 "line": 7
               }
             ]
@@ -291,7 +291,7 @@
             "traced_id": "id.sub_id_2.sub_sub_id_2",
             "traces": [
               {
-                "filepath": "hierarchy_test.yaml",
+                "filepath": "src/hierarchy_test.yaml",
                 "line": 7
               }
             ]
@@ -335,7 +335,7 @@
         "fully_traced": false,
         "direct_traces": [
           {
-            "filepath": "hierarchy_test.yaml",
+            "filepath": "src/hierarchy_test.yaml",
             "line": 7
           }
         ],
@@ -421,7 +421,7 @@
         "fully_traced": true,
         "direct_traces": [
           {
-            "filepath": "hierarchy_test.yaml",
+            "filepath": "src/hierarchy_test.yaml",
             "line": 7
           }
         ],
@@ -464,7 +464,7 @@
         "fully_traced": false,
         "direct_traces": [
           {
-            "filepath": "hierarchy_test.yaml",
+            "filepath": "src/hierarchy_test.yaml",
             "line": 11
           }
         ],
@@ -660,7 +660,7 @@
         "fully_traced": false,
         "direct_traces": [
           {
-            "filepath": "traces.rs",
+            "filepath": "src/traces.rs",
             "line": 1
           }
         ],
@@ -680,7 +680,7 @@
                 "passed": true,
                 "traces": [
                   {
-                    "filepath": "traces.rs",
+                    "filepath": "src/traces.rs",
                     "line": 1
                   }
                 ]
@@ -736,11 +736,11 @@
         "fully_traced": true,
         "direct_traces": [
           {
-            "filepath": "traces.rs",
+            "filepath": "src/traces.rs",
             "line": 7
           },
           {
-            "filepath": "traces.yaml",
+            "filepath": "src/traces.yaml",
             "line": 1
           }
         ],
@@ -760,7 +760,7 @@
                 "passed": true,
                 "traces": [
                   {
-                    "filepath": "traces.rs",
+                    "filepath": "src/traces.rs",
                     "line": 7
                   }
                 ]
@@ -819,7 +819,7 @@
               "other_id"
             ],
             "name": "traces::test::test_fn",
-            "filepath": "traces.rs",
+            "filepath": "src/traces.rs",
             "line": 8,
             "state": "Passed"
           }
@@ -851,7 +851,7 @@
   ],
   "trace_criteria": "Requirements are traced if one of the following criteria is met:\n\n- A trace directly referring to the requirement exists (Directly traced)\n- All of the leaf requirements of the requirement have direct traces (Indirectly traced)\n\nRequirements are fully traced if all of their leaf requirements are traced.",
   "test_coverage_criteria": "A requirement is covered through a test if any of the following criteria are met:\n\n- At least one direct trace to the requirement was reached during test execution\n- All leaf requirements of the requirement were covered by the test\n\nA requirement is passed covered if all of the following criteria are met:\n\n- The requirement is covered at least once\n- All tests covering the requirement passed\n- All tests covering the child requirements of the requirement passed\n\nRequirements are fully covered if all of their leaf requirements are passed covered.",
-  "creation_date": "+002024-06-13T17:39:55.904238800Z",
+  "creation_date": "+002024-07-01T11:25:48.765164600Z",
   "validation": {
     "is_valid": false,
     "criteria": "The collected data is valid if no *deprecated* requirement is traced.",
