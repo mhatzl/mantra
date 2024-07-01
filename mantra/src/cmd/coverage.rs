@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use mantra_lang_tracing::path::SlashPathBuf;
 use mantra_schema::{
     coverage::{CoverageSchema, LineCoverage, TestRunPk},
     traces::TracePk,
@@ -98,7 +99,7 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<(), CoverageE
 
                 // mantra logs might be set in external crates, but the matching traces are likely missing
                 if let Err(DbError::ForeignKeyViolation(_)) = &db_result {
-                    log::debug!(
+                    log::info!(
                         "Skipping unrelated coverage for reg-id=`{}`, file='{}', line='{}'.",
                         trace.req_id,
                         trace.filepath.display(),
@@ -121,10 +122,12 @@ async fn covered_lines_to_traces(
     let mut traces = Vec::new();
 
     for coverage in covered_lines {
-        let file = coverage.filepath.display().to_string();
+        let file = SlashPathBuf::from(coverage.filepath.clone());
+        let file_str = file.to_string();
+
         let trace_spans = sqlx::query!(
             "select req_id, filepath, line, start, end from TraceSpans where filepath = $1",
-            file,
+            file_str,
         )
         .fetch_all(db.pool())
         .await
@@ -134,7 +137,7 @@ async fn covered_lines_to_traces(
             range: (record.start as Line)..(record.end as Line),
             value: TracePk {
                 req_id: record.req_id,
-                filepath: PathBuf::from(record.filepath),
+                filepath: file.clone(),
                 line: record.line as Line,
             },
         })
