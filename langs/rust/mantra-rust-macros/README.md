@@ -50,6 +50,29 @@ trait SomeTrait {
 }
 ```
 
+## Automatic documentation
+
+Requirements set using the `#[req()]` attribute will generate a `Requirements` section in the documentation.
+The requirement IDs are represented as bullet list entries.
+If the environmental variable `MANTRA_REQUIREMENT_BASE_URL` is set, all IDs will be transformed to links with the content of the variable as prefix.
+
+```
+/// Documentation for IDs is automatically generated.
+#[req(req_1, req_2)]
+fn some_fn() {}
+```
+
+Generated documentation with `MANTRA_REQUIREMENT_BASE_URL` set to `https://github.com/mhatzl/mantra/wiki/5-Requirements/`:
+
+```
+Documentation for IDs is automatically generated.
+
+# Requirements
+
+- [req_1](https://github.com/mhatzl/mantra/wiki/5-Requirements/req_1)
+- [req_2](https://github.com/mhatzl/mantra/wiki/5-Requirements/req_2)
+```
+
 ## Coverage log
 
 - Feature `log`
