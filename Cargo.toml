@@ -20,7 +20,7 @@ time = { version = "0.3.36", features = ["serde", "formatting", "parsing", "macr
 log = "0.4.21"
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"
