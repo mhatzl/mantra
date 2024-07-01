@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use mantra_lang_tracing::path::SlashPathBuf;
 use mantra_schema::{
     coverage::{TestRunPk, TestState},
     requirements::Requirement,
@@ -400,15 +401,16 @@ impl MantraDb {
             ..Default::default()
         };
 
-        let file = filepath.display().to_string();
+        let file = SlashPathBuf::from(filepath);
+        let file_str = file.to_string();
 
         for trace in traces {
             let line = trace.line;
             let line_span = trace.line_span;
 
             for id in &trace.ids {
-                if (sqlx::query!("select req_id, filepath, line from Traces where req_id = $1 and filepath = $2 and line = $3", id, file, line).fetch_one(&self.pool).await).is_ok() {
-                    let _ = sqlx::query!("update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3", id, file, line, new_generation).execute(&self.pool).await;
+                if (sqlx::query!("select req_id, filepath, line from Traces where req_id = $1 and filepath = $2 and line = $3", id, file_str, line).fetch_one(&self.pool).await).is_ok() {
+                    let _ = sqlx::query!("update Traces set generation = $4 where req_id = $1 and filepath = $2 and line = $3", id, file_str, line, new_generation).execute(&self.pool).await;
                     changes.unchanged_cnt += 1;
 
                     if let Some(span) = line_span {
@@ -417,7 +419,7 @@ impl MantraDb {
 
                         let _ = sqlx::query!("insert or replace into TraceSpans (req_id, filepath, line, start, end) values ($1, $2, $3, $4, $5)",
                             id,
-                            file,
+                            file_str,
                             line,
                             start,
                             end,
@@ -427,7 +429,7 @@ impl MantraDb {
                     let res = sqlx::query!(
                         "insert into Traces (req_id, filepath, line, generation) values ($1, $2, $3, $4)",
                         id,
-                        file,
+                        file_str,
                         line,
                         new_generation,
                     )
@@ -437,13 +439,13 @@ impl MantraDb {
                     if let Err(sqlx::Error::Database(err)) = res {
                         if err.kind() == sqlx::error::ErrorKind::ForeignKeyViolation {
                             log::warn!("Skipping trace. No requirement with id `{}` found for trace at file='{}', line='{}",
-                                id, file, line);
+                                id, file_str, line);
                         } else {
                             log::error!("Adding trace for id=`{}`, file='{}', line='{}' failed with error: {}",
-                                id, file, line, err);
+                                id, file_str, line, err);
                         }
                     } else {
-                        changes.inserted.push(TracePk{ req_id: id.clone(), filepath: PathBuf::from(&file), line });
+                        changes.inserted.push(TracePk{ req_id: id.clone(), filepath: file.clone(), line });
 
                         if let Some(span) = line_span {
                             let start = span.start;
@@ -451,7 +453,7 @@ impl MantraDb {
 
                             let _ = sqlx::query!("insert into TraceSpans (req_id, filepath, line, start, end) values ($1, $2, $3, $4, $5)",
                                 id,
-                                file,
+                                file_str,
                                 line,
                                 start,
                                 end,
@@ -524,14 +526,16 @@ impl MantraDb {
         req_id: &str,
     ) -> Result<(), DbError> {
         // Note: filepath is already *fix* due to how the "file!()" macro works
-        let file = trace_filepath.display().to_string();
+        let file = SlashPathBuf::from(trace_filepath);
+        let file_str = file.to_string();
+
         let query_result = sqlx::query!(
                 "insert or ignore into TestCoverage (req_id, test_run_name, test_run_date, test_name, trace_filepath, trace_line) values ($1, $2, $3, $4, $5, $6)",
                 req_id,
                 test_run.name,
                 test_run.date,
                 test_name,
-                file,
+                file_str,
                 trace_line,
             )
             .execute(&self.pool)
@@ -548,7 +552,7 @@ impl MantraDb {
         query_result.map_err(|err| {
                 DbError::Insert(format!(
                     "Adding coverage for id='{}', test-run='{}' at {}, test='{}', file='{}', line='{}' failed with error: {}",
-                    req_id, test_run.name, test_run.date, test_name, file, trace_line, err
+                    req_id, test_run.name, test_run.date, test_name, file_str, trace_line, err
                 ))
             })?;
 
@@ -563,7 +567,8 @@ impl MantraDb {
         line: Line,
         state: TestState,
     ) -> Result<(), DbError> {
-        let file = filepath.display().to_string();
+        let file = SlashPathBuf::from(filepath);
+        let file_str = file.to_string();
 
         match state {
             TestState::Passed | TestState::Failed => {
@@ -574,7 +579,7 @@ impl MantraDb {
                     name,
                     test_run.name,
                     test_run.date,
-                    file,
+                    file_str,
                     line,
                     passed,
                 )
@@ -583,18 +588,17 @@ impl MantraDb {
                 .map_err(|err| {
                     DbError::Insert(format!(
                         "Adding test for test='{}', test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
-                        name, test_run.name, test_run.date, file, line, err
+                        name, test_run.name, test_run.date, file_str, line, err
                     ))
                 })?;
             }
             TestState::Skipped { reason } => {
-                let file = filepath.display().to_string();
                 sqlx::query!(
                         "insert or ignore into SkippedTests (name, test_run_name, test_run_date, filepath, line, reason) values ($1, $2, $3, $4, $5, $6)",
                         name,
                         test_run.name,
                         test_run.date,
-                        file,
+                        file_str,
                         line,
                         reason,
                     )
@@ -603,7 +607,7 @@ impl MantraDb {
                     .map_err(|err| {
                         DbError::Insert(format!(
                             "Adding skipped test '{}' for test-run='{}' at {}, file='{}', line='{}' failed with error: {}",
-                            name, test_run.name, test_run.date, file, line, err
+                            name, test_run.name, test_run.date, file_str, line, err
                         ))
                     })?;
             }
