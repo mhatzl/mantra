@@ -295,7 +295,7 @@
                 {%if project.version %}v{{ project.version }}{% endif %}</a>
         </h1>
 
-        {% if tag %}
+        {% if tag.name %}
         <p><strong>Tag:</strong> {%if tag.link %}<a href="{{ tag.link }}">{{ tag.name }}</a>{% else %}{{ tag.name }}{%
             endif %}</p>
         {% endif %}
