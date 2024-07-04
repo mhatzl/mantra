@@ -475,6 +475,8 @@
                                         <div class="fully-traced">traced</div>
                                         {% elif req.trace_info.traced %}
                                         <div class="traced">traced</div>
+                                        {% elif req.manual %}
+                                        <div>-</div>
                                         {% else %}
                                         <div class="untraced">untraced</div>
                                         {% endif %}
@@ -486,6 +488,8 @@
                                         <div class="passed-covered">covered</div>
                                         {% elif req.test_coverage_info.covered %}
                                         <div class="failed-covered">failed</div>
+                                        {% elif req.manual %}
+                                        <div>-</div>
                                         {% else %}
                                         <div class="uncovered">uncovered</div>
                                         {% endif %}

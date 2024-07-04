@@ -153,11 +153,11 @@ with recursive TransitiveChildren(id, child_id) as
     select tc.id, rh.child_id from RequirementHierarchies rh, TransitiveChildren tc
     where tc.child_id = rh.parent_id
 )
-select id, child_id from TransitiveChildren;
+select distinct id, child_id from TransitiveChildren;
 
 -- Requirements without children
 create view LeafRequirements as
-select id
+select distinct id
 from Requirements
 where id not in (select parent_id from RequirementHierarchies);
 
@@ -183,7 +183,7 @@ Deprecated(id) as (
     union
     select id from ParentMarkedDeprecated
 )
-select id
+select distinct id
 from Deprecated d;
 
 create view ManualRequirements as
@@ -201,12 +201,12 @@ Manual(id) as (
     union
     select id from ParentMarkedManual
 )
-select r.id
+select distinct r.id
 from Requirements r, Manual d 
 where r.id = d.id;
 
 create view DirectlyTracedRequirements as
-select r.id from Requirements r, Traces tr
+select distinct r.id from Requirements r, Traces tr
 where r.id = tr.req_id;
 
 -- A requirement is indirectly traced
