@@ -138,7 +138,7 @@ fn requirements_from_wiki_content(
 
     let regex = REQ_ID_MATCHER.get_or_init(|| {
         Regex::new(
-            r"^#{1,6}\s`(?<id>[^\s:]+)`(?:\((?:v(?<version>\d{1,7}):)?(?<marker>[^\)]+)\))?:\s+(?<title>\S+)",
+            r"^#{1,6}\s`(?<id>[^\s:]+)`(?:\((?:v(?<version>\d{1,7}):)?(?<marker>[^\)]+)\))?:\s+(?<title>[^\n]+)",
         )
         .expect("Regex to match the requirement ID could **not** be created.")
     });
