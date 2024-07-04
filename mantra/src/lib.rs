@@ -101,7 +101,11 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
                 .await
                 .map_err(MantraError::Review)?;
 
-            println!("Added '{}' reviews.", added_review_cnt);
+            if added_review_cnt == 0 {
+                println!("No review was added.");
+            } else {
+                println!("Added '{}' reviews.", added_review_cnt);
+            }
 
             Ok(())
         }
@@ -147,7 +151,12 @@ async fn collect(db: &db::MantraDb, cfg: CollectConfig) -> Result<(), MantraErro
         let added_review_cnt = cmd::review::collect(db, review)
             .await
             .map_err(MantraError::Review)?;
-        println!("Added '{}' reviews.", added_review_cnt);
+
+        if added_review_cnt == 0 {
+            println!("No review was added.");
+        } else {
+            println!("Added '{}' reviews.", added_review_cnt);
+        }
     }
 
     Ok(())

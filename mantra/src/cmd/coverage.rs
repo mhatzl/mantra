@@ -81,6 +81,15 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
     };
 
     for test_run in coverage.test_runs {
+        if db.test_run_exists(&test_run.name, &test_run.date).await {
+            log::info!(
+                "Skipping test run '{}' at {}, because it already exists in the database.",
+                &test_run.name,
+                &test_run.date,
+            );
+            continue;
+        }
+
         db.add_test_run(
             &test_run.name,
             &test_run.date,

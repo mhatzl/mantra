@@ -63,13 +63,20 @@ pub async fn collect(db: &MantraDb, cfg: ReviewConfig) -> Result<usize, ReviewEr
             ReviewError::Parsing(review_file.to_path_buf())
         })?;
 
-        let res = db.add_review(review).await.map_err(ReviewError::Db);
+        if db.review_exists(&review.name, &review.date).await {
+            log::info!(
+                "Review '{}' already in the database.",
+                review_file.display()
+            );
+        } else {
+            let res = db.add_review(review).await.map_err(ReviewError::Db);
 
-        if let Err(err) = res {
-            log::error!("Adding review '{}' failed: {}", review_file.display(), err);
+            if let Err(err) = res {
+                log::error!("Adding review '{}' failed: {}", review_file.display(), err);
+            }
+
+            review_cnt += 1;
         }
-
-        review_cnt += 1;
     }
 
     Ok(review_cnt)

@@ -676,6 +676,10 @@ impl MantraDb {
         Ok(())
     }
 
+    pub async fn test_run_exists(&self, name: &str, date: &time::OffsetDateTime) -> bool {
+        sqlx::query!("select * from TestRuns where name = $1 and date = $2", name, date).fetch_one(&self.pool).await.is_ok()
+    }
+
     pub async fn is_valid(&self) -> Result<(), DbError> {
         let record = sqlx::query!("select count(*) as invalid_cnt from InvalidRequirements")
             .fetch_one(&self.pool)
@@ -873,6 +877,10 @@ impl MantraDb {
         }
 
         Ok(())
+    }
+
+    pub async fn review_exists(&self, name: &str, date: &time::PrimitiveDateTime) -> bool {
+        sqlx::query!("select * from Reviews where name = $1 and date = $2", name, date).fetch_one(&self.pool).await.is_ok()
     }
 
     pub async fn delete_reviews(&self, cfg: DeleteReviewsConfig) -> Result<(), DbError> {

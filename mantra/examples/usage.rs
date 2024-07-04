@@ -5,7 +5,7 @@ use mantra::cmd::report::{Project, ReportFormat};
 #[tokio::main]
 async fn main() {
     env_logger::builder()
-        .filter_level(log::LevelFilter::Warn)
+        .filter_level(log::LevelFilter::Info)
         .init();
 
     let _ = std::fs::remove_file("mantra/examples/usage.db");
