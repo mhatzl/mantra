@@ -295,7 +295,7 @@
                 {%if project.version %}v{{ project.version }}{% endif %}</a>
         </h1>
 
-        {% if tag %}
+        {% if tag.name %}
         <p><strong>Tag:</strong> {%if tag.link %}<a href="{{ tag.link }}">{{ tag.name }}</a>{% else %}{{ tag.name }}{%
             endif %}</p>
         {% endif %}
@@ -334,6 +334,17 @@
                 </ul>
             </div>
             {% endif %}
+
+            {% if unrelated.traces | length > 0 %}
+            <p>{{ unrelated.traces | length }} unrelated traces.</p>
+            {% endif %}
+            {% if unrelated.coverage | length > 0 %}
+            <p>{{ unrelated.coverage | length }} unrelated coverage.</p>
+            {% endif %}
+            {% if unrelated.verified_requirements | length > 0 %}
+            <p>{{ unrelated.verified_requirements | length }} unrelated verified requirements.</p>
+            {% endif %}
+
             <h3>Overview</h3>
             <ul>
                 <li>
@@ -383,7 +394,7 @@
                     </td>
                     <td class="txt-center">
                         {% if req.trace_info.fully_traced %}
-                        <div class="fully-traced">fully-traced</div>
+                        <div class="fully-traced">traced</div>
                         {% elif req.trace_info.traced %}
                         <div class="traced">traced</div>
                         {% elif req.manual %}
@@ -394,7 +405,7 @@
                     </td>
                     <td class="txt-center">
                         {% if req.test_coverage_info.fully_covered %}
-                        <div class="fully-covered">fully-covered</div>
+                        <div class="fully-covered">covered</div>
                         {% elif req.test_coverage_info.passed %}
                         <div class="passed-covered">covered</div>
                         {% elif req.test_coverage_info.covered %}
@@ -461,20 +472,24 @@
                                 <tr>
                                     <td class="txt-center">
                                         {% if req.trace_info.fully_traced %}
-                                        <div class="fully-traced">fully-traced</div>
+                                        <div class="fully-traced">traced</div>
                                         {% elif req.trace_info.traced %}
                                         <div class="traced">traced</div>
+                                        {% elif req.manual %}
+                                        <div>-</div>
                                         {% else %}
                                         <div class="untraced">untraced</div>
                                         {% endif %}
                                     </td>
                                     <td class="txt-center">
                                         {% if req.test_coverage_info.fully_covered %}
-                                        <div class="fully-covered">fully-covered</div>
+                                        <div class="fully-covered">covered</div>
                                         {% elif req.test_coverage_info.passed %}
                                         <div class="passed-covered">covered</div>
                                         {% elif req.test_coverage_info.covered %}
                                         <div class="failed-covered">failed</div>
+                                        {% elif req.manual %}
+                                        <div>-</div>
                                         {% else %}
                                         <div class="uncovered">uncovered</div>
                                         {% endif %}
@@ -739,7 +754,7 @@
                     <p><strong>Existing tests:</strong> {{ tests.overview.test_cnt }}</p>
                 </li>
                 <li>
-                    <p><strong>Ran tests:</strong> {{ tests.overview.ran_cnt }} ({{ tests.overview.ran_ratio * 100 |
+                    <p><strong>Run tests:</strong> {{ tests.overview.ran_cnt }} ({{ tests.overview.ran_ratio * 100 |
                         round(precision = 2) }}%)</p>
                 </li>
                 <li>
@@ -788,7 +803,7 @@
                                 <p><strong>Existing Tests:</strong> {{ test_run.overview.test_cnt }}</p>
                             </li>
                             <li>
-                                <p><strong>Ran tests:</strong> {{ test_run.overview.ran_cnt }} ({{
+                                <p><strong>Run tests:</strong> {{ test_run.overview.ran_cnt }} ({{
                                     test_run.overview.ran_ratio * 100 | round(precision = 2) }}%)</p>
                             </li>
                             <li>

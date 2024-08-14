@@ -13,12 +13,31 @@ use time::OffsetDateTime;
 
 use crate::db::{DbError, MantraDb};
 
+pub struct CoverageChanges {
+    inserted: Vec<TracePk>,
+}
+
+impl std::fmt::Display for CoverageChanges {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.inserted.is_empty() {
+            writeln!(f, "No coverage information was added.")
+        } else {
+            writeln!(f, "Coverage added for traces:")?;
+            for covered_trace in &self.inserted {
+                writeln!(f, "- {covered_trace}")?;
+            }
+
+            Ok(())
+        }
+    }
+}
+
 #[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
 pub struct Config {
-    /// File containing coverage data according to the *mantra* CoverageSchema.
+    /// Files containing coverage data according to the *mantra* CoverageSchema.
     /// The file format may either be JSON or TOML.
-    #[serde(alias = "filepath", alias = "data-file")]
-    pub data_file: PathBuf,
+    #[serde(alias = "data-paths")]
+    pub data: Vec<PathBuf>,
 }
 
 pub fn iso8601_str_to_offsetdatetime(time_str: &str) -> OffsetDateTime {
@@ -39,7 +58,10 @@ pub enum CoverageError {
     Db(DbError),
 }
 
-pub async fn collect_from_path(db: &MantraDb, data_file: &Path) -> Result<(), CoverageError> {
+pub async fn collect_from_path(
+    db: &MantraDb,
+    data_file: &Path,
+) -> Result<CoverageChanges, CoverageError> {
     let data = std::fs::read_to_string(data_file).map_err(|_| {
         CoverageError::ReadingData(format!(
             "Could not read coverage data from '{}'.",
@@ -50,11 +72,24 @@ pub async fn collect_from_path(db: &MantraDb, data_file: &Path) -> Result<(), Co
     collect_from_str(db, &data).await
 }
 
-pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<(), CoverageError> {
+pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChanges, CoverageError> {
     let coverage =
         serde_json::from_str::<CoverageSchema>(data).map_err(CoverageError::Deserialize)?;
 
+    let mut changes = CoverageChanges {
+        inserted: Vec::new(),
+    };
+
     for test_run in coverage.test_runs {
+        if db.test_run_exists(&test_run.name, &test_run.date).await {
+            log::info!(
+                "Skipping test run '{}' at {}, because it already exists in the database.",
+                &test_run.name,
+                &test_run.date,
+            );
+            continue;
+        }
+
         db.add_test_run(
             &test_run.name,
             &test_run.date,
@@ -97,22 +132,27 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<(), CoverageE
                     )
                     .await;
 
-                // mantra logs might be set in external crates, but the matching traces are likely missing
-                if let Err(DbError::ForeignKeyViolation(_)) = &db_result {
-                    log::info!(
-                        "Skipping unrelated coverage for reg-id=`{}`, file='{}', line='{}'.",
-                        trace.req_id,
-                        trace.filepath.display(),
-                        trace.line
-                    );
-                } else {
-                    db_result.map_err(CoverageError::Db)?;
+                match db_result {
+                    Ok(true) => {
+                        changes.inserted.push(trace);
+                    }
+                    Ok(false) => {
+                        log::info!(
+                            "Found unrelated coverage for reg-id=`{}`, file='{}', line='{}'.",
+                            trace.req_id,
+                            trace.filepath.display(),
+                            trace.line
+                        );
+                    }
+                    Err(_) => {
+                        db_result.map_err(CoverageError::Db)?;
+                    }
                 }
             }
         }
     }
 
-    Ok(())
+    Ok(changes)
 }
 
 async fn covered_lines_to_traces(

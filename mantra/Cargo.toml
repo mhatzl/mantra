@@ -17,6 +17,7 @@ mantra-schema = { path = "../schema", version = "0" }
 regex.workspace = true
 tree-sitter-rust.workspace = true
 log.workspace = true
+env_logger.workspace = true
 time.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -28,5 +29,4 @@ ignore = "0.4.20"
 mime_guess = "2.0.4"
 thiserror = "1.0.59"
 tera = "1.19.1"
-env_logger = "0.11.3"
 intervaltree = "0.2.7"

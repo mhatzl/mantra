@@ -62,9 +62,16 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
             Ok(())
         }
         cmd::Cmd::Coverage(coverage_cfg) => {
-            cmd::coverage::collect_from_path(&db, &coverage_cfg.data_file)
-                .await
-                .map_err(MantraError::Coverage)
+            for file in coverage_cfg.data {
+                let changes = cmd::coverage::collect_from_path(&db, &file)
+                    .await
+                    .map_err(MantraError::Coverage)?;
+
+                println!("----- {} -----", file.display());
+                println!("{changes}");
+            }
+
+            Ok(())
         }
         cmd::Cmd::DeleteOld(delete_old_cfg) => db
             .delete_old_generations(delete_old_cfg.clean)
@@ -94,7 +101,11 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
                 .await
                 .map_err(MantraError::Review)?;
 
-            println!("Added '{}' reviews.", added_review_cnt);
+            if added_review_cnt == 0 {
+                println!("No review was added.");
+            } else {
+                println!("Added '{}' reviews.", added_review_cnt);
+            }
 
             Ok(())
         }
@@ -127,16 +138,25 @@ async fn collect(db: &db::MantraDb, cfg: CollectConfig) -> Result<(), MantraErro
     println!("{trace_changes}");
 
     if let Some(coverage) = collect_file.coverage {
-        cmd::coverage::collect_from_path(db, &coverage.data_file)
-            .await
-            .map_err(MantraError::Coverage)?;
+        for file in coverage.data {
+            let coverage_changes = cmd::coverage::collect_from_path(db, &file)
+                .await
+                .map_err(MantraError::Coverage)?;
+
+            println!("{coverage_changes}");
+        }
     }
 
     if let Some(review) = collect_file.reviews {
         let added_review_cnt = cmd::review::collect(db, review)
             .await
             .map_err(MantraError::Review)?;
-        println!("Added '{}' reviews.", added_review_cnt);
+
+        if added_review_cnt == 0 {
+            println!("No review was added.");
+        } else {
+            println!("Added '{}' reviews.", added_review_cnt);
+        }
     }
 
     Ok(())

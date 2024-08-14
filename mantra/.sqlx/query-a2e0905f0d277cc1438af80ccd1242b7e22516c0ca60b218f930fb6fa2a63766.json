@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select * from UnrelatedManuallyVerified\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "review_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "review_date",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "comment",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a2e0905f0d277cc1438af80ccd1242b7e22516c0ca60b218f930fb6fa2a63766"
+}
