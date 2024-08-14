@@ -42,6 +42,18 @@ impl std::str::FromStr for SlashPathBuf {
     }
 }
 
+impl From<&str> for SlashPathBuf {
+    fn from(value: &str) -> Self {
+        Self(PathBuf::from(value))
+    }
+}
+
+impl From<String> for SlashPathBuf {
+    fn from(value: String) -> Self {
+        Self(PathBuf::from(value))
+    }
+}
+
 impl From<PathBuf> for SlashPathBuf {
     fn from(value: PathBuf) -> Self {
         Self(value)
@@ -76,6 +88,8 @@ impl std::ops::DerefMut for SlashPathBuf {
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
@@ -104,5 +118,17 @@ mod test {
             PathBuf::from("main.rs"),
             "Filename not used for root file."
         )
+    }
+
+    #[test]
+    fn mixed_slash_path_to_forward_slash() {
+        let path = "folder1\\folder2/folder3\\file.rs";
+        let slash_path = SlashPathBuf::from_str(path).unwrap();
+
+        assert_eq!(
+            &slash_path.to_string(),
+            "folder1/folder2/folder3/file.rs",
+            "Path not converted to forward slash."
+        );
     }
 }
