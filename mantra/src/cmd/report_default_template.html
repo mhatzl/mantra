@@ -171,9 +171,6 @@
 
         .passed,
         .traced,
-        .fully-traced,
-        .passed-covered,
-        .fully-covered,
         .verified,
         .all-leafs-passed,
         .all-leafs-traced {
@@ -196,7 +193,6 @@
         }
 
         .skipped,
-        .failed-covered,
         .leaf-passed,
         .leaf-traces {
             margin: 0;
@@ -393,9 +389,7 @@
                         {% endif %}
                     </td>
                     <td class="txt-center">
-                        {% if req.trace_info.fully_traced %}
-                        <div class="fully-traced">traced</div>
-                        {% elif req.trace_info.traced %}
+                        {% if req.trace_info.traced %}
                         <div class="traced">traced</div>
                         {% elif req.manual %}
                         <div>-</div>
@@ -404,12 +398,10 @@
                         {% endif %}
                     </td>
                     <td class="txt-center">
-                        {% if req.test_coverage_info.fully_covered %}
-                        <div class="fully-covered">covered</div>
-                        {% elif req.test_coverage_info.passed %}
-                        <div class="passed-covered">covered</div>
+                        {% if req.test_coverage_info.passed %}
+                        <div class="passed">passed</div>
                         {% elif req.test_coverage_info.covered %}
-                        <div class="failed-covered">failed</div>
+                        <div class="failed">covered</div>
                         {% elif req.manual %}
                         <div>-</div>
                         {% else %}
@@ -471,9 +463,7 @@
                             <table>
                                 <tr>
                                     <td class="txt-center">
-                                        {% if req.trace_info.fully_traced %}
-                                        <div class="fully-traced">traced</div>
-                                        {% elif req.trace_info.traced %}
+                                        {% if req.trace_info.traced %}
                                         <div class="traced">traced</div>
                                         {% elif req.manual %}
                                         <div>-</div>
@@ -482,12 +472,10 @@
                                         {% endif %}
                                     </td>
                                     <td class="txt-center">
-                                        {% if req.test_coverage_info.fully_covered %}
-                                        <div class="fully-covered">covered</div>
-                                        {% elif req.test_coverage_info.passed %}
-                                        <div class="passed-covered">covered</div>
+                                        {% if req.test_coverage_info.passed %}
+                                        <div class="passed">covered</div>
                                         {% elif req.test_coverage_info.covered %}
-                                        <div class="failed-covered">failed</div>
+                                        <div class="failed">covered</div>
                                         {% elif req.manual %}
                                         <div>-</div>
                                         {% else %}
@@ -495,33 +483,6 @@
                                         {% endif %}
                                     </td>
                                 </tr>
-
-                                {% if req.leaf_statistic %}
-                                <tr>
-                                    <td>
-                                        {% if req.leaf_statistic.traced_leaf_cnt == req.leaf_statistic.leaf_cnt %}
-                                        <div class="all-leafs-traced">leafs-traced: {{
-                                            req.leaf_statistic.traced_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt }}
-                                        </div>
-                                        {% else %}
-                                        <div class="leaf-traces">leafs-traced: {{ req.leaf_statistic.traced_leaf_cnt
-                                            }}/{{ req.leaf_statistic.leaf_cnt }}</div>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if req.leaf_statistic.passed_covered_leaf_cnt == req.leaf_statistic.leaf_cnt
-                                        %}
-                                        <div class="all-leafs-passed">leafs-passed: {{
-                                            req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt
-                                            }}</div>
-                                        {% else %}
-                                        <div class="leaf-passed">leafs-passed: {{
-                                            req.leaf_statistic.passed_covered_leaf_cnt }}/{{ req.leaf_statistic.leaf_cnt
-                                            }}</div>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endif %}
 
                                 {% if req.verified_info | length > 0 %}
                                 <tr>

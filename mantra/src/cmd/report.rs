@@ -217,23 +217,19 @@ impl ReportContext {
         let trace_criteria = "Requirements are traced if one of the following criteria is met:
 
 - A trace directly referring to the requirement exists (Directly traced)
-- All of the leaf requirements of the requirement have direct traces (Indirectly traced)
-
-Requirements are fully traced if all of their leaf requirements are traced.";
+- All of the sub-requirements of the requirement are traced (Indirectly traced)";
 
         let test_coverage_criteria =
-            "A requirement is covered through a test if any of the following criteria are met:
+            "Requirements are covered through a test if one of the following criteria is met:
 
-- At least one direct trace to the requirement was reached during test execution
-- All leaf requirements of the requirement were covered by the test
+- At least one direct trace to the requirement was reached during test execution (Direct coverage)
+- All sub-requirements of the requirement were covered by the test (Indirect coverage)
 
-A requirement is passed covered if all of the following criteria are met:
+Requirements are passed if all of the following criteria are met:
 
 - The requirement is covered at least once
 - All tests covering the requirement passed
-- All tests covering the child requirements of the requirement passed
-
-Requirements are fully covered if all of their leaf requirements are passed covered.";
+- All tests covering child requirements of the requirement passed";
 
         let creation_date = OffsetDateTime::now_utc();
 
