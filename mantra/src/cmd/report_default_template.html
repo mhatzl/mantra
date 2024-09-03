@@ -401,7 +401,7 @@
                         {% if req.test_coverage_info.passed %}
                         <div class="passed">passed</div>
                         {% elif req.test_coverage_info.covered %}
-                        <div class="failed">covered</div>
+                        <div class="failed">failed</div>
                         {% elif req.manual %}
                         <div>-</div>
                         {% else %}
@@ -473,9 +473,9 @@
                                     </td>
                                     <td class="txt-center">
                                         {% if req.test_coverage_info.passed %}
-                                        <div class="passed">covered</div>
+                                        <div class="passed">passed</div>
                                         {% elif req.test_coverage_info.covered %}
-                                        <div class="failed">covered</div>
+                                        <div class="failed">failed</div>
                                         {% elif req.manual %}
                                         <div>-</div>
                                         {% else %}
