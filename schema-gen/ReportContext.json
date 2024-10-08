@@ -17,6 +17,7 @@
   ],
   "properties": {
     "creation_date": {
+      "description": "Creation date given in ISO8601 format.",
       "type": "string"
     },
     "overview": {
@@ -366,7 +367,8 @@
           ]
         },
         "date": {
-          "type": "string"
+          "type": "string",
+          "pattern": "(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2}) (?<hour>\\d{2}):(?<minute>\\d{2})(?<second>:\\d{2}(?<subsecond>\\.\\d{3})?)?"
         },
         "name": {
           "type": "string"
@@ -430,6 +432,7 @@
       ],
       "properties": {
         "date": {
+          "description": "Test run date given in ISO8601 format.",
           "type": "string"
         },
         "name": {
@@ -486,6 +489,7 @@
       ],
       "properties": {
         "date": {
+          "description": "Test run date given in ISO8601 format.",
           "type": "string"
         },
         "logs": {
@@ -752,6 +756,7 @@
           "type": "string"
         },
         "test_run_date": {
+          "description": "Test run date given in ISO8601 format.",
           "type": "string"
         },
         "test_run_name": {
@@ -785,6 +790,7 @@
           "type": "string"
         },
         "review_date": {
+          "description": "Review date given in ISO8601 format.",
           "type": "string"
         },
         "review_name": {
@@ -845,6 +851,7 @@
           ]
         },
         "review_date": {
+          "description": "Review date given in ISO8601 format.",
           "type": "string"
         },
         "review_name": {

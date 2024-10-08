@@ -9,7 +9,12 @@ use crate::db::{DbError, MantraDb};
 pub struct Review {
     pub name: String,
     #[serde(with = "super::review_date_format")]
-    #[schemars(with = "String")]
+    #[schemars(
+        with = "String",
+        regex(
+            pattern = r"(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2}) (?<hour>\d{2}):(?<minute>\d{2})(?<second>:\d{2}(?<subsecond>\.\d{3})?)?"
+        )
+    )]
     pub date: PrimitiveDateTime,
     pub reviewer: String,
     pub comment: Option<String>,

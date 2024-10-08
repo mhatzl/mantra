@@ -175,6 +175,7 @@ pub struct ReportContext {
     pub reviews: Vec<Review>,
     pub trace_criteria: &'static str,
     pub test_coverage_criteria: &'static str,
+    /// Creation date given in ISO8601 format.
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
@@ -709,6 +710,7 @@ impl RequirementTestCoverageInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestCoverageTestRunInfo {
     pub name: String,
+    /// Test run date given in ISO8601 format.
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
@@ -734,6 +736,7 @@ pub struct IndirectTestCoverageInfo {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct VerifiedRequirementInfo {
     pub review_name: String,
+    /// Review date given in ISO8601 format.
     #[serde(with = "super::review_date_format")]
     #[schemars(with = "String")]
     pub review_date: PrimitiveDateTime,
@@ -822,6 +825,7 @@ impl TestsOverview {
 pub struct TestRunInfo {
     pub overview: TestRunOverview,
     pub name: String,
+    /// Test run date given in ISO8601 format.
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
@@ -1100,6 +1104,7 @@ impl Unrelated {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct UnrelatedCoverage {
     pub test_run_name: String,
+    /// Test run date given in ISO8601 format.
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
@@ -1156,6 +1161,7 @@ time::serde::format_description!(
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct UnrelatedVerified {
     pub review_name: String,
+    /// Review date given in ISO8601 format.
     #[serde(with = "review_date_format")]
     #[schemars(with = "String")]
     pub review_date: PrimitiveDateTime,

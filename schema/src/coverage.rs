@@ -16,6 +16,7 @@ pub struct CoverageSchema {
 )]
 pub struct TestRun {
     pub name: String,
+    /// Test run date must be given in ISO8601 format.
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"

@@ -83,6 +83,7 @@
       ],
       "properties": {
         "date": {
+          "description": "Test run date must be given in ISO8601 format.",
           "type": "string"
         },
         "logs": {
