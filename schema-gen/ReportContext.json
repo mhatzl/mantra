@@ -1,0 +1,856 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReportContext",
+  "type": "object",
+  "required": [
+    "creation_date",
+    "overview",
+    "project",
+    "requirements",
+    "reviews",
+    "tag",
+    "test_coverage_criteria",
+    "tests",
+    "trace_criteria",
+    "unrelated",
+    "validation"
+  ],
+  "properties": {
+    "creation_date": {
+      "type": "string"
+    },
+    "overview": {
+      "$ref": "#/definitions/RequirementsOverview"
+    },
+    "project": {
+      "$ref": "#/definitions/Project"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/RequirementInfo"
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Review"
+      }
+    },
+    "tag": {
+      "$ref": "#/definitions/Tag"
+    },
+    "test_coverage_criteria": {
+      "type": "string"
+    },
+    "tests": {
+      "$ref": "#/definitions/TestStatistics"
+    },
+    "trace_criteria": {
+      "type": "string"
+    },
+    "unrelated": {
+      "$ref": "#/definitions/Unrelated"
+    },
+    "validation": {
+      "$ref": "#/definitions/ValidationInfo"
+    }
+  },
+  "definitions": {
+    "IndirectTestCoverageInfo": {
+      "type": "object",
+      "required": [
+        "covered_id",
+        "test_runs"
+      ],
+      "properties": {
+        "covered_id": {
+          "type": "string"
+        },
+        "test_runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCoverageTestRunInfo"
+          }
+        }
+      }
+    },
+    "IndirectTraceInfo": {
+      "type": "object",
+      "required": [
+        "traced_id",
+        "traces"
+      ],
+      "properties": {
+        "traced_id": {
+          "type": "string"
+        },
+        "traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TraceLocation"
+          }
+        }
+      }
+    },
+    "LeafChildrenStatistic": {
+      "type": "object",
+      "required": [
+        "covered_leaf_cnt",
+        "covered_leaf_ratio",
+        "leaf_cnt",
+        "passed_covered_leaf_cnt",
+        "passed_covered_leaf_ratio",
+        "traced_leaf_cnt",
+        "traced_leaf_ratio"
+      ],
+      "properties": {
+        "covered_leaf_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "covered_leaf_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "leaf_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "passed_covered_leaf_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "passed_covered_leaf_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "traced_leaf_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "traced_leaf_ratio": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "Project": {
+      "type": "object",
+      "properties": {
+        "link": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RequirementInfo": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "direct_children",
+        "id",
+        "link",
+        "manual",
+        "test_coverage_info",
+        "title",
+        "trace_info",
+        "valid",
+        "verified_info"
+      ],
+      "properties": {
+        "deprecated": {
+          "type": "boolean"
+        },
+        "direct_children": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "info": true,
+        "leaf_statistic": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LeafChildrenStatistic"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link": {
+          "type": "string"
+        },
+        "manual": {
+          "type": "boolean"
+        },
+        "parent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rendered_info": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "test_coverage_info": {
+          "$ref": "#/definitions/RequirementTestCoverageInfo"
+        },
+        "title": {
+          "type": "string"
+        },
+        "trace_info": {
+          "$ref": "#/definitions/RequirementTraceInfo"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "verified_info": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VerifiedRequirementInfo"
+          }
+        }
+      }
+    },
+    "RequirementTestCoverageInfo": {
+      "type": "object",
+      "required": [
+        "covered",
+        "direct_coverage",
+        "fully_covered",
+        "indirect_coverage",
+        "passed"
+      ],
+      "properties": {
+        "covered": {
+          "type": "boolean"
+        },
+        "direct_coverage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCoverageTestRunInfo"
+          }
+        },
+        "fully_covered": {
+          "type": "boolean"
+        },
+        "indirect_coverage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IndirectTestCoverageInfo"
+          }
+        },
+        "passed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "RequirementTraceInfo": {
+      "type": "object",
+      "required": [
+        "direct_traces",
+        "fully_traced",
+        "indirect_traces",
+        "traced"
+      ],
+      "properties": {
+        "direct_traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TraceLocation"
+          }
+        },
+        "fully_traced": {
+          "type": "boolean"
+        },
+        "indirect_traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IndirectTraceInfo"
+          }
+        },
+        "traced": {
+          "type": "boolean"
+        }
+      }
+    },
+    "RequirementsOverview": {
+      "type": "object",
+      "required": [
+        "covered_cnt",
+        "covered_ratio",
+        "passed_cnt",
+        "passed_ratio",
+        "req_cnt",
+        "traced_cnt",
+        "traced_ratio",
+        "verified_ratio"
+      ],
+      "properties": {
+        "covered_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "covered_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "passed_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "passed_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "req_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "traced_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "traced_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "verified_cnt": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int32"
+        },
+        "verified_ratio": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "Review": {
+      "type": "object",
+      "required": [
+        "date",
+        "name",
+        "requirements",
+        "reviewer"
+      ],
+      "properties": {
+        "comment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VerifiedRequirement"
+          }
+        },
+        "reviewer": {
+          "type": "string"
+        }
+      }
+    },
+    "Tag": {
+      "type": "object",
+      "properties": {
+        "link": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TestCoverageTestInfo": {
+      "type": "object",
+      "required": [
+        "name",
+        "passed",
+        "traces"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TraceLocation"
+          }
+        }
+      }
+    },
+    "TestCoverageTestRunInfo": {
+      "type": "object",
+      "required": [
+        "date",
+        "name",
+        "tests"
+      ],
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCoverageTestInfo"
+          }
+        }
+      }
+    },
+    "TestInfo": {
+      "type": "object",
+      "required": [
+        "covers",
+        "filepath",
+        "line",
+        "name",
+        "state"
+      ],
+      "properties": {
+        "covers": {
+          "description": "List of requirements that are covered by this test.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filepath": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        }
+      }
+    },
+    "TestRunInfo": {
+      "type": "object",
+      "required": [
+        "date",
+        "name",
+        "overview",
+        "tests"
+      ],
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "logs": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "meta": true,
+        "name": {
+          "type": "string"
+        },
+        "overview": {
+          "$ref": "#/definitions/TestRunOverview"
+        },
+        "rendered_meta": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestInfo"
+          }
+        }
+      }
+    },
+    "TestRunOverview": {
+      "type": "object",
+      "required": [
+        "failed_cnt",
+        "failed_ratio",
+        "passed_cnt",
+        "passed_ratio",
+        "ran_cnt",
+        "ran_ratio",
+        "skipped_cnt",
+        "skipped_ratio",
+        "test_cnt"
+      ],
+      "properties": {
+        "failed_cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "failed_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "passed_cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "passed_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "ran_cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ran_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "skipped_cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "skipped_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "test_cnt": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "TestState": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Passed",
+            "Failed"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Skipped"
+          ],
+          "properties": {
+            "Skipped": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TestStatistics": {
+      "type": "object",
+      "required": [
+        "overview",
+        "test_runs"
+      ],
+      "properties": {
+        "overview": {
+          "$ref": "#/definitions/TestsOverview"
+        },
+        "test_runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunInfo"
+          }
+        }
+      }
+    },
+    "TestsOverview": {
+      "type": "object",
+      "required": [
+        "failed_cnt",
+        "failed_ratio",
+        "passed_cnt",
+        "passed_ratio",
+        "ran_cnt",
+        "ran_ratio",
+        "skipped_cnt",
+        "skipped_ratio",
+        "test_cnt"
+      ],
+      "properties": {
+        "failed_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "failed_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "passed_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "passed_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "ran_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ran_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "skipped_cnt": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "skipped_ratio": {
+          "type": "number",
+          "format": "double"
+        },
+        "test_cnt": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "TraceLocation": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "line"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "TracePk": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "line",
+        "req_id"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "req_id": {
+          "type": "string"
+        }
+      }
+    },
+    "Unrelated": {
+      "type": "object",
+      "required": [
+        "coverage",
+        "traces",
+        "verified_requirements"
+      ],
+      "properties": {
+        "coverage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnrelatedCoverage"
+          }
+        },
+        "traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TracePk"
+          }
+        },
+        "verified_requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnrelatedVerified"
+          }
+        }
+      }
+    },
+    "UnrelatedCoverage": {
+      "type": "object",
+      "required": [
+        "req_id",
+        "test_name",
+        "test_run_date",
+        "test_run_name",
+        "trace_filepath",
+        "trace_line"
+      ],
+      "properties": {
+        "req_id": {
+          "type": "string"
+        },
+        "test_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        },
+        "trace_filepath": {
+          "type": "string"
+        },
+        "trace_line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "UnrelatedVerified": {
+      "type": "object",
+      "required": [
+        "req_id",
+        "review_date",
+        "review_name"
+      ],
+      "properties": {
+        "comment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "req_id": {
+          "type": "string"
+        },
+        "review_date": {
+          "type": "string"
+        },
+        "review_name": {
+          "type": "string"
+        }
+      }
+    },
+    "ValidationInfo": {
+      "type": "object",
+      "required": [
+        "criteria",
+        "invalid_reqs",
+        "is_valid"
+      ],
+      "properties": {
+        "criteria": {
+          "type": "string"
+        },
+        "invalid_reqs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_valid": {
+          "type": "boolean"
+        }
+      }
+    },
+    "VerifiedRequirement": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "comment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "VerifiedRequirementInfo": {
+      "type": "object",
+      "required": [
+        "review_date",
+        "review_name"
+      ],
+      "properties": {
+        "comment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "review_date": {
+          "type": "string"
+        },
+        "review_name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

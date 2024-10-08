@@ -50,7 +50,9 @@ pub struct ReportConfig {
     pub test_run_template: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
+#[derive(
+    Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args, schemars::JsonSchema,
+)]
 pub struct Project {
     #[arg(id = "project-name", long = "project-name")]
     pub name: Option<String>,
@@ -60,7 +62,9 @@ pub struct Project {
     pub link: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args)]
+#[derive(
+    Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args, schemars::JsonSchema,
+)]
 pub struct Tag {
     #[arg(id = "tag-name", long = "tag-name")]
     pub name: Option<String>,
@@ -161,7 +165,7 @@ pub async fn create_json_report(
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ReportContext {
     pub project: Project,
     pub tag: Tag,
@@ -175,6 +179,7 @@ pub struct ReportContext {
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
+    #[schemars(with = "String")]
     pub creation_date: OffsetDateTime,
     pub validation: ValidationInfo,
     pub unrelated: Unrelated,
@@ -253,7 +258,7 @@ Requirements are passed if all of the following criteria are met:
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ValidationInfo {
     pub is_valid: bool,
     pub criteria: &'static str,
@@ -287,7 +292,9 @@ impl ValidationInfo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct RequirementsOverview {
     pub req_cnt: i32,
     pub traced_cnt: i32,
@@ -333,7 +340,7 @@ impl RequirementsOverview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct RequirementInfo {
     #[serde(flatten)]
     pub meta: Requirement,
@@ -485,7 +492,7 @@ impl RequirementInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LeafChildrenStatistic {
     leaf_cnt: i32,
     traced_leaf_cnt: i32,
@@ -520,7 +527,7 @@ impl LeafChildrenStatistic {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct RequirementTraceInfo {
     pub traced: bool,
     pub fully_traced: bool,
@@ -591,19 +598,21 @@ impl RequirementTraceInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, sqlx::Type)]
+#[derive(
+    Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, sqlx::Type, schemars::JsonSchema,
+)]
 pub struct TraceLocation {
     pub filepath: String,
     pub line: Line,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct IndirectTraceInfo {
     pub traced_id: String,
     pub traces: Vec<TraceLocation>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct RequirementTestCoverageInfo {
     pub covered: bool,
     pub passed: bool,
@@ -697,39 +706,41 @@ impl RequirementTestCoverageInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestCoverageTestRunInfo {
     pub name: String,
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
+    #[schemars(with = "String")]
     pub date: OffsetDateTime,
     pub tests: Vec<TestCoverageTestInfo>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestCoverageTestInfo {
     pub name: String,
     pub passed: bool,
     pub traces: Vec<TraceLocation>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct IndirectTestCoverageInfo {
     pub covered_id: String,
     pub test_runs: Vec<TestCoverageTestRunInfo>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct VerifiedRequirementInfo {
     pub review_name: String,
     #[serde(with = "super::review_date_format")]
+    #[schemars(with = "String")]
     pub review_date: PrimitiveDateTime,
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestStatistics {
     pub overview: TestsOverview,
     pub test_runs: Vec<TestRunInfo>,
@@ -768,7 +779,9 @@ impl TestStatistics {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct TestsOverview {
     pub test_cnt: i32,
     pub ran_cnt: i32,
@@ -805,7 +818,7 @@ impl TestsOverview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestRunInfo {
     pub overview: TestRunOverview,
     pub name: String,
@@ -813,6 +826,7 @@ pub struct TestRunInfo {
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
+    #[schemars(with = "String")]
     pub date: OffsetDateTime,
     pub meta: Option<serde_json::Value>,
     pub rendered_meta: Option<String>,
@@ -947,7 +961,9 @@ impl TestRunInfo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct TestRunOverview {
     pub test_cnt: i64,
     pub ran_cnt: i64,
@@ -991,7 +1007,7 @@ impl TestRunOverview {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestInfo {
     /// List of requirements that are covered by this test.
     pub covers: Vec<String>,
@@ -1047,7 +1063,7 @@ impl Review {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Unrelated {
     pub traces: Vec<TracePk>,
     pub coverage: Vec<UnrelatedCoverage>,
@@ -1081,13 +1097,14 @@ impl Unrelated {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct UnrelatedCoverage {
     pub test_run_name: String,
     #[serde(
         serialize_with = "time::serde::iso8601::serialize",
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
+    #[schemars(with = "String")]
     pub test_run_date: OffsetDateTime,
     pub test_name: String,
     pub req_id: String,
@@ -1136,10 +1153,11 @@ time::serde::format_description!(
     mantra_schema::reviews::REVIEW_DATE_FORMAT
 );
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct UnrelatedVerified {
     pub review_name: String,
     #[serde(with = "review_date_format")]
+    #[schemars(with = "String")]
     pub review_date: PrimitiveDateTime,
     pub req_id: String,
     pub comment: Option<String>,

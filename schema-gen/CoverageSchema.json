@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CoverageSchema",
+  "type": "object",
+  "required": [
+    "test_runs"
+  ],
+  "properties": {
+    "test_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRun"
+      }
+    }
+  },
+  "definitions": {
+    "LineCoverage": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "lines"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    "Test": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "line",
+        "name",
+        "state"
+      ],
+      "properties": {
+        "covered_lines": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LineCoverage"
+          }
+        },
+        "covered_traces": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TracePk"
+          }
+        },
+        "filepath": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        }
+      }
+    },
+    "TestRun": {
+      "type": "object",
+      "required": [
+        "date",
+        "name",
+        "nr_of_tests",
+        "tests"
+      ],
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "logs": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "meta": true,
+        "name": {
+          "type": "string"
+        },
+        "nr_of_tests": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Test"
+          }
+        }
+      }
+    },
+    "TestState": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Passed",
+            "Failed"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Skipped"
+          ],
+          "properties": {
+            "Skipped": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TracePk": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "line",
+        "req_id"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "req_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

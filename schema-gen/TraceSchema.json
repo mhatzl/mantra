@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TraceSchema",
+  "type": "object",
+  "required": [
+    "traces"
+  ],
+  "properties": {
+    "traces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/FileTraces"
+      }
+    }
+  },
+  "definitions": {
+    "FileTraces": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "traces"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "traces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TraceEntry"
+          }
+        }
+      }
+    },
+    "LineSpan": {
+      "type": "object",
+      "required": [
+        "end",
+        "start"
+      ],
+      "properties": {
+        "end": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "start": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "TraceEntry": {
+      "type": "object",
+      "required": [
+        "ids",
+        "line"
+      ],
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "line": {
+          "description": "The line the trace is defined",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "line_span": {
+          "description": "Optional span of lines this entry affects in the source.\n\ne.g. lines of a function body for a trace set at start of the function.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/LineSpan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

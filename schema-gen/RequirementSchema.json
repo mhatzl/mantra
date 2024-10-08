@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RequirementSchema",
+  "type": "object",
+  "required": [
+    "requirements"
+  ],
+  "properties": {
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Requirement"
+      }
+    }
+  },
+  "definitions": {
+    "Requirement": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "id",
+        "link",
+        "manual",
+        "title"
+      ],
+      "properties": {
+        "deprecated": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "info": true,
+        "link": {
+          "type": "string"
+        },
+        "manual": {
+          "type": "boolean"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

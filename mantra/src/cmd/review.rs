@@ -5,17 +5,18 @@ use time::PrimitiveDateTime;
 
 use crate::db::{DbError, MantraDb};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Review {
     pub name: String,
     #[serde(with = "super::review_date_format")]
+    #[schemars(with = "String")]
     pub date: PrimitiveDateTime,
     pub reviewer: String,
     pub comment: Option<String>,
     pub requirements: Vec<VerifiedRequirement>,
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct VerifiedRequirement {
     pub id: ReqId,
     pub comment: Option<String>,

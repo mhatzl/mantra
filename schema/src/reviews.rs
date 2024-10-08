@@ -12,17 +12,22 @@ pub fn date_from_str(date: &str) -> Result<PrimitiveDateTime, time::error::Parse
     PrimitiveDateTime::parse(date, REVIEW_DATE_FORMAT)
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct ReviewSchema {
     pub name: String,
     #[serde(with = "review_date_format")]
+    #[schemars(with = "String")]
     pub date: PrimitiveDateTime,
     pub reviewer: String,
     pub comment: Option<String>,
     pub requirements: Vec<VerifiedRequirement>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct VerifiedRequirement {
     pub id: ReqId,
     pub comment: Option<String>,
