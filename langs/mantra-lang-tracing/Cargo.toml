@@ -15,7 +15,6 @@ path-slash = "0.2"
 proc-macro2 = { workspace = true, optional = true }
 regex = { workspace = true, optional = true }
 tree-sitter = { workspace = true, optional = true }
-tree-sitter-rust = { workspace = true, optional = true }
 
 [build-dependencies]
 cc = { version = "1.0.90", optional = true }
@@ -25,5 +24,5 @@ mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0" }
 
 [features]
 default = ["collect"]
-collect = ["extract", "dep:tree-sitter", "dep:tree-sitter-rust", "dep:cc"]
+collect = ["extract", "dep:tree-sitter", "dep:cc"]
 extract = ["dep:proc-macro2", "dep:regex"]
