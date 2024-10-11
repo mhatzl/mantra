@@ -58,6 +58,13 @@ having the form `[req(<requirement id(s)>)]`.
   ```
 
 ## Usage
+### Prerequisites
+
+*mantra* uses the [tree-sitter]() crate to find traces in source code.
+This crate requires access to a [native C compiler](https://docs.rs/cc/latest/cc/#compile-time-requirements).
+
+Ensure `cc` is available on `Path` when installing *mantra* via `cargo install`.
+
 ### Per CLI
 
 *mantra* may be installed using `cargo install mantra`.
