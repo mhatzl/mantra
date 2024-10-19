@@ -209,30 +209,30 @@ create view DirectlyTracedRequirements as
 select distinct r.id from Requirements r, Traces tr
 where r.id = tr.req_id;
 
--- A requirement is indirectly traced
--- if **all** of its direct child requirements are either directly or indirectly traced.
-create view IndirectlyTracedRequirements as
-with recursive IsIndirectlyUntraced(id) as (
+create view UntracedRequirements as
+with recursive IsUntraced(id) as (
     -- Leaf requirements cannot be traced indirectly
     select id
     from LeafRequirements
     where id not in (select id from DirectlyTracedRequirements)
     union all
-    -- Recursively get requirements that are not indirectly traced
+    -- Recursively get requirements that are not directly traced,
+    -- or have at least one untraced child
     select r.id
-    from NonLeafRequirements r, RequirementHierarchies rh, IsIndirectlyUntraced u
+    from (
+		select id from NonLeafRequirements except select id from DirectlyTracedRequirements
+	) r, RequirementHierarchies rh, IsUntraced u
     where r.id = rh.parent_id
     and rh.child_id = u.id
-),
--- Neither directly or indirectly traced requirements
-IsUntraced(id) as (
-    select id from IsIndirectlyUntraced
-    except
-    select id from DirectlyTracedRequirements
-),
-HasUntracedChild(id) as (
+)
+select distinct id from IsUntraced;
+
+-- A requirement is indirectly traced
+-- if **all** of its direct child requirements are either directly or indirectly traced.
+create view IndirectlyTracedRequirements as
+with HasUntracedChild(id) as (
     select rh.parent_id
-    from RequirementHierarchies rh, IsUntraced u
+    from RequirementHierarchies rh, UntracedRequirements u
     where rh.child_id = u.id
 )
 -- Only non-leaf requirements can be indirectly traced
@@ -279,11 +279,6 @@ select id
 from NonLeafRequirements
 where id not in (select id from HasUntracedLeaf);
 
-create view UntracedRequirements as
-select id from Requirements
-except
-select id from TracedRequirements;
-
 create view InvalidRequirements as
 select d.id
 from DeprecatedRequirements d, TracedRequirements t
@@ -320,33 +315,32 @@ with CompactTraceEntry(id, test_run_name, test_run_date, test_name, test_passed,
 )
 select id, test_run_name, test_run_date, json(test_list) as tests from GroupedTestEntry;
 
+create view UncoveredRequirements as
+with recursive IsUncovered(id) as (
+    -- Leaf requirements cannot be covered indirectly
+    select id
+    from LeafRequirements
+    where id not in (select id from DirectlyCoveredRequirements)
+    union all
+    -- Recursively get requirements that are not directly covered,
+    -- or have at least one uncovered child
+    select r.id
+    from (
+        select id from NonLeafRequirements except select id from DirectlyCoveredRequirements
+    ) r, RequirementHierarchies rh, IsIndirectlyUncovered u
+    where r.id = rh.parent_id
+    and rh.child_id = u.id
+)
+select distinct id from IsUncovered;
 
 -- Indirectly covered requirements have the same constraint
 -- as indirectly traced requirements.
 --
 -- See description for indirectly traced requirements for more information.
 create view IndirectlyCoveredRequirements as
-with recursive IsIndirectlyUncovered(id) as (
-    -- Leaf requirements cannot be covered indirectly
-    select id
-    from LeafRequirements
-    where id not in (select id from DirectlyCoveredRequirements)
-    union all
-    -- Recursively get requirements that are not indirectly covered
-    select r.id
-    from NonLeafRequirements r, RequirementHierarchies rh, IsIndirectlyUncovered u
-    where r.id = rh.parent_id
-    and rh.child_id = u.id
-),
--- Neither directly or indirectly covered requirements
-IsUncovered(id) as (
-    select id from IsIndirectlyUncovered
-    except
-    select id from DirectlyCoveredRequirements
-),
-HasUncoveredChild(id) as (
+with HasUncoveredChild(id) as (
     select rh.parent_id
-    from RequirementHierarchies rh, IsUncovered u
+    from RequirementHierarchies rh, UncoveredRequirements u
     where rh.child_id = u.id
 )
 -- Only non-leaf requirements can be indirectly uncovered
@@ -399,11 +393,6 @@ create view CoveredRequirements as
 select id from DirectlyCoveredRequirements
 union
 select id from IndirectlyCoveredRequirements;
-
-create view UncoveredRequirements as
-select id from Requirements
-except
-select id from CoveredRequirements;
 
 -- Coverage of a requirement failed if either one of the following holds:
 --
