@@ -145,15 +145,15 @@ create table UnrelatedManuallyVerified (
 -- Views
 -----------------------------------------------------------------------------
 
-create view RequirementChildren as
-with recursive TransitiveChildren(id, child_id) as
+create view RequirementDescendants as
+with recursive TransitiveChildren(id, descendant_id) as
 (
     select parent_id, child_id from RequirementHierarchies
     union all
     select tc.id, rh.child_id from RequirementHierarchies rh, TransitiveChildren tc
-    where tc.child_id = rh.parent_id
+    where tc.descendant_id = rh.parent_id
 )
-select distinct id, child_id from TransitiveChildren;
+select distinct id, descendant_id from TransitiveChildren;
 
 -- Requirements without children
 create view LeafRequirements as
@@ -174,8 +174,8 @@ with MarkedDeprecated(id) as (
     where deprecated = true
 ),
 ParentMarkedDeprecated(id) as (
-    select rc.child_id
-    from RequirementChildren rc, MarkedDeprecated md
+    select rc.descendant_id
+    from RequirementDescendants rc, MarkedDeprecated md
     where rc.id = md.id
 ),
 Deprecated(id) as (
@@ -192,8 +192,8 @@ with MarkedManual(id) as (
     where manual = true
 ),
 ParentMarkedManual(id) as (
-    select rc.child_id
-    from RequirementChildren rc, MarkedManual md
+    select rc.descendant_id
+    from RequirementDescendants rc, MarkedManual md
     where rc.id = md.id
 ),
 Manual(id) as (
@@ -242,9 +242,9 @@ where id not in (select id from HasUntracedChild);
 
 -- Traces to child requirements.
 create view IndirectRequirementTraces as
-select ir.id, c.child_id as traced_id, t.filepath, t.line
-from IndirectlyTracedRequirements ir, RequirementChildren c, Traces t
-where ir.id = c.id and c.child_id = t.req_id;
+select ir.id, c.descendant_id as traced_id, t.filepath, t.line
+from IndirectlyTracedRequirements ir, RequirementDescendants c, Traces t
+where ir.id = c.id and c.descendant_id = t.req_id;
 
 create view IndirectTraceTree as
 with CompactTraceEntry(id, traced_id, trace) as (
@@ -268,8 +268,8 @@ select id from IndirectlyTracedRequirements;
 create view FullyTracedRequirements as
 with HasUntracedLeaf(id) as (
     select rc.id
-    from RequirementChildren rc, LeafRequirements lr, UntracedRequirements ur
-    where rc.child_id = lr.id and lr.id = ur.id
+    from RequirementDescendants rc, LeafRequirements lr, UntracedRequirements ur
+    where rc.descendant_id = lr.id and lr.id = ur.id
 )
 select lr.id
 from LeafRequirements lr, DirectlyTracedRequirements dr
@@ -356,12 +356,12 @@ where id not in (select id from HasUncoveredChild);
 
 -- Test coverage of child requirements.
 create view IndirectRequirementTestCoverage as
-select r.id, c.child_id as covered_id,
+select r.id, c.descendant_id as covered_id,
 v.test_run_name, v.test_run_date, v.test_name,
 v.trace_filepath, v.trace_line,
 coalesce(t.passed, 0) as test_passed
-from IndirectlyCoveredRequirements r, RequirementChildren c, TestCoverage v, Tests t
-where r.id = c.id and c.child_id = v.req_id
+from IndirectlyCoveredRequirements r, RequirementDescendants c, TestCoverage v, Tests t
+where r.id = c.id and c.descendant_id = v.req_id
 and v.test_run_name = t.test_run_name and v.test_run_date = t.test_run_date
 and v.test_name = t.name;
 
@@ -411,8 +411,8 @@ select id from CoveredRequirements;
 -- - one of the child requirements has failed coverage
 create view FailedCoveredRequirements as
 with HasFailedChild(id, covered_id) as (
-    select r.id, rc.child_id from Requirements r, RequirementChildren rc, FailedTestCoverage f
-    where r.id = rc.id and rc.child_id = f.req_id
+    select r.id, rc.descendant_id from Requirements r, RequirementDescendants rc, FailedTestCoverage f
+    where r.id = rc.id and rc.descendant_id = f.req_id
 )
 select c.id, hf.covered_id
 from CoveredRequirements c, HasFailedChild hf
@@ -441,12 +441,12 @@ select id from FailedCoveredRequirements;
 create view FullyCoveredRequirements as
 with HasUncoveredOrFailedLeaf(id) as (
     select rc.id
-    from RequirementChildren rc, LeafRequirements lr, UncoveredRequirements ur
-    where rc.child_id = lr.id and lr.id = ur.id
+    from RequirementDescendants rc, LeafRequirements lr, UncoveredRequirements ur
+    where rc.descendant_id = lr.id and lr.id = ur.id
     union all
     select rc.id
-    from RequirementChildren rc, LeafRequirements lr, FailedCoveredRequirements fr
-    where rc.child_id = lr.id and lr.id = fr.id
+    from RequirementDescendants rc, LeafRequirements lr, FailedCoveredRequirements fr
+    where rc.descendant_id = lr.id and lr.id = fr.id
 )
 select lr.id
 from LeafRequirements lr, PassedCoveredRequirements pr
@@ -484,23 +484,23 @@ from NrRequirements r, NrTraced t, NrCovered c, NrPassed p, VerifiedOverview v;
 create view LeafChildOverview as
 with NrLeafs(id, cnt) as (
     select rc.id, count(*)
-    from RequirementChildren rc, LeafRequirements lr
-    where rc.child_id = lr.id
+    from RequirementDescendants rc, LeafRequirements lr
+    where rc.descendant_id = lr.id
     group by rc.id
 ), NrTracedLeafs(id, cnt) as (
     select rc.id, count(*)
-    from RequirementChildren rc, LeafRequirements lr, DirectlyTracedRequirements dt
-    where rc.child_id = lr.id and lr.id = dt.id
+    from RequirementDescendants rc, LeafRequirements lr, DirectlyTracedRequirements dt
+    where rc.descendant_id = lr.id and lr.id = dt.id
     group by rc.id
 ), NrCoveredLeafs(id, cnt) as (
     select rc.id, count(*)
-    from RequirementChildren rc, LeafRequirements lr, DirectlyCoveredRequirements dc
-    where rc.child_id = lr.id and lr.id = dc.id
+    from RequirementDescendants rc, LeafRequirements lr, DirectlyCoveredRequirements dc
+    where rc.descendant_id = lr.id and lr.id = dc.id
     group by rc.id
 ), NrPassedCoveredLeafs(id, cnt) as (
     select rc.id, count(*)
-    from RequirementChildren rc, LeafRequirements lr, PassedCoveredRequirements pc
-    where rc.child_id = lr.id and lr.id = pc.id
+    from RequirementDescendants rc, LeafRequirements lr, PassedCoveredRequirements pc
+    where rc.descendant_id = lr.id and lr.id = pc.id
     group by rc.id
 )
 select id, sum(leaf_cnt) as leaf_cnt,
