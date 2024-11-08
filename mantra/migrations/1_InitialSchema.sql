@@ -183,8 +183,7 @@ Deprecated(id) as (
     union
     select id from ParentMarkedDeprecated
 )
-select distinct id
-from Deprecated d;
+select distinct id from Deprecated;
 
 create view ManualRequirements as
 with MarkedManual(id) as (
@@ -201,9 +200,7 @@ Manual(id) as (
     union
     select id from ParentMarkedManual
 )
-select distinct r.id
-from Requirements r, Manual d 
-where r.id = d.id;
+select distinct id from Manual;
 
 create view DirectlyTracedRequirements as
 select distinct r.id from Requirements r, Traces tr
