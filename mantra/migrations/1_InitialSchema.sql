@@ -331,7 +331,7 @@ with recursive IsUncovered(id) as (
     select r.id
     from (
         select id from NonLeafRequirements except select id from DirectlyCoveredRequirements
-    ) r, RequirementHierarchies rh, IsIndirectlyUncovered u
+    ) r, RequirementHierarchies rh, IsUncovered u
     where r.id = rh.parent_id
     and rh.child_id = u.id
 )

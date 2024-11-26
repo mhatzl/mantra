@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or replace into TracedItems (name, filepath, line) values ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "2f25932e988169457a7d728f9bea1084dc499d4ccc06b9959627f0e601d8e77b"
+}
