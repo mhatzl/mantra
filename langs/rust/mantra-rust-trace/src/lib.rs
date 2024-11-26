@@ -18,7 +18,7 @@ pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<
         let macro_content = macro_node.named_child(1)?;
 
         if ident.kind() == "identifier"
-            && ident.utf8_text(src) == Ok("req")
+            && ident.utf8_text(src).map(is_req_macro).unwrap_or(false)
             && macro_content.kind() == "token_tree"
         {
             let span = if may_span {
@@ -37,6 +37,43 @@ pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<
                 span,
             ))
             .ok()?]);
+        } else if ident.kind() == "identifier" && ident.utf8_text(src) == Ok("cfg_attrb") {
+            let mut traces = Vec::new();
+
+            let span = if may_span {
+                associated_item_span(*node)
+            } else {
+                None
+            };
+            let start_line = ident.start_position().row + 1;
+
+            for child in macro_content.named_children(&mut macro_content.walk()) {
+                if child.kind() == "identifier"
+                    && child.utf8_text(src).map_or(false, is_req_macro)
+                    && child
+                        .next_named_sibling()
+                        .map_or(false, |n| n.kind() == "token_tree")
+                {
+                    let ids = child
+                        .next_named_sibling()
+                        .expect("Sibling checked in condition")
+                        .utf8_text(src)
+                        .ok()?
+                        .strip_prefix('(')
+                        .and_then(|s| s.strip_suffix(')'))?;
+                    if let Ok(entry) =
+                        TraceEntry::try_from(RawTraceEntry::new(ids, start_line, span))
+                    {
+                        traces.push(entry);
+                    }
+                }
+            }
+
+            return if traces.is_empty() {
+                None
+            } else {
+                Some(traces)
+            };
         }
     } else if node_kind == "line_comment" && is_doc_comment(node) {
         let trace_matcher = mantra_lang_tracing::extract::req_trace_matcher();
@@ -91,4 +128,12 @@ fn is_doc_comment(node: &AstNode) -> bool {
     } else {
         false
     }
+}
+
+fn is_req_macro(content: &str) -> bool {
+    matches!(content, "req" | "requirements")
+        || content
+            .rsplit_once("::")
+            .map(|(_, name)| matches!(name, "req" | "requirements"))
+            .unwrap_or(false)
 }

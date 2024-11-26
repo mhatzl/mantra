@@ -29,7 +29,7 @@ static REQ_TRACE_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new(
 
 pub fn req_trace_matcher() -> &'static Regex {
     REQ_TRACE_MATCHER.get_or_init(|| {
-        Regex::new(r"\[req\((?<ids>[^\)]+)\)\]")
+        Regex::new(r"\[(?:[^\(]+::)?(?:req|requirements)\((?<ids>[^\)]+)\)\]")
             .expect("Regex to match a requirement trace could **not** be created.")
     })
 }
