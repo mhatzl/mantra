@@ -232,6 +232,7 @@ impl MantraDb {
                     }),
                     manual: existing_record.manual,
                     deprecated: existing_record.deprecated,
+                    parents: None,
                 };
                 if req != &existing_req {
                     changes.updated.push(RequirementUpdate {
@@ -313,6 +314,23 @@ impl MantraDb {
                         existing_parent, req.id, err
                     )));
                 }
+            } else if let Some(parents) = &req.parents {
+                for parent in parents {
+                    let res = sqlx::query!(
+                        "insert or ignore into RequirementHierarchies (parent_id, child_id) values ($1, $2)",
+                        parent,
+                        req.id,
+                    )
+                    .execute(&self.pool)
+                    .await;
+    
+                    if let Err(err) = res {
+                        return Err(DbError::Insert(format!(
+                            "Adding requirement hierarchy for parent='{}' and child='{}' failed with error: {}",
+                            parent, req.id, err
+                        )));
+                    }
+                }
             }
         }
 
@@ -341,6 +359,7 @@ impl MantraDb {
                         .expect("Requirement info must be valid JSON.")),
                     manual: old_req.manual,
                     deprecated: old_req.deprecated,
+                    parents: None,
                 })
             }
         }

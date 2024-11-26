@@ -187,6 +187,7 @@ fn requirements_from_wiki_content(
                     info: None,
                     manual,
                     deprecated,
+                    parents: None,
                 });
             }
         }

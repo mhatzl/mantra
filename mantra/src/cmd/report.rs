@@ -346,7 +346,6 @@ pub struct RequirementInfo {
     #[serde(flatten)]
     pub meta: Requirement,
     pub rendered_info: Option<String>,
-    pub parent: Option<String>,
     pub direct_children: Vec<String>,
     pub leaf_statistic: Option<LeafChildrenStatistic>,
     pub trace_info: RequirementTraceInfo,
@@ -383,7 +382,7 @@ impl RequirementInfo {
         let deprecated = record.deprecated;
         let manual = record.manual;
 
-        let record = sqlx::query!(
+        let mut record = sqlx::query!(
             r#"
                 select parent_id
                 from RequirementHierarchies
@@ -391,11 +390,16 @@ impl RequirementInfo {
             "#,
             id
         )
-        .fetch_optional(db.pool())
+        .fetch_all(db.pool())
         .await
         .map_err(ReportError::Db)?;
 
-        let parent = record.map(|r| r.parent_id);
+        let parents: Vec<String> = record.iter_mut().map(|r| r.parent_id.clone()).collect();
+        let parents = if parents.is_empty() {
+            None
+        } else {
+            Some(parents)
+        };
 
         let records = sqlx::query!(
             r#"
@@ -480,8 +484,8 @@ impl RequirementInfo {
                 manual,
                 deprecated,
                 info,
+                parents,
             },
-            parent,
             rendered_info,
             direct_children: children,
             leaf_statistic,

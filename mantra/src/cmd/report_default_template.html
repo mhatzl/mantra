@@ -435,10 +435,12 @@
                             {% elif not req.valid %} <span class="invalid">(invalid)</span>
                             {% endif %}
                         </h3>
-                        <p class="header-right-part"><strong>Parent:</strong> {% if req.parent %}
-                            <a class="req" href="#{{ req.parent }}">
-                                {{ self::break_id(id=req.parent) }}
+                        <p class="header-right-part"><strong>Parent:</strong> {% if req.parents %}
+                            {% for parent in req.parents %}
+                            <a class="req" href="#{{ parent }}">
+                                {{ self::break_id(id=parent) }}
                             </a>
+                            {% endfor %}
                             {% else %}none{% endif %}
                         </p>
                     </div>

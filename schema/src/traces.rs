@@ -31,6 +31,8 @@ pub struct TraceEntry {
     ///
     /// e.g. lines of a function body for a trace set at start of the function.
     pub line_span: Option<LineSpan>,
+    /// Optional name that is linked to this trace entry
+    pub item_name: Option<String>,
 }
 
 impl std::fmt::Display for TraceEntry {

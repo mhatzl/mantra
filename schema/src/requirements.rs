@@ -12,6 +12,8 @@ pub type ReqId = String;
 pub struct Requirement {
     /// ID of the requirement
     pub id: ReqId,
+    /// Optional list of parent requirements
+    pub parents: Option<Vec<ReqId>>,
     /// Title of the requirement
     pub title: String,
     /// Link to the origin the requirement is defined

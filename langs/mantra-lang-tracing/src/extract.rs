@@ -21,6 +21,7 @@ impl TryFrom<RawTraceEntry<'_>> for TraceEntry {
             ids,
             line,
             line_span,
+            item_name: None,
         })
     }
 }
