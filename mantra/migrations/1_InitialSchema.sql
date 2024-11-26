@@ -40,6 +40,13 @@ create table TraceSpans (
     foreign key (req_id, filepath, line) references Traces(req_id, filepath, line) on delete cascade
 );
 
+create table TracedItems (
+    name text not null,
+    filepath text not null,
+    line integer not null,
+    primary key (filepath, line)
+);
+
 -- traces to requirements that were not part of the database when the trace was added.
 create table UnrelatedTraces (
     req_id text not null,
