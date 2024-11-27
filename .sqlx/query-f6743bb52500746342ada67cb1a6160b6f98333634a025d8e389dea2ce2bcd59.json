@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select ti.name\n                from Traces t, TraceSpans ts, TracedItems ti\n                where t.req_id = $1 and t.filepath = $2\n                    and t.line = $3 and t.req_id = ts.req_id\n                    and t.filepath = ts.filepath and t.line = ts.line\n                    and t.filepath = ti.filepath and ts.start = ti.line\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f6743bb52500746342ada67cb1a6160b6f98333634a025d8e389dea2ce2bcd59"
+}

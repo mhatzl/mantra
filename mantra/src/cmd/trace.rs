@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 use crate::db::{MantraDb, TraceChanges};
 
@@ -97,9 +100,14 @@ pub async fn trace_from_source(
 
     if let Some(lsif_files) = &cfg.lsif_data {
         for lsif_data in lsif_files {
-            let content = std::fs::read_to_string(lsif_data).map_err(|_| {
+            let raw_content = tokio::fs::read(lsif_data).await.map_err(|err| {
+                log::error!("{err}");
                 TraceError::CouldNotAccessFile(lsif_data.to_string_lossy().to_string())
             })?;
+            // decoding is needed, because LSIF-JSON may be encoded in UTF-8 or UTF-16
+            let mut decoder = encoding_rs_io::DecodeReaderBytes::new(raw_content.as_slice());
+            let mut content = String::with_capacity(raw_content.len());
+            let _ = decoder.read_to_string(&mut content);
 
             let graph = mantra_lang_tracing::lsif_graph::LsifGraph::create(&content)
                 .map_err(TraceError::Deserialize)?;

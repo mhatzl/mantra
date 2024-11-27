@@ -536,7 +536,7 @@ impl LeafChildrenStatistic {
 pub struct RequirementTraceInfo {
     pub traced: bool,
     pub fully_traced: bool,
-    pub direct_traces: Vec<TraceLocation>,
+    pub direct_traces: Vec<TraceInfo>,
     pub indirect_traces: Vec<IndirectTraceInfo>,
 }
 
@@ -556,7 +556,33 @@ impl RequirementTraceInfo {
         .await
         .map_err(ReportError::Db)?;
 
-        let direct_traces = records;
+        let mut direct_traces = Vec::new();
+
+        for record in records {
+            let item_name = sqlx::query!(
+                r#"
+                select ti.name
+                from Traces t, TraceSpans ts, TracedItems ti
+                where t.req_id = $1 and t.filepath = $2
+                    and t.line = $3 and t.req_id = ts.req_id
+                    and t.filepath = ts.filepath and t.line = ts.line
+                    and t.filepath = ti.filepath and ts.start = ti.line
+            "#,
+                id,
+                record.filepath,
+                record.line
+            )
+            .fetch_optional(db.pool())
+            .await
+            .map_err(ReportError::Db)?
+            .map(|r| r.name);
+
+            direct_traces.push(TraceInfo {
+                filepath: record.filepath,
+                line: record.line,
+                item_name,
+            });
+        }
 
         let records = sqlx::query!(
             r#"
@@ -609,6 +635,15 @@ impl RequirementTraceInfo {
 pub struct TraceLocation {
     pub filepath: String,
     pub line: Line,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, sqlx::Type, schemars::JsonSchema,
+)]
+pub struct TraceInfo {
+    pub filepath: String,
+    pub line: Line,
+    pub item_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

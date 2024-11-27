@@ -535,11 +535,13 @@
                                 {% if req.trace_info.direct_traces | length > 0 %}
                                 <table class="file-location">
                                     <tr>
+                                        <th>name</th>
                                         <th class="filepath">file</th>
                                         <th class="line">line</th>
                                     </tr>
                                     {% for trace in req.trace_info.direct_traces %}
                                     <tr>
+                                        <td>{% if trace.item_name %}{{ trace.item_name }}{% else %}-{% endif %}</td>
                                         <td id="{{ req.id }}|{{ trace.filepath }}|{{ trace.line }}" class="filepath">{{
                                             trace.filepath }}</td>
                                         <td class="line">{{ trace.line }}</td>

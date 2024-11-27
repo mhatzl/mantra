@@ -124,7 +124,8 @@ fn get_ident(
 
     for graph in graphs {
         if graph.contains_doc(filepath) {
-            if let Some(ident) = graph.get_identifier(filepath, start_line) {
+            // "-1" because lsif starts with line nr 0
+            if let Some(ident) = graph.get_identifier(filepath, start_line - 1) {
                 return Some(ident);
             }
         }
