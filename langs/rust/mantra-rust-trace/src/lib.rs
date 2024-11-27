@@ -23,10 +23,7 @@ pub fn collect_traces_in_rust(
         let ident = macro_node.named_child(0)?;
         let macro_content = macro_node.named_child(1)?;
 
-        if ident.kind() == "identifier"
-            && ident.utf8_text(src).map(is_req_macro).unwrap_or(false)
-            && macro_content.kind() == "token_tree"
-        {
+        if is_req_macro(ident, src) {
             let span = if may_span {
                 associated_item_span(*node)
             } else {
@@ -55,12 +52,7 @@ pub fn collect_traces_in_rust(
             let start_line = ident.start_position().row + 1;
 
             for child in macro_content.named_children(&mut macro_content.walk()) {
-                if child.kind() == "identifier"
-                    && child.utf8_text(src).map_or(false, is_req_macro)
-                    && child
-                        .next_named_sibling()
-                        .map_or(false, |n| n.kind() == "token_tree")
-                {
+                if is_req_macro(child, src) {
                     let ids = child
                         .next_named_sibling()
                         .expect("Sibling checked in condition")
@@ -161,10 +153,17 @@ fn is_doc_comment(node: &AstNode) -> bool {
     }
 }
 
-fn is_req_macro(content: &str) -> bool {
-    matches!(content, "req" | "requirements")
-        || content
-            .rsplit_once("::")
-            .map(|(_, name)| matches!(name, "req" | "requirements"))
-            .unwrap_or(false)
+fn is_req_macro(node: AstNode, src: &[u8]) -> bool {
+    ((node.kind() == "identifier" && node.utf8_text(src).map_or(false, is_req_ident))
+        || (node.kind() == "scoped_identifier"
+            && node
+                .named_child(1)
+                .map_or(false, |n| n.utf8_text(src).map_or(false, is_req_ident))))
+        && node
+            .next_named_sibling()
+            .map_or(false, |n| n.kind() == "token_tree")
+}
+
+fn is_req_ident(ident: &str) -> bool {
+    matches!(ident, "req" | "reqcov" | "requirements")
 }
