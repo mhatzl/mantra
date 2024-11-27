@@ -36,6 +36,7 @@ async fn main() {
             mantra::cmd::trace::SourceConfig {
                 root,
                 keep_path_absolute: false,
+                lsif_data: None,
             },
         )),
     };

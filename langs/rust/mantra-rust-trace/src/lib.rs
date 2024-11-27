@@ -1,9 +1,15 @@
 use mantra_lang_tracing::{
     collect::{AstNode, Line, LineSpan, TraceEntry},
+    lsif_graph::LsifGraph,
     RawTraceEntry,
 };
 
-pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<Vec<TraceEntry>> {
+pub fn collect_traces_in_rust(
+    node: &AstNode,
+    src: &[u8],
+    filepath: &str,
+    lsif_graphs: &Option<Vec<LsifGraph>>,
+) -> Option<Vec<TraceEntry>> {
     let node_kind = node.kind();
 
     if node_kind == "attribute_item" || node_kind == "macro_invocation" {
@@ -35,6 +41,7 @@ pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<
                     .and_then(|s| s.strip_suffix(')'))?,
                 ident.start_position().row + 1,
                 span,
+                get_ident(filepath, span, lsif_graphs.as_deref()),
             ))
             .ok()?]);
         } else if ident.kind() == "identifier" && ident.utf8_text(src) == Ok("cfg_attrb") {
@@ -61,9 +68,12 @@ pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<
                         .ok()?
                         .strip_prefix('(')
                         .and_then(|s| s.strip_suffix(')'))?;
-                    if let Ok(entry) =
-                        TraceEntry::try_from(RawTraceEntry::new(ids, start_line, span))
-                    {
+                    if let Ok(entry) = TraceEntry::try_from(RawTraceEntry::new(
+                        ids,
+                        start_line,
+                        span,
+                        get_ident(filepath, span, lsif_graphs.as_deref()),
+                    )) {
                         traces.push(entry);
                     }
                 }
@@ -91,12 +101,32 @@ pub fn collect_traces_in_rust(node: &AstNode, src: &[u8], _args: &()) -> Option<
                         capture.name("ids")?.as_str(),
                         node.start_position().row + 1,
                         span,
+                        get_ident(filepath, span, lsif_graphs.as_deref()),
                     ))
                     .ok()?,
                 )
             }
 
             return Some(traces);
+        }
+    }
+
+    None
+}
+
+fn get_ident(
+    filepath: &str,
+    span: Option<LineSpan>,
+    lsif_graphs: Option<&[LsifGraph]>,
+) -> Option<String> {
+    let start_line = span?.start;
+    let graphs = lsif_graphs?;
+
+    for graph in graphs {
+        if graph.contains_doc(filepath) {
+            if let Some(ident) = graph.get_identifier(filepath, start_line) {
+                return Some(ident);
+            }
         }
     }
 

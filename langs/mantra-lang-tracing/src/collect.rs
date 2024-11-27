@@ -29,6 +29,7 @@ impl TraceCollector<()> for PlainCollector<'_> {
                         capture.name("ids")?.as_str(),
                         i + 1,
                         None,
+                        None,
                     ))
                     .ok()?,
                 )
@@ -42,6 +43,7 @@ impl TraceCollector<()> for PlainCollector<'_> {
 pub struct AstCollector<'a, T> {
     tree: Tree,
     src: &'a [u8],
+    filepath: String,
     collect_fn: AstCollectorFn<'a, T>,
 }
 
@@ -51,10 +53,19 @@ pub use mantra_schema::traces::TraceEntry;
 pub use mantra_schema::Line;
 pub use tree_sitter::Node as AstNode;
 
-pub type AstCollectorFn<'a, T> = Box<dyn FnMut(&AstNode, &'a [u8], &T) -> Option<Vec<TraceEntry>>>;
+pub type AstCollectorFn<'a, T> =
+    Box<dyn FnMut(&AstNode, &'a [u8], &str, &T) -> Option<Vec<TraceEntry>>>;
 
 impl<'a, T> AstCollector<'a, T> {
-    pub fn new(src: &'a [u8], lang: &Language, collect_fn: AstCollectorFn<'a, T>) -> Option<Self> {
+    /// # Parameters
+    ///
+    /// - `filepath`: root-relative path of the src-related file
+    pub fn new(
+        src: &'a [u8],
+        lang: &Language,
+        filepath: String,
+        collect_fn: AstCollectorFn<'a, T>,
+    ) -> Option<Self> {
         let mut parser = Parser::new();
 
         parser.set_language(lang).ok()?;
@@ -64,6 +75,7 @@ impl<'a, T> AstCollector<'a, T> {
         Some(Self {
             tree,
             src,
+            filepath,
             collect_fn,
         })
     }
@@ -102,7 +114,9 @@ impl<'a, T> TraceCollector<T> for AstCollector<'a, T> {
 
             let node = cursor.node();
 
-            if let Some(mut extracted_traces) = (self.collect_fn)(&node, self.src, collect_arg) {
+            if let Some(mut extracted_traces) =
+                (self.collect_fn)(&node, self.src, &self.filepath, collect_arg)
+            {
                 traces.append(&mut extracted_traces);
                 traces_extracted = true;
             }

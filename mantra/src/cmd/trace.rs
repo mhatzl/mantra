@@ -3,7 +3,11 @@ use std::path::{Path, PathBuf};
 use crate::db::{MantraDb, TraceChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
-use mantra_lang_tracing::collect::{AstCollector, PlainCollector, TraceCollector};
+use mantra_lang_tracing::{
+    collect::{AstCollector, PlainCollector, TraceCollector},
+    lsif_graph::LsifGraph,
+    path::SlashPathBuf,
+};
 use mantra_schema::traces::{TraceEntry, TraceSchema};
 
 #[derive(Debug, Clone, clap::Subcommand, serde::Serialize, serde::Deserialize)]
@@ -19,6 +23,9 @@ pub struct SourceConfig {
     #[arg(long)]
     #[serde(default, alias = "keep-path-absolute")]
     pub keep_path_absolute: bool,
+    #[arg(long)]
+    #[serde(default, alias = "lsif-data")]
+    pub lsif_data: Option<Vec<PathBuf>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -86,6 +93,26 @@ pub async fn trace_from_source(
         ..Default::default()
     };
 
+    let mut lsif_graphs = Vec::new();
+
+    if let Some(lsif_files) = &cfg.lsif_data {
+        for lsif_data in lsif_files {
+            let content = std::fs::read_to_string(lsif_data).map_err(|_| {
+                TraceError::CouldNotAccessFile(lsif_data.to_string_lossy().to_string())
+            })?;
+
+            let graph = mantra_lang_tracing::lsif_graph::LsifGraph::create(&content)
+                .map_err(TraceError::Deserialize)?;
+            lsif_graphs.push(graph);
+        }
+    }
+
+    let lsif_graphs = if lsif_graphs.is_empty() {
+        None
+    } else {
+        Some(lsif_graphs)
+    };
+
     if cfg.root.is_dir() || cfg.root == PathBuf::from("") || cfg.root == PathBuf::from("./") {
         let root = if cfg.root == PathBuf::from("") || cfg.root == PathBuf::from("./") {
             std::env::current_dir().expect("Current directory must be valid.")
@@ -114,14 +141,16 @@ pub async fn trace_from_source(
                 .expect("No file type found for given entry. Note: stdin is not supported.")
                 .is_file()
             {
-                if let Some(traces) = collect_traces(dir_entry.path())? {
-                    let filepath = if cfg.keep_path_absolute {
-                        dir_entry.into_path()
-                    } else {
-                        mantra_lang_tracing::path::make_relative(dir_entry.path(), &root)
-                            .unwrap_or(dir_entry.into_path())
-                    };
+                let filepath = if cfg.keep_path_absolute {
+                    dir_entry.clone().into_path()
+                } else {
+                    mantra_lang_tracing::path::make_relative(dir_entry.path(), &root)
+                        .unwrap_or(dir_entry.clone().into_path())
+                };
 
+                if let Some(traces) =
+                    collect_traces(dir_entry.path(), filepath.clone().into(), &lsif_graphs)?
+                {
                     let mut trace_changes = db
                         .add_traces(&filepath, &traces, new_generation)
                         .await
@@ -133,24 +162,30 @@ pub async fn trace_from_source(
         }
 
         Ok(changes)
-    } else if let Some(traces) = collect_traces(&cfg.root)? {
+    } else {
         let filepath = if cfg.keep_path_absolute {
+            cfg.root.to_path_buf()
+        } else {
             mantra_lang_tracing::path::make_relative(&cfg.root, &cfg.root)
                 .unwrap_or(cfg.root.to_path_buf())
-        } else {
-            cfg.root.to_path_buf()
         };
 
-        db.add_traces(&filepath, &traces, new_generation)
-            .await
-            .map_err(TraceError::DbError)
-    } else {
-        Ok(changes)
+        if let Some(traces) = collect_traces(&cfg.root, filepath.clone().into(), &lsif_graphs)? {
+            db.add_traces(&filepath, &traces, new_generation)
+                .await
+                .map_err(TraceError::DbError)
+        } else {
+            Ok(changes)
+        }
     }
 }
 
-fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError> {
-    let is_textfile = mime_guess::from_path(filepath)
+fn collect_traces(
+    abs_filepath: &Path,
+    rel_filepath: SlashPathBuf,
+    lsif_graphs: &Option<Vec<LsifGraph>>,
+) -> Result<Option<Vec<TraceEntry>>, TraceError> {
+    let is_textfile = mime_guess::from_path(abs_filepath)
         .first()
         .map(|mime| mime.type_() == "text")
         .unwrap_or(false);
@@ -160,10 +195,10 @@ fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError
         return Ok(None);
     }
 
-    let content = std::fs::read_to_string(filepath)
-        .map_err(|_| TraceError::CouldNotAccessFile(filepath.to_string_lossy().to_string()))?;
+    let content = std::fs::read_to_string(abs_filepath)
+        .map_err(|_| TraceError::CouldNotAccessFile(abs_filepath.to_string_lossy().to_string()))?;
 
-    let extension_str = filepath
+    let extension_str = abs_filepath
         .extension()
         .map(|osstr| osstr.to_str().unwrap_or_default());
 
@@ -171,15 +206,16 @@ fn collect_traces(filepath: &Path) -> Result<Option<Vec<TraceEntry>>, TraceError
         match AstCollector::new(
             content.as_bytes(),
             &tree_sitter_rust::language(),
+            rel_filepath.to_string(),
             Box::new(mantra_rust_trace::collect_traces_in_rust),
         ) {
             Some(mut collector) => {
-                return Ok(collector.collect(&()));
+                return Ok(collector.collect(lsif_graphs));
             }
             None => {
                 log::warn!(
                     "Failed parsing Rust code. File content taken as plain text: {}",
-                    filepath.display()
+                    abs_filepath.display()
                 );
             }
         }

@@ -16,12 +16,13 @@ impl TryFrom<RawTraceEntry<'_>> for TraceEntry {
             .try_into()
             .map_err(|err: <Line as std::convert::TryFrom<usize>>::Error| err.to_string())?;
         let line_span = value.line_span;
+        let item_name = value.item_name;
 
         Ok(Self {
             ids,
             line,
             line_span,
-            item_name: None,
+            item_name,
         })
     }
 }

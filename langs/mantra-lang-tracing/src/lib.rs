@@ -2,6 +2,8 @@ use mantra_schema::traces::LineSpan;
 
 #[cfg(feature = "collect")]
 pub mod collect;
+#[cfg(feature = "collect")]
+pub mod lsif_graph;
 
 #[cfg(feature = "extract")]
 pub mod extract;
@@ -19,14 +21,22 @@ pub struct RawTraceEntry<'a> {
     ///
     /// e.g. lines of a function body for a trace set at start of the function.
     line_span: Option<LineSpan>,
+    /// Optional item name that is linked to the trace entry.
+    item_name: Option<String>,
 }
 
 impl<'a> RawTraceEntry<'a> {
-    pub fn new(ids: &'a str, line: usize, line_span: Option<LineSpan>) -> Self {
+    pub fn new(
+        ids: &'a str,
+        line: usize,
+        line_span: Option<LineSpan>,
+        item_name: Option<String>,
+    ) -> Self {
         Self {
             ids,
             line,
             line_span,
+            item_name,
         }
     }
 }

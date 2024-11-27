@@ -380,7 +380,7 @@ impl MantraDb {
             .fetch_one(&self.pool)
             .await
         {
-            record.nr.unwrap_or_default().into()
+            record.nr.unwrap_or_default()
         } else {
             0
         }
@@ -496,13 +496,16 @@ impl MantraDb {
                 }
             }
 
-            if let Some(item_name) = &trace.item_name {
-                let _ = sqlx::query!("insert or replace into TracedItems (name, filepath, line) values ($1, $2, $3)",
-                    item_name,
-                    file_str,
-                    line,
-                ).execute(&self.pool).await;
+            if let Some(span) = line_span{
+                if let Some(item_name) = &trace.item_name {
+                    let _ = sqlx::query!("insert or replace into TracedItems (name, filepath, line) values ($1, $2, $3)",
+                        item_name,
+                        file_str,
+                        span.start,
+                    ).execute(&self.pool).await;
+                }
             }
+            
         }
 
         Ok(changes)
@@ -513,7 +516,7 @@ impl MantraDb {
             .fetch_one(&self.pool)
             .await
         {
-            record.nr.unwrap_or_default().into()
+            record.nr.unwrap_or_default()
         } else {
             0
         }
