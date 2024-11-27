@@ -130,7 +130,10 @@ fn associated_item_span(mut node: AstNode) -> Option<LineSpan> {
     while let Some(sibling) = node.next_named_sibling() {
         let sibling_kind = sibling.kind();
 
-        if sibling_kind.ends_with("_item") && sibling_kind != "attribute_item" {
+        if (sibling_kind.ends_with("_item") && sibling_kind != "attribute_item")
+            || sibling_kind == "field_declaration"
+            || sibling_kind == "enum_variant"
+        {
             let start = Line::try_from(sibling.start_position().row + 1).ok()?;
             let end = Line::try_from(sibling.end_position().row + 1).ok()?;
 
