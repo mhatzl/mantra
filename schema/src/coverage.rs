@@ -89,6 +89,7 @@ impl std::cmp::Ord for CoveredLine {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "lowercase")]
 pub enum TestState {
     Passed,
     Failed,

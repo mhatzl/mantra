@@ -157,17 +157,17 @@
         {
           "type": "string",
           "enum": [
-            "Passed",
-            "Failed"
+            "passed",
+            "failed"
           ]
         },
         {
           "type": "object",
           "required": [
-            "Skipped"
+            "skipped"
           ],
           "properties": {
-            "Skipped": {
+            "skipped": {
               "type": "object",
               "properties": {
                 "reason": {

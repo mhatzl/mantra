@@ -13,7 +13,7 @@
                     "name": "traces::test::test_fn",
                     "filepath": "src/traces.rs",
                     "line": 8,
-                    "state": "Passed",
+                    "state": "passed",
                     "covered_files": [{
                         "filepath": "src/traces.rs",
                         "covered_traces": [
