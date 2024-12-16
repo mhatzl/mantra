@@ -6,19 +6,26 @@ use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_schema::requirements::{Requirement, RequirementSchema};
 use regex::Regex;
 
-#[derive(Debug, Clone, clap::Subcommand, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
 pub enum Format {
     FromWiki(WikiConfig),
-    FromSchema { filepath: PathBuf },
+    FromSchema {
+        #[serde(
+            alias = "filepaths",
+            alias = "external-files",
+            alias = "external-filepaths"
+        )]
+        files: Vec<PathBuf>,
+    },
 }
 
-#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct WikiConfig {
-    #[arg(alias = "local-path")]
+    #[serde(alias = "wiki-root", alias = "local-wiki-root")]
     pub root: PathBuf,
-    pub link: String,
-    #[arg(long, alias = "version")]
+    #[serde(alias = "wiki-origin")]
+    pub origin: String,
     #[serde(alias = "version", alias = "major-version")]
     pub major_version: Option<usize>,
 }
@@ -33,19 +40,32 @@ pub enum RequirementsError {
     DbError(crate::db::DbError),
 }
 
-pub async fn collect(db: &MantraDb, fmt: &Format) -> Result<RequirementChanges, RequirementsError> {
-    match fmt {
-        Format::FromWiki(wiki_cfg) => {
-            collect_from_wiki(db, &wiki_cfg.root, &wiki_cfg.link, wiki_cfg.major_version).await
-        }
-        Format::FromSchema { filepath } => {
-            let content = tokio::fs::read_to_string(filepath).await.map_err(|_| {
-                RequirementsError::CouldNotAccessFile(filepath.display().to_string())
-            })?;
-            let schema = serde_json::from_str(&content).map_err(RequirementsError::Deserialize)?;
-            collect_from_schema(db, schema).await
-        }
+pub async fn collect(db: &MantraDb, formats: &[Format]) -> Result<(), RequirementsError> {
+    for fmt in formats {
+        let req_changes = match fmt {
+            Format::FromWiki(wiki_cfg) => {
+                collect_from_wiki(db, &wiki_cfg.root, &wiki_cfg.origin, wiki_cfg.major_version)
+                    .await
+            }
+            Format::FromSchema { files } => {
+                let mut changes = RequirementChanges::default();
+
+                for file in files {
+                    let content = tokio::fs::read_to_string(file).await.map_err(|_| {
+                        RequirementsError::CouldNotAccessFile(file.display().to_string())
+                    })?;
+                    let schema =
+                        serde_json::from_str(&content).map_err(RequirementsError::Deserialize)?;
+                    changes.merge(&mut collect_from_schema(db, schema).await?);
+                }
+
+                Ok(changes)
+            }
+        }?;
+        println!("{req_changes}");
     }
+
+    Ok(())
 }
 
 pub async fn collect_from_schema(

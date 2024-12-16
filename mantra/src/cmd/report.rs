@@ -11,7 +11,7 @@ use mantra_schema::{
 };
 use time::{OffsetDateTime, PrimitiveDateTime};
 
-use crate::{cmd::review::VerifiedRequirement, db::MantraDb};
+use crate::{cfg::Project, cmd::review::VerifiedRequirement, db::MantraDb};
 
 use super::{coverage::iso8601_str_to_offsetdatetime, review::Review};
 
@@ -32,34 +32,110 @@ pub enum ReportError {
 }
 
 #[derive(Debug, Clone, clap::Args)]
-pub struct ReportConfig {
+pub struct ReportCliConfig {
     pub path: PathBuf,
-    #[arg(long)]
-    pub template: Option<PathBuf>,
+    #[arg(long = "mantra-config")]
+    pub mantra_config: Option<PathBuf>,
+    #[command(flatten)]
+    pub template: ReportTemplate,
     #[arg(long)]
     pub formats: Vec<ReportFormat>,
     #[command(flatten)]
     pub project: Project,
     #[command(flatten)]
     pub tag: Tag,
-    /// Path to a Tera template that is used to render the custom info of requirements.
-    #[arg(long)]
-    pub info_template: Option<PathBuf>,
-    /// Path to a Tera template that is used to render the custom metadata of test-runs.
-    #[arg(long)]
-    pub test_run_template: Option<PathBuf>,
+}
+
+impl ReportCliConfig {
+    pub async fn to_cfg(self) -> ReportConfig {
+        ReportConfig::from_cli(self).await
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ReportConfig {
+    pub path: PathBuf,
+    pub template: ReportTemplate,
+    pub formats: Vec<ReportFormat>,
+    pub project: Project,
+    pub tag: Tag,
+}
+
+impl ReportConfig {
+    pub async fn from_cli(mut value: ReportCliConfig) -> Self {
+        match tokio::fs::read_to_string(&value.mantra_config.unwrap_or("mantra.toml".into())).await {
+            Ok(content) => match toml::from_str::<crate::cfg::MantraConfigFile>(&content) {
+                Ok(mantra_cfg) => {
+                    if value.template.base.is_none() && mantra_cfg.report_template.base.is_some() {
+                        value.template.base = mantra_cfg.report_template.base;
+                    }
+                    if value.template.req_info.is_none()
+                        && mantra_cfg.report_template.req_info.is_some()
+                    {
+                        value.template.req_info = mantra_cfg.report_template.req_info;
+                    }
+                    if value.template.test_run_meta.is_none()
+                        && mantra_cfg.report_template.test_run_meta.is_some()
+                    {
+                        value.template.test_run_meta = mantra_cfg.report_template.test_run_meta;
+                    }
+
+                    if value.project.name.is_none() && mantra_cfg.project.name.is_some() {
+                        value.project.name = mantra_cfg.project.name;
+                    }
+                    if value.project.version.is_none() && mantra_cfg.project.version.is_some() {
+                        value.project.version = mantra_cfg.project.version;
+                    }
+                    if value.project.repository.is_none() && mantra_cfg.project.repository.is_some()
+                    {
+                        value.project.repository = mantra_cfg.project.repository;
+                    }
+                    if value.project.homepage.is_none() && mantra_cfg.project.homepage.is_some() {
+                        value.project.homepage = mantra_cfg.project.homepage;
+                    }
+                }
+                Err(err) => log::error!("Could not parse the mantra configuration. Cause: {}", err),
+            },
+            Err(err) => log::warn!("Could not read the mantra configuration. Only CLI arguments will be considered. Cause: {}", err),
+        }
+
+        Self {
+            path: value.path,
+            template: value.template,
+            formats: value.formats,
+            project: value.project,
+            tag: value.tag,
+        }
+    }
 }
 
 #[derive(
-    Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, clap::Args, schemars::JsonSchema,
+    Default,
+    Debug,
+    Clone,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    clap::Args,
+    schemars::JsonSchema,
 )]
-pub struct Project {
-    #[arg(id = "project-name", long = "project-name")]
-    pub name: Option<String>,
-    #[arg(id = "project-version", long = "project-version")]
-    pub version: Option<String>,
-    #[arg(id = "project-link", long = "project-link")]
-    pub link: Option<String>,
+pub struct ReportTemplate {
+    #[arg(id = "base-template", long = "base-template")]
+    pub base: Option<PathBuf>,
+    /// Path to a Tera template that is used to render the custom info of requirements.
+    #[arg(id = "req-info-template", long = "req-info-template")]
+    #[serde(alias = "req-info")]
+    pub req_info: Option<PathBuf>,
+    /// Path to a Tera template that is used to render the custom metadata of test-runs.
+    #[arg(id = "test-run-template", long = "test-run-template")]
+    #[serde(alias = "test-run-meta")]
+    pub test_run_meta: Option<PathBuf>,
+}
+
+impl ReportTemplate {
+    pub(crate) fn is_none(&self) -> bool {
+        self.base.is_none() && self.req_info.is_none() && self.test_run_meta.is_none()
+    }
 }
 
 #[derive(
@@ -99,7 +175,7 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
             ReportFormat::Html => {
                 filepath.set_extension("html");
 
-                let template_content = match &cfg.template {
+                let template_content = match &cfg.template.base {
                     Some(template) => tokio::fs::read_to_string(template)
                         .await
                         .map_err(|_| ReportError::Template)?,
@@ -110,8 +186,8 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
                     db,
                     &cfg.project,
                     &cfg.tag,
-                    cfg.info_template.as_deref(),
-                    cfg.test_run_template.as_deref(),
+                    cfg.template.req_info.as_deref(),
+                    cfg.template.test_run_meta.as_deref(),
                     &template_content,
                 )
                 .await?
@@ -123,8 +199,8 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
                     db,
                     &cfg.project,
                     &cfg.tag,
-                    cfg.info_template.as_deref(),
-                    cfg.test_run_template.as_deref(),
+                    cfg.template.req_info.as_deref(),
+                    cfg.template.test_run_meta.as_deref(),
                 )
                 .await?
             }

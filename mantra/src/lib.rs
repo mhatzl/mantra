@@ -1,4 +1,4 @@
-use cfg::CollectConfig;
+use cfg::MantraConfigPath;
 use cmd::{
     coverage::CoverageError, report::ReportError, requirements::RequirementsError,
     review::ReviewError, trace::TraceError,
@@ -33,8 +33,10 @@ pub enum MantraError {
     Report(ReportError),
     #[error("Failed to collect mantra data. Cause: {}", .0)]
     Collect(String),
-    #[error("Failed to clean the database. Cause: {}", .0)]
-    Clean(DbError),
+    #[error("Failed to prune the database. Cause: {}", .0)]
+    Prune(DbError),
+    #[error("Failed to clear the database. Cause: {}", .0)]
+    Clear(DbError),
 }
 
 pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
@@ -43,102 +45,38 @@ pub async fn run(cfg: cfg::Config) -> Result<(), MantraError> {
         .map_err(MantraError::DbSetup)?;
 
     match cfg.cmd {
-        cmd::Cmd::Trace(trace_kind) => {
-            let changes = cmd::trace::collect(&db, trace_kind)
-                .await
-                .map_err(MantraError::Trace)?;
-
-            println!("{changes}");
-
-            Ok(())
-        }
-        cmd::Cmd::Requirements(extract_cfg) => {
-            let changes = cmd::requirements::collect(&db, &extract_cfg)
-                .await
-                .map_err(MantraError::Extract)?;
-
-            println!("{changes}");
-
-            Ok(())
-        }
-        cmd::Cmd::Coverage(coverage_cfg) => {
-            for file in coverage_cfg.data {
-                let changes = cmd::coverage::collect_from_path(&db, &file)
-                    .await
-                    .map_err(MantraError::Coverage)?;
-
-                println!("----- {} -----", file.display());
-                println!("{changes}");
-            }
-
-            Ok(())
-        }
-        cmd::Cmd::DeleteOld(delete_old_cfg) => db
-            .delete_old_generations(delete_old_cfg.clean)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteReqs(delete_req_cfg) => db
-            .delete_reqs(&delete_req_cfg)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteTraces(delete_traces_cfg) => db
-            .delete_traces(&delete_traces_cfg)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteTestRuns(delete_test_runs_cfg) => db
-            .delete_test_runs(delete_test_runs_cfg)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::DeleteReviews(delete_reviews_cfg) => db
-            .delete_reviews(delete_reviews_cfg)
-            .await
-            .map_err(MantraError::Delete),
-        cmd::Cmd::Report(report_cfg) => cmd::report::report(&db, report_cfg)
+        cmd::Cmd::Report(report_cfg) => cmd::report::report(&db, report_cfg.to_cfg().await)
             .await
             .map_err(MantraError::Report),
-        cmd::Cmd::Review(review_cfg) => {
-            let added_review_cnt = cmd::review::collect(&db, review_cfg)
-                .await
-                .map_err(MantraError::Review)?;
-
-            if added_review_cnt == 0 {
-                println!("No review was added.");
-            } else {
-                println!("Added '{}' reviews.", added_review_cnt);
-            }
-
-            Ok(())
-        }
         cmd::Cmd::Collect(collect_cfg) => collect(&db, collect_cfg).await,
-        cmd::Cmd::Clean => db.clean().await.map_err(MantraError::Clean),
+        cmd::Cmd::Prune => db.prune().await.map_err(MantraError::Prune),
+        cmd::Cmd::Clear => db.clear().await.map_err(MantraError::Clear),
     }
 }
 
-async fn collect(db: &db::MantraDb, cfg: CollectConfig) -> Result<(), MantraError> {
+async fn collect(db: &db::MantraDb, cfg: MantraConfigPath) -> Result<(), MantraError> {
     let collect_cfg = tokio::fs::read_to_string(&cfg.filepath)
         .await
         .map_err(|_| {
             MantraError::Collect(format!("Could not read file '{}'.", cfg.filepath.display()))
         })?;
-    let collect_file: cfg::CollectFile = toml::from_str(&collect_cfg).map_err(|err| {
+    let collect_file: cfg::MantraConfigFile = toml::from_str(&collect_cfg).map_err(|err| {
         MantraError::Collect(format!(
             "Could not read the TOML configuration. Cause: {}",
             err
         ))
     })?;
 
-    let req_changes = cmd::requirements::collect(db, &collect_file.requirements)
+    cmd::requirements::collect(db, &collect_file.requirements)
         .await
         .map_err(MantraError::Extract)?;
-    println!("{req_changes}");
 
-    let trace_changes = cmd::trace::collect(db, collect_file.traces)
+    cmd::trace::collect(db, &collect_file.traces)
         .await
         .map_err(MantraError::Trace)?;
-    println!("{trace_changes}");
 
     if let Some(coverage) = collect_file.coverage {
-        for file in coverage.data {
+        for file in coverage.files {
             let coverage_changes = cmd::coverage::collect_from_path(db, &file)
                 .await
                 .map_err(MantraError::Coverage)?;
@@ -147,7 +85,7 @@ async fn collect(db: &db::MantraDb, cfg: CollectConfig) -> Result<(), MantraErro
         }
     }
 
-    if let Some(review) = collect_file.reviews {
+    if let Some(review) = collect_file.review {
         let added_review_cnt = cmd::review::collect(db, review)
             .await
             .map_err(MantraError::Review)?;

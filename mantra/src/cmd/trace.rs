@@ -13,20 +13,25 @@ use mantra_lang_tracing::{
 };
 use mantra_schema::traces::{TraceEntry, TraceSchema};
 
-#[derive(Debug, Clone, clap::Subcommand, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
 pub enum TraceKind {
     FromSource(SourceConfig),
-    FromSchema { filepath: PathBuf },
+    FromSchema {
+        #[serde(
+            alias = "filepaths",
+            alias = "external-files",
+            alias = "external-filepaths"
+        )]
+        files: Vec<PathBuf>,
+    },
 }
 
-#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SourceConfig {
     pub root: PathBuf,
-    #[arg(long)]
     #[serde(default, alias = "keep-path-absolute")]
     pub keep_path_absolute: bool,
-    #[arg(long)]
     #[serde(default, alias = "lsif-data")]
     pub lsif_data: Option<Vec<PathBuf>>,
 }
@@ -41,11 +46,24 @@ pub enum TraceError {
     Deserialize(serde_json::Error),
 }
 
-pub async fn collect(db: &MantraDb, kind: TraceKind) -> Result<TraceChanges, TraceError> {
-    match kind {
-        TraceKind::FromSource(source_cfg) => trace_from_source(db, &source_cfg).await,
-        TraceKind::FromSchema { filepath } => trace_from_schema_file(db, &filepath).await,
+pub async fn collect(db: &MantraDb, kinds: &[TraceKind]) -> Result<(), TraceError> {
+    for kind in kinds {
+        let trace_changes = match kind {
+            TraceKind::FromSource(source_cfg) => trace_from_source(db, source_cfg).await,
+            TraceKind::FromSchema { files } => {
+                let mut changes = TraceChanges::default();
+
+                for file in files {
+                    changes.merge(&mut trace_from_schema_file(db, file).await?);
+                }
+
+                Ok(changes)
+            }
+        }?;
+        println!("{trace_changes}");
     }
+
+    Ok(())
 }
 
 pub async fn trace_from_schema_file(

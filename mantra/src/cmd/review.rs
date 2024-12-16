@@ -37,16 +37,20 @@ pub enum ReviewError {
     Db(DbError),
 }
 
-#[derive(Debug, Clone, clap::Args, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ReviewConfig {
-    #[serde(alias = "files")]
-    pub reviews: Vec<PathBuf>,
+    #[serde(
+        alias = "filepaths",
+        alias = "external-files",
+        alias = "external-filepaths"
+    )]
+    pub files: Vec<PathBuf>,
 }
 
 pub async fn collect(db: &MantraDb, cfg: ReviewConfig) -> Result<usize, ReviewError> {
     let mut review_cnt = 0;
 
-    for review_file in &cfg.reviews {
+    for review_file in &cfg.files {
         if !matches!(
             review_file.extension().and_then(|s| s.to_str()),
             Some("toml")

@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use mantra::cmd::report::{Project, ReportFormat};
+use mantra::{
+    cfg::{MantraConfigPath, Project},
+    cmd::report::{ReportFormat, ReportTemplate},
+};
 
 #[tokio::main]
 async fn main() {
@@ -12,75 +15,31 @@ async fn main() {
     let db = mantra::db::Config {
         url: Some("sqlite://mantra/examples/usage.db?mode=rwc".to_string()),
     };
-    let root = PathBuf::from("mantra/examples/usage/");
+    let mantra_file: PathBuf = "mantra/examples/mantra.toml".into();
 
-    let wiki_cfg = mantra::cfg::Config {
-        db: db.clone(),
-        cmd: mantra::cmd::Cmd::Requirements(mantra::cmd::requirements::Format::FromWiki(
-            mantra::cmd::requirements::WikiConfig {
-                root: root.clone(),
-                link: "https://github.com/mhatzl/mantra/tree/main".to_string(),
-                major_version: Some(0),
-            },
-        )),
-    };
-    let req_schema_cfg = mantra::cfg::Config {
-        db: db.clone(),
-        cmd: mantra::cmd::Cmd::Requirements(mantra::cmd::requirements::Format::FromSchema {
-            filepath: PathBuf::from("mantra/examples/usage/reqs.json"),
-        }),
-    };
-    let trace_cfg = mantra::cfg::Config {
-        db: db.clone(),
-        cmd: mantra::cmd::Cmd::Trace(mantra::cmd::trace::TraceKind::FromSource(
-            mantra::cmd::trace::SourceConfig {
-                root,
-                keep_path_absolute: false,
-                lsif_data: None,
-            },
-        )),
-    };
-    let coverage_cfg = mantra::cfg::Config {
-        db: db.clone(),
-        cmd: mantra::cmd::Cmd::Coverage(mantra::cmd::coverage::Config {
-            data: vec![PathBuf::from("mantra/examples/usage/coverage.json")],
-        }),
-    };
-    let review_cfg = mantra::cfg::Config {
-        db: db.clone(),
-        cmd: mantra::cmd::Cmd::Review(mantra::cmd::review::ReviewConfig {
-            reviews: vec![PathBuf::from("mantra/examples/usage/my_review.toml")],
-        }),
-    };
     let report_cfg = mantra::cfg::Config {
-        db,
-        cmd: mantra::cmd::Cmd::Report(mantra::cmd::report::ReportConfig {
+        db: db.clone(),
+        cmd: mantra::cmd::Cmd::Report(Box::new(mantra::cmd::report::ReportCliConfig {
             path: PathBuf::from("mantra/examples/mantra_report.html"),
-            template: None,
+            mantra_config: Some(mantra_file.clone()),
+            template: ReportTemplate::default(),
             formats: vec![ReportFormat::Json, ReportFormat::Html],
-            project: Project {
-                name: Some("mantra".to_string()),
-                version: Some("1.0.1".to_string()),
-                link: Some("https://github.com/mhatzl/mantra".to_string()),
-            },
+            project: Project::default(),
             tag: mantra::cmd::report::Tag {
                 name: Some("0.1.0".to_string()),
                 link: Some("https://github.com/mhatzl/mantra-wiki".to_string()),
             },
-            info_template: Some(PathBuf::from("mantra/examples/usage/custom_info.html")),
-            test_run_template: Some(PathBuf::from("mantra/examples/usage/test_run_meta.html")),
+        })),
+    };
+
+    let collect_cfg = mantra::cfg::Config {
+        db,
+        cmd: mantra::cmd::Cmd::Collect(MantraConfigPath {
+            filepath: mantra_file,
         }),
     };
 
-    mantra::run(wiki_cfg).await.unwrap();
-
-    mantra::run(req_schema_cfg).await.unwrap();
-
-    mantra::run(trace_cfg).await.unwrap();
-
-    mantra::run(coverage_cfg).await.unwrap();
-
-    mantra::run(review_cfg).await.unwrap();
+    mantra::run(collect_cfg).await.unwrap();
 
     mantra::run(report_cfg).await.unwrap();
 }

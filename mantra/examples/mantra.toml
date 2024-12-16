@@ -1,0 +1,23 @@
+[project]
+name = "mantra"
+version = "0.1.0"
+repository = "https://github.com/mhatzl/mantra"
+# homepage = "https://github.com/mhatzl/mantra"
+
+[report-template]
+# base = "base-template.html"
+req-info = "mantra/examples/usage/custom_info.html"
+test-run-meta = "mantra/examples/usage/test_run_meta.html"
+
+[[requirements]]
+root = "mantra/examples/usage/reqs.md"
+origin = "https://github.com/mhatzl/mantra/tree/main"
+
+[[traces]]
+root = "mantra/examples/usage/"
+
+[coverage]
+files = ["mantra/examples/usage/coverage.json"]
+
+[review]
+files = ["mantra/examples/usage/my_review.toml"]

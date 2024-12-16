@@ -85,59 +85,38 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
 
   ```toml
   # Collect requirements from local Markdown files.
-  #
-  # **Note:** Only one option to collect requirements may be given.
-  [requirements.from-wiki]
-
+  [[requirements]]
   # Root path to start looking for requirements.
   # Empty means current directory.
   root = ""
-
   # Base URL for all requirements
   link = "https://github.com/mhatzl/mantra-wiki/tree/main/5-Requirements/"
 
-
-  # Collect requirements from a JSON file adhering to the `RequirementSchema`.
-  #
-  # **Note:** Only one option to collect requirements may be given.
-  [requirements.from-schema]
-
-  # The path to a JSON file containing requirements.
-  filepath = "requirements.json"
-
+  # Collect requirements from JSON files adhering to the `RequirementSchema`.
+  [[requirements]]
+  # The path to JSON files containing requirements.
+  files = ["requirements.json"]
 
   # Collect traces from local files
-  #
-  # **Note:** Only one option to collect traces may be given.
-  [traces.from-source]
-
+  [[traces]]
   # Root path to start looking for traces.
   # Empty means current directory.
   root = ""
-
   # If 'false', the filepath will be stored relativ to the root path.
   keep-path-absolute = false
 
+  # Collect traces from JSON files adhering to the `TraceSchema`.
+  [[traces]]
+  # The path to JSON files containing traces.
+  files = ["traces.json"]
 
-  # Collect traces from a JSON file adhering to the `TraceSchema`.
-  #
-  # **Note:** Only one option to collect traces may be given.
-  [trace.from-schema]
-
-  # The path to a JSON file containing traces.
-  filepath = "traces.json"
-
-
-  # Collect coverage from a JSON file adhering to the `CoverageSchema`.
+  # Collect coverage from JSON files adhering to the `CoverageSchema`.
   [coverage]
-
-  # Path to a JSON file containing coverage.
-  filepath = "coverage.json"
-
+  # Path to JSON files containing coverage.
+  files = ["coverage.json"]
 
   # Collect reviews from TOML files adhering to the `ReviewSchema`.
-  [reviews]
-
+  [review]
   # List of review files to add.
   files = ["first_review.toml"]
   ```
@@ -161,61 +140,24 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
   A tag name and link may also be set using the arguments `--tag-name` and `--tag-link`.
   Tags should be used to indicate the requirements-snapshot/tag the report was generated with.
 
-- Adding requirements from local Markdown files
+### Manual Reviews
 
-  `mantra requirements from-wiki <root> <link>`
+Requirements may be manually verified in reviews following the structure below:
 
-  The `root` argument must point to an existing file/folder containing requirements.
-  The `link` is the base URL of the requirements.
+```toml
+name = "<review name>"
+date = "<yyyy-mm-dd HH:MM[optional [:SS.fraction]]>"
+reviewer = "<reviewer of this review>"
+comment = "<optional: general comment for this review>"
 
-  See [req(extract.wiki)](https://github.com/mhatzl/mantra-wiki/blob/main/5-Requirements/5-REQ-extract.md#extractwiki-extract-requirement-ids-defined-in-markdown-based-wikis)
-  in the mantra wiki on how to define requirements in Markdown files.
+[[requirements]]
+id = "<verified requirement ID>"
+comment = "<optional: comment for this specific ID>"
 
-  This command does **not** delete requirements that were already stored in the database.
-  *Generation* counter are used to detect if an existing requirement was not present
-  in the latest *extraction*.
-
-  Use `mantra delete-old` to remove all requirements not added/updated in the latest call.
-
-- Adding traces from local sources
-
-  `mantra trace from-source [--keep-path-absolute] <root>`
-
-  The `root` argument must point to a file or folder to search for traces in text files.
-  By default, file paths for traces are added as relative paths to the given root.
-  This may be changed by setting `--keep-path-absolute`.
-
-- Adding coverage
-
-  Because coverage output from tests highly depends on the language and tooling,
-  *mantra* only provides to add coverage data via files adhering to the `RequirementSchema`.
-
-  `mantra coverage --data-file <path to JSON file>`
-
-- Adding reviews
-
-  `mantra review <reviews>`
-
-  One or more file paths may be given that point to *mantra* reviews.
-
-  **Note:** Only TOML is supported as review format for now.
-
-  **File structure:**
-
-  ```toml
-  name = <review name>
-  date = <yyyy-mm-dd HH:MM[optional [:SS.fraction]]>
-  reviewer = <reviewer of this review>
-  comment = <general comment for this review>
-
-  [[requirements]]
-  id = <verified requirement ID>
-  comment = <optional comment for this specific ID>
-
-  [[requirements]]
-  id = <verified requirement ID>
-  comment = <optional comment for this specific ID>
-  ```
+[[requirements]]
+id = "<verified requirement ID>"
+comment = "<optional: comment for this specific ID>"
+```
 
 # License
 

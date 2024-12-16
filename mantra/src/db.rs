@@ -132,6 +132,15 @@ pub struct RequirementChanges {
     pub new_generation: i64,
 }
 
+impl RequirementChanges {
+    pub fn merge(&mut self, other: &mut Self) {
+        self.updated.append(&mut other.updated);
+        self.inserted.append(&mut other.inserted);
+        self.unchanged_cnt += other.unchanged_cnt;
+        self.new_generation = self.new_generation.max(other.new_generation);
+    }
+}
+
 impl std::fmt::Display for RequirementChanges {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.updated.is_empty() && self.inserted.is_empty() {
@@ -746,7 +755,7 @@ impl MantraDb {
         .map_err(|err| DbError::Delete(err.to_string()))?;
 
         if clean {
-            self.clean().await?;
+            self.prune().await?;
         }
 
         Ok(())
@@ -935,7 +944,7 @@ impl MantraDb {
         Ok(())
     }
 
-    pub async fn clean(&self) -> Result<(), DbError> {
+    pub async fn prune(&self) -> Result<(), DbError> {
         let _ = sqlx::query!(
             "delete from Tests where name not in (select test_name from TestCoverage)"
         )
@@ -949,6 +958,33 @@ impl MantraDb {
             .map_err(|err| DbError::Delete(err.to_string()))?;
         let _ =
         sqlx::query!("delete from Reviews where (name, date) not in (select review_name, review_date from ManuallyVerified)")
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DbError::Delete(err.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn clear(&self) -> Result<(), DbError> {
+        let _ = sqlx::query!(
+            "delete from Requirements"
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DbError::Delete(err.to_string()))?;
+    let _ = sqlx::query!(
+        "delete from UnrelatedTraces"
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(|err| DbError::Delete(err.to_string()))?;
+        let _ =
+        sqlx::query!("delete from TestRuns")
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DbError::Delete(err.to_string()))?;
+        let _ =
+        sqlx::query!("delete from Reviews")
             .execute(&self.pool)
             .await
             .map_err(|err| DbError::Delete(err.to_string()))?;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from UnrelatedTraces",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "410172e1a87570ede2af287ee83e42ed3c4402919276e96cba6e32d4858b32b8"
+}

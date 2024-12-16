@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{
-    cmd::Cmd,
-    db::{self},
-};
+use crate::{cmd::Cmd, db};
 
 #[derive(clap::Parser)]
 pub struct Config {
@@ -15,17 +12,57 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, clap::Args)]
-pub struct CollectConfig {
+pub struct MantraConfigPath {
     #[arg(default_value = "mantra.toml")]
     pub filepath: PathBuf,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct CollectFile {
-    pub requirements: crate::cmd::requirements::Format,
-    pub traces: crate::cmd::trace::TraceKind,
+pub struct MantraConfigFile {
+    #[serde(default)]
+    pub requirements: Vec<crate::cmd::requirements::Format>,
+    #[serde(default)]
+    pub traces: Vec<crate::cmd::trace::TraceKind>,
     pub coverage: Option<crate::cmd::coverage::Config>,
-    pub reviews: Option<crate::cmd::review::ReviewConfig>,
+    pub review: Option<crate::cmd::review::ReviewConfig>,
+    #[serde(default, skip_serializing_if = "crate::cfg::Project::is_none")]
+    pub project: Project,
+    #[serde(
+        alias = "report-template",
+        default,
+        skip_serializing_if = "crate::cmd::report::ReportTemplate::is_none"
+    )]
+    pub report_template: crate::cmd::report::ReportTemplate,
+}
+
+#[derive(
+    Default,
+    Debug,
+    Clone,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    clap::Args,
+    schemars::JsonSchema,
+)]
+pub struct Project {
+    #[arg(id = "project-name", long = "project-name")]
+    pub name: Option<String>,
+    #[arg(id = "project-version", long = "project-version")]
+    pub version: Option<String>,
+    #[arg(id = "project-repository", long = "project-repository")]
+    pub repository: Option<String>,
+    #[arg(id = "project-homepage", long = "project-homepage")]
+    pub homepage: Option<String>,
+}
+
+impl Project {
+    pub(crate) fn is_none(&self) -> bool {
+        self.name.is_none()
+            && self.version.is_none()
+            && self.repository.is_none()
+            && self.homepage.is_none()
+    }
 }
 
 #[derive(Debug, Clone, clap::Args)]
@@ -78,24 +115,41 @@ mod test {
     #[test]
     fn collect_file_syntax() {
         let content = r#"
-                            [requirements.from-wiki]
-                            root = "reqs.md"
-                            link = "cloud-repo.something"
+                            [project]
+                            name = "test-proj"
+                            version = "0.1.0"
+                            repository = "some.link"
+                            homepage = "some-other.link"
 
-                            [traces.from-source]
-                            root = "./"
+                            [report-template]
+                            base = "base-template.html"
+                            req-info = "info-template.html"
+                            test-run-meta = "test-run-template.html"
+
+                            [[requirements]]
+                            root = "reqs.md"
+                            origin = "cloud-repo.something"
+
+                            [[requirements]]
+                            files = ["extern-reqs.json"]
+
+                            [[traces]]
+                            root = ""
+
+                            [[traces]]
+                            files = ["extern-traces.json"]
 
                             [coverage]
-                            data = ["coverage.json"]
+                            files = ["coverage.json"]
 
-                            [reviews]
+                            [review]
                             files = ["first_review.toml"]
                             "#;
 
-        let file: crate::cfg::CollectFile = toml::from_str(content).unwrap();
+        let file: crate::cfg::MantraConfigFile = toml::from_str(content).unwrap();
 
         assert_eq!(
-            file.coverage.unwrap().data.first().unwrap(),
+            file.coverage.unwrap().files.first().unwrap(),
             &PathBuf::from("coverage.json"),
             "Coverage info not correctly extracted."
         );

@@ -286,7 +286,7 @@
 
     <header>
         <h1>Mantra Report for
-            <a class="external-link" {% if project.link %}href="{{ project.link }}" {% endif %}>
+            <a class="external-link" {% if project.repository %}href="{{ project.repository }}" {% endif %}>
                 {%if project.name %}{{ project.name }}{% else %}unknown{% endif %}
                 {%if project.version %}v{{ project.version }}{% endif %}</a>
         </h1>
