@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use lsp_types::lsif;
 
-struct ItemEdgeIn {
-    doc_id: lsif::Id,
-    /// ReferenceResult-ID
-    out_id: lsif::Id,
-}
+// struct ItemEdgeIn {
+//     doc_id: lsif::Id,
+//     /// ReferenceResult-ID
+//     out_id: lsif::Id,
+// }
 
 struct ItemEdgeOut {
     doc_id: lsif::Id,
@@ -42,8 +42,8 @@ pub struct LsifGraph {
     // contains_in: HashMap<lsif::Id, lsif::Id>,
     // /// Doc-ID points to Range-IDs
     // contains_out: HashMap<lsif::Id, Vec<lsif::Id>>,
-    /// ResultSet-ID points to Range-ID
-    result_set_ranges: HashMap<lsif::Id, Vec<lsif::Id>>,
+    // /// ResultSet-ID points to Range-ID
+    // result_set_ranges: HashMap<lsif::Id, Vec<lsif::Id>>,
     /// Range-ID points to ResultSet-ID
     range_to_result_set: HashMap<lsif::Id, lsif::Id>,
     /// MonikerVertex-ID points to ResultSet-ID
@@ -54,12 +54,12 @@ pub struct LsifGraph {
     reference_in: HashMap<lsif::Id, lsif::Id>,
     /// ResultSet-ID points to ReferenceResult-ID
     reference_out: HashMap<lsif::Id, lsif::Id>,
-    /// Referenced Range-ID points to Doc-ID and ReferenceResult-ID
-    item_reference_in: HashMap<lsif::Id, ItemEdgeIn>,
+    // /// Referenced Range-ID points to Doc-ID and ReferenceResult-ID
+    // item_reference_in: HashMap<lsif::Id, ItemEdgeIn>,
     /// ReferenceResult-ID points to Doc-IDs with referenced Range-IDs
     item_reference_out: HashMap<lsif::Id, Vec<ItemEdgeOut>>,
-    /// Definition Range-ID points to Doc-ID and ReferenceResult-ID
-    item_definition_in: HashMap<lsif::Id, ItemEdgeIn>,
+    // /// Definition Range-ID points to Doc-ID and ReferenceResult-ID
+    // item_definition_in: HashMap<lsif::Id, ItemEdgeIn>,
     /// ReferenceResult-ID points to Doc-ID and definition Range-IDs
     ///
     /// **Note:** This assumes that at most one document contains the definition of an item.
@@ -75,17 +75,17 @@ impl LsifGraph {
         let mut elements = HashMap::with_capacity(nr_elems);
         let mut documents = HashMap::new();
         let mut idents = HashMap::new();
-        let mut contains_in = HashMap::new();
-        let mut contains_out = HashMap::new();
+        // let mut contains_in = HashMap::new();
+        // let mut contains_out = HashMap::new();
         let mut result_set_ranges = HashMap::new();
         let mut range_to_result_set = HashMap::new();
         let mut moniker_in = HashMap::new();
         let mut moniker_out = HashMap::new();
         let mut reference_in = HashMap::new();
         let mut reference_out = HashMap::new();
-        let mut item_reference_in = HashMap::new();
+        // let mut item_reference_in = HashMap::new();
         let mut item_reference_out = HashMap::new();
-        let mut item_definition_in = HashMap::new();
+        // let mut item_definition_in = HashMap::new();
         let mut item_definition_out = HashMap::new();
         let mut doc_def_items = HashMap::new();
 
@@ -98,13 +98,15 @@ impl LsifGraph {
                 documents.insert(doc.uri.as_str().to_string(), entry.id.clone());
             } else if let lsif::Element::Vertex(lsif::Vertex::Moniker(moniker)) = &entry.data {
                 idents.insert(moniker.identifier.clone(), entry.id.clone());
-            } else if let lsif::Element::Edge(lsif::Edge::Contains(edge)) = &entry.data {
-                for in_v in &edge.in_vs {
-                    contains_in.insert(in_v.clone(), edge.out_v.clone());
-                }
+            }
+            // else if let lsif::Element::Edge(lsif::Edge::Contains(edge)) = &entry.data {
+            //     for in_v in &edge.in_vs {
+            //         contains_in.insert(in_v.clone(), edge.out_v.clone());
+            //     }
 
-                contains_out.insert(edge.out_v.clone(), edge.in_vs.clone());
-            } else if let lsif::Element::Edge(lsif::Edge::Next(next)) = &entry.data {
+            //     contains_out.insert(edge.out_v.clone(), edge.in_vs.clone());
+            // }
+            else if let lsif::Element::Edge(lsif::Edge::Next(next)) = &entry.data {
                 result_set_ranges
                     .entry(next.in_v.clone())
                     .and_modify(|range_ids: &mut Vec<lsp_types::NumberOrString>| {
@@ -120,15 +122,15 @@ impl LsifGraph {
                 reference_out.insert(ref_edge.out_v.clone(), ref_edge.in_v.clone());
             } else if let lsif::Element::Edge(lsif::Edge::Item(item_edge)) = &entry.data {
                 if item_edge.property == Some(lsif::ItemKind::References) {
-                    for in_id in &item_edge.edge_data.in_vs {
-                        item_reference_in.insert(
-                            in_id.clone(),
-                            ItemEdgeIn {
-                                doc_id: item_edge.document.clone(),
-                                out_id: item_edge.edge_data.out_v.clone(),
-                            },
-                        );
-                    }
+                    // for in_id in &item_edge.edge_data.in_vs {
+                    //     item_reference_in.insert(
+                    //         in_id.clone(),
+                    //         ItemEdgeIn {
+                    //             doc_id: item_edge.document.clone(),
+                    //             out_id: item_edge.edge_data.out_v.clone(),
+                    //         },
+                    //     );
+                    // }
 
                     item_reference_out
                         .entry(item_edge.edge_data.out_v.clone())
@@ -143,15 +145,15 @@ impl LsifGraph {
                             range_ids: item_edge.edge_data.in_vs.clone(),
                         }]);
                 } else if item_edge.property == Some(lsif::ItemKind::Definitions) {
-                    for in_id in &item_edge.edge_data.in_vs {
-                        item_definition_in.insert(
-                            in_id.clone(),
-                            ItemEdgeIn {
-                                doc_id: item_edge.document.clone(),
-                                out_id: item_edge.edge_data.out_v.clone(),
-                            },
-                        );
-                    }
+                    // for in_id in &item_edge.edge_data.in_vs {
+                    //     item_definition_in.insert(
+                    //         in_id.clone(),
+                    //         ItemEdgeIn {
+                    //             doc_id: item_edge.document.clone(),
+                    //             out_id: item_edge.edge_data.out_v.clone(),
+                    //         },
+                    //     );
+                    // }
 
                     item_definition_out.insert(
                         item_edge.edge_data.out_v.clone(),
@@ -192,15 +194,15 @@ impl LsifGraph {
             idents,
             // contains_in,
             // contains_out,
-            result_set_ranges,
+            // result_set_ranges,
             range_to_result_set,
             moniker_in,
             moniker_out,
             reference_in,
             reference_out,
-            item_reference_in,
+            // item_reference_in,
             item_reference_out,
-            item_definition_in,
+            // item_definition_in,
             item_definition_out,
             doc_def_items,
         })
