@@ -14,24 +14,20 @@
                     "filepath": "src/traces.rs",
                     "line": 8,
                     "state": "Passed",
-                    "covered_traces": [
-                        {
-                            "req_id": "other_id",
-                            "filepath": "src/traces.rs",
-                            "line": 7
-                        },
-                        {
-                            "req_id": "bad_id",
-                            "filepath": "src/traces.rs",
-                            "line": 7
-                        },
-                        {
-                            "req_id": "main_id",
-                            "filepath": "src/traces.rs",
-                            "line": 1
-                        }
-                    ],
-                    "covered_lines": []
+                    "covered_files": [{
+                        "filepath": "src/traces.rs",
+                        "covered_traces": [
+                            {
+                                "req_ids": ["other_id", "bad_id"],
+                                "line": 7
+                            },
+                            {
+                                "req_ids": ["main_id"],
+                                "line": 1
+                            }
+                        ],
+                        "covered_lines": []
+                    }]
                 }
             ]
         }

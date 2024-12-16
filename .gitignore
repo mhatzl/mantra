@@ -3,3 +3,5 @@
 /.vscode
 
 Cargo.lock
+
+mantra/examples/mantra_report.*
