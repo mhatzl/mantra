@@ -30,6 +30,12 @@
     },
     "reviewer": {
       "type": "string"
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "definitions": {

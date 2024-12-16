@@ -6,12 +6,15 @@ use std::{
 use mantra_schema::{
     coverage::TestState,
     requirements::{ReqId, Requirement},
-    traces::TracePk,
     Line,
 };
 use time::{OffsetDateTime, PrimitiveDateTime};
 
-use crate::{cfg::Project, cmd::review::VerifiedRequirement, db::MantraDb};
+use crate::{
+    cfg::Project,
+    cmd::review::VerifiedRequirement,
+    db::{MantraDb, TracePk},
+};
 
 use super::{coverage::iso8601_str_to_offsetdatetime, review::Review};
 
@@ -241,8 +244,19 @@ pub async fn create_json_report(
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
+const REPORT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+fn serialize_report_version<S>(_value: &Option<String>, ser: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    ser.serialize_str(REPORT_VERSION)
+}
+
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ReportContext {
+    #[serde(serialize_with = "serialize_report_version")]
+    pub version: Option<String>,
     pub project: Project,
     pub tag: Tag,
     pub overview: RequirementsOverview,
@@ -320,6 +334,7 @@ Requirements are passed if all of the following criteria are met:
         let unrelated = Unrelated::try_from(db).await?;
 
         Ok(Self {
+            version: Some(REPORT_VERSION.to_string()),
             project: project.clone(),
             tag: tag.clone(),
             overview,

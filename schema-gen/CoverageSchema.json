@@ -11,26 +11,76 @@
       "items": {
         "$ref": "#/definitions/TestRun"
       }
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "definitions": {
-    "LineCoverage": {
+    "CoveredFile": {
       "type": "object",
       "required": [
-        "filepath",
-        "lines"
+        "filepath"
       ],
       "properties": {
-        "filepath": {
-          "type": "string"
-        },
-        "lines": {
+        "covered_lines": {
+          "default": [],
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
+            "$ref": "#/definitions/CoveredLine"
           }
+        },
+        "covered_traces": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CoveredFileTrace"
+          }
+        },
+        "filepath": {
+          "type": "string"
+        }
+      }
+    },
+    "CoveredFileTrace": {
+      "type": "object",
+      "required": [
+        "line",
+        "req_ids"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "req_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "CoveredLine": {
+      "type": "object",
+      "required": [
+        "hits",
+        "line"
+      ],
+      "properties": {
+        "hits": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
         }
       }
     },
@@ -43,18 +93,11 @@
         "state"
       ],
       "properties": {
-        "covered_lines": {
+        "covered_files": {
           "default": [],
           "type": "array",
           "items": {
-            "$ref": "#/definitions/LineCoverage"
-          }
-        },
-        "covered_traces": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/TracePk"
+            "$ref": "#/definitions/CoveredFile"
           }
         },
         "filepath": {
@@ -139,27 +182,6 @@
           "additionalProperties": false
         }
       ]
-    },
-    "TracePk": {
-      "type": "object",
-      "required": [
-        "filepath",
-        "line",
-        "req_id"
-      ],
-      "properties": {
-        "filepath": {
-          "type": "string"
-        },
-        "line": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        },
-        "req_id": {
-          "type": "string"
-        }
-      }
     }
   }
 }

@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-use crate::Line;
-
-use super::traces::TracePk;
+use crate::{requirements::ReqId, Line};
 
 #[derive(
     Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct CoverageSchema {
+    #[serde(serialize_with = "crate::serialize_schema_version")]
+    pub version: Option<String>,
     pub test_runs: Vec<TestRun>,
 }
 
@@ -44,17 +44,46 @@ pub struct Test {
     pub line: Line,
     pub state: TestState,
     #[serde(default)]
-    pub covered_traces: Vec<TracePk>,
-    #[serde(default)]
-    pub covered_lines: Vec<LineCoverage>,
+    pub covered_files: Vec<CoveredFile>,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct LineCoverage {
+pub struct CoveredFile {
     pub filepath: PathBuf,
-    pub lines: Vec<Line>,
+    #[serde(default)]
+    pub covered_traces: Vec<CoveredFileTrace>,
+    #[serde(default)]
+    pub covered_lines: Vec<CoveredLine>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct CoveredFileTrace {
+    pub req_ids: Vec<ReqId>,
+    pub line: Line,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct CoveredLine {
+    pub line: Line,
+    pub hits: usize,
+}
+
+impl std::cmp::PartialOrd for CoveredLine {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::cmp::Ord for CoveredLine {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.line.cmp(&other.line)
+    }
 }
 
 #[derive(

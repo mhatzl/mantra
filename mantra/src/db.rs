@@ -3,9 +3,9 @@ use std::path::{Path, PathBuf};
 use mantra_lang_tracing::path::SlashPathBuf;
 use mantra_schema::{
     coverage::{TestRunPk, TestState},
-    requirements::Requirement,
+    requirements::{ReqId, Requirement},
     reviews::ReviewSchema,
-    traces::{TraceEntry, TracePk},
+    traces::TraceEntry,
     Line,
 };
 use sqlx::Pool;
@@ -19,6 +19,27 @@ pub type DB = sqlx::sqlite::Sqlite;
 #[derive(Debug)]
 pub struct MantraDb {
     pool: Pool<DB>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct TracePk {
+    pub req_id: ReqId,
+    pub filepath: PathBuf,
+    pub line: Line,
+}
+
+impl std::fmt::Display for TracePk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "id=`{}`, file='{}', line='{}'",
+            self.req_id,
+            self.filepath.display(),
+            self.line
+        )
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

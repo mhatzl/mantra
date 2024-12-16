@@ -11,6 +11,12 @@
       "items": {
         "$ref": "#/definitions/FileTraces"
       }
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "definitions": {
@@ -63,6 +69,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "item_name": {
+          "description": "Optional name that is linked to this trace entry",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "line": {
           "description": "The line the trace is defined",

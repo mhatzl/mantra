@@ -1,5 +1,7 @@
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct RequirementSchema {
+    #[serde(serialize_with = "crate::serialize_schema_version")]
+    pub version: Option<String>,
     pub requirements: Vec<Requirement>,
 }
 

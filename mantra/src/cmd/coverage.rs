@@ -1,17 +1,17 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
 };
 
 use mantra_lang_tracing::path::SlashPathBuf;
 use mantra_schema::{
-    coverage::{CoverageSchema, LineCoverage, TestRunPk},
-    traces::TracePk,
+    coverage::{CoverageSchema, CoveredFileTrace, CoveredLine, TestRunPk},
+    requirements::ReqId,
     Line,
 };
 use time::OffsetDateTime;
 
-use crate::db::{DbError, MantraDb};
+use crate::db::{DbError, MantraDb, TracePk};
 
 pub struct CoverageChanges {
     inserted: Vec<TracePk>,
@@ -109,7 +109,7 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
             date: test_run.date,
         };
 
-        for mut test in test_run.tests {
+        for test in test_run.tests {
             db.add_test(
                 &test_run_pk,
                 &test.name,
@@ -120,36 +120,46 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
             .await
             .map_err(CoverageError::Db)?;
 
-            if let Ok(Some(mut traces)) = covered_lines_to_traces(db, &mut test.covered_lines).await
-            {
-                test.covered_traces.append(&mut traces);
-            }
+            for mut file in test.covered_files {
+                if let Ok(Some(mut traces)) =
+                    covered_lines_to_traces(db, file.filepath.clone(), &mut file.covered_lines)
+                        .await
+                {
+                    file.covered_traces.append(&mut traces);
+                }
 
-            for trace in test.covered_traces {
-                let db_result = db
-                    .add_coverage(
-                        &test_run_pk,
-                        &test.name,
-                        &trace.filepath,
-                        trace.line,
-                        &trace.req_id,
-                    )
-                    .await;
+                for trace in file.covered_traces {
+                    for req_id in trace.req_ids {
+                        let db_result = db
+                            .add_coverage(
+                                &test_run_pk,
+                                &test.name,
+                                &file.filepath,
+                                trace.line,
+                                &req_id,
+                            )
+                            .await;
 
-                match db_result {
-                    Ok(true) => {
-                        changes.inserted.push(trace);
-                    }
-                    Ok(false) => {
-                        log::info!(
-                            "Found unrelated coverage for reg-id=`{}`, file='{}', line='{}'.",
-                            trace.req_id,
-                            trace.filepath.display(),
-                            trace.line
-                        );
-                    }
-                    Err(_) => {
-                        db_result.map_err(CoverageError::Db)?;
+                        match db_result {
+                            Ok(true) => {
+                                changes.inserted.push(TracePk {
+                                    req_id,
+                                    filepath: file.filepath.clone(),
+                                    line: trace.line,
+                                });
+                            }
+                            Ok(false) => {
+                                log::info!(
+                                "Found unrelated coverage for reg-id=`{}`, file='{}', line='{}'.",
+                                req_id,
+                                file.filepath.display(),
+                                trace.line
+                            );
+                            }
+                            Err(_) => {
+                                db_result.map_err(CoverageError::Db)?;
+                            }
+                        }
                     }
                 }
             }
@@ -161,34 +171,29 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
 
 async fn covered_lines_to_traces(
     db: &MantraDb,
-    covered_lines: &mut [LineCoverage],
-) -> Result<Option<Vec<TracePk>>, DbError> {
+    filepath: PathBuf,
+    covered_lines: &mut [CoveredLine],
+) -> Result<Option<Vec<CoveredFileTrace>>, DbError> {
     let mut traces = Vec::new();
 
-    for coverage in covered_lines {
-        let file = SlashPathBuf::from(coverage.filepath.clone());
-        let file_str = file.to_string();
+    let file = SlashPathBuf::from(filepath);
+    let file_str = file.to_string();
 
-        let trace_spans = sqlx::query!(
-            "select req_id, filepath, line, start, end from TraceSpans where filepath = $1",
-            file_str,
-        )
-        .fetch_all(db.pool())
-        .await
-        .map_err(|err| DbError::Query(err.to_string()))?
-        .into_iter()
-        .map(|record| intervaltree::Element {
-            range: (record.start as Line)..(record.end as Line),
-            value: TracePk {
-                req_id: record.req_id,
-                filepath: file.clone(),
-                line: record.line as Line,
-            },
-        })
-        .collect();
+    let trace_spans = sqlx::query!(
+        "select req_id, filepath, line, start, end from TraceSpans where filepath = $1",
+        file_str,
+    )
+    .fetch_all(db.pool())
+    .await
+    .map_err(|err| DbError::Query(err.to_string()))?
+    .into_iter()
+    .map(|record| intervaltree::Element {
+        range: (record.start as Line)..(record.end as Line),
+        value: (record.req_id, record.line as Line),
+    })
+    .collect();
 
-        traces.extend(get_covered_traces(trace_spans, &mut coverage.lines));
-    }
+    traces.extend(get_covered_traces(trace_spans, covered_lines));
 
     if traces.is_empty() {
         Ok(None)
@@ -198,29 +203,33 @@ async fn covered_lines_to_traces(
 }
 
 fn get_covered_traces(
-    trace_spans: Vec<intervaltree::Element<Line, TracePk>>,
-    covered_lines: &mut [Line],
-) -> impl Iterator<Item = TracePk> {
-    let mut traces = HashSet::new();
+    trace_spans: Vec<intervaltree::Element<Line, (String, Line)>>,
+    covered_lines: &mut [CoveredLine],
+) -> impl Iterator<Item = CoveredFileTrace> {
+    let mut traces: HashMap<Line, HashSet<ReqId>> = HashMap::new();
     let tree = intervaltree::IntervalTree::from_iter(trace_spans);
 
     covered_lines.sort();
 
     for covered_line in covered_lines {
-        for interval in tree.query_point(*covered_line) {
-            traces.insert(interval.value.clone());
+        for interval in tree.query_point(covered_line.line) {
+            traces
+                .entry(interval.value.1)
+                .or_default()
+                .insert(interval.value.0.clone());
         }
     }
 
-    traces.into_iter()
+    traces.into_iter().map(|(line, req_ids)| CoveredFileTrace {
+        req_ids: req_ids.into_iter().collect(),
+        line,
+    })
 }
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
     use intervaltree::Element;
-    use mantra_schema::traces::TracePk;
+    use mantra_schema::coverage::{CoveredFileTrace, CoveredLine};
 
     use super::get_covered_traces;
 
@@ -229,26 +238,22 @@ mod test {
         let spans = vec![
             Element {
                 range: 10..15,
-                value: TracePk {
-                    req_id: "first".to_string(),
-                    filepath: PathBuf::from("filepath.rs"),
-                    line: 8,
-                },
+                value: ("first".to_string(), 8),
             },
             Element {
                 range: 20..25,
-                value: TracePk {
-                    req_id: "second".to_string(),
-                    filepath: PathBuf::from("filepath.rs"),
-                    line: 18,
-                },
+                value: ("second".to_string(), 18),
             },
         ];
 
         // range for first trace is 10..15, so 15 is exclusive
-        let mut lines = vec![15, 24, 30];
+        let mut lines = vec![
+            CoveredLine { line: 15, hits: 0 },
+            CoveredLine { line: 24, hits: 0 },
+            CoveredLine { line: 30, hits: 0 },
+        ];
 
-        let covered_traces: Vec<TracePk> = get_covered_traces(spans, &mut lines).collect();
+        let covered_traces: Vec<CoveredFileTrace> = get_covered_traces(spans, &mut lines).collect();
 
         assert_eq!(
             covered_traces.len(),
@@ -256,7 +261,7 @@ mod test {
             "Not just the second trace matched."
         );
         assert_eq!(
-            covered_traces.first().unwrap().req_id,
+            covered_traces.first().unwrap().req_ids.first().unwrap(),
             "second",
             "The second trace was not matched."
         );
@@ -267,30 +272,22 @@ mod test {
         let spans = vec![
             Element {
                 range: 10..25,
-                value: TracePk {
-                    req_id: "outer".to_string(),
-                    filepath: PathBuf::from("filepath.rs"),
-                    line: 8,
-                },
+                value: ("outer".to_string(), 8),
             },
             Element {
                 range: 20..24,
-                value: TracePk {
-                    req_id: "inner".to_string(),
-                    filepath: PathBuf::from("filepath.rs"),
-                    line: 18,
-                },
+                value: ("inner".to_string(), 18),
             },
         ];
 
-        let mut lines = vec![20];
+        let mut lines = vec![CoveredLine { line: 20, hits: 0 }];
 
-        let covered_traces: Vec<TracePk> = get_covered_traces(spans, &mut lines).collect();
+        let covered_traces: Vec<CoveredFileTrace> = get_covered_traces(spans, &mut lines).collect();
 
         assert_eq!(covered_traces.len(), 2, "Both traces matched.");
         assert_ne!(
-            covered_traces.first().unwrap().req_id,
-            covered_traces.last().unwrap().req_id,
+            covered_traces.first().unwrap().req_ids.first().unwrap(),
+            covered_traces.last().unwrap().req_ids.first().unwrap(),
             "The same trace was matched twice."
         );
     }

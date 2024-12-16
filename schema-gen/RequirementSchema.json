@@ -11,6 +11,12 @@
       "items": {
         "$ref": "#/definitions/Requirement"
       }
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "definitions": {
@@ -25,19 +31,36 @@
       ],
       "properties": {
         "deprecated": {
+          "description": "true: Marks the requirement to be deprecated",
           "type": "boolean"
         },
         "id": {
+          "description": "ID of the requirement",
           "type": "string"
         },
-        "info": true,
+        "info": {
+          "description": "Field to store custom information per requirement"
+        },
         "link": {
+          "description": "Link to the origin the requirement is defined",
           "type": "string"
         },
         "manual": {
+          "description": "true: Marks the requirement to require manual verification",
           "type": "boolean"
         },
+        "parents": {
+          "description": "Optional list of parent requirements",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "title": {
+          "description": "Title of the requirement",
           "type": "string"
         }
       }

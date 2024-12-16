@@ -16,6 +16,8 @@ pub fn date_from_str(date: &str) -> Result<PrimitiveDateTime, time::error::Parse
     Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct ReviewSchema {
+    #[serde(serialize_with = "crate::serialize_schema_version")]
+    pub version: Option<String>,
     pub name: String,
     #[serde(with = "review_date_format")]
     #[schemars(
