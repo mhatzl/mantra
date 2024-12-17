@@ -7,3 +7,4 @@ Cargo.lock
 mantra/examples/mantra_report.*
 mantra/examples/usage.db
 mantra/.sqlx*
+mantra/mantra.db
