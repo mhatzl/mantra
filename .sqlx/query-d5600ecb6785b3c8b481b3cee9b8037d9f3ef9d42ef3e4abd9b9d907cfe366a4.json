@@ -11,12 +11,12 @@
       {
         "name": "passed!: bool",
         "ordinal": 1,
-        "type_info": "Int"
+        "type_info": "Null"
       },
       {
         "name": "skipped!: bool",
         "ordinal": 2,
-        "type_info": "Int"
+        "type_info": "Null"
       },
       {
         "name": "reason?: String",
@@ -31,7 +31,7 @@
       {
         "name": "line: Line",
         "ordinal": 5,
-        "type_info": "Int64"
+        "type_info": "Integer"
       }
     ],
     "parameters": {
@@ -39,8 +39,8 @@
     },
     "nullable": [
       false,
-      false,
-      false,
+      null,
+      null,
       true,
       false,
       false

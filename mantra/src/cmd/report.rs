@@ -387,14 +387,14 @@ impl ValidationInfo {
     Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct RequirementsOverview {
-    pub req_cnt: i32,
-    pub traced_cnt: i32,
+    pub req_cnt: i64,
+    pub traced_cnt: i64,
     pub traced_ratio: f64,
-    pub covered_cnt: i32,
+    pub covered_cnt: i64,
     pub covered_ratio: f64,
-    pub passed_cnt: i32,
+    pub passed_cnt: i64,
     pub passed_ratio: f64,
-    pub verified_cnt: Option<i32>,
+    pub verified_cnt: Option<i64>,
     pub verified_ratio: f64,
 }
 
@@ -409,7 +409,7 @@ impl RequirementsOverview {
                 covered_ratio,
                 passed_cnt,
                 passed_ratio,
-                verified_cnt as "verified_cnt?: i32",
+                verified_cnt as "verified_cnt?: i64",
                 verified_ratio
              from RequirementCoverageOverview"#
         )
@@ -418,15 +418,15 @@ impl RequirementsOverview {
         .map_err(ReportError::Db)?;
 
         Ok(Self {
-            req_cnt: record.req_cnt.unwrap_or_default(),
-            traced_cnt: record.traced_cnt.unwrap_or_default(),
-            traced_ratio: record.traced_ratio.unwrap_or_default(),
-            covered_cnt: record.covered_cnt.unwrap_or_default(),
-            covered_ratio: record.covered_ratio.unwrap_or_default(),
-            passed_cnt: record.passed_cnt.unwrap_or_default(),
-            passed_ratio: record.passed_ratio.unwrap_or_default(),
+            req_cnt: record.req_cnt,
+            traced_cnt: record.traced_cnt,
+            traced_ratio: record.traced_ratio,
+            covered_cnt: record.covered_cnt,
+            covered_ratio: record.covered_ratio,
+            passed_cnt: record.passed_cnt,
+            passed_ratio: record.passed_ratio,
             verified_cnt: record.verified_cnt,
-            verified_ratio: record.verified_ratio.unwrap_or_default(),
+            verified_ratio: record.verified_ratio,
         })
     }
 }
@@ -589,12 +589,12 @@ impl RequirementInfo {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LeafChildrenStatistic {
-    leaf_cnt: i32,
-    traced_leaf_cnt: i32,
+    leaf_cnt: i64,
+    traced_leaf_cnt: i64,
     traced_leaf_ratio: f64,
-    covered_leaf_cnt: i32,
+    covered_leaf_cnt: i64,
     covered_leaf_ratio: f64,
-    passed_covered_leaf_cnt: i32,
+    passed_covered_leaf_cnt: i64,
     passed_covered_leaf_ratio: f64,
 }
 
@@ -604,12 +604,12 @@ impl LeafChildrenStatistic {
             LeafChildrenStatistic,
             r#"
                 select 
-                leaf_cnt as "leaf_cnt!: i32",
-                traced_leaf_cnt as "traced_leaf_cnt!: i32",
+                leaf_cnt,
+                traced_leaf_cnt,
                 traced_leaf_ratio as "traced_leaf_ratio!: f64",
-                covered_leaf_cnt as "covered_leaf_cnt!: i32",
+                covered_leaf_cnt,
                 covered_leaf_ratio as "covered_leaf_ratio!: f64",
-                passed_covered_leaf_cnt as "passed_covered_leaf_cnt!: i32",
+                passed_covered_leaf_cnt,
                 passed_covered_leaf_ratio as "passed_covered_leaf_ratio!: f64"
                 from LeafChildOverview
                 where id = $1
@@ -915,14 +915,14 @@ impl TestStatistics {
     Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct TestsOverview {
-    pub test_cnt: i32,
-    pub ran_cnt: i32,
+    pub test_cnt: i64,
+    pub ran_cnt: i64,
     pub ran_ratio: f64,
-    pub passed_cnt: i32,
+    pub passed_cnt: i64,
     pub passed_ratio: f64,
-    pub failed_cnt: i32,
+    pub failed_cnt: i64,
     pub failed_ratio: f64,
-    pub skipped_cnt: i32,
+    pub skipped_cnt: i64,
     pub skipped_ratio: f64,
 }
 
@@ -932,14 +932,14 @@ impl TestsOverview {
             TestsOverview,
             r#"
                 select 
-                test_cnt as "test_cnt!: i32",
-                ran_cnt as "ran_cnt!: i32",
+                test_cnt as "test_cnt!: i64",
+                ran_cnt as "ran_cnt!: i64",
                 ran_ratio as "ran_ratio!: f64",
-                passed_cnt as "passed_cnt!: i32",
+                passed_cnt as "passed_cnt!: i64",
                 passed_ratio as "passed_ratio!: f64",
-                failed_cnt as "failed_cnt!: i32",
+                failed_cnt as "failed_cnt!: i64",
                 failed_ratio as "failed_ratio!: f64",
-                skipped_cnt as "skipped_cnt!: i32",
+                skipped_cnt as "skipped_cnt!: i64",
                 skipped_ratio as "skipped_ratio!: f64"
                 from OverallTestOverview
                 "#
@@ -1119,14 +1119,14 @@ impl TestRunOverview {
             TestRunOverview,
             r#"
                 select 
-                test_cnt as "test_cnt!: i32",
-                ran_cnt as "ran_cnt!: i32",
+                test_cnt,
+                ran_cnt,
                 ran_ratio as "ran_ratio!: f64",
-                passed_cnt as "passed_cnt!: i32",
+                passed_cnt,
                 passed_ratio as "passed_ratio!: f64",
-                failed_cnt as "failed_cnt!: i32",
+                failed_cnt,
                 failed_ratio as "failed_ratio!: f64",
-                skipped_cnt as "skipped_cnt!: i32",
+                skipped_cnt,
                 skipped_ratio as "skipped_ratio!: f64"
                 from TestRunOverview
                 where name = $1 and date = $2

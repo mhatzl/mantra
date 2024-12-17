@@ -1,17 +1,17 @@
 {
   "db_name": "SQLite",
-  "query": "select\n                req_cnt,\n                traced_cnt,\n                traced_ratio,\n                covered_cnt,\n                covered_ratio,\n                passed_cnt,\n                passed_ratio,\n                verified_cnt as \"verified_cnt?: i32\",\n                verified_ratio\n             from RequirementCoverageOverview",
+  "query": "select\n                req_cnt,\n                traced_cnt,\n                traced_ratio,\n                covered_cnt,\n                covered_ratio,\n                passed_cnt,\n                passed_ratio,\n                verified_cnt as \"verified_cnt?: i64\",\n                verified_ratio\n             from RequirementCoverageOverview",
   "describe": {
     "columns": [
       {
         "name": "req_cnt",
         "ordinal": 0,
-        "type_info": "Int"
+        "type_info": "Integer"
       },
       {
         "name": "traced_cnt",
         "ordinal": 1,
-        "type_info": "Int"
+        "type_info": "Integer"
       },
       {
         "name": "traced_ratio",
@@ -21,7 +21,7 @@
       {
         "name": "covered_cnt",
         "ordinal": 3,
-        "type_info": "Int"
+        "type_info": "Integer"
       },
       {
         "name": "covered_ratio",
@@ -31,7 +31,7 @@
       {
         "name": "passed_cnt",
         "ordinal": 5,
-        "type_info": "Int"
+        "type_info": "Integer"
       },
       {
         "name": "passed_ratio",
@@ -39,7 +39,7 @@
         "type_info": "Float"
       },
       {
-        "name": "verified_cnt?: i32",
+        "name": "verified_cnt?: i64",
         "ordinal": 7,
         "type_info": "Null"
       },
@@ -53,16 +53,16 @@
       "Right": 0
     },
     "nullable": [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
     ]
   },
-  "hash": "3a2b3da49ac66049f4a56af92f82adcb65d652ef86231918d5f8396c6fa0f79d"
+  "hash": "5c176a67de1fd98616c1578353f4466c74d405742b7bcaf706c25a5e9edd0086"
 }

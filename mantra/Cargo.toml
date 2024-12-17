@@ -24,7 +24,7 @@ serde_json.workspace = true
 schemars.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
-sqlx = { version = "0.7.4", features = ["sqlite", "json", "runtime-tokio", "time"] }
+sqlx = { version = "0.8.2", features = ["sqlite", "json", "runtime-tokio", "time"] }
 toml = { version = "0.8.13", features = ["parse"] }
 ignore = "0.4.20"
 mime_guess = "2.0.4"

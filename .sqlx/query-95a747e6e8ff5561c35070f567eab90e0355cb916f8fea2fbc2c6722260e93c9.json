@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select \n                leaf_cnt,\n                traced_leaf_cnt,\n                traced_leaf_ratio as \"traced_leaf_ratio!: f64\",\n                covered_leaf_cnt,\n                covered_leaf_ratio as \"covered_leaf_ratio!: f64\",\n                passed_covered_leaf_cnt,\n                passed_covered_leaf_ratio as \"passed_covered_leaf_ratio!: f64\"\n                from LeafChildOverview\n                where id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "leaf_cnt",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "traced_leaf_cnt",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "traced_leaf_ratio!: f64",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "covered_leaf_cnt",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "covered_leaf_ratio!: f64",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "passed_covered_leaf_cnt",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "passed_covered_leaf_ratio!: f64",
+        "ordinal": 6,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "95a747e6e8ff5561c35070f567eab90e0355cb916f8fea2fbc2c6722260e93c9"
+}
