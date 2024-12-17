@@ -1,3 +1,4 @@
+# Note: set "DATABASE_URL" to absolute path for "cargo publish" to work and set "SQLX_OFFLINE=false"
 [env]
 DATABASE_URL = "sqlite://mantra.db"
 SQLX_OFFLINE = "true"
