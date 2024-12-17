@@ -177,8 +177,8 @@
         "deprecated",
         "direct_children",
         "id",
-        "link",
         "manual",
+        "origin",
         "test_coverage_info",
         "title",
         "trace_info",
@@ -186,8 +186,11 @@
         "verified_info"
       ],
       "properties": {
+        "data": {
+          "description": "Field to store custom information per requirement."
+        },
         "deprecated": {
-          "description": "true: Marks the requirement to be deprecated",
+          "description": "true: Marks the requirement to be deprecated.",
           "type": "boolean"
         },
         "direct_children": {
@@ -197,11 +200,8 @@
           }
         },
         "id": {
-          "description": "ID of the requirement",
+          "description": "ID of the requirement.",
           "type": "string"
-        },
-        "info": {
-          "description": "Field to store custom information per requirement"
         },
         "leaf_statistic": {
           "anyOf": [
@@ -213,16 +213,16 @@
             }
           ]
         },
-        "link": {
-          "description": "Link to the origin the requirement is defined",
-          "type": "string"
-        },
         "manual": {
-          "description": "true: Marks the requirement to require manual verification",
+          "description": "true: Marks the requirement to require manual verification.",
           "type": "boolean"
         },
+        "origin": {
+          "description": "Link to the origin the requirement is defined.",
+          "type": "string"
+        },
         "parents": {
-          "description": "Optional list of parent requirements",
+          "description": "Optional list of parent requirements.",
           "type": [
             "array",
             "null"
@@ -231,7 +231,7 @@
             "type": "string"
           }
         },
-        "rendered_info": {
+        "rendered_data": {
           "type": [
             "string",
             "null"
@@ -241,7 +241,7 @@
           "$ref": "#/definitions/RequirementTestCoverageInfo"
         },
         "title": {
-          "description": "Title of the requirement",
+          "description": "Title of the requirement.",
           "type": "string"
         },
         "trace_info": {
@@ -511,6 +511,7 @@
         "tests"
       ],
       "properties": {
+        "data": true,
         "date": {
           "description": "Test run date given in ISO8601 format.",
           "type": "string"
@@ -521,14 +522,13 @@
             "null"
           ]
         },
-        "meta": true,
         "name": {
           "type": "string"
         },
         "overview": {
           "$ref": "#/definitions/TestRunOverview"
         },
-        "rendered_meta": {
+        "rendered_data": {
           "type": [
             "string",
             "null"

@@ -98,7 +98,7 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
             &test_run.name,
             &test_run.date,
             test_run.nr_of_tests,
-            test_run.meta,
+            test_run.data,
             test_run.logs,
         )
         .await

@@ -125,6 +125,9 @@
         "tests"
       ],
       "properties": {
+        "data": {
+          "description": "Field to store custom information per test run."
+        },
         "date": {
           "description": "Test run date must be given in ISO8601 format.",
           "type": "string"
@@ -135,7 +138,6 @@
             "null"
           ]
         },
-        "meta": true,
         "name": {
           "type": "string"
         },

@@ -30,8 +30,10 @@ pub struct TraceEntry {
     /// Optional span of lines this entry affects in the source.
     ///
     /// e.g. lines of a function body for a trace set at start of the function.
+    #[serde(alias = "line-span")]
     pub line_span: Option<LineSpan>,
     /// Optional name that is linked to this trace entry
+    #[serde(alias = "item-name")]
     pub item_name: Option<String>,
 }
 

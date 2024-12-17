@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            select \n                title,\n                link,\n                info,\n                case when id in (select id from DeprecatedRequirements) then true else false end as \"deprecated!: bool\",\n                case when id in (select id from ManualRequirements) then true else false end as \"manual!: bool\"\n            from Requirements\n            where id = $1\n        ",
+  "query": "\n            select \n                title,\n                origin,\n                data,\n                case when id in (select id from DeprecatedRequirements) then true else false end as \"deprecated!: bool\",\n                case when id in (select id from ManualRequirements) then true else false end as \"manual!: bool\"\n            from Requirements\n            where id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -9,12 +9,12 @@
         "type_info": "Text"
       },
       {
-        "name": "link",
+        "name": "origin",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "info",
+        "name": "data",
         "ordinal": 2,
         "type_info": "Text"
       },
@@ -40,5 +40,5 @@
       null
     ]
   },
-  "hash": "41f25b20be611a1b89dc521215f15e4150f1e867799a571a2115b200e626e3f6"
+  "hash": "2fa9f020b85a403514120779b3337a6a8a5cb1b12c18af7ac6c70a02c8303df6"
 }

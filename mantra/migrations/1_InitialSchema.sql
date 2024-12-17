@@ -1,12 +1,12 @@
 -- requirements that may be traced.
 -- generation is used to show changes for "--dry-run" and to delete non-existing requirements.
--- info might be custom JSON data
+-- the data field may contain custom JSON data
 create table Requirements (
     id text not null primary key,
     generation integer not null,
     title text not null,
-    link text not null,
-    info text,
+    origin text not null,
+    data text,
     manual bool not null,
     deprecated bool not null
 );
@@ -63,7 +63,7 @@ create table TestRuns (
     name text not null,
     date text not null,
     nr_of_tests integer not null,
-    meta text,
+    data text,
     logs text,
     primary key (name, date)
 );

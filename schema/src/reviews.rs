@@ -29,6 +29,7 @@ pub struct ReviewSchema {
     pub date: PrimitiveDateTime,
     pub reviewer: String,
     pub comment: Option<String>,
+    #[serde(alias = "requirement")]
     pub requirements: Vec<VerifiedRequirement>,
 }
 

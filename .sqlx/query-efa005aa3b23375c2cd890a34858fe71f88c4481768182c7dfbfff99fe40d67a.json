@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "select id, title, link, info, manual, deprecated from Requirements where generation < $1",
+  "query": "select id, title, origin, data, manual, deprecated from Requirements where generation < $1",
   "describe": {
     "columns": [
       {
@@ -14,12 +14,12 @@
         "type_info": "Text"
       },
       {
-        "name": "link",
+        "name": "origin",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "info",
+        "name": "data",
         "ordinal": 3,
         "type_info": "Text"
       },
@@ -46,5 +46,5 @@
       false
     ]
   },
-  "hash": "e9157a2b96d375b03ab0fe7334819d78399bbc8ab1b04ed178985ba20ace9411"
+  "hash": "efa005aa3b23375c2cd890a34858fe71f88c4481768182c7dfbfff99fe40d67a"
 }

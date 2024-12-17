@@ -72,15 +72,15 @@ impl ReportConfig {
                     if value.template.base.is_none() && mantra_cfg.report_template.base.is_some() {
                         value.template.base = mantra_cfg.report_template.base;
                     }
-                    if value.template.req_info.is_none()
-                        && mantra_cfg.report_template.req_info.is_some()
+                    if value.template.req_data.is_none()
+                        && mantra_cfg.report_template.req_data.is_some()
                     {
-                        value.template.req_info = mantra_cfg.report_template.req_info;
+                        value.template.req_data = mantra_cfg.report_template.req_data;
                     }
-                    if value.template.test_run_meta.is_none()
-                        && mantra_cfg.report_template.test_run_meta.is_some()
+                    if value.template.test_run_data.is_none()
+                        && mantra_cfg.report_template.test_run_data.is_some()
                     {
-                        value.template.test_run_meta = mantra_cfg.report_template.test_run_meta;
+                        value.template.test_run_data = mantra_cfg.report_template.test_run_data;
                     }
 
                     if value.project.name.is_none() && mantra_cfg.project.name.is_some() {
@@ -125,19 +125,19 @@ impl ReportConfig {
 pub struct ReportTemplate {
     #[arg(id = "base-template", long = "base-template")]
     pub base: Option<PathBuf>,
-    /// Path to a Tera template that is used to render the custom info of requirements.
-    #[arg(id = "req-info-template", long = "req-info-template")]
-    #[serde(alias = "req-info")]
-    pub req_info: Option<PathBuf>,
+    /// Path to a Tera template that is used to render the custom information of requirements.
+    #[arg(id = "req-data-template", long = "req-data-template")]
+    #[serde(alias = "req-data")]
+    pub req_data: Option<PathBuf>,
     /// Path to a Tera template that is used to render the custom metadata of test-runs.
     #[arg(id = "test-run-template", long = "test-run-template")]
-    #[serde(alias = "test-run-meta")]
-    pub test_run_meta: Option<PathBuf>,
+    #[serde(alias = "test-run-data")]
+    pub test_run_data: Option<PathBuf>,
 }
 
 impl ReportTemplate {
     pub(crate) fn is_none(&self) -> bool {
-        self.base.is_none() && self.req_info.is_none() && self.test_run_meta.is_none()
+        self.base.is_none() && self.req_data.is_none() && self.test_run_data.is_none()
     }
 }
 
@@ -189,8 +189,8 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
                     db,
                     &cfg.project,
                     &cfg.tag,
-                    cfg.template.req_info.as_deref(),
-                    cfg.template.test_run_meta.as_deref(),
+                    cfg.template.req_data.as_deref(),
+                    cfg.template.test_run_data.as_deref(),
                     &template_content,
                 )
                 .await?
@@ -202,8 +202,8 @@ pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), ReportError>
                     db,
                     &cfg.project,
                     &cfg.tag,
-                    cfg.template.req_info.as_deref(),
-                    cfg.template.test_run_meta.as_deref(),
+                    cfg.template.req_data.as_deref(),
+                    cfg.template.test_run_data.as_deref(),
                 )
                 .await?
             }
@@ -221,12 +221,12 @@ pub async fn create_tera_report(
     db: &MantraDb,
     project: &Project,
     tag: &Tag,
-    info_template: Option<&Path>,
+    req_template: Option<&Path>,
     test_run_template: Option<&Path>,
     template: &str,
 ) -> Result<String, ReportError> {
     let context = tera::Context::from_serialize(
-        ReportContext::try_from(db, project, tag, info_template, test_run_template).await?,
+        ReportContext::try_from(db, project, tag, req_template, test_run_template).await?,
     )
     .map_err(|_| ReportError::Tera)?;
     tera::Tera::one_off(template, &context, true).map_err(|_| ReportError::Tera)
@@ -236,11 +236,10 @@ pub async fn create_json_report(
     db: &MantraDb,
     project: &Project,
     tag: &Tag,
-    info_template: Option<&Path>,
+    req_template: Option<&Path>,
     test_run_template: Option<&Path>,
 ) -> Result<String, ReportError> {
-    let report =
-        ReportContext::try_from(db, project, tag, info_template, test_run_template).await?;
+    let report = ReportContext::try_from(db, project, tag, req_template, test_run_template).await?;
     serde_json::to_string_pretty(&report).map_err(|_| ReportError::Serialize)
 }
 
@@ -281,7 +280,7 @@ impl ReportContext {
         db: &MantraDb,
         project: &Project,
         tag: &Tag,
-        info_template: Option<&Path>,
+        req_template: Option<&Path>,
         test_run_template: Option<&Path>,
     ) -> Result<Self, ReportError> {
         let overview = RequirementsOverview::try_from(db).await?;
@@ -293,7 +292,7 @@ impl ReportContext {
 
         let mut requirements = Vec::new();
         for req in req_records {
-            requirements.push(RequirementInfo::try_from(db, req.id, info_template).await?);
+            requirements.push(RequirementInfo::try_from(db, req.id, req_template).await?);
         }
 
         let tests = TestStatistics::try_from(db, test_run_template).await?;
@@ -436,7 +435,7 @@ impl RequirementsOverview {
 pub struct RequirementInfo {
     #[serde(flatten)]
     pub meta: Requirement,
-    pub rendered_info: Option<String>,
+    pub rendered_data: Option<String>,
     pub direct_children: Vec<String>,
     pub leaf_statistic: Option<LeafChildrenStatistic>,
     pub trace_info: RequirementTraceInfo,
@@ -449,7 +448,7 @@ impl RequirementInfo {
     pub async fn try_from(
         db: &MantraDb,
         id: impl Into<ReqId>,
-        info_template: Option<&Path>,
+        req_template: Option<&Path>,
     ) -> Result<Self, ReportError> {
         let id: ReqId = id.into();
 
@@ -457,8 +456,8 @@ impl RequirementInfo {
         let record = sqlx::query!(r#"
             select 
                 title,
-                link,
-                info,
+                origin,
+                data,
                 case when id in (select id from DeprecatedRequirements) then true else false end as "deprecated!: bool",
                 case when id in (select id from ManualRequirements) then true else false end as "manual!: bool"
             from Requirements
@@ -466,10 +465,10 @@ impl RequirementInfo {
         "#, id).fetch_one(db.pool()).await.map_err(ReportError::Db)?;
 
         let title = record.title;
-        let link = record.link;
-        let info = record
-            .info
-            .map(|a| serde_json::from_str(&a).expect("Requirement info must be valid JSON."));
+        let origin = record.origin;
+        let data = record
+            .data
+            .map(|a| serde_json::from_str(&a).expect("Requirement data must be valid JSON."));
         let deprecated = record.deprecated;
         let manual = record.manual;
 
@@ -549,14 +548,14 @@ impl RequirementInfo {
         .map_err(ReportError::Db)?
         .is_none();
 
-        let rendered_info = if let Some(template) = info_template {
+        let rendered_data = if let Some(template) = req_template {
             let template_content = tokio::fs::read_to_string(template)
                 .await
                 .map_err(|_| ReportError::Template)?;
 
-            if let Some(value) = &info {
+            if let Some(value) = &data {
                 let context = tera::Context::from_serialize(value)
-                    .expect("Requirement info value is valid JSON.");
+                    .expect("Requirement data value is valid JSON.");
                 let rendered = tera::Tera::one_off(&template_content, &context, true)
                     .map_err(|_| ReportError::Tera)?;
                 Some(rendered)
@@ -571,13 +570,13 @@ impl RequirementInfo {
             meta: Requirement {
                 id,
                 title,
-                link,
+                origin,
                 manual,
                 deprecated,
-                info,
+                data,
                 parents,
             },
-            rendered_info,
+            rendered_data,
             direct_children: children,
             leaf_statistic,
             trace_info,
@@ -962,8 +961,8 @@ pub struct TestRunInfo {
     )]
     #[schemars(with = "String")]
     pub date: OffsetDateTime,
-    pub meta: Option<serde_json::Value>,
-    pub rendered_meta: Option<String>,
+    pub data: Option<serde_json::Value>,
+    pub rendered_data: Option<String>,
     pub logs: Option<String>,
     pub tests: Vec<TestInfo>,
 }
@@ -1051,7 +1050,7 @@ impl TestRunInfo {
 
         let record = sqlx::query!(
             r#"
-            select meta, logs from TestRuns
+            select data, logs from TestRuns
             where name = $1 and date = $2
             "#,
             name,
@@ -1061,18 +1060,18 @@ impl TestRunInfo {
         .await
         .map_err(ReportError::Db)?;
 
-        let meta = record
-            .meta
-            .map(|m| serde_json::from_str(&m).expect("Test run meta data must be valid JSON."));
+        let data = record
+            .data
+            .map(|m| serde_json::from_str(&m).expect("Test run data data must be valid JSON."));
 
-        let rendered_meta = if let Some(template) = test_run_template {
+        let rendered_data = if let Some(template) = test_run_template {
             let template_content = tokio::fs::read_to_string(template)
                 .await
                 .map_err(|_| ReportError::Template)?;
 
-            if let Some(value) = &meta {
+            if let Some(value) = &data {
                 let context = tera::Context::from_serialize(value)
-                    .expect("Test-run meta value is valid JSON.");
+                    .expect("Test-run data value is valid JSON.");
                 let rendered = tera::Tera::one_off(&template_content, &context, true)
                     .map_err(|_| ReportError::Tera)?;
                 Some(rendered)
@@ -1087,8 +1086,8 @@ impl TestRunInfo {
             overview,
             name,
             date,
-            meta,
-            rendered_meta,
+            data,
+            rendered_data,
             logs: record.logs,
             tests: test_info,
         })

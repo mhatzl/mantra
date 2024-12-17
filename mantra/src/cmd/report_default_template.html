@@ -503,10 +503,10 @@
 
                         <div class="requirement-custom-info">
                             <p><strong>{{ req.title }}</strong></p>
-                            <a class="external-link" href="{{ req.link }}">{{ req.link }}</a>
-                            {% if req.rendered_info %}
-                            <div class="rendered-info">
-                                {{ req.rendered_info | safe }}
+                            <a class="external-link" href="{{ req.origin }}">{{ req.origin }}</a>
+                            {% if req.rendered_data %}
+                            <div class="rendered-data">
+                                {{ req.rendered_data | safe }}
                             </div>
                             {% endif %}
                         </div>
@@ -786,9 +786,9 @@
                         </ul>
                     </div>
 
-                    {% if test_run.rendered_meta %}
-                    <div class="test-run-meta">
-                        {{ test_run.rendered_meta | safe }}
+                    {% if test_run.rendered_data %}
+                    <div class="test-run-data">
+                        {{ test_run.rendered_data | safe }}
                     </div>
                     {% endif %}
 

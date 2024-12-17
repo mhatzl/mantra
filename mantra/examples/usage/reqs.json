@@ -3,10 +3,10 @@
         {
             "id": "id_from_schema",
             "title": "Some req added from JSON.",
-            "link": "local",
+            "origin": "local",
             "manual": false,
             "deprecated": false,
-            "info": {
+            "data": {
                 "custom_field": "some data"
             }
         }

@@ -8,6 +8,7 @@ use crate::{requirements::ReqId, Line};
 pub struct CoverageSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub version: Option<String>,
+    #[serde(alias = "test-runs")]
     pub test_runs: Vec<TestRun>,
 }
 
@@ -23,8 +24,10 @@ pub struct TestRun {
     )]
     #[schemars(with = "String")]
     pub date: time::OffsetDateTime,
+    #[serde(alias = "nr-of-tests")]
     pub nr_of_tests: u32,
-    pub meta: Option<serde_json::Value>,
+    /// Field to store custom information per test run.
+    pub data: Option<serde_json::Value>,
     pub logs: Option<String>,
     pub tests: Vec<Test>,
 }
@@ -43,7 +46,7 @@ pub struct Test {
     pub filepath: PathBuf,
     pub line: Line,
     pub state: TestState,
-    #[serde(default)]
+    #[serde(default, alias = "covered-files")]
     pub covered_files: Vec<CoveredFile>,
 }
 
@@ -52,9 +55,9 @@ pub struct Test {
 )]
 pub struct CoveredFile {
     pub filepath: PathBuf,
-    #[serde(default)]
+    #[serde(default, alias = "covered-traces")]
     pub covered_traces: Vec<CoveredFileTrace>,
-    #[serde(default)]
+    #[serde(default, alias = "covered-lines")]
     pub covered_lines: Vec<CoveredLine>,
 }
 
@@ -62,6 +65,7 @@ pub struct CoveredFile {
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct CoveredFileTrace {
+    #[serde(alias = "req-ids")]
     pub req_ids: Vec<ReqId>,
     pub line: Line,
 }

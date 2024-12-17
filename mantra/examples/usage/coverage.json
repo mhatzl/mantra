@@ -4,7 +4,7 @@
             "name": "usage-test",
             "date": "+002024-06-11T13:07:43.346392800Z",
             "nr_of_tests": 1,
-            "meta": {
+            "data": {
                 "binary": "target\\debug\\usage"
             },
             "logs": "",

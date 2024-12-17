@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert or ignore into TestRuns (name, date, nr_of_tests, data, logs) values ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "695d412740d14c1e45e76d835f65b07a831f79d0f74b4183a09050c052ce7c6d"
+}

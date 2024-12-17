@@ -123,8 +123,8 @@ mod test {
 
                             [report-template]
                             base = "base-template.html"
-                            req-info = "info-template.html"
-                            test-run-meta = "test-run-template.html"
+                            req-data = "req-template.html"
+                            test-run-data = "test-run-template.html"
 
                             [[requirements]]
                             root = "reqs.md"

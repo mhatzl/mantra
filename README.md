@@ -84,13 +84,36 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
   **File structure:**
 
   ```toml
+  # Project information that will be used by `mantra report`.
+  # The CLI arguments overwrite these settings.
+  #
+  # All fields are optional.
+  [project]
+  name = "project-name"
+  version = "0.1.0"
+  repository = "<link to the project repository>"
+  homepage = "<link to the project homepage>"
+
+  # Template paths that will be used by `mantra report`.
+  # The CLI arguments overwrite these settings.
+  #
+  # All fields are optional.
+  [report-template]
+  # The base template to use.
+  # Mantra uses the integrated report template if no base template is set.
+  base = "base-template.html"
+  # The template used to render the custom `data` field for requirements.
+  req-data = "data-template.html"
+  # The template used to render the custom `data` field for test runs.
+  test-run-data = "test-run-template.html"
+
   # Collect requirements from local Markdown files.
   [[requirements]]
   # Root path to start looking for requirements.
   # Empty means current directory.
   root = ""
   # Base URL for all requirements
-  link = "https://github.com/mhatzl/mantra-wiki/tree/main/5-Requirements/"
+  origin = "https://github.com/mhatzl/mantra-wiki/tree/main/5-Requirements/"
 
   # Collect requirements from JSON files adhering to the `RequirementSchema`.
   [[requirements]]
@@ -131,14 +154,18 @@ before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=
   The JSON form is passed to the template.
   If no template is given, the [report_default_template](/mantra/src/cmd/report_default_template.html) is used.
 
-  To render custom data like requirement info and test-run metadata,
-  the arguments `--info-template` and `--test-run-template` may be set to template files.
+  To render custom data like requirement and test-run data,
+  the arguments `--req-template` and `--test-run-template` may be set to template files.
   These templates are then pre-rendered using [Tera](https://keats.github.io/tera/docs/),
-  and the rendered content is made available as `rendered_info` and `rendered_meta` next to the regular `info` and `meta` fields.
+  and the rendered content is made available as `rendered_data` next to the regular `data` fields.
 
-  Project name, version, and link may be set using the arguments `--project_name`, `--project_version`, and `--project_link`.
+  Project name, version, repository, and homepage may be set using the arguments `--project-name`,
+  `--project-version`, `--project-repository`, and `--project-homepage`.
   A tag name and link may also be set using the arguments `--tag-name` and `--tag-link`.
   Tags should be used to indicate the requirements-snapshot/tag the report was generated with.
+
+  The template and project arguments may be set in the `mantra.toml` file,
+  because these settings are assumed to not change much.
 
 ### Manual Reviews
 
@@ -150,11 +177,11 @@ date = "<yyyy-mm-dd HH:MM[optional [:SS.fraction]]>"
 reviewer = "<reviewer of this review>"
 comment = "<optional: general comment for this review>"
 
-[[requirements]]
+[[requirement]]
 id = "<verified requirement ID>"
 comment = "<optional: comment for this specific ID>"
 
-[[requirements]]
+[[requirement]]
 id = "<verified requirement ID>"
 comment = "<optional: comment for this specific ID>"
 ```

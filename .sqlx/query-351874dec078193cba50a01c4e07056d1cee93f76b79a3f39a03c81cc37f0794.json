@@ -19,7 +19,7 @@
         "type_info": "Int64"
       },
       {
-        "name": "meta",
+        "name": "data",
         "ordinal": 3,
         "type_info": "Text"
       },

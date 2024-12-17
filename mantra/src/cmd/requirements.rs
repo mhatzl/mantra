@@ -80,7 +80,7 @@ pub async fn collect_from_schema(
 async fn collect_from_wiki(
     db: &MantraDb,
     root: &Path,
-    link: &str,
+    origin: &str,
     version: Option<usize>,
 ) -> Result<RequirementChanges, RequirementsError> {
     let mut reqs = Vec::new();
@@ -117,10 +117,12 @@ async fn collect_from_wiki(
                     .expect("Filepath is valid filename.")
                     .to_string_lossy()
                     .replace(char::is_whitespace, "-");
-                let link = format!("{}/{}", link, file_stem);
+                let req_origin = format!("{}/{}", origin, file_stem);
 
                 reqs.append(&mut requirements_from_wiki_content(
-                    &content, &link, version,
+                    &content,
+                    &req_origin,
+                    version,
                 ));
             }
         }
@@ -128,7 +130,7 @@ async fn collect_from_wiki(
         let content = std::fs::read_to_string(root)
             .map_err(|_| RequirementsError::CouldNotAccessFile(root.display().to_string()))?;
 
-        reqs = requirements_from_wiki_content(&content, link, version);
+        reqs = requirements_from_wiki_content(&content, origin, version);
     }
 
     if reqs.is_empty() {
@@ -148,7 +150,7 @@ static REQ_ID_MATCHER: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
 fn requirements_from_wiki_content(
     content: &str,
-    link: &str,
+    origin: &str,
     version: Option<usize>,
 ) -> Vec<Requirement> {
     let lines = content.lines();
@@ -203,8 +205,8 @@ fn requirements_from_wiki_content(
                 reqs.push(Requirement {
                     id,
                     title,
-                    link: link.to_string(),
-                    info: None,
+                    origin: origin.to_string(),
+                    data: None,
                     manual,
                     deprecated,
                     parents: None,
