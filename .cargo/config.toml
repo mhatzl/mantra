@@ -1,4 +1,5 @@
-# Note: set "DATABASE_URL" to absolute path for "cargo publish" to work and set "SQLX_OFFLINE=false"
+# Note: set "SQLX_OFFLINE_DIR" to absolute path to the workspace ".sqlx" folder for `cargo publish` to work
+# see: https://github.com/launchbadge/sqlx/issues/3644
 [env]
 DATABASE_URL = "sqlite://mantra.db"
 SQLX_OFFLINE = "true"
