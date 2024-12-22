@@ -6,7 +6,7 @@ version.workspace = true
 edition.workspace = true
 repository.workspace = true 
 license.workspace = true
-include = ["../.sqlx", "src/", "examples/", "migrations/"]
+include = ["../.sqlx", "src/", "examples/usage", "examples/mantra.toml", "examples/usage.rs", "migrations/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
