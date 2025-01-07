@@ -1,4 +1,6 @@
-# Note: set "SQLX_OFFLINE_DIR" to absolute path to the workspace ".sqlx" folder for `cargo publish` to work
+# Note: set "SQLX_OFFLINE_DIR" to absolute path to the ".sqlx" folder in the "mantra/" subfolder for `cargo publish` to work
+# Copy the workspace ".sqlx" folder created with "cargo sqlx prepare --workspace" into the subfolder for it to work.
+# "cargo publish" by default only includes files/folders at package level and ignores everything mentioned in ".gitignore" files.
 # see: https://github.com/launchbadge/sqlx/issues/3644
 [env]
 DATABASE_URL = "sqlite://mantra.db"
