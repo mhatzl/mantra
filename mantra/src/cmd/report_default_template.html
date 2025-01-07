@@ -799,9 +799,9 @@
                             <div class="test-header">
                                 <p><strong class="test-name">&lrm;{{ test.name }}</strong></p>
                                 <p class="header-right-part">
-                                    {% if test.state == 'Passed'%}
+                                    {% if test.state == 'passed'%}
                                     <span class="passed">passed</span>
-                                    {% elif 'Skipped' in test.state %}
+                                    {% elif 'skipped' in test.state %}
                                     <span class="skipped">skipped</span>
                                     {% else %}
                                     <span class="failed">failed</span>
