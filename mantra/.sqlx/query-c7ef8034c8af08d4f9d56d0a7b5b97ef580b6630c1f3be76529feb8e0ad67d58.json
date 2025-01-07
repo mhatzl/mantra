@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "select name, date from Reviews order by name, date",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "date",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c7ef8034c8af08d4f9d56d0a7b5b97ef580b6630c1f3be76529feb8e0ad67d58"
+}

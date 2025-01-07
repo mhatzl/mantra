@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                test_run_name,\n                test_run_date,\n                test_name,\n                req_id,\n                trace_filepath,\n                trace_line as \"trace_line!: u32\"\n                from UnrelatedTestCoverage\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_run_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "req_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "trace_filepath",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "trace_line!: u32",
+        "ordinal": 5,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "253e528c0e691b3c4f2900b4e31a08c484d83093b9abe6605a2d68c7ecc7e11a"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update Requirements set generation = 0",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "cff2e67ba60c36f0f6708b3ba6f5444dd741062a3239cde09ad636389a5847f4"
+}

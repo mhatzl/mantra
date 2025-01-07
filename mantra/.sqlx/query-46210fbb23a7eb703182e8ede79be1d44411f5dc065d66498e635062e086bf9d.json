@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from TestRuns where (name, date) not in (select test_run_name, test_run_date from TestCoverage)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "46210fbb23a7eb703182e8ede79be1d44411f5dc065d66498e635062e086bf9d"
+}

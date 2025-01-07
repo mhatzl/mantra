@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select covered_id, test_runs as \"test_runs!: String\"\n                from IndirectTestCoverageTree\n                where id = $1\n                order by covered_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "covered_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_runs!: String",
+        "ordinal": 1,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "d9eb3e22fab82438dfda040a220e8c7c84e3f93265eb0d7cacce1e7884c9d9de"
+}

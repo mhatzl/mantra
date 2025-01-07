@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from TestRuns where unixepoch(date) < unixepoch($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "27e6076f0a41604caee733f801ef2ae18b8a5c8594d0efcc0f5a6ee83adfa2e0"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into Traces (req_id, filepath, line, generation) values ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "9a8a7d2e73523094d9629d7443b7532eaacd498ccb41c0d93cae1d1965c9b993"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select traced_id as \"traced_id!\", traces as \"traces!: String\"\n            from IndirectTraceTree\n            where id = $1\n            order by traced_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "traced_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "traces!: String",
+        "ordinal": 1,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "dafba70a19eb9ae075ce17dea080881fdb9bc17659b850830c66af31ad5f35cb"
+}

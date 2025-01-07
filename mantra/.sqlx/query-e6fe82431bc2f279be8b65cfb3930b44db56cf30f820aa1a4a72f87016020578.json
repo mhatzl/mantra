@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Traces where generation < (select max(generation) from Traces)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "e6fe82431bc2f279be8b65cfb3930b44db56cf30f820aa1a4a72f87016020578"
+}

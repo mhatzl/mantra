@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select name, date\n            from TestRuns\n            order by name, date\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "date",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "67a98fa1e8195ecb797eca1ad6a1d0e1a217fc2ceac6fe7ab7ad23d3073ca50d"
+}

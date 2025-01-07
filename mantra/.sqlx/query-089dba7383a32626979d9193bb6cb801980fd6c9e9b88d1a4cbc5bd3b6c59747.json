@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select id as \"id!\" from InvalidRequirements",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "089dba7383a32626979d9193bb6cb801980fd6c9e9b88d1a4cbc5bd3b6c59747"
+}

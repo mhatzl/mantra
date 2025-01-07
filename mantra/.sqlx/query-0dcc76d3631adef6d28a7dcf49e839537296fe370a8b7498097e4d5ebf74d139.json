@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select review_name, review_date, comment\n                from ManuallyVerified\n                where req_id = $1\n                order by review_name, review_date\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "review_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "review_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "comment",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "0dcc76d3631adef6d28a7dcf49e839537296fe370a8b7498097e4d5ebf74d139"
+}

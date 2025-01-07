@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select test_run_name, test_run_date, tests as \"tests!: String\"\n                from DirectCoverageTree\n                where id = $1\n                order by test_run_name, test_run_date\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_run_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "tests!: String",
+        "ordinal": 2,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "071542c036f4b22e112f0137d2241b9da9c26b551674dca53090d9ec319b7754"
+}

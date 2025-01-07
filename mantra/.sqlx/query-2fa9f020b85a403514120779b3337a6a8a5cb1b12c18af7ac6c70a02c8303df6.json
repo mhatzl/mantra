@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select \n                title,\n                origin,\n                data,\n                case when id in (select id from DeprecatedRequirements) then true else false end as \"deprecated!: bool\",\n                case when id in (select id from ManualRequirements) then true else false end as \"manual!: bool\"\n            from Requirements\n            where id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "title",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "origin",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "data",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "deprecated!: bool",
+        "ordinal": 3,
+        "type_info": "Null"
+      },
+      {
+        "name": "manual!: bool",
+        "ordinal": 4,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "2fa9f020b85a403514120779b3337a6a8a5cb1b12c18af7ac6c70a02c8303df6"
+}

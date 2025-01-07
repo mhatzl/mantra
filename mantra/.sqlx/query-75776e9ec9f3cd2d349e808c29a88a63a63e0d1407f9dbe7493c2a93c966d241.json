@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select child_id\n                from RequirementHierarchies\n                where parent_id = $1\n                order by child_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "child_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "75776e9ec9f3cd2d349e808c29a88a63a63e0d1407f9dbe7493c2a93c966d241"
+}

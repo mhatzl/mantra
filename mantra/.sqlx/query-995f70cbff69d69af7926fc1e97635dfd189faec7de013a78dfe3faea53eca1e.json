@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "select req_id, filepath, line from Traces where req_id = $1 and filepath = $2 and line = $3",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "filepath",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "line",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "995f70cbff69d69af7926fc1e97635dfd189faec7de013a78dfe3faea53eca1e"
+}

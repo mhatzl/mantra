@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Requirements where generation < (select max(generation) from Requirements)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "60ae496fb475438219b3e66159553ef0f18958f4fae371827a499128637dd0d8"
+}

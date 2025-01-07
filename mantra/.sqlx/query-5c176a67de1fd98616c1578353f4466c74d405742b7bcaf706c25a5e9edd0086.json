@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "select\n                req_cnt,\n                traced_cnt,\n                traced_ratio,\n                covered_cnt,\n                covered_ratio,\n                passed_cnt,\n                passed_ratio,\n                verified_cnt as \"verified_cnt?: i64\",\n                verified_ratio\n             from RequirementCoverageOverview",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_cnt",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "traced_cnt",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "traced_ratio",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "covered_cnt",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "covered_ratio",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "passed_cnt",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "passed_ratio",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "verified_cnt?: i64",
+        "ordinal": 7,
+        "type_info": "Null"
+      },
+      {
+        "name": "verified_ratio",
+        "ordinal": 8,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "5c176a67de1fd98616c1578353f4466c74d405742b7bcaf706c25a5e9edd0086"
+}

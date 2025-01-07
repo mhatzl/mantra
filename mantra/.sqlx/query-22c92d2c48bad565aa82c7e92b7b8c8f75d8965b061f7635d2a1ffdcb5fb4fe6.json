@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "select id, title, origin, data, manual, deprecated from Requirements where id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "origin",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "data",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "manual",
+        "ordinal": 4,
+        "type_info": "Bool"
+      },
+      {
+        "name": "deprecated",
+        "ordinal": 5,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "22c92d2c48bad565aa82c7e92b7b8c8f75d8965b061f7635d2a1ffdcb5fb4fe6"
+}

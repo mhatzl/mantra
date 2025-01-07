@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select \n                test_cnt,\n                ran_cnt,\n                ran_ratio as \"ran_ratio!: f64\",\n                passed_cnt,\n                passed_ratio as \"passed_ratio!: f64\",\n                failed_cnt,\n                failed_ratio as \"failed_ratio!: f64\",\n                skipped_cnt,\n                skipped_ratio as \"skipped_ratio!: f64\"\n                from TestRunOverview\n                where name = $1 and date = $2\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_cnt",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "ran_cnt",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "ran_ratio!: f64",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "passed_cnt",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "passed_ratio!: f64",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "failed_cnt",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "failed_ratio!: f64",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "skipped_cnt",
+        "ordinal": 7,
+        "type_info": "Integer"
+      },
+      {
+        "name": "skipped_ratio!: f64",
+        "ordinal": 8,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "cc61a8a3f263db15379ff6c452aab4e021de33bf4b6342cef60204f6e1095970"
+}

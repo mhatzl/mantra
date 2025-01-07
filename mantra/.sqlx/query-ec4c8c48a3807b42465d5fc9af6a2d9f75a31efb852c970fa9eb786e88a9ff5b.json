@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into UnrelatedTraces (req_id, filepath, line) values ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "ec4c8c48a3807b42465d5fc9af6a2d9f75a31efb852c970fa9eb786e88a9ff5b"
+}

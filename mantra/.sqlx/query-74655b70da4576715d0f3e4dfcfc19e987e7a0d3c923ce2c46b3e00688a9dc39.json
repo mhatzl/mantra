@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "select * from Reviews where name = $1 and date = $2",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "reviewer",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "comment",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "74655b70da4576715d0f3e4dfcfc19e987e7a0d3c923ce2c46b3e00688a9dc39"
+}

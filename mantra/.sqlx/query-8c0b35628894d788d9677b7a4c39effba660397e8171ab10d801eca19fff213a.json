@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                req_id,\n                filepath,\n                line as \"line!: u32\"\n                from UnrelatedTraces\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "filepath",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "line!: u32",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8c0b35628894d788d9677b7a4c39effba660397e8171ab10d801eca19fff213a"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from Reviews",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "2d919135768d684d6381a482ef5df0f4e83aa04b2de9afae6171d39be12a85da"
+}

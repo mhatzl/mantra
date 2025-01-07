@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update Traces set generation = 0",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "7a8722360a44a28df1c82584cad84e4a48335f7cbfaea7d231bf19181953303f"
+}

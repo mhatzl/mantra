@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select max(generation) as nr from Traces",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "ec498ade01558a9064678024d56b6a2984634e20e0440699d5b1e3f48886bea9"
+}
