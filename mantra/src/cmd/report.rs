@@ -229,7 +229,7 @@ pub async fn create_tera_report(
         ReportContext::try_from(db, project, tag, req_template, test_run_template).await?,
     )
     .map_err(|_| ReportError::Tera)?;
-    tera::Tera::one_off(template, &context, true).map_err(|_| ReportError::Tera)
+    tera_one_off(template, &context)
 }
 
 pub async fn create_json_report(
@@ -556,9 +556,7 @@ impl RequirementInfo {
             if let Some(value) = &data {
                 let context = tera::Context::from_serialize(value)
                     .expect("Requirement data value is valid JSON.");
-                let rendered = tera::Tera::one_off(&template_content, &context, true)
-                    .map_err(|_| ReportError::Tera)?;
-                Some(rendered)
+                Some(tera_one_off(&template_content, &context)?)
             } else {
                 None
             }
@@ -1072,9 +1070,7 @@ impl TestRunInfo {
             if let Some(value) = &data {
                 let context = tera::Context::from_serialize(value)
                     .expect("Test-run data value is valid JSON.");
-                let rendered = tera::Tera::one_off(&template_content, &context, true)
-                    .map_err(|_| ReportError::Tera)?;
-                Some(rendered)
+                Some(tera_one_off(&template_content, &context)?)
             } else {
                 None
             }
@@ -1323,4 +1319,28 @@ impl UnrelatedVerified {
 
         Ok(unrelated)
     }
+}
+
+/// taken from the Tera src code
+const ONE_OFF_TEMPLATE_NAME: &str = "__tera_one_off";
+/// name of the added fn accessible in Tera templates to get the current working directory
+const TERA_CWD_FN: &str = "cwd";
+
+fn tera_one_off(template_content: &str, context: &tera::Context) -> Result<String, ReportError> {
+    let mut tera = tera::Tera::default();
+    tera.register_function(TERA_CWD_FN, tera_cwd);
+    tera.autoescape_on(vec![ONE_OFF_TEMPLATE_NAME]);
+    let rendered = tera
+        .render_str(template_content, context)
+        .map_err(|_| ReportError::Tera)?;
+    Ok(rendered)
+}
+
+/// Function to make the current working directory accessible in a Tera template.
+fn tera_cwd(
+    _map: &std::collections::HashMap<std::string::String, tera::Value>,
+) -> Result<tera::Value, tera::Error> {
+    std::env::current_dir()
+        .map_err(|e| tera::Error::msg(e))
+        .map(|v| tera::Value::String(v.display().to_string()))
 }
