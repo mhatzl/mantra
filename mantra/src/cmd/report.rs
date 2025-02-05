@@ -1341,6 +1341,6 @@ fn tera_cwd(
     _map: &std::collections::HashMap<std::string::String, tera::Value>,
 ) -> Result<tera::Value, tera::Error> {
     std::env::current_dir()
-        .map_err(|e| tera::Error::msg(e))
+        .map_err(tera::Error::msg)
         .map(|v| tera::Value::String(v.display().to_string()))
 }
