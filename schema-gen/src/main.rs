@@ -8,7 +8,7 @@ fn main() {
     let trace_schema = schemars::schema_for!(mantra_schema::traces::TraceSchema);
     write_schema(&trace_schema, &std::path::PathBuf::from("TraceSchema.json"));
 
-    let coverage_schema = schemars::schema_for!(mantra_schema::coverage::CoverageSchema);
+    let coverage_schema = schemars::schema_for!(mantra_schema::testcov::TestCovSchema);
     write_schema(
         &coverage_schema,
         &std::path::PathBuf::from("CoverageSchema.json"),

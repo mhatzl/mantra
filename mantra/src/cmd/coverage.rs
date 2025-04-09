@@ -5,8 +5,8 @@ use std::{
 
 use mantra_lang_tracing::path::SlashPathBuf;
 use mantra_schema::{
-    coverage::{CoverageSchema, CoveredFileTrace, CoveredLine, TestRunPk},
     requirements::ReqId,
+    testcov::{CoveredFileTrace, CoveredStatement, TestCovSchema, TestRunPk},
     Line,
 };
 use time::OffsetDateTime;
@@ -78,7 +78,7 @@ pub async fn collect_from_path(
 
 pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChanges, CoverageError> {
     let coverage =
-        serde_json::from_str::<CoverageSchema>(data).map_err(CoverageError::Deserialize)?;
+        serde_json::from_str::<TestCovSchema>(data).map_err(CoverageError::Deserialize)?;
 
     let mut changes = CoverageChanges {
         inserted: Vec::new(),
@@ -122,7 +122,7 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
 
             for mut file in test.covered_files {
                 if let Ok(Some(mut traces)) =
-                    covered_lines_to_traces(db, file.filepath.clone(), &mut file.covered_lines)
+                    covered_lines_to_traces(db, file.filepath.clone(), &mut file.covered_statements)
                         .await
                 {
                     file.covered_traces.append(&mut traces);
@@ -172,7 +172,7 @@ pub async fn collect_from_str(db: &MantraDb, data: &str) -> Result<CoverageChang
 async fn covered_lines_to_traces(
     db: &MantraDb,
     filepath: PathBuf,
-    covered_lines: &mut [CoveredLine],
+    covered_lines: &mut [CoveredStatement],
 ) -> Result<Option<Vec<CoveredFileTrace>>, DbError> {
     let mut traces = Vec::new();
 
@@ -204,7 +204,7 @@ async fn covered_lines_to_traces(
 
 fn get_covered_traces(
     trace_spans: Vec<intervaltree::Element<Line, (String, Line)>>,
-    covered_lines: &mut [CoveredLine],
+    covered_lines: &mut [CoveredStatement],
 ) -> impl Iterator<Item = CoveredFileTrace> {
     let mut traces: HashMap<Line, HashSet<ReqId>> = HashMap::new();
     let tree = intervaltree::IntervalTree::from_iter(trace_spans);
@@ -229,7 +229,7 @@ fn get_covered_traces(
 #[cfg(test)]
 mod test {
     use intervaltree::Element;
-    use mantra_schema::coverage::{CoveredFileTrace, CoveredLine};
+    use mantra_schema::testcov::{CoveredFileTrace, CoveredStatement};
 
     use super::get_covered_traces;
 
@@ -248,9 +248,9 @@ mod test {
 
         // range for first trace is 10..15, so 15 is exclusive
         let mut lines = vec![
-            CoveredLine { line: 15, hits: 0 },
-            CoveredLine { line: 24, hits: 0 },
-            CoveredLine { line: 30, hits: 0 },
+            CoveredStatement { line: 15, hits: 0 },
+            CoveredStatement { line: 24, hits: 0 },
+            CoveredStatement { line: 30, hits: 0 },
         ];
 
         let covered_traces: Vec<CoveredFileTrace> = get_covered_traces(spans, &mut lines).collect();
@@ -280,7 +280,7 @@ mod test {
             },
         ];
 
-        let mut lines = vec![CoveredLine { line: 20, hits: 0 }];
+        let mut lines = vec![CoveredStatement { line: 20, hits: 0 }];
 
         let covered_traces: Vec<CoveredFileTrace> = get_covered_traces(spans, &mut lines).collect();
 

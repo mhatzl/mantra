@@ -4,8 +4,8 @@ use std::{
 };
 
 use mantra_schema::{
-    coverage::TestState,
     requirements::{ReqId, Requirement},
+    testcov::TestState,
     Line,
 };
 use time::{OffsetDateTime, PrimitiveDateTime};

@@ -23,26 +23,40 @@ pub struct LineSpan {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+pub struct ItemEntry {
+    /// Name of the item.
+    pub ident: String,
+    /// The line span of the item.
+    pub span: LineSpan,
+    /// Indicates if this item is a test.
+    pub is_test: bool,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct TraceEntry {
     pub ids: Vec<ReqId>,
-    /// The line the trace is defined
+    /// The line the trace is defined at
     pub line: Line,
-    /// Optional span of lines this entry affects in the source.
+    /// Optional start line of an item this trace entry is related to in the source file.
     ///
-    /// e.g. lines of a function body for a trace set at start of the function.
-    #[serde(alias = "line-span")]
-    pub line_span: Option<LineSpan>,
-    /// Optional name that is linked to this trace entry
-    #[serde(alias = "item-name")]
-    pub item_name: Option<String>,
+    /// e.g. start line of a function definition.
+    #[serde(alias = "item-start-line")]
+    pub item_start_line: Option<Line>,
 }
 
 impl std::fmt::Display for TraceEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "req({}) at '{}'", self.ids.join(","), self.line)?;
+        write!(
+            f,
+            "Traces req({}) at line '{}'.",
+            self.ids.join(","),
+            self.line
+        )?;
 
-        if let Some(span) = self.line_span {
-            write!(f, " spans lines '{}:{}'", span.start, span.end)?;
+        if let Some(line) = self.item_start_line {
+            write!(f, " Related item starts at line '{}'.", line)?;
         }
 
         Ok(())
@@ -55,7 +69,7 @@ impl std::fmt::Display for TraceEntry {
 pub struct TraceSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub version: Option<String>,
-    pub traces: Vec<FileTraces>,
+    pub files: Vec<FileTraces>,
 }
 
 #[derive(
@@ -63,5 +77,8 @@ pub struct TraceSchema {
 )]
 pub struct FileTraces {
     pub filepath: PathBuf,
+    #[serde(default)]
     pub traces: Vec<TraceEntry>,
+    #[serde(default)]
+    pub items: Vec<ItemEntry>,
 }
