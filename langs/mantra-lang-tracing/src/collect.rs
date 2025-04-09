@@ -2,8 +2,13 @@ use tree_sitter::{Language, Parser, Tree};
 
 use crate::RawTraceEntry;
 
-pub trait TraceCollector<T> {
-    fn collect(&mut self, collect_arg: &T) -> Option<Vec<TraceEntry>>;
+pub trait TraceInfoCollector<T> {
+    fn collect(&mut self, collect_arg: &T) -> Option<TraceInfo>;
+}
+
+pub struct TraceInfo {
+    pub traces: Vec<TraceEntry>,
+    pub items: Vec<ItemEntry>,
 }
 
 pub struct PlainCollector<'a> {
@@ -16,27 +21,32 @@ impl<'a> PlainCollector<'a> {
     }
 }
 
-impl TraceCollector<()> for PlainCollector<'_> {
-    fn collect(&mut self, _collect_arg: &()) -> Option<Vec<TraceEntry>> {
+impl TraceInfoCollector<()> for PlainCollector<'_> {
+    fn collect(&mut self, _collect_arg: &()) -> Option<TraceInfo> {
         let trace_matcher = crate::extract::req_trace_matcher();
         let mut traces = Vec::new();
         let lines = self.src.lines();
 
         for (i, line_content) in lines.enumerate() {
-            for capture in trace_matcher.captures_iter(line_content) {
-                traces.push(
-                    TraceEntry::try_from(RawTraceEntry::new(
-                        capture.name("ids")?.as_str(),
-                        i + 1,
-                        None,
-                        None,
-                    ))
-                    .ok()?,
-                )
+            // TODO: log in case line nr exceeds u32 range
+            if let Ok(line) = (i + 1).try_into() {
+                for capture in trace_matcher.captures_iter(line_content) {
+                    traces.push(
+                        TraceEntry::try_from(RawTraceEntry::new(
+                            capture.name("ids")?.as_str(),
+                            line,
+                            None,
+                        ))
+                        .ok()?,
+                    )
+                }
             }
         }
 
-        Some(traces)
+        Some(TraceInfo {
+            traces,
+            items: Vec::new(),
+        })
     }
 }
 
@@ -48,13 +58,13 @@ pub struct AstCollector<'a, T> {
 }
 
 // re-export types used in collector_fn for fewer dependencies for implementors
+pub use mantra_schema::traces::ItemEntry;
 pub use mantra_schema::traces::LineSpan;
 pub use mantra_schema::traces::TraceEntry;
 pub use mantra_schema::Line;
 pub use tree_sitter::Node as AstNode;
 
-pub type AstCollectorFn<'a, T> =
-    Box<dyn FnMut(&AstNode, &'a [u8], &str, &T) -> Option<Vec<TraceEntry>>>;
+pub type AstCollectorFn<'a, T> = Box<dyn FnMut(&AstNode, &'a [u8], &str, &T) -> Option<TraceInfo>>;
 
 impl<'a, T> AstCollector<'a, T> {
     /// # Parameters
@@ -81,10 +91,11 @@ impl<'a, T> AstCollector<'a, T> {
     }
 }
 
-impl<'a, T> TraceCollector<T> for AstCollector<'a, T> {
-    fn collect(&mut self, collect_arg: &T) -> Option<Vec<TraceEntry>> {
+impl<'a, T> TraceInfoCollector<T> for AstCollector<'a, T> {
+    fn collect(&mut self, collect_arg: &T) -> Option<TraceInfo> {
         let mut cursor = self.tree.walk();
         let mut traces = Vec::new();
+        let mut items = Vec::new();
         let mut traces_extracted = false;
 
         // top down traversal
@@ -114,18 +125,22 @@ impl<'a, T> TraceCollector<T> for AstCollector<'a, T> {
 
             let node = cursor.node();
 
-            if let Some(mut extracted_traces) =
+            if let Some(mut extracted_info) =
                 (self.collect_fn)(&node, self.src, &self.filepath, collect_arg)
             {
-                traces.append(&mut extracted_traces);
-                traces_extracted = true;
+                if !extracted_info.traces.is_empty() {
+                    traces_extracted = true;
+                }
+
+                traces.append(&mut extracted_info.traces);
+                items.append(&mut extracted_info.items);
             }
         }
 
-        if traces.is_empty() {
+        if traces.is_empty() && items.is_empty() {
             None
         } else {
-            Some(traces)
+            Some(TraceInfo { traces, items })
         }
     }
 }

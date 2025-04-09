@@ -7,7 +7,7 @@ use crate::db::{MantraDb, TraceChanges};
 
 use ignore::{types::TypesBuilder, WalkBuilder};
 use mantra_lang_tracing::{
-    collect::{AstCollector, PlainCollector, TraceCollector},
+    collect::{AstCollector, PlainCollector, TraceInfoCollector},
     lsif_graph::LsifGraph,
     path::SlashPathBuf,
 };
@@ -233,7 +233,7 @@ fn collect_traces(
             content.as_bytes(),
             &tree_sitter_rust::language(),
             rel_filepath.to_string(),
-            Box::new(mantra_rust_trace::collect_traces_in_rust),
+            Box::new(mantra_rust_trace::collect_trace_info_in_rust),
         ) {
             Some(mut collector) => {
                 return Ok(collector.collect(lsif_graphs));

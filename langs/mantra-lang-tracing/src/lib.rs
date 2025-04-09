@@ -1,4 +1,4 @@
-use mantra_schema::traces::LineSpan;
+use mantra_schema::Line;
 
 #[cfg(feature = "collect")]
 pub mod collect;
@@ -16,27 +16,19 @@ pub struct RawTraceEntry<'a> {
     /// The format is defined in the README section [specifying requirement IDs](https://github.com/mhatzl/mantra/tree/main/langs/mantra-lang-tracing#specifying-requirement-ids).
     ids: &'a str,
     /// The line the trace is defined
-    line: usize,
-    /// Optional span of lines this entry affects in the source.
+    line: Line,
+    /// Optional start line of an item this trace entry is related to in the source file.
     ///
-    /// e.g. lines of a function body for a trace set at start of the function.
-    line_span: Option<LineSpan>,
-    /// Optional item name that is linked to the trace entry.
-    item_name: Option<String>,
+    /// e.g. start line of a function definition.
+    item_start_line: Option<Line>,
 }
 
 impl<'a> RawTraceEntry<'a> {
-    pub fn new(
-        ids: &'a str,
-        line: usize,
-        line_span: Option<LineSpan>,
-        item_name: Option<String>,
-    ) -> Self {
+    pub fn new(ids: &'a str, line: Line, item_start_line: Option<Line>) -> Self {
         Self {
             ids,
             line,
-            line_span,
-            item_name,
+            item_start_line,
         }
     }
 }

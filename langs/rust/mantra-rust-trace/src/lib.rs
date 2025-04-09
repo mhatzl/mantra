@@ -1,19 +1,19 @@
 use mantra_lang_tracing::{
-    collect::{AstNode, Line, LineSpan, TraceEntry},
+    collect::{AstNode, ItemEntry, Line, LineSpan, TraceEntry, TraceInfo},
     lsif_graph::LsifGraph,
     RawTraceEntry,
 };
 
-pub fn collect_traces_in_rust(
+pub fn collect_trace_info_in_rust(
     node: &AstNode,
     src: &[u8],
     filepath: &str,
     lsif_graphs: &Option<Vec<LsifGraph>>,
-) -> Option<Vec<TraceEntry>> {
+) -> Option<TraceInfo> {
     let node_kind = node.kind();
 
     if node_kind == "attribute_item" || node_kind == "macro_invocation" {
-        let (macro_node, may_span) = if node_kind == "macro_invocation" {
+        let (macro_node, has_associated_item) = if node_kind == "macro_invocation" {
             (*node, false)
         } else {
             let attribute_node = node.named_child(0)?;
@@ -24,32 +24,42 @@ pub fn collect_traces_in_rust(
         let macro_content = macro_node.named_child(1)?;
 
         if is_req_macro(ident, src) {
-            let span = if may_span {
-                associated_item_span(*node)
+            let item_start = if has_associated_item {
+                get_associated_item_start(*node)
             } else {
                 None
             };
+            let Ok(line) = (ident.start_position().row + 1).try_into() else {
+                // TODO: log in case line nr exceeds u32
+                return None;
+            };
 
-            return Some(vec![TraceEntry::try_from(RawTraceEntry::new(
-                macro_content
-                    .utf8_text(src)
-                    .ok()?
-                    .strip_prefix('(')
-                    .and_then(|s| s.strip_suffix(')'))?,
-                ident.start_position().row + 1,
-                span,
-                get_ident(filepath, span, lsif_graphs.as_deref()),
-            ))
-            .ok()?]);
+            return Some(TraceInfo {
+                traces: vec![TraceEntry::try_from(RawTraceEntry::new(
+                    macro_content
+                        .utf8_text(src)
+                        .ok()?
+                        .strip_prefix('(')
+                        .and_then(|s| s.strip_suffix(')'))?,
+                    line,
+                    item_start,
+                    // get_ident(filepath, span, lsif_graphs.as_deref()),
+                ))
+                .ok()?],
+                items: vec![],
+            });
         } else if ident.kind() == "identifier" && ident.utf8_text(src) == Ok("cfg_attrb") {
             let mut traces = Vec::new();
 
-            let span = if may_span {
-                associated_item_span(*node)
+            let item_start = if has_associated_item {
+                get_associated_item_start(*node)
             } else {
                 None
             };
-            let start_line = ident.start_position().row + 1;
+            let Ok(line) = (ident.start_position().row + 1).try_into() else {
+                // TODO: log in case line nr exceeds u32
+                return None;
+            };
 
             for child in macro_content.named_children(&mut macro_content.walk()) {
                 if is_req_macro(child, src) {
@@ -60,12 +70,9 @@ pub fn collect_traces_in_rust(
                         .ok()?
                         .strip_prefix('(')
                         .and_then(|s| s.strip_suffix(')'))?;
-                    if let Ok(entry) = TraceEntry::try_from(RawTraceEntry::new(
-                        ids,
-                        start_line,
-                        span,
-                        get_ident(filepath, span, lsif_graphs.as_deref()),
-                    )) {
+                    if let Ok(entry) =
+                        TraceEntry::try_from(RawTraceEntry::new(ids, line, item_start))
+                    {
                         traces.push(entry);
                     }
                 }
@@ -74,7 +81,10 @@ pub fn collect_traces_in_rust(
             return if traces.is_empty() {
                 None
             } else {
-                Some(traces)
+                Some(TraceInfo {
+                    traces,
+                    items: vec![],
+                })
             };
         }
     } else if node_kind == "line_comment" && is_doc_comment(node) {
@@ -84,23 +94,71 @@ pub fn collect_traces_in_rust(
         let captures: Vec<_> = trace_matcher.captures_iter(comment_content).collect();
 
         if !captures.is_empty() {
-            let span = associated_item_span(*node);
+            let item_start = get_associated_item_start(*node);
 
             let mut traces = Vec::new();
             for capture in captures {
-                traces.push(
-                    TraceEntry::try_from(RawTraceEntry::new(
-                        capture.name("ids")?.as_str(),
-                        node.start_position().row + 1,
-                        span,
-                        get_ident(filepath, span, lsif_graphs.as_deref()),
-                    ))
-                    .ok()?,
-                )
+                if let Ok(line) = (node.start_position().row + 1).try_into() {
+                    // TODO: log in case line nr exceeds u32
+                    traces.push(
+                        TraceEntry::try_from(RawTraceEntry::new(
+                            capture.name("ids")?.as_str(),
+                            line,
+                            item_start,
+                        ))
+                        .ok()?,
+                    )
+                };
             }
 
-            return Some(traces);
+            return Some(TraceInfo {
+                traces,
+                items: vec![],
+            });
         }
+    } else if node_kind.ends_with("_item") {
+        let span = LineSpan {
+            start: (node.start_position().row + 1).try_into().ok()?,
+            end: (node.end_position().row + 1).try_into().ok()?,
+        };
+        let ident = if node_kind == "impl_item" {
+            let mut impl_ident = String::from("impl");
+
+            for named_child in node.named_children(&mut node.walk()) {
+                if named_child.grammar_name() == "body" {
+                    break;
+                }
+
+                if named_child.kind() == "type_identifier" {
+                    impl_ident.push(' ');
+                }
+
+                if named_child.grammar_name() == "trait" {
+                    impl_ident.push_str("for ");
+                }
+
+                let content = named_child.utf8_text(src).unwrap_or("-");
+                impl_ident.push_str(content);
+            }
+
+            impl_ident
+        } else {
+            get_ident(filepath, span.start - 1, lsif_graphs.as_deref()).unwrap_or_else(|| {
+                let Some(ident) = node.named_child(0) else {
+                    return "-".to_string();
+                };
+                ident.utf8_text(src).unwrap_or("-").to_string()
+            })
+        };
+
+        return Some(TraceInfo {
+            traces: vec![],
+            items: vec![ItemEntry {
+                ident,
+                span,
+                is_test: false, // TODO: detect if its a test fn
+            }],
+        });
     }
 
     None
@@ -108,16 +166,15 @@ pub fn collect_traces_in_rust(
 
 fn get_ident(
     filepath: &str,
-    span: Option<LineSpan>,
+    item_start_zero_based: Line,
     lsif_graphs: Option<&[LsifGraph]>,
 ) -> Option<String> {
-    let start_line = span?.start;
     let graphs = lsif_graphs?;
 
     for graph in graphs {
         if graph.contains_doc(filepath) {
             // "-1" because lsif starts with line nr 0
-            if let Some(ident) = graph.get_identifier(filepath, start_line - 1) {
+            if let Some(ident) = graph.get_identifier(filepath, item_start_zero_based) {
                 return Some(ident);
             }
         }
@@ -126,7 +183,7 @@ fn get_ident(
     None
 }
 
-fn associated_item_span(mut node: AstNode) -> Option<LineSpan> {
+fn get_associated_item_start(mut node: AstNode) -> Option<Line> {
     while let Some(sibling) = node.next_named_sibling() {
         let sibling_kind = sibling.kind();
 
@@ -135,9 +192,7 @@ fn associated_item_span(mut node: AstNode) -> Option<LineSpan> {
             || sibling_kind == "enum_variant"
         {
             let start = Line::try_from(sibling.start_position().row + 1).ok()?;
-            let end = Line::try_from(sibling.end_position().row + 1).ok()?;
-
-            return Some(LineSpan { start, end });
+            return Some(start);
         } else if sibling_kind.ends_with("comment") && !is_doc_comment(&sibling) {
             return None;
         }

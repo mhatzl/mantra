@@ -29,6 +29,7 @@ pub struct ItemEntry {
     /// The line span of the item.
     pub span: LineSpan,
     /// Indicates if this item is a test.
+    #[serde(default)]
     pub is_test: bool,
 }
 

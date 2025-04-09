@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use mantra_schema::{requirements::ReqId, traces::TraceEntry, Line};
+use mantra_schema::{requirements::ReqId, traces::TraceEntry};
 use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use regex::Regex;
 
@@ -11,18 +11,11 @@ impl TryFrom<RawTraceEntry<'_>> for TraceEntry {
 
     fn try_from(value: RawTraceEntry) -> Result<Self, Self::Error> {
         let ids = extract_req_ids_from_str(value.ids).map_err(|err| err.to_string())?;
-        let line = value
-            .line
-            .try_into()
-            .map_err(|err: <Line as std::convert::TryFrom<usize>>::Error| err.to_string())?;
-        let line_span = value.line_span;
-        let item_name = value.item_name;
 
         Ok(Self {
             ids,
-            line,
-            line_span,
-            item_name,
+            line: value.line,
+            item_start_line: value.item_start_line,
         })
     }
 }
