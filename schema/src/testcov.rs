@@ -25,16 +25,10 @@ pub struct TestRun {
     #[schemars(with = "String")]
     pub date: time::OffsetDateTime,
     /// Hash of the test run content to detect changes.
+    ///
+    /// If not provided, will be computed using the fields: nr_of_tests, data, logs, tests, covered_files
     #[serde(alias = "content-hash")]
     pub content_hash: Option<String>,
-    /// ISO8601 timestamp when the test run was last checked.
-    #[serde(
-        alias = "last-checked-at",
-        serialize_with = "time::serde::iso8601::option::serialize",
-        deserialize_with = "time::serde::iso8601::option::deserialize"
-    )]
-    #[schemars(with = "Option<String>")]
-    pub last_checked_at: Option<time::OffsetDateTime>,
     #[serde(alias = "nr-of-tests")]
     pub nr_of_tests: u32,
     /// Field to store custom information per test run.

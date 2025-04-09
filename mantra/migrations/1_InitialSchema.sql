@@ -20,18 +20,18 @@ create table RequirementHierarchies (
     primary key (child_id, parent_id)
 );
 
--- hashes to detect changes to any file involved in mantra's traceability
-create table FileHashes (
+-- information to detect changes to any file that may contain items and/or traces
+create table TraceableFiles (
     filepath text not null primary key,
-    hash blob not null,
+    content_hash blob not null,
     last_modified_at text not null,
     last_checked_at text not null,
     constraint ch_mdf_times check(last_modified_at <= last_checked_at)
 );
 
--- raw traces to locations in text files
-create table RawTraces (
-    filepath text not null references FileHashes(filepath),
+-- base for all traces to link req traces to items
+create table TracedLines (
+    filepath text not null references TraceableFiles(filepath) on delete cascade,
     line integer not null,
     primary key (filepath, line)
 );
@@ -42,7 +42,7 @@ create table DirectReqTraces (
     filepath text not null,
     line integer not null,
     primary key (req_id, filepath, line),
-    foreign key (filepath, line) references RawTraces(filepat, line) on delete cascade
+    foreign key (filepath, line) references TracedLines(filepath, line) on delete cascade
 );
 
 -- Language item such as function, test, struct, enum, class, ...
@@ -50,7 +50,7 @@ create table DirectReqTraces (
 -- Due to feature flags or language semantics, idents may be declared multiple times, and are therefore not unique.
 create table Items (
     ident text not null,
-    filepath text not null references FileHashes(filepath) on delete cascade,
+    filepath text not null references TraceableFiles(filepath) on delete cascade,
     start_line integer not null,
     end_line integer not null,
     primary key (filepath, start_line),
@@ -74,7 +74,7 @@ create table DirectTracedItems (
     item_start_line integer not null,
     primary key (filepath, traced_line, item_start_line),
     foreign key (filepath, item_start_line) references Items(filepath, start_line) on delete cascade,
-    foreign key (filepath, traced_line) references RawTraces(filepath, line) on delete cascade
+    foreign key (filepath, traced_line) references TracedLines(filepath, line) on delete cascade
 );
 
 create table DirectItemReferences (
@@ -93,7 +93,7 @@ create table UnrelatedDirectReqTraces (
     filepath text not null,
     line integer not null,
     primary key (req_id, filepath, line),
-    foreign key (filepath, line) references RawTraces(filepath, line) on delete cascade
+    foreign key (filepath, line) references TracedLines(filepath, line) on delete cascade
 );
 
 -- test runs that executed tests
@@ -159,7 +159,7 @@ create table TestRunStatementCoverage (
     hits integer not null,
     primary key (test_run_name, test_run_date, stmnt_filepath, stmnt_line),
     foreign key (test_run_name, test_run_date) references TestRuns(test_run_name, test_run_date) on delete cascade,
-    foreign key (stmnt_filepath) references FileHashes(filepath)
+    foreign key (stmnt_filepath) references TraceableFiles(filepath)
 );
 
 create table TestStatementCoverage (
@@ -171,7 +171,7 @@ create table TestStatementCoverage (
     hits integer not null,
     primary key (test_run_name, test_run_date, test_name, stmnt_filepath, stmnt_line),
     foreign key (test_run_name, test_run_date, test_name) references RunTests(test_run_name, test_run_date, name) on delete cascade,
-    foreign key (stmnt_filepath) references FileHashes(filepath)
+    foreign key (stmnt_filepath) references TraceableFiles(filepath)
 );
 
 -- review to add manually verified requirements

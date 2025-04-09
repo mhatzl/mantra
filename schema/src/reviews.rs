@@ -32,6 +32,8 @@ pub struct ReviewSchema {
     )]
     pub date: PrimitiveDateTime,
     /// Hash of the review content to detect changes.
+    ///
+    /// If not provided, will be computed using the fields: reviewer, comment, requirements, overrides
     #[serde(alias = "content-hash")]
     pub content_hash: Option<String>,
     pub reviewer: String,

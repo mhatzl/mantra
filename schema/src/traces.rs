@@ -33,6 +33,20 @@ pub struct ItemEntry {
     pub is_test: bool,
 }
 
+impl std::fmt::Display for ItemEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_test {
+            write!(f, "test: ")?;
+        }
+
+        write!(
+            f,
+            "`{}` @{}..{}",
+            self.ident, self.span.start, self.span.end
+        )
+    }
+}
+
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
@@ -70,14 +84,17 @@ impl std::fmt::Display for TraceEntry {
 pub struct TraceSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub version: Option<String>,
-    pub files: Vec<FileTraces>,
+    pub files: Vec<FileTraceInfo>,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct FileTraces {
+pub struct FileTraceInfo {
     pub filepath: PathBuf,
+    /// Hash of the file content to detect changes.
+    #[serde(alias = "content-hash")]
+    pub content_hash: String,
     #[serde(default)]
     pub traces: Vec<TraceEntry>,
     #[serde(default)]

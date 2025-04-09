@@ -15,25 +15,11 @@ pub struct Requirement {
     /// ID of the requirement.
     pub id: ReqId,
     /// Hash of the requirement content to detect changes.
+    ///
+    /// If not provided, will be computed using the fields: parents, title, origin, manual, deprecated, data
     #[serde(alias = "content-hash")]
     pub content_hash: Option<String>,
-    /// ISO8601 timestamp when the requirement content was last modified.
-    #[serde(
-        alias = "last-modified-at",
-        serialize_with = "time::serde::iso8601::option::serialize",
-        deserialize_with = "time::serde::iso8601::option::deserialize"
-    )]
-    #[schemars(with = "Option<String>")]
-    pub last_modified_at: Option<time::OffsetDateTime>,
-    /// ISO8601 timestamp when the requirement content was last checked for modification.
-    #[serde(
-        alias = "last-checked-at",
-        serialize_with = "time::serde::iso8601::option::serialize",
-        deserialize_with = "time::serde::iso8601::option::deserialize"
-    )]
-    #[schemars(with = "Option<String>")]
-    pub last_checked_at: Option<time::OffsetDateTime>,
-    /// Optional list of parent requirements.
+    /// Optional list of parent requirement IDs.
     pub parents: Option<Vec<ReqId>>,
     /// Title of the requirement.
     pub title: String,
