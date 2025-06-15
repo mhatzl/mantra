@@ -88,10 +88,15 @@ create table RequirementHierarchies (
 create table FileHashes (
     filepath text not null,
     hash text not null,
-    added_at_utc text not null,
-    updated_at_utc text not null,
-    primary key (filepath, hash),
-    constraint ch_times check (added_at_utc <= updated_at_utc)
+    primary key (filepath, hash)
+);
+
+create table FileContents (
+    filepath text not null,
+    file_hash text not null,
+    content text not null,
+    primary key (filepath, file_hash),
+    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
 );
 
 create table CollectedFileHashes (
