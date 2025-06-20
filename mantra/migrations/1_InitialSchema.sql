@@ -208,128 +208,150 @@ create table UnrelatedDirectReqTraces (
 -- Meaning, if there are fewer associated tests in the Tests table, not all tests were executed.
 create table TestRuns (
     name text not null,
-    date text not null,
+    utc_date text not null,
     revision integer not null,
     nr_of_tests integer not null,
-    primary key (name, date, revision),
-    constraint ch_time check (date <= last_checked_at)
+    primary key (name, utc_date, revision),
+    constraint ch_time check (utc_date <= last_checked_at)
 );
 
 create table TestRunCollections (
     collect_hash text not null references Collections (hash) on delete cascade,
     name text not null,
-    date text not null,
+    utc_date text not null,
     revision integer not null,
     content_hash text not null,
     source_filepath text not null,
     source_file_hash text not null,
-    primary key (collect_hash, name, date, revision),
-    foreign key (name, date, revision) references TestRuns (name, date, revision) on delete cascade,
+    primary key (collect_hash, name, utc_date, revision),
+    foreign key (name, utc_date, revision) references TestRuns (name, utc_date, revision) on delete cascade,
     foreign key (source_filepath, source_file_hash) references FileHashes (filepath, file_hash) on delete cascade
 );
 
 create table TestRunChanges (
     name text not null,
-    date text not null,
+    utc_date text not null,
     revision integer not null,
-    revision_date text not null,
     comment text not null,
     authors text not null,
-    primary key (name, date, revision),
-    foreign key (name, date, revision) references TestRuns (name, date, revision) on delete cascade,
-    constraint ch_revision_date check (date <= revision_date)
+    primary key (name, utc_date, revision),
+    foreign key (name, utc_date, revision) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
 create table TestRunHierarchies (
     parent_name text not null,
-    parent_date text not null,
+    parent_utc_date text not null,
     parent_revision integer not null,
     child_name text not null,
-    child_date text not null,
+    child_utc_date text not null,
     child_revision integer not null,
     primary key (
         parent_name,
-        parent_date,
+        parent_utc_date,
         parent_revision,
         child_name,
-        child_date,
+        child_utc_date,
         child_revision
     ),
-    foreign key (parent_name, parent_date, parent_revision) references TestRuns (name, date, revision) on delete cascade,
-    foreign key (child_name, child_date, child_revision) references TestRuns (name, date, revision) on delete cascade
+    foreign key (parent_name, parent_utc_date, parent_revision) references TestRuns (name, utc_date, revision) on delete cascade,
+    foreign key (child_name, child_utc_date, child_revision) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
 create table TestRunMetadata (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     data text not null,
-    primary key (test_run_name, test_run_date, test_run_revision),
-    foreign key (test_run_name, test_run_date, test_run_revision) references TestRuns (name, date, revision) on delete cascade
+    primary key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ),
+    foreign key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
 create table TestRunLogs (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     logs text not null,
-    primary key (test_run_name, test_run_date, test_run_revision),
-    foreign key (test_run_name, test_run_date, test_run_revision) references TestRuns (name, date, revision) on delete cascade
+    primary key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ),
+    foreign key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
 create table TestRunStatementCoverage (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     stmnt_filepath text not null,
     stmnt_line text not null,
     hits integer not null,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         stmnt_filepath,
         stmnt_line
     ),
-    foreign key (test_run_name, test_run_date, test_run_revision) references TestRuns (name, date, revision) on delete cascade
+    foreign key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
 create table TestCases (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     name text not null,
     -- 0=failed; 1=passed; 2=skipped; null = running/not executed
     state integer,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     ),
-    foreign key (test_run_name, test_run_date, test_run_revision) references TestRuns (name, date, revision) on delete cascade
+    foreign key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
 create table TestCaseMetadata (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     data text not null,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ),
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ) references TestCases (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     ) on delete cascade
@@ -337,24 +359,24 @@ create table TestCaseMetadata (
 
 create table TestCaseLogs (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     logs text not null,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ),
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ) references TestCases (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     ) on delete cascade
@@ -362,25 +384,25 @@ create table TestCaseLogs (
 
 create table TestCaseLocations (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     filepath text not null,
     line integer not null,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ),
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ) references TestCases (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     ) on delete cascade
@@ -388,24 +410,24 @@ create table TestCaseLocations (
 
 create table TestCaseStateReason (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     reason text not null,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ),
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ) references TestCases (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     ) on delete cascade
@@ -413,7 +435,7 @@ create table TestCaseStateReason (
 
 create table TestCaseStatementCoverage (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     stmnt_filepath text not null,
@@ -421,7 +443,7 @@ create table TestCaseStatementCoverage (
     hits integer not null,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name,
         stmnt_filepath,
@@ -429,12 +451,12 @@ create table TestCaseStatementCoverage (
     ),
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ) references TestCases (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     ) on delete cascade
@@ -443,22 +465,22 @@ create table TestCaseStatementCoverage (
 -- review to add manually verified requirements
 create table Reviews (
     name text not null,
-    date text not null,
+    utc_date text not null,
     revision integer not null,
     reviewer text not null,
     description text,
-    primary key (name, date, revision)
+    primary key (name, utc_date, revision)
 );
 
 create table ReviewCollections (
     collect_hash text not null references Collections (hash) on delete cascade,
     name text not null,
-    date text not null,
+    utc_date text not null,
     revision integer not null,
     source_filepath text not null,
     source_file_hash text not null,
-    primary key (collect_hash, name, date, revision),
-    foreign key (name, date, revision) references Reviews (name, date, revision) on delete cascade,
+    primary key (collect_hash, name, utc_date, revision),
+    foreign key (name, utc_date, revision) references Reviews (name, utc_date, revision) on delete cascade,
     foreign key (source_filepath, source_file_hash) references FileHashes (filepath, file_hash) on delete cascade
 );
 
@@ -466,53 +488,63 @@ create table ReviewCollections (
 create table ManuallyVerified (
     req_id text not null references Requirements (id) on delete cascade,
     review_name text not null,
-    review_date text not null,
+    review_utc_date text not null,
     review_revision integer not null,
     comment text,
-    primary key (req_id, review_name, review_date, review_revision),
-    foreign key (review_name, review_date, review_revision) references Reviews (name, date, revision) on delete cascade
+    primary key (
+        req_id,
+        review_name,
+        review_utc_date,
+        review_revision
+    ),
+    foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade
 );
 
 -- manually verified requirements
 create table UnrelatedManuallyVerified (
     req_id text not null,
     review_name text not null,
-    review_date text not null,
+    review_utc_date text not null,
     review_revision integer not null,
     comment text,
-    primary key (req_id, review_name, review_date, review_revision),
-    foreign key (review_name, review_date, review_revision) references Reviews (name, date, revision) on delete cascade
+    primary key (
+        req_id,
+        review_name,
+        review_utc_date,
+        review_revision
+    ),
+    foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade
 );
 
 create table TestCaseOverrides (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     review_name text not null,
-    review_date text not null,
+    review_utc_date text not null,
     review_revision integer not null,
     -- 0=failed; 1=passed; 2=skipped
     state integer not null,
     comment text,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name,
         review_name,
-        review_date,
+        review_utc_date,
         review_revision
     ),
-    foreign key (review_name, review_date, review_revision) references Reviews (name, date, revision) on delete cascade,
+    foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade,
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name
     ) references TestCases (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         name
     )
@@ -520,10 +552,10 @@ create table TestCaseOverrides (
 
 create table TestRunStatementCoverageOverrides (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     review_name text not null,
-    review_date text not null,
+    review_utc_date text not null,
     review_revision integer not null,
     stmnt_filepath text not null,
     stmnt_line text not null,
@@ -531,24 +563,24 @@ create table TestRunStatementCoverageOverrides (
     comment text,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         review_name,
-        review_date,
+        review_utc_date,
         review_revision,
         stmnt_filepath,
         stmnt_line
     ),
-    foreign key (review_name, review_date, review_revision) references Reviews (name, date, revision) on delete cascade,
+    foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade,
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         stmnt_filepath,
         stmnt_line
     ) references TestRunStatementCoverage (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         stmnt_filepath,
         stmnt_line
@@ -557,11 +589,11 @@ create table TestRunStatementCoverageOverrides (
 
 create table TestCaseStatementCoverageOverrides (
     test_run_name text not null,
-    test_run_date text not null,
+    test_run_utc_date text not null,
     test_run_revision integer not null,
     test_case_name text not null,
     review_name text not null,
-    review_date text not null,
+    review_utc_date text not null,
     review_revision integer not null,
     stmnt_filepath text not null,
     stmnt_line text not null,
@@ -569,26 +601,26 @@ create table TestCaseStatementCoverageOverrides (
     comment text,
     primary key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name,
         review_name,
-        review_date,
+        review_utc_date,
         review_revision,
         stmnt_filepath,
         stmnt_line
     ),
-    foreign key (review_name, review_date, review_revision) references Reviews (name, date, revision) on delete cascade,
+    foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade,
     foreign key (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name,
         stmnt_filepath,
         stmnt_line
     ) references TestCaseStatementCoverage (
         test_run_name,
-        test_run_date,
+        test_run_utc_date,
         test_run_revision,
         test_case_name,
         stmnt_filepath,
