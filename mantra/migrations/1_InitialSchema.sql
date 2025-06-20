@@ -23,6 +23,10 @@ create table Projects (
     name text not null,
     -- version of a project
     version text not null,
+    homepage text,
+    repository text,
+    license text,
+    data text,
     primary key (name, version)
 );
 
@@ -204,15 +208,15 @@ create table UnrelatedDirectReqTraces (
 
 -- test runs that executed tests
 --
--- NOTE: `nr_of_tests` is the number of expected tests in one run.
--- Meaning, if there are fewer associated tests in the Tests table, not all tests were executed.
+-- NOTE: `nr_of_test_cases` is the number of expected test cases in one run.
+-- Meaning, if there are fewer associated test cases in the `TestCases` table,
+-- not all test cases were executed.
 create table TestRuns (
     name text not null,
     utc_date text not null,
     revision integer not null,
-    nr_of_tests integer not null,
-    primary key (name, utc_date, revision),
-    constraint ch_time check (utc_date <= last_checked_at)
+    nr_of_test_cases integer not null,
+    primary key (name, utc_date, revision)
 );
 
 create table TestRunCollections (
