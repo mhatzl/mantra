@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 /// Defines the schema to exchange requirements related information.
-/// [req("exchange.requirements")]
+/// [req("exchange.requirements.schema")]
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct RequirementSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
