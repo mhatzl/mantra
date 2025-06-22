@@ -511,9 +511,9 @@ create table TestCases (
     -- Name of the test case.
     name text not null,
     -- State of the test case.
-    -- 0=failed; 1=passed; 2=skipped; null = running/not executed
+    -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     -- [req("testcov.test_case.state")]
-    state integer,
+    state integer not null,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -868,7 +868,7 @@ create table TestCaseOverrides (
     -- Revision of the review.
     review_revision integer not null,
     -- State that must be used instead of the one stored in the TestCase table.
-    -- 0=failed; 1=passed; 2=skipped
+    -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
     -- Optional comment explaining why the state must be overriden.
     comment text,

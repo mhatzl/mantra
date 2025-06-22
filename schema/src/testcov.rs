@@ -12,9 +12,12 @@ pub struct TestCovSchema {
     pub test_runs: Vec<TestRun>,
 }
 
+/// Represents a test run in *mantra*.
+/// [req("testcov.test_run")]
 #[derive(
     Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "kebab-case")]
 pub struct TestRun {
     pub name: String,
     /// Test run date must be given in ISO8601 format.
@@ -23,45 +26,61 @@ pub struct TestRun {
         deserialize_with = "time::serde::iso8601::deserialize"
     )]
     #[schemars(with = "String")]
-    pub date: time::OffsetDateTime,
+    pub utc_date: time::OffsetDateTime,
     /// Hash of the test run content to detect changes.
     ///
-    /// If not provided, will be computed using the fields: nr_of_tests, data, logs, tests, covered_files
-    #[serde(alias = "content-hash")]
+    /// If not provided, will be computed using the fields: nr_of_test_cases, data, logs, test_cases, covered_files
     pub content_hash: Option<String>,
     #[serde(alias = "nr-of-tests")]
-    pub nr_of_tests: u32,
+    pub nr_of_test_cases: u32,
     /// Field to store custom information per test run.
     pub data: Option<serde_json::Value>,
     pub logs: Option<String>,
-    pub tests: Vec<Test>,
-    #[serde(default, alias = "covered-files")]
+    #[serde(alias = "tests")]
+    pub test_cases: Vec<TestCase>,
+    #[serde(default)]
     pub covered_files: Vec<CoveredFile>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TestRunPk {
-    pub name: String,
-    pub date: time::OffsetDateTime,
+    /// Optionally nested test runs.
+    /// [req("testcov.test_run.nested")]
+    #[serde(default)]
+    pub test_runs: Vec<TestRun>,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct TestLocation {
+#[serde(rename_all = "kebab-case")]
+pub struct TestCase {
+    pub name: String,
+    pub location: Option<TestCaseLocation>,
+    pub state: TestCaseState,
+    pub state_reason: Option<String>,
+    /// Field to store custom information per test case.
+    pub data: Option<serde_json::Value>,
+    pub logs: Option<String>,
+    #[serde(default)]
+    pub covered_files: Vec<CoveredFile>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct TestCaseLocation {
     pub filepath: PathBuf,
+    pub file_hash: Option<String>,
     pub line: Line,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct Test {
-    pub name: String,
-    pub location: Option<TestLocation>,
-    pub state: TestState,
-    #[serde(default, alias = "covered-files")]
-    pub covered_files: Vec<CoveredFile>,
+#[serde(rename_all = "lowercase")]
+pub enum TestCaseState {
+    Failed = 0,
+    Passed = 1,
+    Skipped = 2,
+    Unknown = 3,
 }
 
 #[derive(
@@ -91,14 +110,4 @@ impl std::cmp::Ord for CoveredStatement {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.line.cmp(&other.line)
     }
-}
-
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-#[serde(rename_all = "lowercase")]
-pub enum TestState {
-    Passed,
-    Failed,
-    Skipped { reason: Option<String> },
 }
