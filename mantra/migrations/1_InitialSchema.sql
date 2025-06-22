@@ -74,22 +74,34 @@ create table RequirementCollections (
 --
 -- **Note:** Multiple IDs may have the same content.
 -- However, this likely indicates a rename of the requirement ID.
--- [req("changes.track.reqs", "req.title", "req.description", "req.properties", "req.manual", "req.deprecated")
+-- [req("changes.track.reqs")]
 create table RequirementContents (
     -- The SAH256 hash of the requirement content.
     hash text not null primary key,
     -- The title of the requirement.
+    -- [req("req.title")]
     title text not null,
     -- Optional description of the requirement.
+    -- [req("req.description")]
     description text,
-    -- Optional properties of the requirement.
-    properties text,
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
-    manual_verification bool,
+    -- [req("req.manual")]
+    manual_verification bool not null,
     -- Flag indicating whether the requirement is deprecated.
     -- `true`: The requirement is deprecated.
-    deprecated bool
+    -- [req("req.deprecated")]
+    deprecated bool not null
+);
+
+-- Table to store custom properties of requirements.
+-- [req("req.properties")]
+create table CustomRequirementProperties (
+    -- The hash of the requirement content.
+    req_content_hash text not null primary key,
+    -- Custom property of the trace. e.g. "critical"
+    property text not null,
+    foreign key (req_content_hash) references RequirementContents (hash) on delete cascade
 );
 
 -- Table to store the wiki origins of requirement definitions.
@@ -134,7 +146,7 @@ create table RequirementHierarchies (
 );
 
 -- Table to store hashes of files containing content that is stored in the database.
--- [req("changes.track.traces.files")
+-- [req("changes.track.traces.files")]
 create table FileHashes (
     -- Filepath of a file that containes content that is stored in the database.
     filepath text not null,
@@ -144,7 +156,7 @@ create table FileHashes (
 );
 
 -- Table to map file hashes to `mantra collect` runs.
--- [req("changes.track")
+-- [req("changes.track")]
 create table CollectedFileHashes (
     -- Hash of the collected content.
     collect_hash text not null references Collections (hash) on delete cascade,
@@ -157,31 +169,37 @@ create table CollectedFileHashes (
 );
 
 -- Table to store all traces.
--- [req("trace.origin", "changes.track")
-create table TracedLines (
+-- [req("trace.origin", "changes.track")]
+create table Traces (
     -- Filepath of the file the trace was detected in.
     filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at in the file.
     line integer not null,
+    -- Indicates if the trace verifies traced requirements.
+    -- [req("trace.properties.verifies")]
+    verifies bool not null,
+    -- Indicates if the trace satisfies traced requirements.
+    -- [req("trace.properties.satisfies")]
+    satisfies bool not null,
     primary key (filepath, file_hash, line),
     foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
 );
 
--- Table to store properties of traces.
--- [req("trace-properties")]
-create table TraceProperties (
+-- Table to store custom properties of traces.
+-- [req("trace.properties.others")]
+create table CustomTraceProperties (
     -- File the trace was detected in.
     filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
-    -- Property of the trace. e.g. "satisfies", "verifies"
+    -- Custom property of the trace. e.g. "critical"
     property text not null,
     primary key (filepath, file_hash, line, property),
-    foreign key (filepath, file_hash, line) references TracedLines (filepath, file_hash, line) on delete cascade
+    foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade
 );
 
 -- Table to store relations between traces and requirements.
@@ -196,7 +214,7 @@ create table DirectReqTraces (
     -- Line the trace was detected at.
     line integer not null,
     primary key (req_id, filepath, file_hash, line),
-    foreign key (filepath, file_hash, line) references TracedLines (filepath, file_hash, line) on delete cascade
+    foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade
 );
 
 -- Table to store language elements such as function, test, struct, enum, class, ...
@@ -205,8 +223,8 @@ create table DirectReqTraces (
 -- Due to feature flags or language semantics, idents may be declared multiple times, and are therefore not unique.
 -- [req("trace.element")]
 create table Elements (
-    -- Optional ident for the element.
-    ident text,
+    -- Identifier for the element.
+    ident text not null,
     -- File the element is defined in.
     filepath text not null,
     -- Hash of the file content.
@@ -266,7 +284,7 @@ create table DirectTracedElements (
         element_definition_line
     ),
     foreign key (filepath, file_hash, element_definition_line) references Elements (filepath, file_hash, definition_line) on delete cascade,
-    foreign key (filepath, file_hash, traced_line) references TracedLines (filepath, file_hash, line) on delete cascade
+    foreign key (filepath, file_hash, traced_line) references Traces (filepath, file_hash, line) on delete cascade
 );
 
 -- Table to store where an element is referenced.
@@ -315,7 +333,7 @@ create table UnrelatedDirectReqTraces (
     -- Line the trace was detected at.
     line integer not null,
     primary key (collect_hash, req_id, filepath, file_hash, line),
-    foreign key (filepath, file_hash, line) references TracedLines (filepath, file_hash, line) on delete cascade
+    foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade
 );
 
 -- Table to store test runs that executed one or more test cases.
