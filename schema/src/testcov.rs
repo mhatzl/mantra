@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::Line;
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct TestCovSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
@@ -15,7 +15,7 @@ pub struct TestCovSchema {
 /// Represents a test run in *mantra*.
 /// [req("testcov.test_run")]
 #[derive(
-    Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct TestRun {
@@ -44,6 +44,22 @@ pub struct TestRun {
     /// [req("testcov.test_run.nested")]
     #[serde(default)]
     pub test_runs: Vec<TestRun>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct TestRunId {
+    pub name: String,
+    /// Test run date must be given in ISO8601 format.
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
+    #[schemars(with = "String")]
+    pub utc_date: time::OffsetDateTime,
+    pub revision: usize,
 }
 
 #[derive(

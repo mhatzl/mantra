@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use time::PrimitiveDateTime;
 
-use crate::Line;
+use crate::{
+    testcov::{TestCaseState, TestRunId},
+    Line,
+};
 
 use super::requirements::ReqId;
 
@@ -17,8 +20,9 @@ pub fn date_from_str(date: &str) -> Result<PrimitiveDateTime, time::error::Parse
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "kebab-case")]
 pub struct ReviewSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub version: Option<String>,
@@ -34,72 +38,64 @@ pub struct ReviewSchema {
     /// Hash of the review content to detect changes.
     ///
     /// If not provided, will be computed using the fields: reviewer, comment, requirements, overrides
-    #[serde(alias = "content-hash")]
     pub content_hash: Option<String>,
     pub reviewer: String,
     pub comment: Option<String>,
     #[serde(alias = "requirement")]
     pub requirements: Vec<VerifiedRequirement>,
     #[serde(alias = "override")]
-    pub overrides: Vec<TestCovOverrides>,
+    pub overrides: Vec<OverrideTestRun>,
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct VerifiedRequirement {
-    pub id: ReqId,
+    #[serde(alias = "ids")]
+    pub id: OneOrMultRequirementIds,
     pub comment: Option<String>,
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct TestCovOverrides {
-    pub test_run_name: String,
-    /// Test run date must be given in ISO8601 format.
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
-    #[schemars(with = "String")]
-    pub test_run_date: time::OffsetDateTime,
-    pub tests: Vec<TestOverride>,
-    pub statement_coverage: Vec<OverrideCoveredFile>,
+pub enum OneOrMultRequirementIds {
+    One(ReqId),
+    Mult(Vec<ReqId>),
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct TestOverride {
+pub struct OverrideTestRun {
+    pub test_run: TestRunId,
+    #[serde(alias = "test")]
+    pub test_cases: Vec<OverrideTestCaseState>,
+    pub coverage: Vec<OverrideFileCoverage>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct OverrideTestCaseState {
     pub name: String,
-    pub state: OverrideTestState,
+    pub state: TestCaseState,
     pub comment: Option<String>,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "lowercase")]
-pub enum OverrideTestState {
-    Passed,
-    Failed,
-    Skipped,
-}
-
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-pub struct OverrideCoveredFile {
+pub struct OverrideFileCoverage {
     pub filepath: PathBuf,
     #[serde(default)]
-    pub statements: Vec<OverrideCoveredStatement>,
+    pub statements: Vec<OverrideStatementCoverage>,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct OverrideCoveredStatement {
+pub struct OverrideStatementCoverage {
     pub lines: Vec<Line>,
     pub hits: usize,
     pub comment: Option<String>,
