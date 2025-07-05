@@ -19,20 +19,22 @@ pub struct TraceSchema {
 }
 
 /// The trace information per file.
+/// [req("changes.track.traces.files")]
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct FileTraceInfo {
     /// File that contains traces and/or elements.
+    /// [req("trace.origin")]
     pub filepath: PathBuf,
     /// Hash of the file content to detect changes.
-    /// [req("changes.track.traces.files")]
     pub file_hash: String,
     /// Traces detected in the file.
     #[serde(default)]
     pub traces: Vec<Trace>,
     /// Elements detected in the file.
+    /// [req("trace.element", "testcov.static_approx")]
     #[serde(default)]
     pub elements: Vec<Element>,
 }
@@ -45,13 +47,16 @@ pub struct FileTraceInfo {
 #[serde(rename_all = "kebab-case")]
 pub struct Trace {
     /// The requirement IDs that are referenced by the trace.
+    /// [req("trace.id", "trace.mult_reqs")]
     pub ids: Vec<ReqId>,
-    /// The line the trace is defined at
+    /// The line the trace is defined at.
+    /// [req("trace.origin")]
     pub line: Line,
     /// Optional definition line of an element
     /// this trace is related to in the source file.
     ///
     /// e.g. line of a function definition.
+    /// [req("trace.element")]
     pub element_definition_line: Option<Line>,
     /// `true`: Marks that a trace *satisfies* the traced requirements.
     /// [req("trace.properties.satisfies`")]
@@ -110,6 +115,10 @@ pub struct Element {
     /// The kind of the element.
     /// [req("trace.element.kind")]
     pub kind: ElementKind,
+    /// Optional references of the element at other locations.
+    /// [req("testcov.static_approx")]
+    #[serde(default)]
+    pub references: Vec<ElementReference>,
 }
 
 impl std::fmt::Display for Element {
@@ -124,6 +133,20 @@ impl std::fmt::Display for Element {
             self.ident, self.span.start, self.span.end
         )
     }
+}
+
+/// [req("trace.element.kind")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub struct ElementReference {
+    /// The filepath where the element is referenced in.
+    pub filepath: PathBuf,
+    /// Hash of the file content to detect changes.
+    pub file_hash: String,
+    /// Line the elemenet is referenced at.
+    pub line: Line,
 }
 
 /// Defines supported element kinds.
