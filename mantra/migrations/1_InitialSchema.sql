@@ -817,7 +817,7 @@ create table ManuallyVerifiedRequirements (
     -- Revision of the review.
     review_revision integer not null,
     -- Optional comment for the manual verification.
-    comment text,
+    comment text not null,
     primary key (
         req_id,
         review_name,
@@ -840,7 +840,7 @@ create table UnrelatedManuallyVerifiedRequirements (
     -- Revision of the review.
     review_revision integer not null,
     -- Optional comment for the manual verification.
-    comment text,
+    comment text not null,
     primary key (
         req_id,
         review_name,
@@ -871,7 +871,7 @@ create table TestCaseOverrides (
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
     -- Optional comment explaining why the state must be overriden.
-    comment text,
+    comment text not null,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -917,7 +917,7 @@ create table TestRunStatementCoverageOverrides (
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
     -- Optional comment explaining why this statement coverage must be overriden.
-    comment text,
+    comment text not null,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -968,7 +968,7 @@ create table TestCaseStatementCoverageOverrides (
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
     -- Optional comment explaining why this statement coverage must be overriden.
-    comment text,
+    comment text not null,
     primary key (
         test_run_name,
         test_run_utc_date,
