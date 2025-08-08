@@ -66,6 +66,7 @@ pub struct Requirement {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "lowercase")]
 pub enum RequirementOrigin {
     /// Marks that a requirement was defined in a markup-based Wiki.
     /// [req("req.origin.wiki")]

@@ -100,6 +100,7 @@ pub enum OneOrMultRequirementIds {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "kebab-case")]
 pub struct OverrideTestRun {
     /// Identification of the test run the overrides are applied to.
     pub test_run: TestRunId,

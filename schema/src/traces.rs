@@ -95,6 +95,7 @@ impl std::fmt::Display for Trace {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "kebab-case")]
 pub struct Element {
     /// Identifier of the element.
     ///
@@ -139,7 +140,7 @@ impl std::fmt::Display for Element {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 pub struct ElementReference {
     /// The filepath where the element is referenced in.
     pub filepath: PathBuf,
