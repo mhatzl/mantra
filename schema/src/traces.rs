@@ -58,14 +58,9 @@ pub struct Trace {
     /// e.g. line of a function definition.
     /// [req("trace.element")]
     pub element_definition_line: Option<Line>,
-    /// `true`: Marks that a trace *satisfies* the traced requirements.
-    /// [req("trace.properties.satisfies`")]
-    #[serde(default)]
-    pub satisfies: bool,
-    /// `true`: Marks that a trace *verifies* the traced requirements.
-    /// [req("trace.properties.verifies")]
-    #[serde(default)]
-    pub verifies: bool,
+    /// Trace kind.
+    /// [req("trace.kind`")]
+    pub kind: TraceKind,
     /// List of (custom) properties that may be set on a trace.
     /// [req("trace.properties")]
     #[serde(default)]
@@ -87,6 +82,21 @@ impl std::fmt::Display for Trace {
 
         Ok(())
     }
+}
+
+/// The trace kind.
+/// [req("trace.kind")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum TraceKind {
+    /// Trace links to an artifact that provides clarification for a requirement.
+    Clarifies = 0,
+    /// Trace links to an artifact that satisfies a requirement.
+    Satisfies = 1,
+    /// Trace links to an artifact that verifies a requirement.
+    Verifies = 2,
 }
 
 /// A generic code element.

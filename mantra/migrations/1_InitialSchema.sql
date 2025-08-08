@@ -177,12 +177,9 @@ create table Traces (
     file_hash text not null,
     -- Line the trace was detected at in the file.
     line integer not null,
-    -- Indicates if the trace verifies traced requirements.
-    -- [req("trace.properties.verifies")]
-    verifies bool not null,
-    -- Indicates if the trace satisfies traced requirements.
-    -- [req("trace.properties.satisfies")]
-    satisfies bool not null,
+    -- Trace kind (0 = clarifies, 1 = satisfies, 2 = verifies).
+    -- [req("trace.kind")]
+    kind integer not null,
     primary key (filepath, file_hash, line),
     foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
 );
