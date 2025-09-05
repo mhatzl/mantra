@@ -177,7 +177,7 @@ create table Traces (
     file_hash text not null,
     -- Line the trace was detected at in the file.
     line integer not null,
-    -- Trace kind (0 = clarifies, 1 = satisfies, 2 = verifies).
+    -- Trace kind (0 = clarifies, 1 = satisfies, 2 = verifies, 3 = links).
     -- [req("trace.kind")]
     kind integer not null,
     primary key (filepath, file_hash, line),
@@ -185,7 +185,7 @@ create table Traces (
 );
 
 -- Table to store custom properties of traces.
--- [req("trace.properties.others")]
+-- [req("trace.properties")]
 create table CustomTraceProperties (
     -- File the trace was detected in.
     filepath text not null,
@@ -214,7 +214,7 @@ create table DirectReqTraces (
     foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade
 );
 
--- Table to store language elements such as function, test, struct, enum, class, ...
+-- Table to store language elements such as functions, tests, structs, enums, classes, ...
 --
 -- Note: Elements are uniquely identifiable by filepath and line number.
 -- Due to feature flags or language semantics, idents may be declared multiple times, and are therefore not unique.
@@ -238,19 +238,39 @@ create table Elements (
     -- [req("trace.element.kind")]
     kind integer not null,
     -- Hash of the content of the element.
-    content_hash text not null references ElementContents (content_hash),
+    content_hash text not null references CodeContents (content_hash),
     primary key (filepath, file_hash, definition_line),
     foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade,
     constraint start_le_end check (start_line <= end_line),
     constraint def_in_span check (start_line <= definition_line <= end_line)
 );
 
--- Table to store the content of an element.
--- [req("report.coverage.content")]
-create table ElementContents (
+-- Table to store language code blocks that are linked to traces.
+-- [req("trace.code_block")]
+create table CodeBlocks (
+    -- File the code block is defined in.
+    filepath text not null,
+    -- Hash of the file content.
+    file_hash text not null,
+    -- Line the code block span starts.
+    -- [req("trace.code_block.span")]
+    start_line integer not null,
+    -- Line the code block span ends.
+    -- [req("trace.code_block.span")]
+    end_line integer not null,
+    -- Hash of the content of the code block.
+    content_hash text not null references CodeContents (content_hash),
+    primary key (filepath, file_hash, start_line),
+    foreign key (filepath, file_hash, start_line) references Traces (filepath, file_hash, line) on delete cascade,
+    constraint start_le_end check (start_line <= end_line)
+);
+
+-- Table to store the content of elements and code blocks.
+-- [req("report.coverage.content", "trace.element", "trace.code_block")]
+create table CodeContents (
     -- The hash of the content.
     content_hash text not null primary key,
-    -- The element content.
+    -- The element or code block content.
     content text not null
 );
 
@@ -321,7 +341,7 @@ create table DirectElementReferences (
 create table UnrelatedDirectReqTraces (
     -- Hash of the collected content.
     collect_hash text not null references Collections (hash) on delete cascade,
-    -- The requirement ID that
+    -- The requirement ID that was not part of the requirements table at collection time.
     req_id text not null,
     -- File the trace to the requirement was detected in.
     filepath text not null,
