@@ -52,12 +52,9 @@ pub struct Trace {
     /// The line the trace is defined at.
     /// [req("trace.origin")]
     pub line: Line,
-    /// Optional definition line of an element
-    /// this trace is related to in the source file.
-    ///
-    /// e.g. line of a function definition.
-    /// [req("trace.element")]
-    pub element_definition_line: Option<Line>,
+    /// Optional related code block or element that is linked to the trace.
+    /// [req("trace.code_block", "trace.element")]
+    pub related_code: Option<TraceRelatedCodeVariant>,
     /// Trace kind.
     /// [req("trace.kind`")]
     pub kind: TraceKind,
@@ -76,8 +73,17 @@ impl std::fmt::Display for Trace {
             self.line
         )?;
 
-        if let Some(line) = self.element_definition_line {
-            write!(f, " Related element defined at line '{}'.", line)?;
+        if let Some(code) = &self.related_code {
+            match code {
+                TraceRelatedCodeVariant::CodeBlock(code_block) => write!(
+                    f,
+                    " Related code block spans lines '{}..{}'.",
+                    code_block.span.start, code_block.span.end
+                )?,
+                TraceRelatedCodeVariant::ElementAtLine(line) => {
+                    write!(f, " Related element defined at line '{line}'.")?
+                }
+            }
         }
 
         Ok(())
@@ -97,6 +103,38 @@ pub enum TraceKind {
     Satisfies = 1,
     /// Trace links to an artifact that verifies a requirement.
     Verifies = 2,
+}
+
+/// Possible related code variants for a trace.
+/// [req("trace.code_block", "trace.element")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum TraceRelatedCodeVariant {
+    /// Code block that is linked to the trace.
+    /// [req("trace.code_block")]
+    CodeBlock(CodeBlock),
+    /// Definition line of an element the trace is related to in the source file.
+    ///
+    /// e.g. line of a function definition.
+    /// [req("trace.element")]
+    ElementAtLine(Line),
+}
+
+/// A generic code block that is linked to a trace.
+/// [req("trace.code_block")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct CodeBlock {
+    /// The content of the code block.
+    /// [req("report.coverage.content"]
+    pub content: Option<String>,
+    /// The line span of the code block.
+    /// [req("trace.code_block.span")]
+    pub span: LineSpan,
 }
 
 /// A generic code element.
@@ -126,6 +164,9 @@ pub struct Element {
     /// The kind of the element.
     /// [req("trace.element.kind")]
     pub kind: ElementKind,
+    /// The content of the element.
+    /// [req("report.coverage.content"]
+    pub content: Option<String>,
     /// Optional references of the element at other locations.
     /// [req("testcov.static_approx")]
     #[serde(default)]
