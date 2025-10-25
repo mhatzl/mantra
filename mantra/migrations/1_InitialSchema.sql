@@ -1,5 +1,5 @@
 -- Base table used to track changes over multiple `mantra collect` runs.
--- [req("lifecycle.versioning", "changes.track")]
+-- [req("lifecycle.project", "changes.track")]
 create table Collections (
     -- SHA256 hash over all data that was collected when running `mantra collect`.
     hash text not null primary key,
@@ -19,12 +19,14 @@ create table CollectionMetadata (
 );
 
 -- Table contains projects that were collected via `mantra collect`.
--- [req("lifecycle.versioning.id", "report.project_data")]
+-- [req("lifecycle.project.id", "report.project_data")]
 create table Projects (
     -- Name of a project.
     name text not null,
-    -- Version of a project.
-    version text not null,
+    -- Baseline of a project
+    base text not null,
+    -- Optional version of a project.
+    version text,
     -- Optional URL to the project's homepage.
     homepage text,
     -- Optional URL to the project's repository.
@@ -33,20 +35,20 @@ create table Projects (
     license text,
     -- Optional metadata of the project.
     data text,
-    primary key (name, version)
+    primary key (name, base)
 );
 
 -- Table to link between projects and collections.
--- [req("lifecycle.versioning.id")]
+-- [req("lifecycle.project.id")]
 create table ProjectCollections (
     -- Hash of the data collected via `mantra collect`.
     collect_hash text not null references Collections (hash) on delete cascade,
     -- Project name that was set for the collected data.
     project_name text not null,
-    -- Project version that was set for the collected data.
-    project_version text not null,
-    foreign key (project_name, project_version) references Projects (name, version) on delete cascade,
-    primary key (project_name, project_version, collect_hash)
+    -- Project baseline that was set for the collected data.
+    project_base text not null,
+    foreign key (project_name, project_base) references Projects (name, base) on delete cascade,
+    primary key (project_name, project_base, collect_hash)
 );
 
 -- Table containing all requirement IDs collected by mantra.
@@ -54,7 +56,7 @@ create table ProjectCollections (
 create table Requirements (id text not null primary key);
 
 -- Table to link between collections and requirements.
--- [req("lifecycle.versioning", "changes.track")]
+-- [req("lifecycle.project", "changes.track")]
 create table RequirementCollections (
     -- Hash of the data collected via `mantra collect`.
     collect_hash text not null references Collections (hash) on delete cascade,
