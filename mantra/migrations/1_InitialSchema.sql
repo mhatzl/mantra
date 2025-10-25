@@ -3,19 +3,26 @@
 create table Collections (
     -- SHA256 hash over all data that was collected when running `mantra collect`.
     hash text not null primary key,
+    -- SHA256 hash of the optional metadata that was collected.
+    -- TODO: Currently no requirement. decide if table is needed.
+    metadata_hash text,
     -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
     added_at_utc text not null,
     -- UTC timestamp from the last execution of `mantra collect` whose collected data matched this hash.
     updated_at_utc text not null,
+    foreign key (metadata_hash) references ContentHash (hash) on delete set null,
     constraint ch_times check (added_at_utc <= updated_at_utc)
 );
 
--- Additional metadata that may be set in `mantra.toml` when running `mantra collect`.
+-- Table to store the plain content and the related SHA256 hash.
+-- This reduces duplication of unchanged content.
 --
--- TODO: Currently no requirement. decide if table is needed.
-create table CollectionMetadata (
-    collect_hash text not null primary key references Collections (hash) on delete cascade,
-    data text
+-- TODO: link to a fitting requirement
+create table ContentHash (
+    -- Hash of the content
+    hash text not null primary key,
+    -- Content that is either plain text or of unknown format to mantra.
+    content text not null,
 );
 
 -- Table contains projects that were collected via `mantra collect`.
@@ -34,8 +41,9 @@ create table Projects (
     -- Optional license of the project.
     license text,
     -- Optional metadata of the project.
-    data text,
-    primary key (name, base)
+    data_hash text,
+    primary key (name, base),
+    foreign key (data_hash) references ContentHash (hash) on delete set null
 );
 
 -- Table to link between projects and collections.
@@ -80,12 +88,15 @@ create table RequirementCollections (
 create table RequirementContents (
     -- The SAH256 hash of the requirement content.
     hash text not null primary key,
-    -- The title of the requirement.
+    -- The hash of the title of the requirement.
     -- [req("req.title")]
-    title text not null,
-    -- Optional description of the requirement.
+    title_hash text not null,
+    -- The hash of the origin of the requirement.
+    -- [req("req.origin")]
+    origin_hash text not null,
+    -- Optional hash of the description content of the requirement.
     -- [req("req.description")]
-    description text,
+    description_hash text,
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
     -- [req("req.manual")]
@@ -93,44 +104,34 @@ create table RequirementContents (
     -- Flag indicating whether the requirement is deprecated.
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
-    deprecated bool not null
+    deprecated bool not null,
+    foreign key (description_hash) references ContentHash (hash) on delete set null,
+    foreign key (origin_hash) references RequirementOrigins (hash) on delete cascade,
+    foreign key (title_hash) references ContentHash (hash) on delete cascade
 );
 
--- Table to store custom properties of requirements.
+-- Table to map to custom properties of requirements.
 -- [req("req.properties")]
 create table CustomRequirementProperties (
     -- The hash of the requirement content.
-    req_content_hash text not null primary key,
-    -- Custom property of the trace. e.g. "critical"
-    property text not null,
-    foreign key (req_content_hash) references RequirementContents (hash) on delete cascade
+    req_content_hash text not null,
+    -- Hash of a custom property of the requirement.
+    property_hash text not null,
+    primary key (req_content_hash, property_hash),
+    foreign key (req_content_hash) references RequirementContents (hash) on delete cascade,
+    foreign key (property_hash) references ContentHash (hash) on delete cascade
 );
 
--- Table to store the wiki origins of requirement definitions.
--- [req("req.origin.wiki")]
-create table RequirementWikiOrigins (
-    -- The hash of the requirement content.
-    req_content_hash text not null references RequirementContents (hash) on delete cascade,
-    -- The relative filepath to the wiki page that defines the requirement.
-    -- Relative from the root directory set in `mantra.toml` to the file that defines the requirement.
-    filepath text not null,
-    -- The line number in the file where the requirement is defined.
-    line int not null,
-    -- Optional URL to the repository of the wiki.
-    repo_url text,
-    -- Optional URL to the rendered view of the wiki.
-    rendered_url text,
-    primary key (req_content_hash)
-);
-
--- Table to store external origins of requirements.
--- [req("req.origin.external")]
-create table RequirementsExternalOrigins (
-    -- The hash of the requirement content.
-    req_content_hash text not null references RequirementContents (hash) on delete cascade,
-    -- The URL a requirement is defined at externally to mantra.
-    url text not null,
-    primary key (req_content_hash)
+-- Table to store the origins of requirements.
+-- [req("req.origin")]
+create table RequirementOrigins (
+    -- The hash of the requirement origin data.
+    hash text not null primary key,
+    -- The variant defining the format of the origin data.
+    -- [req("req.origin.wiki", "req.origin.external")]
+    variant text not null,
+    -- Contains information about the origin of a requirement.
+    origin text not null
 );
 
 -- Table to represent the requirement hierarchy per requirement content.
@@ -239,12 +240,26 @@ create table Elements (
     -- Type of the element.
     -- [req("trace.element.kind")]
     kind integer not null,
-    -- Hash of the content of the element.
-    content_hash text not null references CodeContents (content_hash),
     primary key (filepath, file_hash, definition_line),
     foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade,
     constraint start_le_end check (start_line <= end_line),
     constraint def_in_span check (start_line <= definition_line <= end_line)
+);
+
+-- Table to link to the content of an element.
+-- Note: This table may be left empty if content can be retrieved locally when generating reports.
+-- [req("report.coverage.content", "trace.element")]
+create table ElementContents (
+    -- File the element is defined in.
+    filepath text not null,
+    -- Hash of the file content.
+    file_hash text not null,
+    -- Line the element is defined at.
+    definition_line integer not null,
+    -- Hash of the content of the element.
+    content_hash text not null references ContentHash (hash) on delete cascade,
+    primary key (filepath, file_hash, definition_line),
+    foreign key (filepath, file_hash, definition_line) references Elements (filepath, file_hash, definition_line) on delete cascade
 );
 
 -- Table to store language code blocks that are linked to traces.
@@ -260,20 +275,26 @@ create table CodeBlocks (
     -- Line the code block span ends.
     -- [req("trace.code_block.span")]
     end_line integer not null,
-    -- Hash of the content of the code block.
-    content_hash text not null references CodeContents (content_hash),
     primary key (filepath, file_hash, start_line),
     foreign key (filepath, file_hash, start_line) references Traces (filepath, file_hash, line) on delete cascade,
     constraint start_le_end check (start_line <= end_line)
 );
 
--- Table to store the content of elements and code blocks.
--- [req("report.coverage.content", "trace.element", "trace.code_block")]
-create table CodeContents (
+-- Table to link to the content of a code block.
+-- Note: This table may be left empty if content can be retrieved locally when generating reports.
+-- [req("report.coverage.content", "trace.code_block")]
+create table CodeBlockContents (
+    -- File the code block is defined in.
+    filepath text not null,
+    -- Hash of the file content.
+    file_hash text not null,
+    -- Line the code block span starts.
+    -- [req("trace.code_block.span")]
+    start_line integer not null,
     -- The hash of the content.
-    content_hash text not null primary key,
-    -- The element or code block content.
-    content text not null
+    content_hash text not null references ContentHash (hash) on delete cascade,
+    primary key (filepath, file_hash, start_line),
+    foreign key (filepath, file_hash, start_line) references CodeBlocks (filepath, file_hash, start_line) on delete cascade
 );
 
 -- Table to store direct links between elements and traces.
@@ -339,6 +360,9 @@ create table DirectElementReferences (
 
 -- Table to store traces to requirements that were not part of the database
 -- when the trace was added via `mantra collect`.
+--
+-- Note: Reference to the collect-hash is needed to get the collection time relation.
+--
 -- [req("analyze.validate.store_invalid")]
 create table UnrelatedDirectReqTraces (
     -- Hash of the collected content.
@@ -368,6 +392,9 @@ create table TestRuns (
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
     nr_of_test_cases integer not null,
+    -- Hash of the optional metadata of a test run.
+    -- [req("testcov.test_run.metadata")]
+    metadata_hash text references ContentHash (hash) on delete set null,
     primary key (name, utc_date, revision)
 );
 
@@ -440,33 +467,11 @@ create table TestRunHierarchies (
     foreign key (child_name, child_utc_date, child_revision) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
--- Table to store metadata for test runs.
--- [req("testcov.test_run.metadata")]
-create table TestRunMetadata (
-    -- Name of the test run.
-    test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
-    -- JSON formatted metadata of a test run.
-    data text not null,
-    primary key (
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision
-    ),
-    foreign key (
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision
-    ) references TestRuns (name, utc_date, revision) on delete cascade
-);
-
 -- Table to store logs that were captured during test run execution.
 --
--- **Note:** Separate table to `TestRunMetadata`, because logs at test run level should be rare,
--- which would lead to a field next to `data` that is mostly `null`.
+-- **Note:** Separate table to `TestRuns`, because logs at test run level should be rare,
+-- which would lead to a field that is mostly `null`.
+--
 -- [req("testcov.test_case.metadata")]
 create table TestRunLogs (
     -- Name of the test run.
@@ -475,8 +480,8 @@ create table TestRunLogs (
     test_run_utc_date text not null,
     -- Revision of the test run.
     test_run_revision integer not null,
-    -- Logs captured during the test run execution.
-    logs text not null,
+    -- Hash of the logs captured during the test run execution.
+    logs_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -546,7 +551,11 @@ create table TestCases (
     ) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
--- Table to store metadata of a test case.
+-- Table to link to metadata of a test case.
+--
+-- Note: Metadata in own table, because in contrast to test runs,
+-- it is expected that test cases will seldom have metadata.
+--
 -- [req("testcov.test_case.metadata")]
 create table TestCaseMetadata (
     -- Name of the test run.
@@ -557,8 +566,8 @@ create table TestCaseMetadata (
     test_run_revision integer not null,
     -- Name of the test case.
     test_case_name text not null,
-    -- JSON formatted metadata of the test case.
-    data text not null,
+    -- Hash of the metadata of the test case.
+    data_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -578,11 +587,11 @@ create table TestCaseMetadata (
     ) on delete cascade
 );
 
--- Table to store logs of a test case.
+-- Table to link log output to a test case.
 --
--- **Note:** Logs separate to metadata table, because test cases likely have no metadata
--- besides logs, so the `data` field would be mostly `null` if logs and metadata would be in one table.
--- The test run tables are split, because there `logs` is assumed to be mostly `null.
+-- **Note:** Logs separate to metadata table, because test cases likely have no metadata esides logs,
+-- so the `data` field would be mostly `null` if logs and metadata are stored in one table.
+--
 -- [req("testcov.test_case.metadata")]
 create table TestCaseLogs (
     -- Name of the test run.
@@ -594,7 +603,7 @@ create table TestCaseLogs (
     -- Name of the test case.
     test_case_name text not null,
     -- Logs that were captured during the execution of the test case.
-    logs text not null,
+    logs_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -614,10 +623,10 @@ create table TestCaseLogs (
     ) on delete cascade
 );
 
--- Table to store the locations of test cases where the location
--- can be mapped to a file tracked in the database.
+-- Table to store the link between an element and a test cases where the test case location
+-- can be mapped to an element in a tracked file.
 -- [req("testcov.test_case.origin", "changes.track")]
-create table TestCaseTrackedLocations (
+create table TestCaseTrackedElements (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
@@ -631,6 +640,7 @@ create table TestCaseTrackedLocations (
     -- Hash of the file content.
     file_hash text not null,
     -- Line the test case is defined at.
+    -- This links to the definition line of the element.
     line integer not null,
     primary key (
         test_run_name,
@@ -651,10 +661,12 @@ create table TestCaseTrackedLocations (
     ) on delete cascade,
     foreign key (
         filepath,
-        file_hash
-    ) references FileHashes (
+        file_hash,
+        line
+    ) references Elements (
         filepath,
-        file_hash
+        file_hash,
+        definition_line
     )
 );
 
@@ -780,9 +792,9 @@ create table Reviews (
     -- The reviewers of the review.
     -- [req("review.reviewer")]
     reviewer text not null,
-    -- Optional decription for the review.
+    -- Hash of the optional decription for the review.
     -- [req("review.description")]
-    description text,
+    description_hash text references ContentHash (hash) on delete set null,
     primary key (name, utc_date, revision)
 );
 
@@ -835,8 +847,8 @@ create table ManuallyVerifiedRequirements (
     review_utc_date text not null,
     -- Revision of the review.
     review_revision integer not null,
-    -- Optional comment for the manual verification.
-    comment text not null,
+    -- Hash of the optional comment for the manual verification.
+    comment_hash text references ContentHash (hash) on delete set null,
     primary key (
         req_id,
         review_name,
@@ -858,8 +870,8 @@ create table UnrelatedManuallyVerifiedRequirements (
     review_utc_date text not null,
     -- Revision of the review.
     review_revision integer not null,
-    -- Optional comment for the manual verification.
-    comment text not null,
+    -- Hash of the optional comment for the manual verification.
+    comment_hash text references ContentHash (hash) on delete set null,
     primary key (
         req_id,
         review_name,
@@ -889,8 +901,8 @@ create table TestCaseOverrides (
     -- State that must be used instead of the one stored in the TestCase table.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
-    -- Optional comment explaining why the state must be overriden.
-    comment text not null,
+    -- Hash of the optional comment explaining why the state must be overriden.
+    comment_hash text references ContentHash (hash) on delete set null,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -935,8 +947,8 @@ create table TestRunStatementCoverageOverrides (
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
-    -- Optional comment explaining why this statement coverage must be overriden.
-    comment text not null,
+    -- Hash of the optional comment explaining why this statement coverage must be overriden.
+    comment_hash text references ContentHash (hash) on delete set null,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -986,8 +998,8 @@ create table TestCaseStatementCoverageOverrides (
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
-    -- Optional comment explaining why this statement coverage must be overriden.
-    comment text not null,
+    -- Hash of the optional comment explaining why this statement coverage must be overriden.
+    comment_hash text references ContentHash (hash) on delete set null,
     primary key (
         test_run_name,
         test_run_utc_date,
