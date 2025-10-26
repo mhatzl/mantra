@@ -1,7 +1,3 @@
-use std::path::PathBuf;
-
-use crate::Line;
-
 /// Defines the schema to exchange requirements related information.
 /// [req("exchange.requirements.schema")]
 #[derive(
@@ -46,7 +42,7 @@ pub struct Requirement {
     pub description: Option<String>,
     /// Origin where the requirement is defined at.
     /// [req("req.origin")]
-    pub origin: RequirementOrigin,
+    pub origin: serde_json::Value,
     /// true: Marks the requirement to require manual verification.
     /// [req("req.manual")]
     #[serde(default)]
@@ -59,46 +55,4 @@ pub struct Requirement {
     /// [req("req.properties")]
     #[serde(default)]
     pub properties: Vec<serde_json::Value>,
-}
-
-/// Defines the origin variants of a requirement.
-/// [req("req.origin")]
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-#[serde(rename_all = "lowercase")]
-pub enum RequirementOrigin {
-    /// Marks that a requirement was defined in a markup-based Wiki.
-    /// [req("req.origin.wiki")]
-    Wiki(WikiRequirementOrigin),
-    /// Marks that a requirement was defined in an external source.
-    /// [req("req.origin.extern")]
-    Extern(ExternRequirementOrigin),
-}
-
-/// Struct for the wiki origin of a requirement.
-/// [req("req.origin.wiki")]
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-#[serde(rename_all = "kebab-case")]
-pub struct WikiRequirementOrigin {
-    /// The file the requirement is defined in in the wiki.
-    pub filepath: PathBuf,
-    /// The line the requirement is defined at.
-    pub line: Line,
-    /// Optional URL to the repository of the wiki.
-    pub repo_url: Option<String>,
-    /// Optional URL to the rendered view of the wiki.
-    pub rendered_url: Option<String>,
-}
-
-/// Struct for the external origin of a requirement.
-/// [req("req.origin.extern")]
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-pub struct ExternRequirementOrigin {
-    /// The URL a requirement is defined at externally to mantra.
-    pub url: String,
 }

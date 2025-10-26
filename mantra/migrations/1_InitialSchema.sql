@@ -3,8 +3,14 @@
 create table Collections (
     -- SHA256 hash over all data that was collected when running `mantra collect`.
     hash text not null primary key,
+    -- Optional names of authors involved in data collected.
+    -- [req("changes.authors")]
+    authors text,
+    -- Optional comment explaining the data collected in the `mantra collect` run that resulted in this entry.
+    -- [req("changes.comment")]
+    comment text,
     -- SHA256 hash of the optional metadata that was collected.
-    -- TODO: Currently no requirement. decide if table is needed.
+    -- TODO: Currently no requirement. decide if field is needed.
     metadata_hash text,
     -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
     added_at_utc text not null,
@@ -91,9 +97,9 @@ create table RequirementContents (
     -- The hash of the title of the requirement.
     -- [req("req.title")]
     title_hash text not null,
-    -- The hash of the origin of the requirement.
+    -- The hash of the origin data of the requirement.
     -- [req("req.origin")]
-    origin_hash text not null,
+    origin_hash text not null references ContentHash (hash) on delete cascade,
     -- Optional hash of the description content of the requirement.
     -- [req("req.description")]
     description_hash text,
@@ -106,7 +112,6 @@ create table RequirementContents (
     -- [req("req.deprecated")]
     deprecated bool not null,
     foreign key (description_hash) references ContentHash (hash) on delete set null,
-    foreign key (origin_hash) references RequirementOrigins (hash) on delete cascade,
     foreign key (title_hash) references ContentHash (hash) on delete cascade
 );
 
@@ -120,18 +125,6 @@ create table CustomRequirementProperties (
     primary key (req_content_hash, property_hash),
     foreign key (req_content_hash) references RequirementContents (hash) on delete cascade,
     foreign key (property_hash) references ContentHash (hash) on delete cascade
-);
-
--- Table to store the origins of requirements.
--- [req("req.origin")]
-create table RequirementOrigins (
-    -- The hash of the requirement origin data.
-    hash text not null primary key,
-    -- The variant defining the format of the origin data.
-    -- [req("req.origin.wiki", "req.origin.external")]
-    variant text not null,
-    -- Contains information about the origin of a requirement.
-    origin text not null
 );
 
 -- Table to represent the requirement hierarchy per requirement content.
@@ -412,29 +405,10 @@ create table TestRunCollections (
     test_run_revision integer not null,
     -- Hash of the test run content for this collection.
     content_hash text not null,
-    -- File the test run data was collected from.
-    source_filepath text not null,
-    -- Hash of the file content the test run was collected from.
-    source_file_hash text not null,
+    -- The hash of the origin data of the test run.
+    -- [req("testcov.test_run.origin")]
+    origin_hash text not null references ContentHash (hash) on delete cascade,
     primary key (collect_hash, test_run_name, test_run_utc_date, test_run_revision),
-    foreign key (test_run_name, test_run_utc_date, test_run_revision) references TestRuns (name, utc_date, revision) on delete cascade,
-    foreign key (source_filepath, source_file_hash) references FileHashes (filepath, file_hash) on delete cascade
-);
-
--- Table to store retrospective changes to a test run.
--- [req("changes.track.test_runs")]
-create table TestRunChanges (
-    -- The name of the test run.
-    test_run_name text not null,
-    -- The UTC date and time at which the test run was executed.
-    test_run_utc_date text not null,
-    -- Indicates the revision of a test run to track retrospective changes.
-    test_run_revision integer not null,
-    -- The comment explaining the changes.
-    comment text not null,
-    -- The authors resonsiple for the changes.
-    authors text not null,
-    primary key (test_run_name, test_run_utc_date, test_run_revision),
     foreign key (test_run_name, test_run_utc_date, test_run_revision) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
@@ -494,9 +468,41 @@ create table TestRunLogs (
     ) references TestRuns (name, utc_date, revision) on delete cascade
 );
 
--- Table to store statement coverage per test run.
--- [req("testcov.cov.lines"])
-create table TestRunStatementCoverage (
+-- Table to store statement coverage per test run for files that are mapped to tracked files.
+-- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
+create table TestRunTrackedStatementCoverage (
+    -- Name of the test run.
+    test_run_name text not null,
+    -- UTC date and time of the test run.
+    test_run_utc_date text not null,
+    -- Revision of the test run.
+    test_run_revision integer not null,
+    -- File that was covered.
+    stmnt_filepath text not null,
+    -- Hash of the file content when the coverage was captured.
+    stmnt_file_hash text not null,
+    -- Line that was covered.
+    stmnt_line text not null,
+    -- Number of how often the line was covered/hit during test run execution.
+    hits integer not null,
+    primary key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision,
+        stmnt_filepath,
+        stmnt_line
+    ),
+    foreign key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision
+    ) references TestRuns (name, utc_date, revision) on delete cascade,
+    foreign key (stmnt_filepath, stmnt_file_hash) references FileHashes (file, hash) on delete cascade
+);
+
+-- Table to store statement coverage per test run for files that cannot be mapped to tracked files.
+-- [req("testcov.cov.lines", "testcov.cov.trace_mapping.no_hash"])
+create table TestRunUntrackedStatementCoverage (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
@@ -623,10 +629,10 @@ create table TestCaseLogs (
     ) on delete cascade
 );
 
--- Table to store the link between an element and a test cases where the test case location
+-- Table to store the link between an element and a test case where the test case location
 -- can be mapped to an element in a tracked file.
 -- [req("testcov.test_case.origin", "changes.track")]
-create table TestCaseTrackedElements (
+create table TestCaseTrackedLocations (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
@@ -743,8 +749,52 @@ create table TestCaseStateReason (
 );
 
 -- Table to store statement coverage per test case.
--- [req("testcov.cov.lines"])
-create table TestCaseStatementCoverage (
+-- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
+create table TestCaseTrackedStatementCoverage (
+    -- Name of the test run.
+    test_run_name text not null,
+    -- UTC date and time of the test run.
+    test_run_utc_date text not null,
+    -- Revision of the test run.
+    test_run_revision integer not null,
+    -- Name of the test case.
+    test_case_name text not null,
+    -- File that was covered.
+    stmnt_filepath text not null,
+    -- Hash of the file that was covered.
+    stmnt_file_hash text not null,
+    -- Line that was covered.
+    stmnt_line text not null,
+    -- Number of how often the line was covered/hit during the test case execution.
+    hits integer not null,
+    primary key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision,
+        test_case_name,
+        stmnt_filepath,
+        stmnt_line
+    ),
+    foreign key (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision,
+        test_case_name
+    ) references TestCases (
+        test_run_name,
+        test_run_utc_date,
+        test_run_revision,
+        name
+    ) on delete cascade,
+    foreign key (stmnt_filepath, stmnt_file_hash) references FileHashes (
+        filepath,
+        file_hash
+    ) on delete cascade
+);
+
+-- Table to store statement coverage per test case for files that cannot be mapped to collected files.
+-- [req("testcov.cov.lines", "testcov.cov.trace_mapping.no_hash])
+create table TestCaseUntrackedStatementCoverage (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
@@ -789,9 +839,14 @@ create table Reviews (
     utc_date text not null,
     -- Indicates the revision of a review to track retrospective changes.
     revision integer not null,
+    -- The hash of the review content to detect changes.
+    content_hash text not null,
     -- The reviewers of the review.
     -- [req("review.reviewer")]
     reviewer text not null,
+    -- The hash of the origin data of the review.
+    -- [req("review.origin")]
+    origin_hash text not null references ContentHash (hash) on delete cascade,
     -- Hash of the optional decription for the review.
     -- [req("review.description")]
     description_hash text references ContentHash (hash) on delete set null,
@@ -809,29 +864,7 @@ create table ReviewCollections (
     review_utc_date text not null,
     -- Revision of the review.
     review_revision integer not null,
-    -- The file the review content was collected from.
-    source_filepath text not null,
-    -- The hash of the file content the review was collected from.
-    source_file_hash text not null,
     primary key (collect_hash, review_name, review_utc_date, review_revision),
-    foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade,
-    foreign key (source_filepath, source_file_hash) references FileHashes (filepath, file_hash) on delete cascade
-);
-
--- Table to store retrospective changes to a review.
--- [req("changes.track.reviews")]
-create table ReviewChanges (
-    -- Name of the review.
-    review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Indicates the revision of a review to track retrospective changes.
-    review_revision integer not null,
-    -- The comment explaining the changes.
-    comment text not null,
-    -- The authors resonsiple for the changes.
-    authors text not null,
-    primary key (review_name, review_utc_date, review_revision),
     foreign key (review_name, review_utc_date, review_revision) references Reviews (name, utc_date, revision) on delete cascade
 );
 
@@ -847,8 +880,8 @@ create table ManuallyVerifiedRequirements (
     review_utc_date text not null,
     -- Revision of the review.
     review_revision integer not null,
-    -- Hash of the optional comment for the manual verification.
-    comment_hash text references ContentHash (hash) on delete set null,
+    -- Hash of the comment for the manual verification.
+    comment_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         req_id,
         review_name,
@@ -870,8 +903,8 @@ create table UnrelatedManuallyVerifiedRequirements (
     review_utc_date text not null,
     -- Revision of the review.
     review_revision integer not null,
-    -- Hash of the optional comment for the manual verification.
-    comment_hash text references ContentHash (hash) on delete set null,
+    -- Hash of the comment for the manual verification.
+    comment_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         req_id,
         review_name,
@@ -901,8 +934,8 @@ create table TestCaseOverrides (
     -- State that must be used instead of the one stored in the TestCase table.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
-    -- Hash of the optional comment explaining why the state must be overriden.
-    comment_hash text references ContentHash (hash) on delete set null,
+    -- Hash of the comment explaining why the state must be overriden.
+    comment_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -927,6 +960,9 @@ create table TestCaseOverrides (
 );
 
 -- Table to store overrides from reviews for statement coverage entries of test runs.
+--
+-- **Note:** No file hash needed, because the related coverage entry is either in the tracked or untracked table.
+--
 -- [req("review.coverage", "testcov.cov.lines")]
 create table TestRunStatementCoverageOverrides (
     -- Name of the test run.
@@ -947,8 +983,8 @@ create table TestRunStatementCoverageOverrides (
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
-    -- Hash of the optional comment explaining why this statement coverage must be overriden.
-    comment_hash text references ContentHash (hash) on delete set null,
+    -- Hash of the comment explaining why this statement coverage must be overriden.
+    comment_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -976,6 +1012,9 @@ create table TestRunStatementCoverageOverrides (
 );
 
 -- Table to store overrides from reviews for statement coverage entries of test cases.
+--
+-- **Note:** No file hash needed, because the related coverage entry is either in the tracked or untracked table.
+--
 -- [req("review.coverage", "testcov.cov.lines")]
 create table TestCaseStatementCoverageOverrides (
     -- Name of the test run.
@@ -998,8 +1037,8 @@ create table TestCaseStatementCoverageOverrides (
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
-    -- Hash of the optional comment explaining why this statement coverage must be overriden.
-    comment_hash text references ContentHash (hash) on delete set null,
+    -- Hash of the comment explaining why this statement coverage must be overriden.
+    comment_hash text not null references ContentHash (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,

@@ -51,7 +51,7 @@ pub struct ReviewSchema {
     pub date: OffsetDateTime,
     /// Hash of the review content to detect changes.
     ///
-    /// If not provided, will be computed using the fields: reviewer, comment, requirements, overrides
+    /// If not provided, will be computed using the fields: reviewer, description, origin, requirements, overrides
     /// [req("changes.track.reviews")]
     pub content_hash: Option<String>,
     /// The reviewer that were part of the review.
@@ -60,6 +60,9 @@ pub struct ReviewSchema {
     /// Optional description of the review.
     /// [req("review.description")]
     pub description: Option<String>,
+    /// Optional origin of the review.
+    /// [req("review.origin")]
+    pub origin: Option<serde_json::Value>,
     /// List of requirements that are verified in this review.
     /// [req("review.verify_req")]
     #[serde(alias = "requirement", default)]

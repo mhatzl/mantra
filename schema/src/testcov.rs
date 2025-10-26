@@ -39,9 +39,12 @@ pub struct TestRun {
     pub utc_date: time::OffsetDateTime,
     /// Hash of the test run content to detect changes.
     ///
-    /// If not provided, will be computed using the fields: nr_of_test_cases, data, logs, test_cases, covered_files
+    /// If not provided, will be computed using the fields: origin, nr_of_test_cases, data, logs, test_cases, covered_files, test_runs
     /// [req("changes.track.test_runs")]
     pub content_hash: Option<String>,
+    /// Optional origin of the test run.
+    /// [req("testcov.test_run.origin")]
+    pub origin: Option<serde_json::Value>,
     /// Nr of test cases that are part of the test run.
     ///
     /// **Note:** Must match with the number of entries in the `test_cases` field,
