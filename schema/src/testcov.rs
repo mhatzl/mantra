@@ -52,6 +52,9 @@ pub struct TestRun {
     /// In case this differs, it indicates that not all test cases have finished execution.
     #[serde(alias = "nr-of-tests")]
     pub nr_of_test_cases: u32,
+    /// Optional VCS identifier for the content the test run is based on (e.g. git commit SHA).
+    /// [req("testcov.cov.trace_mapping.vcs")]
+    pub vcs_ident: Option<String>,
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
     pub data: Option<serde_json::Value>,
