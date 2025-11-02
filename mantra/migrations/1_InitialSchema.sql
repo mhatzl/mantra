@@ -11,19 +11,21 @@ create table Collections (
     comment text,
     -- SHA256 hash of the optional metadata that was collected.
     -- TODO: Currently no requirement. decide if field is needed.
-    metadata_hash text,
+    metadata_hash text references ContentHash (hash) on delete set null,
+    -- Optional VCS identifier (e.g. git commit SHA) the collected data is based on.
+    -- [req("changes.track.vcs")]
+    vcs_ident text,
     -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
     added_at_utc text not null,
     -- UTC timestamp from the last execution of `mantra collect` whose collected data matched this hash.
     updated_at_utc text not null,
-    foreign key (metadata_hash) references ContentHash (hash) on delete set null,
     constraint ch_times check (added_at_utc <= updated_at_utc)
 );
 
 -- Table to store the plain content and the related SHA256 hash.
 -- This reduces duplication of unchanged content.
 --
--- TODO: link to a fitting requirement
+-- [req("changes.show", "changes.compact_content")]
 create table ContentHash (
     -- Hash of the content
     hash text not null primary key,
@@ -385,6 +387,9 @@ create table TestRuns (
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
     nr_of_test_cases integer not null,
+    -- Optional VCS identifier (e.g. git commit SHA) the test run is based on.
+    -- [req("testcov.cov.trace_mapping.vcs")]
+    vcs_ident text,
     -- Hash of the optional metadata of a test run.
     -- [req("testcov.test_run.metadata")]
     metadata_hash text references ContentHash (hash) on delete set null,
