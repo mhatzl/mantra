@@ -16,6 +16,11 @@ pub struct TraceSchema {
     pub version: Option<String>,
     /// List of files that contain trace and element information.
     pub files: Vec<FileTraceInfo>,
+    /// Optional metadata related to all files in this entry.
+    pub metadata: Option<serde_json::Value>,
+    /// Optional base origin of the files in this entry.
+    /// e.g. specific branch or commit from a git repository
+    pub origin: Option<serde_json::Value>,
 }
 
 /// The trace information per file.

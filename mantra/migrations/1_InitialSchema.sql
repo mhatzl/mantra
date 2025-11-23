@@ -11,10 +11,7 @@ create table Collections (
     comment text,
     -- SHA256 hash of the optional metadata that was collected.
     -- TODO: Currently no requirement. decide if field is needed.
-    metadata_hash text references ContentHash (hash) on delete set null,
-    -- Optional VCS identifier (e.g. git commit SHA) the collected data is based on.
-    -- [req("changes.track.vcs")]
-    vcs_ident text,
+    metadata_hash text references GeneralContents (hash) on delete set null,
     -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
     added_at_utc text not null,
     -- UTC timestamp from the last execution of `mantra collect` whose collected data matched this hash.
@@ -22,15 +19,40 @@ create table Collections (
     constraint ch_times check (added_at_utc <= updated_at_utc)
 );
 
+-- Table to track general origins and metadata of collected information that was retrieved by the same section in `mantra.toml`.
+-- A section is either about requirements, traces, reviews, test runs, or project information.
+-- [req("changes.track.origin", "changes.track.metadata")]
+create table CollectedSections (
+    -- The hash of the collected information by this section.
+    hash text not null primary key,
+    -- The hash of the metadata that is related to this section.
+    metadata_hash text references GeneralContents (hash) on delete set null,
+    -- The hash of the origin content that is related to this section.
+    origin_hash text references GeneralContents (hash) on delete set null
+);
+
+-- Table to map section contents to collections.
+-- [req("changes.track.origin", "changes.track.metadata")]
+create table SectionCollections (
+    -- The hash of a collection run.
+    collect_hash test not null references Collections(hash) on delete cascade,
+    -- The hash of a section that was collected in the related collection run.
+    section_hash text not null references CollectedSections (hash) on delete cascade,
+    -- The hash of the configuration in `mantra.toml` for this section that was used to collect related information.
+    -- [req("cli.collect.config")]
+    config_hash text references GeneralContents (hash) on delete set null,
+    primary key (collect_hash, section_hash)
+);
+
 -- Table to store the plain content and the related SHA256 hash.
 -- This reduces duplication of unchanged content.
 --
 -- [req("changes.show", "changes.compact_content")]
-create table ContentHash (
+create table GeneralContents (
     -- Hash of the content
     hash text not null primary key,
     -- Content that is either plain text or of unknown format to mantra.
-    content text not null,
+    content text not null
 );
 
 -- Table contains projects that were collected via `mantra collect`.
@@ -49,16 +71,16 @@ create table Projects (
     -- Optional license of the project.
     license text,
     -- Optional metadata of the project.
-    data_hash text,
+    metadata_hash text,
     primary key (name, base),
-    foreign key (data_hash) references ContentHash (hash) on delete set null
+    foreign key (metadata_hash) references GeneralContents (hash) on delete set null
 );
 
 -- Table to link between projects and collections.
 -- [req("lifecycle.project.id")]
 create table ProjectCollections (
     -- Hash of the data collected via `mantra collect`.
-    collect_hash text not null references Collections (hash) on delete cascade,
+    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- Project name that was set for the collected data.
     project_name text not null,
     -- Project baseline that was set for the collected data.
@@ -75,17 +97,12 @@ create table Requirements (id text not null primary key);
 -- [req("lifecycle.project", "changes.track")]
 create table RequirementCollections (
     -- Hash of the data collected via `mantra collect`.
-    collect_hash text not null references Collections (hash) on delete cascade,
+    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- The requirement ID that maps to the content hash in the particular collection.
     req_id text not null references Requirements (id) on delete cascade,
     -- The requirement content hash that maps to general information about a requirement.
     req_content_hash text not null references RequirementContents (hash) on delete cascade,
-    -- The relative source filepath this data was collected from.
-    source_filepath text not null,
-    -- The hash of the source file.
-    source_file_hash text not null,
-    primary key (collect_hash, req_id),
-    foreign key (source_filepath, source_file_hash) references FileHashes (filepath, hash) on delete cascade
+    primary key (collect_hash, req_id)
 );
 
 -- Stores general requirements content such as title and description.
@@ -101,7 +118,7 @@ create table RequirementContents (
     title_hash text not null,
     -- The hash of the origin data of the requirement.
     -- [req("req.origin")]
-    origin_hash text not null references ContentHash (hash) on delete cascade,
+    origin_hash text not null references GeneralContents (hash) on delete cascade,
     -- Optional hash of the description content of the requirement.
     -- [req("req.description")]
     description_hash text,
@@ -113,8 +130,8 @@ create table RequirementContents (
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
     deprecated bool not null,
-    foreign key (description_hash) references ContentHash (hash) on delete set null,
-    foreign key (title_hash) references ContentHash (hash) on delete cascade
+    foreign key (description_hash) references GeneralContents (hash) on delete set null,
+    foreign key (title_hash) references GeneralContents (hash) on delete cascade
 );
 
 -- Table to map to custom properties of requirements.
@@ -126,7 +143,7 @@ create table CustomRequirementProperties (
     property_hash text not null,
     primary key (req_content_hash, property_hash),
     foreign key (req_content_hash) references RequirementContents (hash) on delete cascade,
-    foreign key (property_hash) references ContentHash (hash) on delete cascade
+    foreign key (property_hash) references GeneralContents (hash) on delete cascade
 );
 
 -- Table to represent the requirement hierarchy per requirement content.
@@ -155,9 +172,9 @@ create table FileHashes (
 
 -- Table to map file hashes to `mantra collect` runs.
 -- [req("changes.track")]
-create table CollectedFileHashes (
+create table FileHashCollections (
     -- Hash of the collected content.
-    collect_hash text not null references Collections (hash) on delete cascade,
+    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- Filepath of a file content was collected from.
     filepath text not null,
     -- Hash of the file content.
@@ -252,7 +269,7 @@ create table ElementContents (
     -- Line the element is defined at.
     definition_line integer not null,
     -- Hash of the content of the element.
-    content_hash text not null references ContentHash (hash) on delete cascade,
+    content_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (filepath, file_hash, definition_line),
     foreign key (filepath, file_hash, definition_line) references Elements (filepath, file_hash, definition_line) on delete cascade
 );
@@ -264,15 +281,17 @@ create table CodeBlocks (
     filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
+    -- Line the trace related to the code block is set.
+    traced_line integer not null,
     -- Line the code block span starts.
     -- [req("trace.code_block.span")]
     start_line integer not null,
     -- Line the code block span ends.
     -- [req("trace.code_block.span")]
     end_line integer not null,
-    primary key (filepath, file_hash, start_line),
-    foreign key (filepath, file_hash, start_line) references Traces (filepath, file_hash, line) on delete cascade,
-    constraint start_le_end check (start_line <= end_line)
+    primary key (filepath, file_hash, traced_line),
+    foreign key (filepath, file_hash, traced_line) references Traces (filepath, file_hash, line) on delete cascade,
+    constraint start_le_trace_le_end check (start_line <= traced_line <= end_line)
 );
 
 -- Table to link to the content of a code block.
@@ -283,13 +302,12 @@ create table CodeBlockContents (
     filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
-    -- Line the code block span starts.
-    -- [req("trace.code_block.span")]
-    start_line integer not null,
+    -- Line the trace related to the code block is set.
+    traced_line integer not null,
     -- The hash of the content.
-    content_hash text not null references ContentHash (hash) on delete cascade,
-    primary key (filepath, file_hash, start_line),
-    foreign key (filepath, file_hash, start_line) references CodeBlocks (filepath, file_hash, start_line) on delete cascade
+    content_hash text not null references GeneralContents (hash) on delete cascade,
+    primary key (filepath, file_hash, traced_line),
+    foreign key (filepath, file_hash, traced_line) references CodeBlocks (filepath, file_hash, traced_line) on delete cascade
 );
 
 -- Table to store direct links between elements and traces.
@@ -361,7 +379,7 @@ create table DirectElementReferences (
 -- [req("analyze.validate.store_invalid")]
 create table UnrelatedDirectReqTraces (
     -- Hash of the collected content.
-    collect_hash text not null references Collections (hash) on delete cascade,
+    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- The requirement ID that was not part of the requirements table at collection time.
     req_id text not null,
     -- File the trace to the requirement was detected in.
@@ -387,12 +405,14 @@ create table TestRuns (
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
     nr_of_test_cases integer not null,
-    -- Optional VCS identifier (e.g. git commit SHA) the test run is based on.
-    -- [req("testcov.cov.trace_mapping.vcs")]
-    vcs_ident text,
     -- Hash of the optional metadata of a test run.
     -- [req("testcov.test_run.metadata")]
-    metadata_hash text references ContentHash (hash) on delete set null,
+    metadata_hash text references GeneralContents (hash) on delete set null,
+    -- The hash of the origin data of the test run.
+    -- [req("testcov.test_run.origin")]
+    origin_hash text not null references GeneralContents (hash) on delete cascade,
+    -- Hash of the test run content.
+    content_hash text not null,
     primary key (name, utc_date, revision)
 );
 
@@ -401,18 +421,13 @@ create table TestRuns (
 -- [req("changes.track")]
 create table TestRunCollections (
     -- Hash of the collected content.
-    collect_hash text not null references Collections (hash) on delete cascade,
+    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- The name of the test run.
     test_run_name text not null,
     -- The UTC date and time at which the test run was executed.
     test_run_utc_date text not null,
     -- Indicates the revision of a test run to track retrospective changes.
     test_run_revision integer not null,
-    -- Hash of the test run content for this collection.
-    content_hash text not null,
-    -- The hash of the origin data of the test run.
-    -- [req("testcov.test_run.origin")]
-    origin_hash text not null references ContentHash (hash) on delete cascade,
     primary key (collect_hash, test_run_name, test_run_utc_date, test_run_revision),
     foreign key (test_run_name, test_run_utc_date, test_run_revision) references TestRuns (name, utc_date, revision) on delete cascade
 );
@@ -460,7 +475,7 @@ create table TestRunLogs (
     -- Revision of the test run.
     test_run_revision integer not null,
     -- Hash of the logs captured during the test run execution.
-    logs_hash text not null references ContentHash (hash) on delete cascade,
+    logs_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -578,7 +593,7 @@ create table TestCaseMetadata (
     -- Name of the test case.
     test_case_name text not null,
     -- Hash of the metadata of the test case.
-    data_hash text not null references ContentHash (hash) on delete cascade,
+    data_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -614,7 +629,7 @@ create table TestCaseLogs (
     -- Name of the test case.
     test_case_name text not null,
     -- Logs that were captured during the execution of the test case.
-    logs_hash text not null references ContentHash (hash) on delete cascade,
+    logs_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -851,10 +866,10 @@ create table Reviews (
     reviewer text not null,
     -- The hash of the origin data of the review.
     -- [req("review.origin")]
-    origin_hash text not null references ContentHash (hash) on delete cascade,
+    origin_hash text not null references GeneralContents (hash) on delete cascade,
     -- Hash of the optional decription for the review.
     -- [req("review.description")]
-    description_hash text references ContentHash (hash) on delete set null,
+    description_hash text references GeneralContents (hash) on delete set null,
     primary key (name, utc_date, revision)
 );
 
@@ -862,7 +877,7 @@ create table Reviews (
 -- [req("changes.track")]
 create table ReviewCollections (
     -- Hash of the collected content.
-    collect_hash text not null references Collections (hash) on delete cascade,
+    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
@@ -886,7 +901,7 @@ create table ManuallyVerifiedRequirements (
     -- Revision of the review.
     review_revision integer not null,
     -- Hash of the comment for the manual verification.
-    comment_hash text not null references ContentHash (hash) on delete cascade,
+    comment_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         req_id,
         review_name,
@@ -909,7 +924,7 @@ create table UnrelatedManuallyVerifiedRequirements (
     -- Revision of the review.
     review_revision integer not null,
     -- Hash of the comment for the manual verification.
-    comment_hash text not null references ContentHash (hash) on delete cascade,
+    comment_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         req_id,
         review_name,
@@ -940,7 +955,7 @@ create table TestCaseOverrides (
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
     -- Hash of the comment explaining why the state must be overriden.
-    comment_hash text not null references ContentHash (hash) on delete cascade,
+    comment_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -989,7 +1004,7 @@ create table TestRunStatementCoverageOverrides (
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
     -- Hash of the comment explaining why this statement coverage must be overriden.
-    comment_hash text not null references ContentHash (hash) on delete cascade,
+    comment_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,
@@ -1043,7 +1058,7 @@ create table TestCaseStatementCoverageOverrides (
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
     -- Hash of the comment explaining why this statement coverage must be overriden.
-    comment_hash text not null references ContentHash (hash) on delete cascade,
+    comment_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
         test_run_name,
         test_run_utc_date,

@@ -10,6 +10,11 @@ pub struct RequirementSchema {
     pub version: Option<String>,
     /// List of requirements.
     pub requirements: Vec<Requirement>,
+    /// Optional metadata related to all requirements in this entry.
+    pub metadata: Option<serde_json::Value>,
+    /// Optional base origin of the requirements in this entry.
+    /// e.g. specific branch or commit from a git repository
+    pub origin: Option<serde_json::Value>,
 }
 
 /// Type alias for a requirement ID.

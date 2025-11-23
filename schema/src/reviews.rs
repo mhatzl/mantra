@@ -36,6 +36,25 @@ pub struct ReviewSchema {
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub version: Option<String>,
+    pub reviews: Vec<Review>,
+    /// Optional metadata related to all reviews in this entry.
+    pub metadata: Option<serde_json::Value>,
+    /// Optional base origin of the reviews in this entry.
+    /// e.g. specific branch or commit from a git repository
+    pub origin: Option<serde_json::Value>,
+}
+
+/// Defines the fields for a review.
+/// [req("exchange.review")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct Review {
+    /// The schema version.
+    /// [req("exchange.versioned")]
+    #[serde(serialize_with = "crate::serialize_schema_version")]
+    pub schema_version: Option<String>,
     /// The name of the review.
     /// [req("review.id")]
     pub name: String,
@@ -45,7 +64,7 @@ pub struct ReviewSchema {
     #[schemars(
         with = "String",
         regex(
-            pattern = r"(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(T|\s)(?<hour>\d{2}):(?<minute>\d{2})(?<second>:\d{2}(?<subsecond>\.\d{3})?)?utc(?<utc>(-|+)\d{2})"
+            pattern = r"(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(T| )(?<hour>\d{2}):(?<minute>\d{2})(?<second>:\d{2}(?<subsecond>\.\d{3})?)?utc(?<utc>(-|+)\d{2})"
         )
     )]
     pub date: OffsetDateTime,
