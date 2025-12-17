@@ -238,6 +238,41 @@ create table FileHashCollections (
     foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
 );
 
+-- Table to store line spans that must be excluded from code coverage analysis.
+--
+-- TODO: add req trace
+create table CoverageBlockExcludes (
+    -- Filepath of the file the trace was detected in.
+    filepath text not null,
+    -- Hash of the file content.
+    file_hash text not null,
+    -- First line that must be excluded from code coverage analysis until the `end_line`.
+    start_line integer not null,
+    -- Last line that must be excluded (inclusive) from code coverage analysis.
+    end_line integer not null,
+    -- Hash of the comment explaining why the spanned lines must be excluded from code coverage calculations.
+    comment_hash text not null references GeneralContents (hash) on delete cascade,
+    primary key (filepath, file_hash, start_line),
+    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade,
+    constraint start_le_end check (start_line <= end_line)
+);
+
+-- Table to store lines that must be excluded from code coverage analysis.
+--
+-- TODO: add req trace
+create table CoverageLineExcludes (
+    -- Filepath of the file the trace was detected in.
+    filepath text not null,
+    -- Hash of the file content.
+    file_hash text not null,
+    -- Line that must be excluded from code coverage analysis.
+    line integer not null,
+    -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
+    comment text not null references GeneralContents (hash) on delete cascade,
+    primary key (filepath, file_hash, line),
+    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
+);
+
 -- Table to store all traces.
 -- [req("trace.origin", "changes.track")]
 create table Traces (
