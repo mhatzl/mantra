@@ -1,5 +1,5 @@
 -- Base table used to track changes over multiple `mantra collect` runs.
--- [req("lifecycle.project", "changes.track")]
+-- [req("lifecycle.product", "changes.track")]
 create table Collections (
     -- SHA256 hash over all data that was collected when running `mantra collect`.
     hash text not null primary key,
@@ -20,7 +20,7 @@ create table Collections (
 );
 
 -- Table to track general origins and metadata of collected information that was retrieved by the same section in `mantra.toml`.
--- A section is either about requirements, traces, reviews, test runs, or project information.
+-- A section is either about requirements, traces, reviews, test runs, or product information.
 -- [req("changes.track.origin", "changes.track.metadata")]
 create table CollectedSections (
     -- The hash of the collected information by this section.
