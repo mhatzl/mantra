@@ -42,6 +42,37 @@ pub struct FileTraceInfo {
     /// [req("trace.element", "testcov.static_approx")]
     #[serde(default)]
     pub elements: Vec<Element>,
+    /// Coverage excludes detected in the file.
+    ///
+    /// TODO: add requirement trace
+    #[serde(default)]
+    pub coverage_excludes: Vec<CoverageExclude>,
+}
+
+/// Coverage exclusion information found in a file.
+/// e.g. markers in code files may be used to exclude uncoverable lines from being considered for code coverage metrics.
+///
+/// TODO: add requirement trace
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct CoverageExclude {
+    /// The kind of coverage exclusion.
+    kind: CoverageExcludeKind,
+    /// Mandatory comment on why the exclusion is acceptable.
+    comment: String,
+}
+
+/// The kind of coverage exclusion that was found in a file.
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub enum CoverageExcludeKind {
+    /// Excludes a code span from coverage metrics.
+    /// Both lines are inclusive!
+    Block { start: Line, end: Line },
+    /// Excludes one line from coverage metrics.
+    Line(Line),
 }
 
 /// A *mantra* trace.
@@ -108,6 +139,8 @@ pub enum TraceKind {
     Satisfies = 1,
     /// Trace links to an artifact that verifies a requirement.
     Verifies = 2,
+    /// Trace link that provides no additional information.
+    Links = 3,
 }
 
 /// Possible related code variants for a trace.

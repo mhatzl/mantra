@@ -1,5 +1,6 @@
 use serde::Serializer;
 
+pub mod product;
 pub mod requirements;
 pub mod reviews;
 pub mod testcov;

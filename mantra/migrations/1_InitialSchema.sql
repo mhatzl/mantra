@@ -3,6 +3,13 @@
 create table Collections (
     -- SHA256 hash over all data that was collected when running `mantra collect`.
     hash text not null primary key,
+    -- Filepath to the `mantra.toml` file that was used to collect the data.
+    -- [req("changes.track.origin")]
+    collect_filepath text not null,
+    -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
+    added_at_utc text not null,
+    -- UTC timestamp from the last execution of `mantra collect` whose collected data matched this hash.
+    updated_at_utc text not null,
     -- Optional names of authors involved in data collected.
     -- [req("changes.authors")]
     authors text,
@@ -10,29 +17,19 @@ create table Collections (
     -- [req("changes.comment")]
     comment text,
     -- SHA256 hash of the optional metadata that was collected.
-    -- TODO: Currently no requirement. decide if field is needed.
+    -- [req("changes.track.metadata")]
     metadata_hash text references GeneralJson (hash) on delete set null,
-    -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
-    added_at_utc text not null,
-    -- UTC timestamp from the last execution of `mantra collect` whose collected data matched this hash.
-    updated_at_utc text not null,
     constraint ch_times check (added_at_utc <= updated_at_utc)
 );
 
--- Table to track general origins and metadata of collected information that was retrieved by the same section in `mantra.toml`.
+-- Table to track collected information that was retrieved by a section in `mantra.toml`.
 -- A section is either about requirements, traces, reviews, test runs, or product information.
--- [req("changes.track.origin", "changes.track.metadata")]
 create table CollectedSections (
     -- The hash of the collected information by this section.
     hash text not null primary key,
-    -- The hash of the metadata that is related to this section.
-    metadata_hash text references GeneralJson (hash) on delete set null,
-    -- The hash of the origin content that is related to this section.
-    origin_hash text references GeneralJson (hash) on delete set null
 );
 
 -- Table to map section contents to collections.
--- [req("changes.track.origin", "changes.track.metadata")]
 create table SectionCollections (
     -- The hash of a collection run.
     collect_hash test not null references Collections(hash) on delete cascade,
@@ -139,6 +136,18 @@ create table RequirementCollections (
     -- The requirement ID of a product that maps to the content hash in the particular collection.
     req_id text not null,
     -- The requirement content hash that maps to general information about a requirement.
+    req_content_hash text not null references RequirementContents (hash) on delete cascade,
+    primary key (section_hash, req_id, product_id)
+);
+
+-- Stores the content of requirements.
+--
+-- **Note:** Decoupled from RequirementCollections, because a contnet change in one requirement
+-- should not require to duplicate the content mapping for all other requirements.
+-- [req("changes.track.reqs")]
+create table RequirementContents (
+    hash text not null primary key,
+    -- The requirement content hash that maps to general information about a requirement.
     req_details_hash text not null references RequirementDetails (hash) on delete cascade,
     req_properties_hash text not null references RequirementPropertiesHashes (hash) on delete cascade,
     req_hierarchies_hash text not null references RequirementHierarchiesHashes (hash) on delete cascade,
@@ -150,8 +159,6 @@ create table RequirementCollections (
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
     deprecated bool not null,
-    primary key (section_hash, req_id, product_id),
-    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
 );
 
 -- Stores general requirements details such as title and description.
@@ -204,15 +211,17 @@ create table RequirementHierarchiesHashes (
 create table RequirementHierarchies (
     -- The hash of the requirement content.
     req_hierarchies_hash text not null references RequirementHierarchiesHashes (hash) on delete cascade,
-    -- Product ID the requirements are part of.
-    product_id text not null,
-    -- The ID of the requirement, whose content referenced the parent ID.
-    req_id text not null,
+    -- Product ID the child requirements id defined in.
+    child_product_id text not null,
+    -- The ID of the child requirement, whose content referenced the parent ID.
+    child_req_id text not null,
+    -- The product ID the parent requirement is defined in.
+    parent_product_id text not null,
     -- The ID of the parent requirement.
-    parent_id text not null,
-    primary key (req_content_hash, product_id, req_id, parent_id),
-    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade,
-    foreign key (product_id, parent_id) references Requirements (product_id, id) on delete cascade
+    parent_req_id text not null,
+    primary key (req_content_hash, child_product_id, child_req_id, parent_product_id, parent_req_id),
+    foreign key (child_product_id, child_req_id) references Requirements (product_id, id) on delete cascade,
+    foreign key (parent_product_id, parent_id) references Requirements (product_id, id) on delete cascade
 );
 
 -- Table to store hashes of files containing content that is stored in the database.
@@ -369,7 +378,7 @@ create table ElementContents (
 
 -- Table to store language code blocks that are linked to traces.
 -- [req("trace.code_block")]
-create table CodeBlocks (
+create table TracedCodeBlocks (
     -- File the code block is defined in.
     filepath text not null,
     -- Hash of the file content.
@@ -400,7 +409,7 @@ create table CodeBlockContents (
     -- The hash of the content.
     content_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (filepath, file_hash, traced_line),
-    foreign key (filepath, file_hash, traced_line) references CodeBlocks (filepath, file_hash, traced_line) on delete cascade
+    foreign key (filepath, file_hash, traced_line) references TracedCodeBlocks (filepath, file_hash, traced_line) on delete cascade
 );
 
 -- Table to store direct links between elements and traces.

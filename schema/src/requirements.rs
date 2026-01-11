@@ -1,3 +1,5 @@
+use crate::product::ProductId;
+
 /// Defines the schema to exchange requirements related information.
 /// [req("exchange.requirements.schema")]
 #[derive(
@@ -60,4 +62,20 @@ pub struct Requirement {
     /// [req("req.properties")]
     #[serde(default)]
     pub properties: Vec<serde_json::Value>,
+}
+
+/// This struct defines the information *mantra* stores about a parent requirement.
+///
+/// [req("req.hierarchy")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct ParentRequirement {
+    /// ID of the parent requirement.
+    /// [req("req.id")]
+    pub id: ReqId,
+    /// ID of the product the parent requirement is defined in.
+    /// If `None`, the parent is assumed to be defined in the same product as the child requirement.
+    pub product_id: Option<ProductId>,
 }

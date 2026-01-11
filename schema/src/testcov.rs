@@ -178,6 +178,9 @@ pub enum TestCaseState {
 pub struct CoveredFile {
     /// File the coverage information is for.
     pub filepath: PathBuf,
+    /// Optional hash of the file content to detect changes.
+    /// Coverage formats may not provide the file hash, therefore it must be optional.
+    pub file_hash: Option<String>,
     /// Coverage information for a line in the file.
     /// [req("testcov.cov.lines")]
     #[serde(default)]

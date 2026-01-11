@@ -51,10 +51,6 @@ pub struct ReviewSchema {
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct Review {
-    /// The schema version.
-    /// [req("exchange.versioned")]
-    #[serde(serialize_with = "crate::serialize_schema_version")]
-    pub schema_version: Option<String>,
     /// The name of the review.
     /// [req("review.id")]
     pub name: String,
