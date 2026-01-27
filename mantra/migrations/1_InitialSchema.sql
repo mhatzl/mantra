@@ -227,7 +227,7 @@ with recursive IsUntraced(id) as (
 		select id from NonLeafRequirements except select id from DirectlyTracedRequirements
 	) r, RequirementHierarchies rh, IsUntraced u
     where r.id = rh.parent_id
-    and rh.child_id = u.id
+    and rh.child_id = u.id and u.id not in (select id from FullyVerifiedRequirements)
 )
 select distinct id from IsUntraced;
 
@@ -236,13 +236,18 @@ select distinct id from IsUntraced;
 create view IndirectlyTracedRequirements as
 with HasUntracedChild(id) as (
     select rh.parent_id
-    from RequirementHierarchies rh, UntracedRequirements u
+    from RequirementHierarchies rh, (select id from UntracedRequirements except select id from FullyVerifiedRequirements) u
     where rh.child_id = u.id
+),
+HasTracedDescendant(id) as (
+    select rc.id
+    from RequirementDescendants rc, DirectlyTracedRequirements dr
+    where rc.descendant_id = dr.id
 )
 -- Only non-leaf requirements can be indirectly traced
 select distinct id
 from NonLeafRequirements
-where id not in (select id from HasUntracedChild);
+where id not in (select id from HasUntracedChild) and id in (select id from HasTracedDescendant);
 
 -- Traces to child requirements.
 create view IndirectRequirementTraces as
@@ -267,12 +272,15 @@ select id from DirectlyTracedRequirements
 union
 select id from IndirectlyTracedRequirements;
 
--- A requirement is fully covered if all its leaf requirements are traced.
--- Consequently, leaf requirements are fully traced if they are traced.
+-- A requirement is fully traced if all its leaf requirements are traced,
+-- because all others are then at least indirectly traced.
+-- Consequently, leaf requirements are fully traced if they are directly traced.
+--
+-- Verified manual leaf requirements are excluded from affecting indirect traces.
 create view FullyTracedRequirements as
 with HasUntracedLeaf(id) as (
     select rc.id
-    from RequirementDescendants rc, LeafRequirements lr, UntracedRequirements ur
+    from RequirementDescendants rc, LeafRequirements lr, (select id from UntracedRequirements except select id from FullyVerifiedRequirements) ur
     where rc.descendant_id = lr.id and lr.id = ur.id
 )
 select lr.id
@@ -280,7 +288,7 @@ from LeafRequirements lr, DirectlyTracedRequirements dr
 where lr.id = dr.id
 union
 select id
-from NonLeafRequirements
+from IndirectlyTracedRequirements
 where id not in (select id from HasUntracedLeaf);
 
 create view InvalidRequirements as
@@ -333,7 +341,7 @@ with recursive IsUncovered(id) as (
         select id from NonLeafRequirements except select id from DirectlyCoveredRequirements
     ) r, RequirementHierarchies rh, IsUncovered u
     where r.id = rh.parent_id
-    and rh.child_id = u.id
+    and rh.child_id = u.id and u.id not in (select id from FullyVerifiedRequirements)
 )
 select distinct id from IsUncovered;
 
@@ -344,13 +352,19 @@ select distinct id from IsUncovered;
 create view IndirectlyCoveredRequirements as
 with HasUncoveredChild(id) as (
     select rh.parent_id
-    from RequirementHierarchies rh, UncoveredRequirements u
+    from RequirementHierarchies rh, (select id from UncoveredRequirements except select id from FullyVerifiedRequirements) u
     where rh.child_id = u.id
+),
+-- Ensure that at least one descendant is covered and not *just* manually verified
+HasCoveredDescendant(id) as (
+    select rc.id
+    from RequirementDescendants rc, DirectlyCoveredRequirements cr
+    where rc.descendant_id = cr.id
 )
 -- Only non-leaf requirements can be indirectly uncovered
 select distinct id
 from NonLeafRequirements
-where id not in (select id from HasUncoveredChild);
+where id not in (select id from HasUncoveredChild) and id in (select id from HasCoveredDescendant);
 
 -- Test coverage of child requirements.
 create view IndirectRequirementTestCoverage as
@@ -429,25 +443,29 @@ select id from CoveredRequirements
 except
 select id from FailedCoveredRequirements;
 
--- A requirement is fully covered if all its leaf requirements are passed covered.
+-- A requirement is fully covered if all its child requirements are passed covered,
+-- or if uncovered children are set as manual and verified.
+-- For non-leaf requirements, at least one passed covered child is needed.
 -- Consequently, leaf requirements are fully covered if they are passed covered.
+--
+-- Note: A failed coverage of a child must also fail the parent.
 create view FullyCoveredRequirements as
-with HasUncoveredOrFailedLeaf(id) as (
+with HasUncoveredOrFailedDescendant(id) as (
     select rc.id
-    from RequirementDescendants rc, LeafRequirements lr, UncoveredRequirements ur
+    from RequirementDescendants rc, LeafRequirements lr, (select id from UncoveredRequirements except select id from FullyVerifiedRequirements) ur
     where rc.descendant_id = lr.id and lr.id = ur.id
     union
     select rc.id
-    from RequirementDescendants rc, LeafRequirements lr, FailedCoveredRequirements fr
-    where rc.descendant_id = lr.id and lr.id = fr.id
+    from RequirementDescendants rc, CoveredRequirements cr, FailedCoveredRequirements fr
+    where rc.descendant_id = cr.id and cr.id = fr.id
 )
 select lr.id
 from LeafRequirements lr, PassedCoveredRequirements pr
 where lr.id = pr.id
 union
 select id
-from NonLeafRequirements
-where id not in (select id from HasUncoveredOrFailedLeaf);
+from IndirectlyCoveredRequirements
+where id not in (select id from HasUncoveredOrFailedDescendant) and id not in (select id from FailedCoveredRequirements);
 
 create view RequirementCoverageOverview as
 with NrRequirements(cnt) as (select count(*) from Requirements),
@@ -600,3 +618,18 @@ from TestRunOverview;
 
 create view ManuallyVerifiedRequirements as
 select distinct req_id from ManuallyVerified;
+
+create view VerifiedManualRequirements as
+select distinct mr.id from ManuallyVerifiedRequirements mv, ManualRequirements mr
+where mv.req_id = mr.id;
+
+-- Requires that all children of a manual requirement must also be verified
+create view FullyVerifiedRequirements as
+with HasUnverifiedDescendant(id) as (
+    select rd.id
+    from ManualRequirements mr, RequirementDescendants rd
+    where rd.descendant_id = mr.id and mr.id not in (select id from VerifiedManualRequirements)
+)
+select mv.id
+from VerifiedManualRequirements mv
+where mv.id not in (select id from HasUnverifiedDescendant);

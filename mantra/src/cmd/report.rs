@@ -1010,7 +1010,7 @@ impl TestRunInfo {
         for test in test_records {
             let covers = sqlx::query!(
                 "
-                select req_id from TestCoverage
+                select distinct req_id from TestCoverage
                 where test_run_name = $1 and
                 test_run_date = $2 and
                 test_name = $3
