@@ -278,7 +278,7 @@ with HasUntracedLeaf(id) as (
 select lr.id
 from LeafRequirements lr, DirectlyTracedRequirements dr
 where lr.id = dr.id
-union all
+union
 select id
 from NonLeafRequirements
 where id not in (select id from HasUntracedLeaf);
@@ -289,7 +289,7 @@ from DeprecatedRequirements d, TracedRequirements t
 where d.id = t.id;
 
 create view DirectlyCoveredRequirements as
-select id from Requirements
+select distinct id from Requirements
 where id in (select req_id from TestCoverage);
 
 create view DirectRequirementCoverage as
@@ -410,7 +410,7 @@ with HasFailedChild(id, covered_id) as (
 select c.id, hf.covered_id
 from CoveredRequirements c, HasFailedChild hf
 where c.id = hf.id
-union all
+union
 select c.id, null as covered_id
 from CoveredRequirements c, FailedTestCoverage f
 where c.id = f.req_id;
@@ -419,7 +419,7 @@ create view FailedRequirementCoverage as
 select fr.id, null as covered_id, fc.test_run_name, fc.test_run_date, fc.test_name, fc.filepath, fc.line
 from FailedCoveredRequirements fr, FailedTestCoverage fc
 where fr.id = fc.req_id
-union all
+union
 select fr.id, fr.covered_id as covered_id, fc.test_run_name, fc.test_run_date, fc.test_name, fc.filepath, fc.line
 from FailedCoveredRequirements fr, FailedTestCoverage fc
 where fr.covered_id = fc.req_id;
@@ -436,7 +436,7 @@ with HasUncoveredOrFailedLeaf(id) as (
     select rc.id
     from RequirementDescendants rc, LeafRequirements lr, UncoveredRequirements ur
     where rc.descendant_id = lr.id and lr.id = ur.id
-    union all
+    union
     select rc.id
     from RequirementDescendants rc, LeafRequirements lr, FailedCoveredRequirements fr
     where rc.descendant_id = lr.id and lr.id = fr.id
@@ -444,7 +444,7 @@ with HasUncoveredOrFailedLeaf(id) as (
 select lr.id
 from LeafRequirements lr, PassedCoveredRequirements pr
 where lr.id = pr.id
-union all
+union
 select id
 from NonLeafRequirements
 where id not in (select id from HasUncoveredOrFailedLeaf);
@@ -503,13 +503,13 @@ sum(passed_covered_leaf_cnt) as passed_covered_leaf_cnt, case when sum(leaf_cnt)
 from (
     select id, cnt as leaf_cnt, 0 as traced_leaf_cnt, 0 as covered_leaf_cnt, 0 as passed_covered_leaf_cnt
     from NrLeafs
-    union all
+    union
     select id, 0 as leaf_cnt, cnt as traced_leaf_cnt, 0 as covered_leaf_cnt, 0 as passed_covered_leaf_cnt
     from NrTracedLeafs
-    union all
+    union
     select id, 0 as leaf_cnt, 0 as traced_leaf_cnt, cnt as covered_leaf_cnt, 0 as passed_covered_leaf_cnt
     from NrCoveredLeafs
-    union all
+    union
     select id, 0 as leaf_cnt, 0 as traced_leaf_cnt, 0 as covered_leaf_cnt, cnt as passed_covered_leaf_cnt
     from NrPassedCoveredLeafs
 )
@@ -567,16 +567,16 @@ TestRunCnts(name, date, test_cnt, ran_cnt, passed_cnt, failed_cnt, skipped_cnt) 
     from (
         select name, date, cnt as test_cnt, 0 as ran_cnt, 0 as passed_cnt, 0 as failed_cnt, 0 as skipped_cnt
         from NrTests
-        union all
+        union
         select name, date, 0 as test_cnt, cnt as ran_cnt, 0 as passed_cnt, 0 as failed_cnt, 0 as skipped_cnt
         from NrRanTests
-        union all
+        union
         select name, date, 0 as test_cnt, 0 as ran_cnt, cnt as passed_cnt, 0 as failed_cnt, 0 as skipped_cnt
         from NrPassed
-        union all
+        union
         select name, date, 0 as test_cnt, 0 as ran_cnt, 0 as passed_cnt, cnt as failed_cnt, 0 as skipped_cnt
         from NrFailed
-        union all
+        union
         select name, date, 0 as test_cnt, 0 as ran_cnt, 0 as passed_cnt, 0 as failed_cnt, cnt as skipped_cnt
         from NrSkipped
     )
@@ -599,4 +599,4 @@ select sum(test_cnt) as test_cnt,
 from TestRunOverview;
 
 create view ManuallyVerifiedRequirements as
-select req_id from ManuallyVerified;
+select distinct req_id from ManuallyVerified;
