@@ -26,7 +26,7 @@ create table Collections (
 -- A section is either about requirements, traces, reviews, test runs, or product information.
 create table CollectedSections (
     -- The hash of the collected information by this section.
-    hash text not null primary key,
+    hash text not null primary key
 );
 
 -- Table to map section contents to collections.
@@ -67,7 +67,7 @@ create table GeneralJson (
 -- [req("lifecycle.product.id")]
 create table Products (
     -- Product ID
-    id text not null primary key,
+    id text not null primary key
 );
 
 -- Table contains product baselines that were collected via `mantra collect`.
@@ -115,7 +115,7 @@ create table ProductCollections (
     -- Product details that were collected.
     product_details_hash text references ProductDetails (hash) on delete set null,
     primary key (product_id, product_base, section_hash),
-    foreign key (product_id, product_base) references ProductVersions (id, base) on delete cascade
+    foreign key (product_id, product_base) references ProductBaselines (id, base) on delete cascade
 );
 
 -- Table containing all requirement IDs collected by mantra.
@@ -150,7 +150,7 @@ create table RequirementContents (
     -- The requirement content hash that maps to general information about a requirement.
     req_details_hash text not null references RequirementDetails (hash) on delete cascade,
     req_properties_hash text not null references RequirementPropertiesHashes (hash) on delete cascade,
-    req_hierarchies_hash text not null references RequirementHierarchiesHashes (hash) on delete cascade,
+    req_hierarchies_hash text references RequirementHierarchiesHashes (hash) on delete set null,
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
     -- [req("req.manual")]
@@ -158,7 +158,7 @@ create table RequirementContents (
     -- Flag indicating whether the requirement is deprecated.
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
-    deprecated bool not null,
+    deprecated bool not null
 );
 
 -- Stores general requirements details such as title and description.
@@ -177,14 +177,14 @@ create table RequirementDetails (
     origin_hash text not null references GeneralJson (hash) on delete cascade,
     -- Optional hash of the description content of the requirement.
     -- [req("req.description")]
-    description_hash text references GeneralContents (hash) on delete set null,
+    description_hash text references GeneralContents (hash) on delete set null
 );
 
 -- Table to map to properties of requirements.
 -- [req("req.properties")]
 create table RequirementPropertiesHashes (
     -- The hash over all properties of a requirement.
-    hash text not null primary key,
+    hash text not null primary key
 );
 
 -- Table to map to properties of requirements.
@@ -192,16 +192,18 @@ create table RequirementPropertiesHashes (
 create table RequirementProperties (
     -- The hash of the requirement content.
     req_properties_hash text not null references RequirementPropertiesHashes (hash) on delete cascade,
+    -- Key of the property
+    property_key text not null,
     -- Hash of a custom property of the requirement.
-    property_hash text not null references GeneralJson (hash) on delete cascade,
-    primary key (req_properties_hash, property_hash)
+    value_hash text not null references GeneralJson (hash) on delete cascade,
+    primary key (req_properties_hash, property_key, value_hash)
 );
 
 -- Table to map the requirement hierarchy to a requirement.
 -- [req("req.hierarchy", "changes.track.reqs")]
 create table RequirementHierarchiesHashes (
     -- The hash of requirement parents block that defines the requirement hierarchy.
-    hash text not null primary key,
+    hash text not null primary key
 );
 
 -- Table to represent the requirement hierarchy per requirement content.
@@ -219,9 +221,9 @@ create table RequirementHierarchies (
     parent_product_id text not null,
     -- The ID of the parent requirement.
     parent_req_id text not null,
-    primary key (req_content_hash, child_product_id, child_req_id, parent_product_id, parent_req_id),
+    primary key (req_hierarchies_hash, child_product_id, child_req_id, parent_product_id, parent_req_id),
     foreign key (child_product_id, child_req_id) references Requirements (product_id, id) on delete cascade,
-    foreign key (parent_product_id, parent_id) references Requirements (product_id, id) on delete cascade
+    foreign key (parent_product_id, parent_req_id) references Requirements (product_id, id) on delete cascade
 );
 
 -- Table to store hashes of files containing content that is stored in the database.
@@ -701,7 +703,7 @@ create table TestCases (
         name
     ),
     foreign key (
-        produc_id,
+        product_id,
         test_run_name,
         test_run_utc_date,
         test_run_revision
@@ -728,7 +730,7 @@ create table TestCaseMetadata (
     -- Hash of the metadata of the test case.
     data_hash text not null references GeneralContents (hash) on delete cascade,
     primary key (
-        produc_id,
+        product_id,
         test_run_name,
         test_run_utc_date,
         test_run_revision,

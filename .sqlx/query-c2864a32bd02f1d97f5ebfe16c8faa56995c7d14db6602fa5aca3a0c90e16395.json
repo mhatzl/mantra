@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or ignore into RequirementDetails (\n                    hash,\n                    title_hash,\n                    origin_hash,\n                    description_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "c2864a32bd02f1d97f5ebfe16c8faa56995c7d14db6602fa5aca3a0c90e16395"
+}

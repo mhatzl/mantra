@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or ignore into Requirements (id, product_id)\n                values ($1, $2)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "fe9aeb41fcaa4a7d3054a7630bccf52ca673e134297d85bb091520df54db1c92"
+}

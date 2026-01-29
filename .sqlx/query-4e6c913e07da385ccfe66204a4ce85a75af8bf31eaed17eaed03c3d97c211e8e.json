@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or ignore into GeneralContents (\n                    hash,\n                    content\n                )\n                values (\n                    $1,\n                    $2\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "4e6c913e07da385ccfe66204a4ce85a75af8bf31eaed17eaed03c3d97c211e8e"
+}

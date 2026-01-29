@@ -27,33 +27,33 @@ pub struct Product {
     /// The product ID.
     ///
     /// TODO: map to requirement
-    id: Option<ProductId>,
+    pub id: Option<ProductId>,
     /// Baseline of the product. e.g. git branch or commit hash
     ///
     /// TODO: map to requirement
-    base: String,
+    pub base: String,
     /// The name of the product.
     ///
     /// TODO: map to requirement
-    name: String,
+    pub name: String,
     /// Optional version of the product.
     ///
     /// TODO: map to requirement
-    version: Option<String>,
+    pub version: Option<String>,
     /// Optional link to the homepage of the product.
     ///
     /// TODO: map to requirement
-    homepage: Option<String>,
+    pub homepage: Option<String>,
     /// Optional link to the repository of the product.
     ///
     /// TODO: map to requirement
-    repository: Option<String>,
+    pub repository: Option<String>,
     /// Optional license of the product.
     ///
     /// TODO: map to requirement
-    license: Option<String>,
+    pub license: Option<String>,
     /// Optional metadata of the product.
     ///
     /// TODO: map to requirement
-    metadata: Option<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
 }

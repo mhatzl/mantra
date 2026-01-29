@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert or ignore into GeneralJson (\n                        hash,\n                        data\n                    )\n                    values (\n                        $1,\n                        $2\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c11b26392759d114cf69fa33a5667f6367e2512df76535e28bd584eadd214676"
+}

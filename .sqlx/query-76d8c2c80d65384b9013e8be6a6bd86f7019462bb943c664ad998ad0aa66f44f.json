@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into CollectedSections (hash)\n            values ($1)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "76d8c2c80d65384b9013e8be6a6bd86f7019462bb943c664ad998ad0aa66f44f"
+}

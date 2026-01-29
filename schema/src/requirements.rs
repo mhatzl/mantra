@@ -40,7 +40,7 @@ pub struct Requirement {
     pub content_hash: Option<String>,
     /// Optional list of parent requirement IDs.
     /// [req("req.hierarchy.mult_parents")]
-    pub parents: Option<Vec<ReqId>>,
+    pub parents: Option<Vec<ParentRequirement>>,
     /// Title of the requirement.
     /// [req("req.title")]
     pub title: String,
@@ -61,7 +61,7 @@ pub struct Requirement {
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     #[serde(default)]
-    pub properties: Vec<serde_json::Value>,
+    pub properties: Vec<RequirementProperty>,
 }
 
 /// This struct defines the information *mantra* stores about a parent requirement.
@@ -78,4 +78,17 @@ pub struct ParentRequirement {
     /// ID of the product the parent requirement is defined in.
     /// If `None`, the parent is assumed to be defined in the same product as the child requirement.
     pub product_id: Option<ProductId>,
+}
+
+/// Key value properties of requirements.
+///
+/// [req("req.properties")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct RequirementProperty {
+    /// The key of the property.
+    pub key: String,
+    /// The value of the property.
+    pub value: serde_json::Value,
 }
