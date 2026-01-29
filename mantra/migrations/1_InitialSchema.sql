@@ -391,6 +391,8 @@ create table TracedCodeBlocks (
     -- Line the code block span ends.
     -- [req("trace.code_block.span")]
     end_line integer not null,
+    -- The code block kind. other=0, if=1, else-if=2, else=3, loop=4, while=5, for=6, match/case=7,
+    kind integer not null,
     primary key (filepath, file_hash, traced_line),
     foreign key (filepath, file_hash, traced_line) references Traces (filepath, file_hash, line) on delete cascade,
     constraint start_le_trace_le_end check (start_line <= traced_line <= end_line)
