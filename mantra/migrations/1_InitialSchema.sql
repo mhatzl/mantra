@@ -279,20 +279,19 @@ create table CustomTraceProperties (
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
--- Table to store relations between traces and requirements.
+-- Table to store requirement IDs linked to traces.
+--
+-- **Note:** Actual mapping to the Requirements table is done indirectly via ProductRelatedFiles.
 -- [req("trace.id", "trace.mult_reqs")]
 create table DirectReqTraces (
-    -- Product ID that maps the trace and requirement.
-    product_id text not null,
     -- Requirement ID that is directly set on the trace.
     req_id text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
-    primary key (product_id, req_id, file_hash, line),
-    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
-    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
+    primary key (req_id, filepath, file_hash, line),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
 -- Table to store language elements such as functions, tests, structs, enums, classes, ...
@@ -388,26 +387,6 @@ create table DirectTracedElements (
     foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade
 );
 
-
--- Table to store traces to requirements that were not part of the database
--- when the trace was added via `mantra collect`.
---
--- Note: Reference to the selection hash and product ID is needed to get the collection time relation.
---
--- [req("analyze.validate.store_invalid")]
-create table UnrelatedDirectReqTraces (
-    -- The product ID that maps to the product that misses the requirement ID.
-    product_id text not null references Products(id) on delete cascade,
-    -- The requirement ID that was not part of the requirements table at collection time for the product.
-    req_id text not null,
-    -- Hash of the file content.
-    file_hash text not null,
-    -- Line the trace was detected at.
-    line integer not null,
-    primary key (product_id, req_id, file_hash, line),
-    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
-);
-
 -- Table to store line spans that must be excluded from code coverage analysis.
 --
 -- TODO: add req trace
@@ -433,7 +412,7 @@ create table CoverageLineExcludes (
     -- Line that must be excluded from code coverage analysis.
     line integer not null,
     -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
-    comment text not null references GeneralTexts (hash) on delete cascade,
+    comment text not null references GeneralTexts (hash) on delete restrict,
     primary key (file_hash, line),
 );
 
@@ -705,10 +684,10 @@ create table TestCaseLocations (
     ) on delete cascade
 );
 
--- Table to store the reason for the state of a test case.
--- This is mostly needed for *skipped* test cases.
+-- Table to store additional properties for the state of a test case.
+-- This is mostly needed for *skipped* or *failed* test cases.
 -- [req("testcov.test_case.state")]
-create table TestCaseStateReason (
+create table TestCaseStateProperties (
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -717,13 +696,15 @@ create table TestCaseStateReason (
     test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
-    -- The reason for the state of a test case.
-    reason text not null,
+    -- The key of the additional property for the state of a test case.
+    property_key text not null,
+    property_value text references GeneralJson (hash) on delete restrict,
     primary key (
         product_id,
         test_run_name,
         test_run_date,
-        test_case_name
+        test_case_name,
+        property_key
     ),
     foreign key (
         product_id,
