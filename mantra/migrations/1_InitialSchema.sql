@@ -1,80 +1,59 @@
--- Base table used to track changes over multiple `mantra collect` runs.
--- [req("lifecycle.product", "changes.track")]
-create table Collections (
-    -- SHA256 hash over all data that was collected when running `mantra collect`.
-    hash text not null primary key,
-    -- Filepath to the `mantra.toml` file that was used to collect the data.
-    -- [req("changes.track.origin")]
-    collect_filepath text not null,
-    -- UTC timestamp from the first execution of `mantra collect` whose collected data matched this hash.
-    added_at_utc text not null,
-    -- UTC timestamp from the last execution of `mantra collect` whose collected data matched this hash.
-    updated_at_utc text not null,
-    -- Optional names of authors involved in data collected.
-    -- [req("changes.authors")]
-    authors text,
-    -- Optional comment explaining the data collected in the `mantra collect` run that resulted in this entry.
-    -- [req("changes.comment")]
-    comment text,
-    -- SHA256 hash of the optional metadata that was collected.
-    -- [req("changes.track.metadata")]
-    metadata_hash text references GeneralJson (hash) on delete set null,
-    constraint ch_times check (added_at_utc <= updated_at_utc)
-);
-
--- Table to track collected information that was retrieved by a section in `mantra.toml`.
--- A section is either about requirements, traces, reviews, test runs, or product information.
-create table CollectedSections (
-    -- The hash of the collected information by this section.
-    hash text not null primary key
-);
-
--- Table to map section contents to collections.
-create table SectionCollections (
-    -- The hash of a collection run.
-    collect_hash test not null references Collections(hash) on delete cascade,
-    -- The hash of a section that was collected in the related collection run.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
-    -- The hash of the configuration in `mantra.toml` for this section that was used to collect related information.
-    -- [req("cli.collect.config")]
-    config_hash text references GeneralJson (hash) on delete set null,
-    primary key (collect_hash, section_hash)
-);
-
--- Table to store the plain content and the related SHA256 hash.
+-- Table to store plain text and the related hash.
 -- This reduces duplication of unchanged content.
 --
 -- [req("changes.show", "changes.compact_content")]
-create table GeneralContents (
+create table GeneralTexts (
     -- Hash of the content
     hash text not null primary key,
     -- Content that is either plain text or of unknown format to mantra.
     content text not null
 );
 
--- Table to store JSON data and the related SHA256 hash.
--- This reduces duplication of unchanged data.
+-- Table to store JSON content and the related hash.
+-- This reduces duplication of unchanged content.
 --
 -- TODO: map requirement
 create table GeneralJson (
-    -- Hash of the data
+    -- Hash of the content
     hash text not null primary key,
-    -- JSON data that may contain user defined information.
-    data text not null
+    -- JSON content that may contain user defined information.
+    content text not null
 );
 
--- Table contains product IDs that were collected via `mantra collect`.
--- [req("lifecycle.product.id")]
+-- Table to store hashes of file contents from which data was collected.
+-- [req("changes.track.traces.files")]
+create table FileHashes (
+    -- Hash of the file content.
+    hash text not null
+);
+
+-- Base table used to track changes over multiple `mantra collect` runs.
+-- [req("lifecycle.product", "changes.track")]
+create table Collections (
+    nr integer primary key autoincrement,
+    run_at_utc text not null,
+    -- Filepath to the `mantra.toml` file that was used to collect the data.
+    -- Path is relativ to the invocation of `mantra collect`.
+    -- [req("changes.track.origin")]
+    collect_filepath text not null,
+    -- The hash of the configuration content in `mantra.toml` for this collection.
+    -- [req("cli.collect.config")]
+    config_hash text not null references GeneralJson (hash) on delete restrict,
+    -- Optional hash of the arguments set when calling `mantra collect`.
+    arguments_hash text references GeneralJson (hash) on delete restrict,
+    -- Optional hash of the environmental variables set that are relevant for mantra
+    -- when calling `mantra collect`.
+    env_vars_hash text references GeneralJson (hash) on delete restrict
+);
+
+-- Table contains products that were collected via `mantra collect`.
+-- [req("lifecycle.product.id", "report.product_data")]
 create table Products (
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Product ID
-    id text not null primary key
-);
-
--- Table contains product baselines that were collected via `mantra collect`.
--- [req("lifecycle.product.id")]
-create table ProductBaselines (
-    -- Product ID
-    id text not null references Products (id) on delete cascade,
+    id text not null primary key,
+    -- Name of a product.
+    name text not null,
     -- Baseline of a product.
     -- e.g. git branch or commit hash
     base text not null,
@@ -83,16 +62,6 @@ create table ProductBaselines (
     -- **Note:** Version is optional, because it might not change between commits
     -- and is therefore not part of the primary key.
     version text,
-    primary key (id, base)
-);
-
--- Table contains product details that were collected via `mantra collect`.
--- [req("report.product_data")]
-create table ProductDetails (
-    -- Hash of the product details.
-    hash text not null primary key,
-    -- Name of a product.
-    name text not null,
     -- Optional URL to the product's homepage.
     homepage text,
     -- Optional URL to the product's repository.
@@ -100,22 +69,128 @@ create table ProductDetails (
     -- Optional license of the product.
     license text,
     -- Optional metadata of the product.
-    metadata_hash text references GeneralJson (hash) on delete set null
+    metadata_hash text references GeneralJson (hash) on delete restrict
 );
 
--- Table to link between products and collections.
--- [req("lifecycle.product.id")]
-create table ProductCollections (
-    -- Hash of the product data collected via `mantra collect`.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
-    -- Product id that maps to the product of the collected data.
+create table ProductsHistory (
+    nr integer primary key,
+    product_id text not null references Products (id) on delete cascade,
+    collect_nr text not null references Collections (nr) on delete restrict,
+    operation text not null check (operation in ('insert', 'update', 'delete')),
+    name text,
+    base text,
+    version text,
+    homepage text,
+    repository text,
+    license text,
+    metadata_hash text references GeneralJson (hash) on delete restrict
+);
+
+create trigger ProductsUpdates
+after update on Products
+for each row
+when (
+    old.name is distinct from new.name or
+    old.base is distinct from new.base or
+    old.version is distinct from new.version or
+    old.homepage is distinct from new.homepage or
+    old.repository is distinct from new.repository or
+    old.license is distinct from new.license or
+    old.metadata_hash is distinct from new.metadata_hash
+)
+begin
+    insert into ProductsHistory (
+        product_id,
+        collect_nr,
+        operation,
+        name,
+        base,
+        version,
+        homepage,
+        repository,
+        license,
+        metadata_hash
+    )
+    values (
+        old.id,
+        (select max(nr) from Collections),
+        'update',
+        case when old.name is distinct from new.name then old.name else null end,
+        case when old.base is distinct from new.base then old.base else null end,
+        case when old.version is distinct from new.version then old.version else null end,
+        case when old.homepage is distinct from new.homepage then old.homepage else null end,
+        case when old.repository is distinct from new.repository then old.repository else null end,
+        case when old.license is distinct from new.license then old.license else null end,
+        case when old.metadata_hash is distinct from new.metadata_hash then old.metadata_hash else null end
+    );
+end;
+
+create trigger ProductsInsertions
+after insert on Products
+for each row
+begin
+    insert into ProductsHistory (
+        product_id,
+        collect_nr,
+        operation,
+        name,
+        base,
+        version,
+        homepage,
+        repository,
+        license,
+        metadata_hash
+    )
+    values (
+        new.id,
+        (select max(nr) from Collections),
+        'insert',
+        new.name,
+        new.base,
+        new.version,
+        new.homepage,
+        new.repository,
+        new.license,
+        new.metadata_hash
+    );
+end;
+
+create trigger ProductsDeletions
+after delete on Products
+for each row
+begin
+    insert into ProductsHistory (
+        product_id,
+        collect_nr,
+        operation,
+        name,
+        base,
+        version,
+        homepage,
+        repository,
+        license,
+        metadata_hash
+    )
+    values (
+        old.id,
+        (select max(nr) from Collections),
+        'delete',
+        old.name,
+        old.base,
+        old.version,
+        old.homepage,
+        old.repository,
+        old.license,
+        old.metadata_hash
+    );
+end;
+
+create table ProductRelatedFiles (
+    -- Product ID
     product_id text not null,
-    -- Product version of the collected data.
-    product_base text not null,
-    -- Product details that were collected.
-    product_details_hash text references ProductDetails (hash) on delete set null,
-    primary key (product_id, product_base, section_hash),
-    foreign key (product_id, product_base) references ProductBaselines (id, base) on delete cascade
+    filepath text not null,
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    constraint ProductRelatedFiles primary key (product_id, filepath)
 );
 
 -- Table containing all requirement IDs collected by mantra.
@@ -123,34 +198,6 @@ create table ProductCollections (
 create table Requirements (
     id text not null,
     product_id text not null references Products (id) on delete cascade,
-    primary key (id, product_id)
-);
-
--- Table to link between collections and requirements.
--- [req("lifecycle.product", "changes.track")]
-create table RequirementCollections (
-    -- Hash of the data collected via `mantra collect`.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
-    -- The product ID that maps to the content hash in the particular collection.
-    product_id text not null,
-    -- The requirement ID of a product that maps to the content hash in the particular collection.
-    req_id text not null,
-    -- The requirement content hash that maps to general information about a requirement.
-    req_content_hash text not null references RequirementContents (hash) on delete cascade,
-    primary key (section_hash, req_id, product_id)
-);
-
--- Stores the content of requirements.
---
--- **Note:** Decoupled from RequirementCollections, because a contnet change in one requirement
--- should not require to duplicate the content mapping for all other requirements.
--- [req("changes.track.reqs")]
-create table RequirementContents (
-    hash text not null primary key,
-    -- The requirement content hash that maps to general information about a requirement.
-    req_details_hash text not null references RequirementDetails (hash) on delete cascade,
-    req_properties_hash text not null references RequirementPropertiesHashes (hash) on delete cascade,
-    req_hierarchies_hash text references RequirementHierarchiesHashes (hash) on delete set null,
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
     -- [req("req.manual")]
@@ -159,60 +206,39 @@ create table RequirementContents (
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
     deprecated bool not null
-);
-
--- Stores general requirements details such as title and description.
---
--- **Note:** Multiple IDs may have the same content.
--- However, this likely indicates a rename of the requirement ID.
--- [req("changes.track.reqs")]
-create table RequirementDetails (
-    -- The SAH256 hash of the requirement details.
-    hash text not null primary key,
-    -- The hash of the title of the requirement.
+    -- The title of the requirement.
     -- [req("req.title")]
-    title_hash text not null references GeneralContents (hash) on delete cascade,
-    -- The hash of the origin data of the requirement.
+    title text not null,
+    -- The origin data of the requirement.
     -- [req("req.origin")]
-    origin_hash text not null references GeneralJson (hash) on delete cascade,
-    -- Optional hash of the description content of the requirement.
+    origin_hash text not null references GeneralJson (hash) on delete restrict,
+    -- Optional description content of the requirement.
     -- [req("req.description")]
-    description_hash text references GeneralContents (hash) on delete set null
-);
-
--- Table to map to properties of requirements.
--- [req("req.properties")]
-create table RequirementPropertiesHashes (
-    -- The hash over all properties of a requirement.
-    hash text not null primary key
+    description_hash text references GeneralTexts (hash) on delete restrict,
+    -- Hash of the source the requirement was defined in.
+    -- e.g. Markdown or JSON file
+    src_hash text not null references FileHashes (hash) on delete restrict,
+    constraint RequirementsPk primary key (id, product_id)
 );
 
 -- Table to map to properties of requirements.
 -- [req("req.properties")]
 create table RequirementProperties (
-    -- The hash of the requirement content.
-    req_properties_hash text not null references RequirementPropertiesHashes (hash) on delete cascade,
+    req_id text not null,
+    product_id text not null,
     -- Key of the property
     property_key text not null,
     -- Hash of a custom property of the requirement.
-    value_hash text not null references GeneralJson (hash) on delete cascade,
-    primary key (req_properties_hash, property_key, value_hash)
-);
-
--- Table to map the requirement hierarchy to a requirement.
--- [req("req.hierarchy", "changes.track.reqs")]
-create table RequirementHierarchiesHashes (
-    -- The hash of requirement parents block that defines the requirement hierarchy.
-    hash text not null primary key
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    constraint RequirementPropertiesPk primary key (req_id, product_id, property_key),
+    foreign key (req_id, product_id) references Requirements (id, product_id) on delete cascade
 );
 
 -- Table to represent the requirement hierarchy per requirement content.
 --
 -- **Note:** Per requirement content, because the parent IDs are part of the content.
--- [req("req.hierarchy", "changes.track.reqs")]
+-- [req("req.hierarchy")]
 create table RequirementHierarchies (
-    -- The hash of the requirement content.
-    req_hierarchies_hash text not null references RequirementHierarchiesHashes (hash) on delete cascade,
     -- Product ID the child requirements id defined in.
     child_product_id text not null,
     -- The ID of the child requirement, whose content referenced the parent ID.
@@ -221,74 +247,14 @@ create table RequirementHierarchies (
     parent_product_id text not null,
     -- The ID of the parent requirement.
     parent_req_id text not null,
-    primary key (req_hierarchies_hash, child_product_id, child_req_id, parent_product_id, parent_req_id),
+    constraint RequirementHierarchiesPk primary key (child_product_id, child_req_id, parent_product_id, parent_req_id),
     foreign key (child_product_id, child_req_id) references Requirements (product_id, id) on delete cascade,
     foreign key (parent_product_id, parent_req_id) references Requirements (product_id, id) on delete cascade
-);
-
--- Table to store hashes of files containing content that is stored in the database.
--- [req("changes.track.traces.files")]
-create table FileHashes (
-    -- Filepath of a file that containes content that is stored in the database.
-    filepath text not null,
-    -- SHA256 hash of the file to be able to map to a *snapshot* of the file content.
-    hash text not null,
-    primary key (filepath, hash)
-);
-
--- Table to map file hashes to `mantra collect` runs.
--- [req("changes.track")]
-create table FileHashCollections (
-    -- Hash of the collected content.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
-    -- Filepath of a file content was collected from.
-    filepath text not null,
-    -- Hash of the file content.
-    file_hash text not null,
-    primary key (section_hash, filepath, file_hash),
-    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
-);
-
--- Table to store line spans that must be excluded from code coverage analysis.
---
--- TODO: add req trace
-create table CoverageBlockExcludes (
-    -- Filepath of the file the trace was detected in.
-    filepath text not null,
-    -- Hash of the file content.
-    file_hash text not null,
-    -- First line that must be excluded from code coverage analysis until the `end_line`.
-    start_line integer not null,
-    -- Last line that must be excluded (inclusive) from code coverage analysis.
-    end_line integer not null,
-    -- Hash of the comment explaining why the spanned lines must be excluded from code coverage calculations.
-    comment_hash text not null references GeneralContents (hash) on delete cascade,
-    primary key (filepath, file_hash, start_line),
-    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade,
-    constraint start_le_end check (start_line <= end_line)
-);
-
--- Table to store lines that must be excluded from code coverage analysis.
---
--- TODO: add req trace
-create table CoverageLineExcludes (
-    -- Filepath of the file the trace was detected in.
-    filepath text not null,
-    -- Hash of the file content.
-    file_hash text not null,
-    -- Line that must be excluded from code coverage analysis.
-    line integer not null,
-    -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
-    comment text not null references GeneralContents (hash) on delete cascade,
-    primary key (filepath, file_hash, line),
-    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
 );
 
 -- Table to store all traces.
 -- [req("trace.origin", "changes.track")]
 create table Traces (
-    -- Filepath of the file the trace was detected in.
-    filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at in the file.
@@ -296,23 +262,21 @@ create table Traces (
     -- Trace kind (0 = clarifies, 1 = satisfies, 2 = verifies, 3 = links).
     -- [req("trace.kind")]
     kind integer not null,
-    primary key (filepath, file_hash, line),
-    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade
+    primary key (file_hash, line),
+    foreign key (file_hash) references FileHashes (hash) on delete restrict
 );
 
 -- Table to store custom properties of traces.
 -- [req("trace.properties")]
 create table CustomTraceProperties (
-    -- File the trace was detected in.
-    filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
     -- Custom property of the trace. e.g. "critical"
     property text not null,
-    primary key (filepath, file_hash, line, property),
-    foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade
+    primary key (file_hash, line, property),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
 -- Table to store relations between traces and requirements.
@@ -322,14 +286,12 @@ create table DirectReqTraces (
     product_id text not null,
     -- Requirement ID that is directly set on the trace.
     req_id text not null,
-    -- File the trace to the requirement was detected in.
-    filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
-    primary key (req_id, filepath, file_hash, line),
-    foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade,
+    primary key (product_id, req_id, file_hash, line),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
     foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
 );
 
@@ -339,12 +301,12 @@ create table DirectReqTraces (
 -- Due to feature flags or language semantics, idents may be declared multiple times, and are therefore not unique.
 -- [req("trace.element")]
 create table Elements (
-    -- Identifier for the element.
-    ident text not null,
-    -- File the element is defined in.
-    filepath text not null,
+    -- Name of the element.
+    --
+    -- **Note:** The fully qualified identifier is stored in ElementIdents.
+    name text not null,
     -- Hash of the file content.
-    file_hash text not null,
+    file_hash text not null references FileHashes (hash) on delete restrict,
     -- Line the element is defined at.
     definition_line integer not null,
     -- Line the element span starts.
@@ -356,33 +318,30 @@ create table Elements (
     -- Type of the element.
     -- [req("trace.element.kind")]
     kind integer not null,
-    primary key (filepath, file_hash, definition_line),
-    foreign key (filepath, file_hash) references FileHashes (filepath, hash) on delete cascade,
+    -- Optional hash of the content of the element.
+    content_hash text references GeneralTexts (hash) on delete restrict,
+    primary key (file_hash, definition_line),
     constraint start_le_end check (start_line <= end_line),
     constraint def_in_span check (start_line <= definition_line <= end_line)
 );
 
--- Table to link to the content of an element.
--- Note: This table may be left empty if content can be retrieved locally when generating reports.
--- [req("report.coverage.content", "trace.element")]
-create table ElementContents (
+create table ElementIdents (
+    product_id text not null,
     -- File the element is defined in.
     filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the element is defined at.
     definition_line integer not null,
-    -- Hash of the content of the element.
-    content_hash text not null references GeneralContents (hash) on delete cascade,
-    primary key (filepath, file_hash, definition_line),
-    foreign key (filepath, file_hash, definition_line) references Elements (filepath, file_hash, definition_line) on delete cascade
+    ident text not null,
+    primary key (product_id, filepath, file_hash, definition_line),
+    foreign key (product_id, filepath, file_hash) references ProductRelatedFiles (product_id, filepath, file_hash) on delete cascade,
+    foreign key (file_hash, definition_line) references Elements (file_hash, definition_line) on delete cascade
 );
 
 -- Table to store language code blocks that are linked to traces.
 -- [req("trace.code_block")]
 create table TracedCodeBlocks (
-    -- File the code block is defined in.
-    filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the code block is set.
@@ -395,25 +354,11 @@ create table TracedCodeBlocks (
     end_line integer not null,
     -- The code block kind. other=0, if=1, else-if=2, else=3, loop=4, while=5, for=6, match/case=7,
     kind integer not null,
-    primary key (filepath, file_hash, traced_line),
-    foreign key (filepath, file_hash, traced_line) references Traces (filepath, file_hash, line) on delete cascade,
+    -- Optional hash of the code block.
+    content_hash text references GeneralTexts (hash) on delete restrict,
+    primary key (file_hash, traced_line),
+    foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade,
     constraint start_le_trace_le_end check (start_line <= traced_line <= end_line)
-);
-
--- Table to link to the content of a code block.
--- Note: This table may be left empty if content can be retrieved locally when generating reports.
--- [req("report.coverage.content", "trace.code_block")]
-create table CodeBlockContents (
-    -- File the code block is defined in.
-    filepath text not null,
-    -- Hash of the file content.
-    file_hash text not null,
-    -- Line the trace related to the code block is set.
-    traced_line integer not null,
-    -- The hash of the content.
-    content_hash text not null references GeneralContents (hash) on delete cascade,
-    primary key (filepath, file_hash, traced_line),
-    foreign key (filepath, file_hash, traced_line) references TracedCodeBlocks (filepath, file_hash, traced_line) on delete cascade
 );
 
 -- Table to store direct links between elements and traces.
@@ -428,8 +373,6 @@ create table CodeBlockContents (
 --
 -- [req("trace.element")]
 create table DirectTracedElements (
-    -- File the element is defined in.
-    filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the element was detected at.
@@ -437,45 +380,14 @@ create table DirectTracedElements (
     -- Line the element is defined at.
     element_definition_line integer not null,
     primary key (
-        filepath,
         file_hash,
         traced_line,
         element_definition_line
     ),
-    foreign key (filepath, file_hash, element_definition_line) references Elements (filepath, file_hash, definition_line) on delete cascade,
-    foreign key (filepath, file_hash, traced_line) references Traces (filepath, file_hash, line) on delete cascade
+    foreign key (file_hash, element_definition_line) references Elements (file_hash, definition_line) on delete cascade,
+    foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade
 );
 
--- Table to store where an element is referenced.
--- [req("testcov.static_approx")]
-create table DirectElementReferences (
-    -- File the element is defined in.
-    origin_filepath text not null,
-    -- Hash of the file the element is defined in.
-    origin_file_hash text not null,
-    -- Line the element is defined at.
-    origin_definition_line integer not null,
-    -- File the element is referenced in.
-    ref_filepath text not null,
-    -- Hash of the file the element is referenced in.
-    ref_file_hash text not null,
-    -- Line the element is referenced at.
-    ref_line integer not null,
-    primary key (
-        origin_filepath,
-        origin_file_hash,
-        origin_definition_line,
-        ref_filepath,
-        ref_file_hash,
-        ref_line
-    ),
-    foreign key (
-        origin_filepath,
-        origin_file_hash,
-        origin_definition_line
-    ) references Elements (filepath, file_hash, definition_line) on delete cascade,
-    foreign key (ref_filepath, ref_file_hash) references FileHashes (filepath, hash) on delete cascade
-);
 
 -- Table to store traces to requirements that were not part of the database
 -- when the trace was added via `mantra collect`.
@@ -484,66 +396,103 @@ create table DirectElementReferences (
 --
 -- [req("analyze.validate.store_invalid")]
 create table UnrelatedDirectReqTraces (
-    -- Hash of the collected content.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
     -- The product ID that maps to the product that misses the requirement ID.
     product_id text not null references Products(id) on delete cascade,
     -- The requirement ID that was not part of the requirements table at collection time for the product.
     req_id text not null,
-    -- File the trace to the requirement was detected in.
-    filepath text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
-    primary key (section_hash, product_id, req_id, filepath, file_hash, line),
-    foreign key (filepath, file_hash, line) references Traces (filepath, file_hash, line) on delete cascade
+    primary key (product_id, req_id, file_hash, line),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
--- Table to store test runs that executed one or more test cases.
--- [req("testcov.test_run", "changes.track.test_runs")]
+-- Table to store line spans that must be excluded from code coverage analysis.
+--
+-- TODO: add req trace
+create table CoverageBlockExcludes (
+    -- Hash of the file content.
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    -- First line that must be excluded from code coverage analysis until the `end_line`.
+    start_line integer not null,
+    -- Last line that must be excluded (inclusive) from code coverage analysis.
+    end_line integer not null,
+    -- Hash of the comment explaining why the spanned lines must be excluded from code coverage calculations.
+    comment_hash text not null references GeneralTexts (hash) on delete restrict,
+    primary key (file_hash, start_line),
+    constraint start_le_end check (start_line <= end_line)
+);
+
+-- Table to store lines that must be excluded from code coverage analysis.
+--
+-- TODO: add req trace
+create table CoverageLineExcludes (
+    -- Hash of the file content.
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    -- Line that must be excluded from code coverage analysis.
+    line integer not null,
+    -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
+    comment text not null references GeneralTexts (hash) on delete cascade,
+    primary key (file_hash, line),
+);
+
+-- Base table for test runs.
+-- [req("testcov.test_run")]
 create table TestRuns (
-    -- The product ID that maps to the product that got tested with this test run.
-    product_id text not null references Products(id) on delete cascade,
+    product_id text not null references Products (id) on delete cascade,
     -- The name of the test run.
     name text not null,
     -- The UTC date and time at which the test run was executed.
     utc_date text not null,
-    -- Indicates the revision of a test run to track retrospective changes.
-    revision integer not null,
+    -- Optional duration about how long the test run took.
+    duration integer,
     -- The number of expected test cases mapped to the test run.
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
     nr_of_test_cases integer not null,
-    -- Hash of the optional metadata of a test run.
-    -- [req("testcov.test_run.metadata")]
-    metadata_hash text references GeneralContents (hash) on delete set null,
     -- The hash of the origin data of the test run.
     -- [req("testcov.test_run.origin")]
-    origin_hash text not null references GeneralContents (hash) on delete cascade,
-    -- Hash of the test run content.
-    --
-    -- **Note:** Needed to detect changes and require a new revision.
-    content_hash text not null,
-    primary key (product_id, name, utc_date, revision)
+    origin_hash text not null references GeneralJson (hash) on delete restrict,
+    -- Hash of the source the test run data was collected from.
+    -- e.g. JSON file
+    src_hash text not null references FileHashes (hash) on delete restrict,
+    primary key (product_id, name, utc_date)
 );
 
--- Table to store the mapping between a `mantra collect` invocation
--- and the collected test run.
--- [req("changes.track")]
-create table TestRunCollections (
-    -- Hash of the collected content.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
-    -- The product ID that maps to the product that got tested with this test run.
+-- Table to store optional metadata of a test run.
+-- [req("testcov.test_run.metadata")]
+create table TestRunProperties (
     product_id text not null,
-    -- The name of the test run.
     test_run_name text not null,
-    -- The UTC date and time at which the test run was executed.
-    test_run_utc_date text not null,
-    -- Indicates the revision of a test run to track retrospective changes.
-    test_run_revision integer not null,
-    primary key (section_hash, test_run_name, test_run_utc_date, test_run_revision),
-    foreign key (product_id, test_run_name, test_run_utc_date, test_run_revision) references TestRuns (product_id, name, utc_date, revision) on delete cascade
+    test_run_date text not null,
+    property_key text not null,
+    property_value text references GeneralJson (hash) on delete restrict,
+    primary key (product_id, test_run_name, test_run_date, property_key),
+    foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade
+);
+
+create table TestRunRevisions (
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    -- Indicates the revision
+    revision integer not null,
+    -- Optional names of authors of the revision.
+    -- Mandatory for later revisions.
+    -- [req("changes.authors")]
+    authors text,
+    -- Optional comment for the revision.
+    -- Mandatory for later revisions.
+    -- [req("changes.comment")]
+    comment text,
+    primary key (product_id, test_run_name, test_run_date),
+    foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade,
+    constraint revision_check
+        check (
+          (revision = 0) or
+          (authors is not null and comment is not null)
+        )
 );
 
 -- Table to store test run hierarchies.
@@ -551,31 +500,28 @@ create table TestRunCollections (
 -- while each test run may additionally have regular test cases.
 -- [req("testcov.test_run.nested")]
 create table TestRunHierarchies (
-    -- The product ID that maps to the product that got tested with this test run.
-    product_id text not null,
+    -- The product ID of the parent test run.
+    parent_product_id text not null,
     -- The name of the parent test run.
     parent_name text not null,
     -- The UTC date and time of the parent test run.
-    parent_utc_date text not null,
-    -- The revision of the parent test run.
-    parent_revision integer not null,
+    parent_date text not null,
+    -- The product ID of the child test run.
+    child_product_id text not null,
     -- The name of the child test run.
     child_name text not null,
     -- The UTC date and time of the child test run.
-    child_utc_date text not null,
-    -- The revision of the child test run.
-    child_revision integer not null,
+    child_date text not null,
     primary key (
-        product_id,
+        parent_product_id,
         parent_name,
-        parent_utc_date,
-        parent_revision,
+        parent_date,
+        child_product_id,
         child_name,
-        child_utc_date,
-        child_revision
+        child_date
     ),
-    foreign key (product_id, parent_name, parent_utc_date, parent_revision) references TestRuns (product_id, name, utc_date, revision) on delete cascade,
-    foreign key (product_id, child_name, child_utc_date, child_revision) references TestRuns (product_id, name, utc_date, revision) on delete cascade
+    foreign key (parent_product_id, parent_name, parent_date) references TestRuns (product_id, name, utc_date) on delete cascade,
+    foreign key (child_product_id, child_name, child_date) references TestRuns (product_id, name, utc_date) on delete cascade
 );
 
 -- Table to store logs that were captured during test run execution.
@@ -589,41 +535,38 @@ create table TestRunLogs (
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    -- Date and time of the test run.
+    test_run_date text not null,
+    -- stdout = 0, stderr = 1
+    log_src integer not null,
     -- Hash of the logs captured during the test run execution.
-    logs_hash text not null references GeneralContents (hash) on delete cascade,
+    logs_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision
+        test_run_date,
+        log_src
     ),
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision
-    ) references TestRuns (product_id, name, utc_date, revision) on delete cascade
+        test_run_date
+    ) references TestRuns (product_id, name, utc_date) on delete cascade
 );
 
--- Table to store statement coverage per test run for files that are mapped to tracked files.
+-- Table to store statement coverage per test run.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
-create table TestRunTrackedStatementCoverage (
+create table TestRunStatementCoverage (
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- File that was covered.
     stmnt_filepath text not null,
-    -- Hash of the file content when the coverage was captured.
-    stmnt_file_hash text not null,
+    -- Optional hash of the file content when the coverage was captured.
+    stmnt_file_hash text,
     -- Line that was covered.
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
@@ -631,51 +574,15 @@ create table TestRunTrackedStatementCoverage (
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         stmnt_filepath,
         stmnt_line
     ),
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision
-    ) references TestRuns (product_id, name, utc_date, revision) on delete cascade,
-    foreign key (stmnt_filepath, stmnt_file_hash) references FileHashes (file, hash) on delete cascade
-);
-
--- Table to store statement coverage per test run for files that cannot be mapped to tracked files.
--- [req("testcov.cov.lines", "testcov.cov.trace_mapping.no_hash"])
-create table TestRunUntrackedStatementCoverage (
-    -- The product ID that maps to the product that got tested with this test run.
-    product_id text not null,
-    -- Name of the test run.
-    test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
-    -- File that was covered.
-    stmnt_filepath text not null,
-    -- Line that was covered.
-    stmnt_line text not null,
-    -- Number of how often the line was covered/hit during test run execution.
-    hits integer not null,
-    primary key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        stmnt_filepath,
-        stmnt_line
-    ),
-    foreign key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision
-    ) references TestRuns (product_id, name, utc_date, revision) on delete cascade
+        test_run_date
+    ) references TestRuns (product_id, name, utc_date) on delete cascade
 );
 
 -- Table to store test case results.
@@ -686,69 +593,41 @@ create table TestCases (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     name text not null,
     -- State of the test case.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     -- [req("testcov.test_case.state")]
     state integer not null,
+    -- Optional utc date and time for the test case.
+    utc_date text,
+    -- Optional duration of the test case.
+    duration text,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date
         name
     ),
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision
-    ) references TestRuns (product_id, name, utc_date, revision) on delete cascade
+        test_run_date
+    ) references TestRuns (product_id, name, utc_date) on delete cascade
 );
 
--- Table to link to metadata of a test case.
---
--- Note: Metadata in own table, because in contrast to test runs,
--- it is expected that test cases will seldom have metadata.
---
+-- Table to store optional metadata of a test case.
 -- [req("testcov.test_case.metadata")]
-create table TestCaseMetadata (
-    -- The product ID that maps to the product that got tested with this test run.
+create table TestCaseProperties (
     product_id text not null,
-    -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
-    -- Name of the test case.
+    test_run_date text not null,
     test_case_name text not null,
-    -- Hash of the metadata of the test case.
-    data_hash text not null references GeneralContents (hash) on delete cascade,
-    primary key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name
-    ),
-    foreign key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name
-    ) references TestCases (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        name
-    ) on delete cascade
+    property_key text not null,
+    property_value text references GeneralJson (hash) on delete restrict,
+    primary key (product_id, test_run_name, test_run_date, test_case_name, property_key),
+    foreign key (product_id, test_run_name, test_run_date, test_case_name) references TestCases (product_id, test_run_name, test_run_date, name) on delete cascade
 );
 
 -- Table to link log output to a test case.
@@ -763,127 +642,65 @@ create table TestCaseLogs (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
+    -- stdout = 0, stderr = 1
+    log_src integer not null,
     -- Logs that were captured during the execution of the test case.
-    logs_hash text not null references GeneralContents (hash) on delete cascade,
+    logs_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name
+        test_run_date,
+        test_case_name,
+        log_src
     ),
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ) references TestCases (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         name
     ) on delete cascade
 );
 
--- Table to store the link between an element and a test case where the test case location
--- can be mapped to an element in a tracked file.
--- [req("testcov.test_case.origin", "changes.track")]
-create table TestCaseTrackedLocations (
-    -- The product ID that maps to the product that got tested with this test run.
-    product_id text not null,
-    -- Name of the test run.
-    test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
-    -- Name of the test case.
-    test_case_name text not null,
-    -- File the test case is defined in.
-    filepath text not null,
-    -- Hash of the file content.
-    file_hash text not null,
-    -- Line the test case is defined at.
-    -- This links to the definition line of the element.
-    line integer not null,
-    primary key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name
-    ),
-    foreign key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name
-    ) references TestCases (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        name
-    ) on delete cascade,
-    foreign key (
-        filepath,
-        file_hash,
-        line
-    ) references Elements (
-        filepath,
-        file_hash,
-        definition_line
-    )
-);
-
--- Table to store the locations of test cases, in case the location
--- cannot be tracked to files stored in the database.
---
--- **Note:** This table does not link to `FileHashes`, because test cases
--- may be defined in files that are not tracked by *mantra*.
--- Furthermore, the hash of the file content is seldomly part of test report formats.
+-- Table to store the optional location of test cases.
 -- [req("testcov.test_case.origin")]
-create table TestCaseUntrackedLocations (
+create table TestCaseLocations (
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- File the test case is defined in.
     filepath text not null,
+    -- Optional hash of the file content.
+    file_hash text,
     -- Line the test case is defined at.
     line integer not null,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ),
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ) references TestCases (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         name
     ) on delete cascade
 );
@@ -897,9 +714,7 @@ create table TestCaseStateReason (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- The reason for the state of a test case.
@@ -907,42 +722,37 @@ create table TestCaseStateReason (
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ),
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ) references TestCases (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         name
     ) on delete cascade
 );
 
 -- Table to store statement coverage per test case.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
-create table TestCaseTrackedStatementCoverage (
+create table TestCaseStatementCoverage (
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- File that was covered.
     stmnt_filepath text not null,
     -- Hash of the file that was covered.
-    stmnt_file_hash text not null,
+    stmnt_file_hash text,
     -- Line that was covered.
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during the test case execution.
@@ -950,8 +760,7 @@ create table TestCaseTrackedStatementCoverage (
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name,
         stmnt_filepath,
         stmnt_line
@@ -959,61 +768,12 @@ create table TestCaseTrackedStatementCoverage (
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ) references TestCases (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        name
-    ) on delete cascade,
-    foreign key (stmnt_filepath, stmnt_file_hash) references FileHashes (
-        filepath,
-        file_hash
-    ) on delete cascade
-);
-
--- Table to store statement coverage per test case for files that cannot be mapped to collected files.
--- [req("testcov.cov.lines", "testcov.cov.trace_mapping.no_hash])
-create table TestCaseUntrackedStatementCoverage (
-    -- Product ID that maps to the product that is tested.
-    product_id text not null,
-    -- Name of the test run.
-    test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
-    -- Name of the test case.
-    test_case_name text not null,
-    -- File that was covered.
-    stmnt_filepath text not null,
-    -- Line that was covered.
-    stmnt_line text not null,
-    -- Number of how often the line was covered/hit during the test case execution.
-    hits integer not null,
-    primary key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name,
-        stmnt_filepath,
-        stmnt_line
-    ),
-    foreign key (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
-        test_case_name
-    ) references TestCases (
-        product_id,
-        test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         name
     ) on delete cascade
 );
@@ -1027,63 +787,71 @@ create table Reviews (
     name text not null,
     -- UTC date and time at which the review was held.
     utc_date text not null,
-    -- Indicates the revision of a review to track retrospective changes.
-    revision integer not null,
-    -- The hash of the review content to detect changes.
-    content_hash text not null,
     -- The reviewers of the review.
     -- [req("review.reviewer")]
     reviewer text not null,
     -- The hash of the origin data of the review.
     -- [req("review.origin")]
-    origin_hash text not null references GeneralContents (hash) on delete cascade,
+    origin_hash text not null references GeneralTexts (hash) on delete restrict,
     -- Hash of the optional decription for the review.
     -- [req("review.description")]
-    description_hash text references GeneralContents (hash) on delete set null,
-    primary key (product_id, name, utc_date, revision)
+    description_hash text references GeneralTexts (hash) on delete restrict,
+    -- The hash of the file content the review was collected from to detect changes.
+    src_hash text not null references FileHashes (hash) on delete restrict,
+    primary key (product_id, name, utc_date, revision),
+    constraint revision_check
+        check (
+          (revision = 0) or
+          (revision_author is not null and revision_comment is not null)
+        )
 );
 
--- Table to map review to `mantra collect` runs.
--- [req("changes.track")]
-create table ReviewCollections (
-    -- Hash of the collected content.
-    section_hash text not null references CollectedSections (hash) on delete cascade,
-    -- The product ID that maps to the product that got reviewed.
+create table ReviewRevisions (
     product_id text not null,
-    -- Name of the review.
     review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Revision of the review.
-    review_revision integer not null,
-    primary key (section_hash, review_name, review_utc_date, review_revision),
-    foreign key (product_id, review_name, review_utc_date, review_revision) references Reviews (product_id, name, utc_date, revision) on delete cascade
+    review_date text not null,
+    -- Indicates the revision
+    revision integer not null,
+    -- Optional names of authors of the revision.
+    -- Mandatory for later revisions.
+    -- [req("changes.authors")]
+    authors text,
+    -- Optional comment for the revision.
+    -- Mandatory for later revisions.
+    -- [req("changes.comment")]
+    comment text,
+    primary key (product_id, review_name, review_date),
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
+    constraint revision_check
+        check (
+          (revision = 0) or
+          (authors is not null and comment is not null)
+        )
 );
+
 
 -- Table to store requirement IDs that were manually verified in a review,
 -- and the IDs could be mapped to requirements stored in the database.
 -- [req("review.verify_req")]
 create table ManuallyVerifiedRequirements (
     -- ID of the requirement that is manually verified.
-    req_id text not null references Requirements (id) on delete cascade,
+    req_id text not null,
     -- Product ID that maps to the product that got reviewed.
     product_id text not null,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Revision of the review.
-    review_revision integer not null,
+    review_date text not null,
     -- Hash of the comment for the manual verification.
-    comment_hash text not null references GeneralContents (hash) on delete cascade,
+    comment_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
         product_id,
         req_id,
         review_name,
-        review_utc_date,
-        review_revision
+        review_date
     ),
-    foreign key (product_id, review_name, review_utc_date, review_revision) references Reviews (product_id, name, utc_date, revision) on delete cascade
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
+    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
 );
 
 -- Table to store requirement IDs that were manually verified in a review,
@@ -1097,11 +865,9 @@ create table UnrelatedManuallyVerifiedRequirements (
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Revision of the review.
-    review_revision integer not null,
+    review_date text not null,
     -- Hash of the comment for the manual verification.
-    comment_hash text not null references GeneralContents (hash) on delete cascade,
+    comment_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
         product_id,
         req_id,
@@ -1109,7 +875,7 @@ create table UnrelatedManuallyVerifiedRequirements (
         review_utc_date,
         review_revision
     ),
-    foreign key (product_id, review_name, review_utc_date, review_revision) references Reviews (product_id, name, utc_date, revision) on delete cascade
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
 );
 
 -- Table to store test case overrides from reviews.
@@ -1120,44 +886,36 @@ create table TestCaseOverrides (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Revision of the review.
-    review_revision integer not null,
+    review_date text not null,
     -- State that must be used instead of the one stored in the TestCase table.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
     -- Hash of the comment explaining why the state must be overriden.
-    comment_hash text not null references GeneralContents (hash) on delete cascade,
+    comment_hash text not null references GeneralTexts(hash) on delete cascade,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name,
         review_name,
-        review_utc_date,
-        review_revision
+        review_date
     ),
-    foreign key (product_id, review_name, review_utc_date, review_revision) references Reviews (product_id, name, utc_date, revision) on delete cascade,
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name
     ) references TestCases (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         name
     )
 );
@@ -1173,15 +931,11 @@ create table TestRunStatementCoverageOverrides (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Revision of the review.
-    review_revision integer not null,
+    review_date text not null,
     -- File that was covered.
     stmnt_filepath text not null,
     -- Line that was covered.
@@ -1189,31 +943,27 @@ create table TestRunStatementCoverageOverrides (
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
     -- Hash of the comment explaining why this statement coverage must be overriden.
-    comment_hash text not null references GeneralContents (hash) on delete cascade,
+    comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         review_name,
-        review_utc_date,
-        review_revision,
+        review_date,
         stmnt_filepath,
         stmnt_line
     ),
-    foreign key (product_id, review_name, review_utc_date, review_revision) references Reviews (product_id, name, utc_date, revision) on delete cascade,
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         stmnt_filepath,
         stmnt_line
     ) references TestRunStatementCoverage (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         stmnt_filepath,
         stmnt_line
     )
@@ -1230,17 +980,13 @@ create table TestCaseStatementCoverageOverrides (
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
-    test_run_utc_date text not null,
-    -- Revision of the test run.
-    test_run_revision integer not null,
+    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
-    review_utc_date text not null,
-    -- Revision of the review.
-    review_revision integer not null,
+    review_date text not null,
     -- File that was covered.
     stmnt_filepath text not null,
     -- Line that was covered.
@@ -1248,33 +994,29 @@ create table TestCaseStatementCoverageOverrides (
     -- Number of how often the line was covered/hit during test run execution.
     hits integer not null,
     -- Hash of the comment explaining why this statement coverage must be overriden.
-    comment_hash text not null references GeneralContents (hash) on delete cascade,
+    comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name,
         review_name,
-        review_utc_date,
-        review_revision,
+        review_date,
         stmnt_filepath,
         stmnt_line
     ),
-    foreign key (product_id, review_name, review_utc_date, review_revision) references Reviews (product_id, name, utc_date, revision) on delete cascade,
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
     foreign key (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name,
         stmnt_filepath,
         stmnt_line
     ) references TestCaseStatementCoverage (
         product_id,
         test_run_name,
-        test_run_utc_date,
-        test_run_revision,
+        test_run_date,
         test_case_name,
         stmnt_filepath,
         stmnt_line
