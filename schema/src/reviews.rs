@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use time::OffsetDateTime;
 
 use crate::{
-    testcov::{TestCaseState, TestRunId},
-    Line,
+    test_runs::{TestCaseState, TestRunPk},
+    Line, Origin, Properties, Revision,
 };
 
 use super::requirements::ReqId;
@@ -37,11 +37,14 @@ pub struct ReviewSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub version: Option<String>,
     pub reviews: Vec<Review>,
-    /// Optional metadata related to all reviews in this entry.
-    pub metadata: Option<serde_json::Value>,
+    /// Optional properties related to all reviews in this entry.
+    ///
+    /// **Note:** If a review sets a property key directly,
+    /// the value set at the review will be taken.
+    pub properties: Option<Properties>,
     /// Optional base origin of the reviews in this entry.
     /// e.g. specific branch or commit from a git repository
-    pub origin: Option<serde_json::Value>,
+    pub origin: Option<Origin>,
 }
 
 /// Defines the fields for a review.
@@ -64,11 +67,6 @@ pub struct Review {
         )
     )]
     pub date: OffsetDateTime,
-    /// Hash of the review content to detect changes.
-    ///
-    /// If not provided, will be computed using the fields: reviewer, description, origin, requirements, overrides
-    /// [req("changes.track.reviews")]
-    pub content_hash: Option<String>,
     /// The reviewer that were part of the review.
     /// [req("review.reviewer")]
     pub reviewer: String,
@@ -77,7 +75,11 @@ pub struct Review {
     pub description: Option<String>,
     /// Optional origin of the review.
     /// [req("review.origin")]
-    pub origin: Option<serde_json::Value>,
+    pub origin: Option<Origin>,
+    /// Optional properties related to this review.
+    pub properties: Option<Properties>,
+    /// Optional revisions for the review.
+    pub revisions: Option<Vec<Revision>>,
     /// List of requirements that are verified in this review.
     /// [req("review.verify_req")]
     #[serde(alias = "requirement", default)]
@@ -121,7 +123,7 @@ pub enum OneOrMultRequirementIds {
 #[serde(rename_all = "kebab-case")]
 pub struct OverrideTestRun {
     /// Identification of the test run the overrides are applied to.
-    pub test_run: TestRunId,
+    pub test_run: TestRunPk,
     /// List of test case state overrides.
     /// [req("review.test_case_state")]
     #[serde(alias = "test", default)]

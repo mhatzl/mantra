@@ -1,4 +1,4 @@
-use crate::product::ProductId;
+use crate::{product::ProductId, Origin, Properties};
 
 /// Defines the schema to exchange requirements related information.
 /// [req("exchange.requirements.schema")]
@@ -12,11 +12,14 @@ pub struct RequirementSchema {
     pub version: Option<String>,
     /// List of requirements.
     pub requirements: Vec<Requirement>,
-    /// Optional metadata related to all requirements in this entry.
-    pub metadata: Option<serde_json::Value>,
+    /// Optional properties related to all requirements in this entry.
+    ///
+    /// **Note:** If a requirement sets a property key directly,
+    /// the value set at the requirement will be taken.
+    pub properties: Option<Properties>,
     /// Optional base origin of the requirements in this entry.
     /// e.g. specific branch or commit from a git repository
-    pub origin: Option<serde_json::Value>,
+    pub origin: Option<Origin>,
 }
 
 /// Type alias for a requirement ID.
@@ -33,14 +36,9 @@ pub struct Requirement {
     /// ID of the requirement.
     /// [req("req.id")]
     pub id: ReqId,
-    /// Hash of the requirement content to detect changes.
-    ///
-    /// If not provided, will be computed using the fields:
-    /// parents, title, origin, manual_verification, deprecated, properties
-    pub content_hash: Option<String>,
     /// Optional list of parent requirement IDs.
     /// [req("req.hierarchy.mult_parents")]
-    pub parents: Option<Vec<ParentRequirement>>,
+    pub parents: Option<Vec<RequirementPk>>,
     /// Title of the requirement.
     /// [req("req.title")]
     pub title: String,
@@ -49,7 +47,7 @@ pub struct Requirement {
     pub description: Option<String>,
     /// Origin where the requirement is defined at.
     /// [req("req.origin")]
-    pub origin: serde_json::Value,
+    pub origin: Origin,
     /// true: Marks the requirement to require manual verification.
     /// [req("req.manual")]
     #[serde(default)]
@@ -60,35 +58,19 @@ pub struct Requirement {
     pub deprecated: bool,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
-    #[serde(default)]
-    pub properties: Vec<RequirementProperty>,
+    pub properties: Option<Properties>,
 }
 
-/// This struct defines the information *mantra* stores about a parent requirement.
-///
-/// [req("req.hierarchy")]
+/// This struct defines the primary key to identify requirements for a product.
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
-pub struct ParentRequirement {
+pub struct RequirementPk {
     /// ID of the parent requirement.
     /// [req("req.id")]
     pub id: ReqId,
     /// ID of the product the parent requirement is defined in.
     /// If `None`, the parent is assumed to be defined in the same product as the child requirement.
     pub product_id: Option<ProductId>,
-}
-
-/// Key value properties of requirements.
-///
-/// [req("req.properties")]
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-pub struct RequirementProperty {
-    /// The key of the property.
-    pub key: String,
-    /// The value of the property.
-    pub value: serde_json::Value,
 }

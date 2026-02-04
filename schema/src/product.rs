@@ -1,21 +1,9 @@
+use crate::Properties;
+
 /// Type alias for a product ID.
 ///
 /// TODO: map to requirement
 pub type ProductId = String;
-
-/// Defines the schema to exchange product related information.
-/// [req("exchange.requirements.schema")]
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-pub struct ProductSchema {
-    /// The schema version.
-    /// [req("exchange.versioned")]
-    #[serde(serialize_with = "crate::serialize_schema_version")]
-    pub version: Option<String>,
-    /// List of products.
-    pub products: Vec<Product>,
-}
 
 /// This struct defines the information *mantra* stores about a product.
 ///
@@ -52,8 +40,8 @@ pub struct Product {
     ///
     /// TODO: map to requirement
     pub license: Option<String>,
-    /// Optional metadata of the product.
+    /// Optional properties of the product.
     ///
     /// TODO: map to requirement
-    pub metadata: Option<serde_json::Value>,
+    pub properties: Option<Properties>,
 }
