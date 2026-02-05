@@ -3,7 +3,7 @@
 -- Base table for test runs.
 -- [req("testcov.test_run")]
 create table TestRuns (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null references Products (id) on delete cascade,
     -- The name of the test run.
     name text not null,
@@ -30,7 +30,7 @@ create table TestRuns (
 -- Table to store optional metadata of a test run.
 -- [req("testcov.test_run.metadata")]
 create table TestRunProperties (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -41,7 +41,7 @@ create table TestRunProperties (
 );
 
 create table TestRunRevisions (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -62,7 +62,7 @@ create table TestRunRevisions (
 -- while each test run may additionally have regular test cases.
 -- [req("testcov.test_run.nested")]
 create table TestRunHierarchies (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID of the parent test run.
     parent_product_id text not null,
     -- The name of the parent test run.
@@ -94,7 +94,7 @@ create table TestRunHierarchies (
 --
 -- [req("testcov.test_case.metadata")]
 create table TestRunLogs (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -121,7 +121,7 @@ create table TestRunLogs (
 -- Table to store statement coverage per test run.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
 create table TestRunStatementCoverage (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -153,7 +153,7 @@ create table TestRunStatementCoverage (
 -- Table to store test case results.
 -- [req("testcov.test_case")]
 create table TestCases (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -173,7 +173,7 @@ create table TestCases (
     primary key (
         product_id,
         test_run_name,
-        test_run_date
+        test_run_date,
         name
     ),
     foreign key (
@@ -185,7 +185,7 @@ create table TestCases (
 
 -- Stores requirements that are explicitely verified by the test case.
 create table TestCaseVerifiedRequirements (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -199,7 +199,7 @@ create table TestCaseVerifiedRequirements (
 -- Table to store optional metadata of a test case.
 -- [req("testcov.test_case.metadata")]
 create table TestCaseProperties (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -217,7 +217,7 @@ create table TestCaseProperties (
 --
 -- [req("testcov.test_case.metadata")]
 create table TestCaseLogs (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -253,7 +253,7 @@ create table TestCaseLogs (
 -- Table to store the optional location of test cases.
 -- [req("testcov.test_case.origin")]
 create table TestCaseLocations (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -291,7 +291,7 @@ create table TestCaseLocations (
 -- This is mostly needed for *skipped* or *failed* test cases.
 -- [req("testcov.test_case.state")]
 create table TestCaseStateProperties (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
@@ -326,7 +326,7 @@ create table TestCaseStateProperties (
 -- Table to store statement coverage per test case.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
 create table TestCaseStatementCoverage (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.

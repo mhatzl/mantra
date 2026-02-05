@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "mantra",
     "langs/mantra-lang-tracing",
@@ -20,6 +20,7 @@ time = { version = "0.3.36", features = ["serde", "formatting", "parsing", "macr
 log = "0.4.21"
 env_logger = "0.11.3"
 schemars = "0.8.21"
+sqlx = "0.8.6"
 
 [workspace.package]
 version = "0.7.6"

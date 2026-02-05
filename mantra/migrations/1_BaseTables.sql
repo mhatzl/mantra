@@ -24,7 +24,7 @@ create table GeneralJson (
 -- [req("changes.track.traces.files")]
 create table FileHashes (
     -- Hash of the file content.
-    hash text not null
+    hash text not null primary key
 );
 
 -- Base table used to track changes over multiple `mantra collect` runs.
@@ -35,7 +35,7 @@ create table Collections (
     -- Filepath to the `mantra.toml` file that was used to collect the data.
     -- Path is relativ to the invocation of `mantra collect`.
     -- [req("changes.track.origin")]
-    collect_filepath text not null,
+    config_filepath text not null,
     -- The hash of the configuration content in `mantra.toml` for this collection.
     -- [req("cli.collect.config")]
     config_hash text not null references GeneralJson (hash) on delete restrict,

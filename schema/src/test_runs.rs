@@ -1,5 +1,6 @@
-use std::{path::PathBuf, time::Duration};
+use std::time::Duration;
 
+use crate::path::RelativePathBuf;
 use crate::{requirements::ReqId, Line, Origin, Properties, Revision};
 
 /// Defines the schema to exchange test and coverage related information.
@@ -143,7 +144,8 @@ pub struct TestCase {
 #[serde(rename_all = "kebab-case")]
 pub struct TestCaseLocation {
     /// The filepath the test case is defined in.
-    pub filepath: PathBuf,
+    #[schemars(with = "String")]
+    pub filepath: RelativePathBuf,
     /// The hash of the file content at the time the test case was executed.
     /// [req("changes.track.test_runs")]
     pub file_hash: Option<String>,
@@ -179,7 +181,8 @@ pub enum TestCaseState {
 )]
 pub struct CoveredFile {
     /// File the coverage information is for.
-    pub filepath: PathBuf,
+    #[schemars(with = "String")]
+    pub filepath: RelativePathBuf,
     /// Optional hash of the file content to detect changes.
     /// Coverage formats may not provide the file hash, therefore it must be optional.
     pub file_hash: Option<String>,

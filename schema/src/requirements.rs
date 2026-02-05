@@ -49,13 +49,24 @@ pub struct Requirement {
     /// [req("req.origin")]
     pub origin: Origin,
     /// true: Marks the requirement to require manual verification.
+    ///
+    /// **Note:** All potential children of such a requirement are also marked
+    /// to require manual verification.
     /// [req("req.manual")]
     #[serde(default)]
     pub manual_verification: bool,
     /// true: Marks the requirement to be deprecated.
+    ///
+    /// **Note:** All potential children of such a requirement are also marked as deprecated.
     /// [req("req.deprecated")]
     #[serde(default)]
     pub deprecated: bool,
+    /// true: Instructs mantra to ignore the requirement for the product it is mapped to.
+    ///
+    /// **Note:** All potential children of such a requirement will also be ignored.
+    /// [req("req.ignore")]
+    #[serde(default)]
+    pub ignore: bool,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,

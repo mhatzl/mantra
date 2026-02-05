@@ -2,7 +2,7 @@
 -- Table to store reviews.
 -- [req("review", "changes.track")]
 create table Reviews (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got reviewed.
     product_id text not null references Products(id) on delete cascade,
     -- Name of the review
@@ -23,12 +23,12 @@ create table Reviews (
     description_hash text references GeneralTexts (hash) on delete restrict,
     -- The hash of the file content the review was collected from to detect changes.
     src_hash text not null references FileHashes (hash) on delete restrict,
-    primary key (product_id, name, utc_date),
+    primary key (product_id, name, utc_date)
 );
 
 -- Table to store optional metadata of a review.
 create table ReviewProperties (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     review_name text not null,
     review_date text not null,
@@ -39,7 +39,7 @@ create table ReviewProperties (
 );
 
 create table ReviewRevisions (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     review_name text not null,
     review_date text not null,
@@ -59,7 +59,7 @@ create table ReviewRevisions (
 -- and the IDs could be mapped to requirements stored in the database.
 -- [req("review.verify_req")]
 create table ManuallyVerifiedRequirements (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- ID of the requirement that is manually verified.
     req_id text not null,
     -- Product ID that maps to the product that got reviewed.
@@ -83,7 +83,7 @@ create table ManuallyVerifiedRequirements (
 -- Table to store test case overrides from reviews.
 -- [req("review.test_case_state")]
 create table TestCaseOverrides (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
     -- Name of the test run.
@@ -129,7 +129,7 @@ create table TestCaseOverrides (
 --
 -- [req("review.coverage", "testcov.cov.lines")]
 create table TestRunStatementCoverageOverrides (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
     -- Name of the test run.
@@ -179,7 +179,7 @@ create table TestRunStatementCoverageOverrides (
 --
 -- [req("review.coverage", "testcov.cov.lines")]
 create table TestCaseStatementCoverageOverrides (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
     -- Name of the test run.

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or replace into GeneralTexts (\n                    hash,\n                    content\n                )\n                values (\n                    $1,\n                    $2\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2b932a72ed927c07a560d8ba14ed021bac932adcb0327dd3b8d536c8bc2461ec"
+}

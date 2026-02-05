@@ -1,4 +1,4 @@
-use crate::Properties;
+use crate::{FmtHash, Properties};
 
 /// Type alias for a product ID.
 ///
@@ -40,8 +40,26 @@ pub struct Product {
     ///
     /// TODO: map to requirement
     pub license: Option<String>,
+    /// Optional description of the product.
+    ///
+    /// TODO: map to requirement
+    pub description: Option<String>,
     /// Optional properties of the product.
     ///
     /// TODO: map to requirement
     pub properties: Option<Properties>,
+}
+
+impl Product {
+    pub fn id(&self) -> ProductId {
+        match &self.id {
+            Some(id) => id.clone(),
+            None => FmtHash::from(&serde_json::json!({
+                "name": self.name,
+                "base": self.base
+            }))
+            .hash()
+            .to_string(),
+        }
+    }
 }

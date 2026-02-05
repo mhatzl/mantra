@@ -2,7 +2,7 @@
 -- Table contains products that were collected via `mantra collect`.
 -- [req("lifecycle.product.id", "report.product_data")]
 create table Products (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Product ID
     id text not null primary key,
     -- Name of a product.
@@ -20,7 +20,9 @@ create table Products (
     -- Optional URL to the product's repository.
     repository text,
     -- Optional license of the product.
-    license text
+    license text,
+    -- Optional description of the product.
+    description_hash text references GeneralTexts (hash) on delete restrict
 );
 
 create table ProductsHistory (
@@ -34,7 +36,7 @@ create table ProductsHistory (
     homepage text,
     repository text,
     license text,
-    metadata_hash text references GeneralJson (hash) on delete restrict
+    description_hash text references GeneralJson (hash) on delete restrict
 );
 
 create trigger ProductsUpdates
@@ -47,7 +49,7 @@ when (
     old.homepage is distinct from new.homepage or
     old.repository is distinct from new.repository or
     old.license is distinct from new.license or
-    old.metadata_hash is distinct from new.metadata_hash
+    old.description_hash is distinct from new.description_hash
 )
 begin
     insert into ProductsHistory (
@@ -60,7 +62,7 @@ begin
         homepage,
         repository,
         license,
-        metadata_hash
+        description_hash
     )
     values (
         old.id,
@@ -72,7 +74,7 @@ begin
         case when old.homepage is distinct from new.homepage then old.homepage else null end,
         case when old.repository is distinct from new.repository then old.repository else null end,
         case when old.license is distinct from new.license then old.license else null end,
-        case when old.metadata_hash is distinct from new.metadata_hash then old.metadata_hash else null end
+        case when old.description_hash is distinct from new.description_hash then old.description_hash else null end
     );
 end;
 
@@ -90,7 +92,7 @@ begin
         homepage,
         repository,
         license,
-        metadata_hash
+        description_hash
     )
     values (
         new.id,
@@ -102,7 +104,7 @@ begin
         new.homepage,
         new.repository,
         new.license,
-        new.metadata_hash
+        new.description_hash
     );
 end;
 
@@ -120,7 +122,7 @@ begin
         homepage,
         repository,
         license,
-        metadata_hash
+        description_hash
     )
     values (
         old.id,
@@ -132,27 +134,27 @@ begin
         old.homepage,
         old.repository,
         old.license,
-        old.metadata_hash
+        old.description_hash
     );
 end;
 
 create table ProductRelatedFiles (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Product ID
-    product_id text not null,
+    product_id text not null references Products(id) on delete cascade,
     filepath text not null,
     file_hash text not null references FileHashes (hash) on delete restrict,
-    constraint ProductRelatedFiles primary key (product_id, filepath)
+    primary key (product_id, filepath)
 );
 
 -- Table to map to properties of products.
 create table ProductProperties (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     -- Key of the property
     property_key text not null,
     -- Hash of a custom property of the product.
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    constraint ProductPropertiesPk primary key (product_id, property_key),
-    foreign key (product_id) references Products (product_id) on delete cascade
+    primary key (product_id, property_key),
+    foreign key (product_id) references Products (id) on delete cascade
 );

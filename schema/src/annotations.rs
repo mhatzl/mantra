@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use crate::path::RelativePathBuf;
 
 use crate::{Line, LineSpan, Origin, Properties};
 
@@ -35,7 +35,8 @@ pub struct AnnotationSchema {
 pub struct FileAnnotations {
     /// File that contains traces and/or elements.
     /// [req("trace.origin")]
-    pub filepath: PathBuf,
+    #[schemars(with = "String")]
+    pub filepath: RelativePathBuf,
     /// Hash of the file content to detect changes.
     pub file_hash: String,
     /// Traces detected in the file.

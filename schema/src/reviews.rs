@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-
+use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
 use crate::{
@@ -170,7 +169,8 @@ pub struct OverrideTestCaseState {
 )]
 pub struct OverrideFileCoverage {
     /// The file whose coverage data is overridden in a review.
-    pub filepath: PathBuf,
+    #[schemars(with = "String")]
+    pub filepath: RelativePathBuf,
     /// The line information in the file that is overridden.
     #[serde(default)]
     pub lines: Vec<OverrideCoveredLineInfo>,

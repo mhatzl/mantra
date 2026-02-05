@@ -2,7 +2,7 @@
 -- Table containing all requirement IDs collected by mantra.
 -- [req("req.id", "changes.track.reqs.id")]
 create table Requirements (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     id text not null,
     product_id text not null references Products (id) on delete cascade,
     -- Flag indicating whether the requirement requires manual verification.
@@ -12,7 +12,11 @@ create table Requirements (
     -- Flag indicating whether the requirement is deprecated.
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
-    deprecated bool not null
+    deprecated bool not null,
+    -- Flag indicating whether the requirement should be ignored for this product.
+    -- `true`: The requirement must be ignored.
+    -- [req("req.ignored")]
+    ignore bool not null,
     -- The title of the requirement.
     -- [req("req.title")]
     title text not null,
@@ -34,7 +38,7 @@ create table Requirements (
 -- Table to map to properties of requirements.
 -- [req("req.properties")]
 create table RequirementProperties (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     req_id text not null,
     product_id text not null,
     -- Key of the property
@@ -50,7 +54,7 @@ create table RequirementProperties (
 -- **Note:** Per requirement content, because the parent IDs are part of the content.
 -- [req("req.hierarchy")]
 create table RequirementHierarchies (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Product ID the child requirements id defined in.
     child_product_id text not null,
     -- The ID of the child requirement, whose content referenced the parent ID.

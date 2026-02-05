@@ -1,6 +1,6 @@
 
 create table AnnotatedFileOrigins (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     filepath text not null,
     origin_hash text not null references GeneralJson (hash) on delete restrict,
@@ -47,12 +47,12 @@ create table DirectReqTraces (
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
-    primary key (req_id, filepath, file_hash, line),
+    primary key (req_id, file_hash, line),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
 create table DirectProductReqTraces (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     req_id text not null,
     filepath text not null,
@@ -95,7 +95,7 @@ create table Elements (
 );
 
 create table ElementIdents (
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     -- File the element is defined in.
     filepath text not null,
@@ -105,7 +105,7 @@ create table ElementIdents (
     definition_line integer not null,
     ident text not null,
     primary key (product_id, filepath, file_hash, definition_line),
-    foreign key (product_id, filepath, file_hash) references ProductRelatedFiles (product_id, filepath, file_hash) on delete cascade,
+    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, definition_line) references Elements (file_hash, definition_line) on delete cascade
 );
 
@@ -184,5 +184,5 @@ create table CoverageLineExcludes (
     line integer not null,
     -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
     comment text not null references GeneralTexts (hash) on delete restrict,
-    primary key (file_hash, line),
+    primary key (file_hash, line)
 );
