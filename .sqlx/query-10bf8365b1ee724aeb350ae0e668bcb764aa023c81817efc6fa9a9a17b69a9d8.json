@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ElementIdents (\n                    last_collect_nr,\n                    product_id,\n                    filepath,\n                    file_hash,\n                    definition_line,\n                    ident\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6\n                )\n                on conflict (product_id, filepath, file_hash, definition_line)\n                do update set\n                    ident = excluded.ident\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "10bf8365b1ee724aeb350ae0e668bcb764aa023c81817efc6fa9a9a17b69a9d8"
+}

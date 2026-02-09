@@ -52,9 +52,20 @@ pub struct Revision {
     pub comment: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, sqlx::Type)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    sqlx::Type,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+)]
 // #[cfg_attr(feature = "sqlx", derive(sqlx_macros::Encode, sqlx_macros::Type))]
 #[sqlx(transparent)]
+#[serde(transparent)]
 pub struct FmtHash(String);
 
 impl FmtHash {
@@ -86,4 +97,8 @@ impl std::str::FromStr for FmtHash {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::from(&s.to_string()))
     }
+}
+
+pub enum ConversionError {
+    UnknownKind,
 }

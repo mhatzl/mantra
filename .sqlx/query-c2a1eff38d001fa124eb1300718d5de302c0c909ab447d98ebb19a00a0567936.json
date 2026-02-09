@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert or ignore into DirectTracedElements (\n                            file_hash,\n                            traced_line,\n                            element_definition_line\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3\n                        )\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "c2a1eff38d001fa124eb1300718d5de302c0c909ab447d98ebb19a00a0567936"
+}

@@ -1,0 +1,474 @@
+use mantra_schema::{
+    FmtHash, Properties,
+    annotations::{
+        AnnotationSchema, CoverageExclude, CoverageExcludeKind, Element, FileAnnotations, Trace,
+        TraceRelatedCodeVariant,
+    },
+};
+
+use crate::cmd::collect::{Collection, merge_local_and_base_properties};
+
+impl<'db> Collection<'db> {
+    pub(super) async fn update_annotations(
+        &mut self,
+        annotation_schemas: Vec<AnnotationSchema>,
+    ) -> Result<(), anyhow::Error> {
+        // TODO: if hash should be replaced => first remove every entry linked to file-hashes that will be added
+
+        for schema in annotation_schemas {
+            self.update_per_annotation_schema(schema).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_per_annotation_schema(
+        &mut self,
+        annotaiton_schema: AnnotationSchema,
+    ) -> Result<(), anyhow::Error> {
+        let base_origin_hash = annotaiton_schema.origin.as_ref().map(FmtHash::from);
+
+        if let Some(hash) = &base_origin_hash
+            && let Some(origin) = annotaiton_schema.origin
+        {
+            self.insert_general_json(&hash, origin.clone()).await?;
+        }
+
+        // TODO: do not stop at first collect error
+
+        for file_annotations in annotaiton_schema.files {
+            self.update_per_annotation_file(
+                file_annotations,
+                &base_origin_hash,
+                &annotaiton_schema.trace_properties,
+            )
+            .await?;
+        }
+
+        todo!()
+    }
+
+    async fn update_per_annotation_file(
+        &mut self,
+        file_annotations: FileAnnotations,
+        base_origin_hash: &Option<FmtHash>,
+        base_trace_props: &Option<Properties>,
+    ) -> Result<(), anyhow::Error> {
+        // TODO: don't return on first error
+
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+        let filepath = file_annotations.filepath.as_str();
+
+        self.insert_file_hash(&file_annotations.filepath, &file_annotations.file_hash)
+            .await?;
+
+        sqlx::query!(
+            "
+            insert into AnnotatedFileOrigins (
+                last_collect_nr,
+                product_id,
+                filepath,
+                base_origin_hash
+            )
+            values (
+                $1,
+                $2,
+                $3,
+                $4
+            )
+            on conflict (product_id, filepath, base_origin_hash)
+            do update set
+                last_collect_nr = excluded.last_collect_nr
+            ",
+            collect_nr,
+            product_id,
+            filepath,
+            base_origin_hash
+        )
+        .execute(&mut *self.connection())
+        .await?;
+
+        // **Note:** Adding elements first to be able to map traces to elements later
+        for element in file_annotations.elements {
+            self.update_element(filepath, &file_annotations.file_hash, element)
+                .await?;
+        }
+
+        for trace in file_annotations.traces {
+            self.update_trace(
+                filepath,
+                &file_annotations.file_hash,
+                trace,
+                base_trace_props,
+            )
+            .await?;
+        }
+
+        for coverage_exclude in file_annotations.coverage_excludes {
+            self.update_coverage_exclude(&file_annotations.file_hash, coverage_exclude)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_element(
+        &mut self,
+        filepath: &str,
+        file_hash: &FmtHash,
+        element: Element,
+    ) -> Result<(), anyhow::Error> {
+        let kind = element.kind.as_nr();
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+        let content_hash = element.content.as_ref().map(FmtHash::from);
+        if let Some(hash) = &content_hash
+            && let Some(content) = element.content
+        {
+            self.insert_general_text(&hash, content).await?;
+        }
+
+        sqlx::query!(
+            "
+            insert into Elements (
+                name,
+                file_hash,
+                definition_line,
+                start_line,
+                end_line,
+                kind,
+                content_hash
+            )
+            values (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7
+            )
+            on conflict (file_hash, definition_line)
+            do update set
+                start_line = excluded.start_line,
+                end_line = excluded.end_line,
+                kind = excluded.kind,
+                content_hash = excluded.content_hash
+            ",
+            element.name,
+            file_hash,
+            element.definition_line,
+            element.span.start,
+            element.span.end,
+            kind,
+            content_hash
+        )
+        .execute(&mut *self.connection())
+        .await?;
+
+        if let Some(ident) = element.ident {
+            sqlx::query!(
+                "
+                insert into ElementIdents (
+                    last_collect_nr,
+                    product_id,
+                    filepath,
+                    file_hash,
+                    definition_line,
+                    ident
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    $6
+                )
+                on conflict (product_id, filepath, file_hash, definition_line)
+                do update set
+                    ident = excluded.ident
+                ",
+                collect_nr,
+                product_id,
+                filepath,
+                file_hash,
+                element.definition_line,
+                ident
+            )
+            .execute(&mut *self.connection())
+            .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_trace(
+        &mut self,
+        filepath: &str,
+        file_hash: &FmtHash,
+        trace: Trace,
+        base_trace_props: &Option<Properties>,
+    ) -> Result<(), anyhow::Error> {
+        let kind = trace.kind.as_nr();
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+
+        sqlx::query!(
+            "
+            insert into Traces (
+                file_hash,
+                line,
+                kind
+            )
+            values (
+                $1,
+                $2,
+                $3
+            )
+            on conflict (file_hash, line)
+            do update set
+                kind = excluded.kind
+            ",
+            file_hash,
+            trace.line,
+            kind
+        )
+        .execute(&mut *self.connection())
+        .await?;
+
+        if let Some(props) = merge_local_and_base_properties(trace.properties, base_trace_props) {
+            for prop in props {
+                let value_hash = FmtHash::from(&prop.1);
+                self.insert_general_json(&value_hash, prop.1).await?;
+
+                sqlx::query!(
+                    "
+                    insert into TraceProperties (
+                        file_hash,
+                        line,
+                        property_key,
+                        property_value
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (file_hash, line, property_key)
+                    do update set
+                        property_value = excluded.property_value
+                    ",
+                    file_hash,
+                    trace.line,
+                    prop.0,
+                    value_hash
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        for req_id in trace.ids {
+            sqlx::query!(
+                "
+                insert or ignore into DirectReqTraces (
+                    req_id,
+                    file_hash,
+                    line
+                )
+                values (
+                    $1,
+                    $2,
+                    $3
+                )
+                ",
+                req_id,
+                file_hash,
+                trace.line
+            )
+            .execute(&mut *self.connection())
+            .await?;
+
+            let req_available = sqlx::query!(
+                "
+                select id from Requirements
+                where id = $1 and product_id = $2
+                ",
+                req_id,
+                product_id
+            )
+            .fetch_optional(&mut *self.connection())
+            .await?
+            .is_some();
+
+            if req_available {
+                sqlx::query!(
+                    "
+                    insert into DirectProductReqTraces (
+                        last_collect_nr,
+                        product_id,
+                        req_id,
+                        filepath,
+                        file_hash,
+                        line
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6
+                    )
+                    on conflict (product_id, req_id, filepath, file_hash, line)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                    collect_nr,
+                    product_id,
+                    req_id,
+                    filepath,
+                    file_hash,
+                    trace.line
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        if let Some(related_code) = trace.related_code {
+            match related_code {
+                TraceRelatedCodeVariant::CodeBlock(code_block) => {
+                    let kind = code_block.kind.as_nr();
+                    let content_hash = code_block.content.as_ref().map(FmtHash::from);
+                    if let Some(hash) = &content_hash
+                        && let Some(content) = code_block.content
+                    {
+                        self.insert_general_text(&hash, content).await?;
+                    }
+
+                    sqlx::query!(
+                        "
+                        insert into TracedCodeBlocks (
+                            file_hash,
+                            traced_line,
+                            start_line,
+                            end_line,
+                            kind,
+                            content_hash
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6
+                        )
+                        on conflict (file_hash, traced_line)
+                        do update set
+                            start_line = excluded.start_line,
+                            end_line = excluded.end_line,
+                            kind = excluded.kind,
+                            content_hash = excluded.content_hash
+                        ",
+                        file_hash,
+                        trace.line,
+                        code_block.span.start,
+                        code_block.span.end,
+                        kind,
+                        content_hash
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
+                TraceRelatedCodeVariant::ElementAtLine(def_line) => {
+                    sqlx::query!(
+                        "
+                        insert or ignore into DirectTracedElements (
+                            file_hash,
+                            traced_line,
+                            element_definition_line
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3
+                        )
+                        ",
+                        file_hash,
+                        trace.line,
+                        def_line
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn update_coverage_exclude(
+        &mut self,
+        file_hash: &FmtHash,
+        coverage_exclude: CoverageExclude,
+    ) -> Result<(), anyhow::Error> {
+        let comment_hash = FmtHash::from(&coverage_exclude.comment);
+        self.insert_general_text(&comment_hash, coverage_exclude.comment)
+            .await?;
+
+        match coverage_exclude.kind {
+            CoverageExcludeKind::Block { start, end } => {
+                sqlx::query!(
+                    "
+                    insert or ignore into CoverageBlockExcludes (
+                        file_hash,
+                        start_line,
+                        end_line,
+                        comment_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    ",
+                    file_hash,
+                    start,
+                    end,
+                    comment_hash
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+            CoverageExcludeKind::Line(line) => {
+                sqlx::query!(
+                    "
+                    insert or ignore into CoverageLineExcludes (
+                        file_hash,
+                        line,
+                        comment_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3
+                    )
+                    ",
+                    file_hash,
+                    line,
+                    comment_hash
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        Ok(())
+    }
+}

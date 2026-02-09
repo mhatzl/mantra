@@ -1,7 +1,8 @@
 use std::time::Duration;
 
+use crate::FmtHash;
 use crate::path::RelativePathBuf;
-use crate::{requirements::ReqId, Line, Origin, Properties, Revision};
+use crate::{Line, Origin, Properties, Revision, requirements::ReqId};
 
 /// Defines the schema to exchange test and coverage related information.
 /// [req("exchange.testcov.schema")]
@@ -148,7 +149,8 @@ pub struct TestCaseLocation {
     pub filepath: RelativePathBuf,
     /// The hash of the file content at the time the test case was executed.
     /// [req("changes.track.test_runs")]
-    pub file_hash: Option<String>,
+    #[schemars(with = "String")]
+    pub file_hash: Option<FmtHash>,
     /// The line in the file the test case is defined at.
     pub line: Line,
 }
@@ -185,7 +187,7 @@ pub struct CoveredFile {
     pub filepath: RelativePathBuf,
     /// Optional hash of the file content to detect changes.
     /// Coverage formats may not provide the file hash, therefore it must be optional.
-    pub file_hash: Option<String>,
+    pub file_hash: Option<FmtHash>,
     /// Coverage information for a line in the file.
     /// [req("testcov.cov.lines")]
     #[serde(default)]

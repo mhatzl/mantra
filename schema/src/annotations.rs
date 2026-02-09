@@ -1,6 +1,6 @@
 use crate::path::RelativePathBuf;
 
-use crate::{Line, LineSpan, Origin, Properties};
+use crate::{ConversionError, FmtHash, Line, LineSpan, Origin, Properties};
 
 use super::requirements::ReqId;
 
@@ -38,7 +38,7 @@ pub struct FileAnnotations {
     #[schemars(with = "String")]
     pub filepath: RelativePathBuf,
     /// Hash of the file content to detect changes.
-    pub file_hash: String,
+    pub file_hash: FmtHash,
     /// Traces detected in the file.
     #[serde(default)]
     pub traces: Vec<Trace>,
@@ -62,9 +62,9 @@ pub struct FileAnnotations {
 )]
 pub struct CoverageExclude {
     /// The kind of coverage exclusion.
-    kind: CoverageExcludeKind,
+    pub kind: CoverageExcludeKind,
     /// Mandatory comment on why the exclusion is acceptable.
-    comment: String,
+    pub comment: String,
 }
 
 /// The kind of coverage exclusion that was found in a file.
@@ -132,7 +132,15 @@ impl std::fmt::Display for Trace {
 /// The trace kind.
 /// [req("trace.kind")]
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum TraceKind {
@@ -144,6 +152,26 @@ pub enum TraceKind {
     Verifies = 2,
     /// Trace link that provides no additional information.
     Links = 3,
+}
+
+impl TraceKind {
+    pub fn as_nr(&self) -> i32 {
+        *self as i32
+    }
+}
+
+impl TryFrom<i32> for TraceKind {
+    type Error = ConversionError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(TraceKind::Clarifies),
+            1 => Ok(TraceKind::Satisfies),
+            2 => Ok(TraceKind::Verifies),
+            3 => Ok(TraceKind::Links),
+            _ => Err(ConversionError::UnknownKind),
+        }
+    }
 }
 
 /// Possible related code variants for a trace.
@@ -182,7 +210,15 @@ pub struct CodeBlock {
 
 /// The code block kind.
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum CodeBlockKind {
@@ -195,6 +231,30 @@ pub enum CodeBlockKind {
     For = 6,
     #[serde(alias = "switch", alias = "case")]
     Match = 7,
+}
+
+impl CodeBlockKind {
+    pub fn as_nr(&self) -> i32 {
+        *self as i32
+    }
+}
+
+impl TryFrom<i32> for CodeBlockKind {
+    type Error = ConversionError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(CodeBlockKind::Other),
+            1 => Ok(CodeBlockKind::If),
+            2 => Ok(CodeBlockKind::ElseIf),
+            3 => Ok(CodeBlockKind::Else),
+            4 => Ok(CodeBlockKind::Loop),
+            5 => Ok(CodeBlockKind::While),
+            6 => Ok(CodeBlockKind::For),
+            7 => Ok(CodeBlockKind::Match),
+            _ => Err(ConversionError::UnknownKind),
+        }
+    }
 }
 
 /// A generic code element.
@@ -244,7 +304,15 @@ impl std::fmt::Display for Element {
 /// Defines supported element kinds.
 /// [req("trace.element.kind")]
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum ElementKind {
@@ -273,4 +341,29 @@ pub enum ElementKind {
     /// A trait, interface, or other abstract type.
     #[serde(alias = "interface", alias = "abstract-type")]
     Trait = 8,
+}
+
+impl ElementKind {
+    pub fn as_nr(&self) -> i32 {
+        *self as i32
+    }
+}
+
+impl TryFrom<i32> for ElementKind {
+    type Error = ConversionError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(ElementKind::Other),
+            1 => Ok(ElementKind::Test),
+            2 => Ok(ElementKind::Module),
+            3 => Ok(ElementKind::Function),
+            4 => Ok(ElementKind::Variable),
+            5 => Ok(ElementKind::Const),
+            6 => Ok(ElementKind::Type),
+            7 => Ok(ElementKind::Field),
+            8 => Ok(ElementKind::Trait),
+            _ => Err(ConversionError::UnknownKind),
+        }
+    }
 }

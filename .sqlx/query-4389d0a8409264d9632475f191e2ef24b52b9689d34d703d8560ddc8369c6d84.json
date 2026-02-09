@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into RequirementHierarchies (\n                        last_collect_nr,\n                        child_product_id,\n                        child_req_id,\n                        parent_product_id,\n                        parent_req_id\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5\n                    )\n                    on conflict (child_product_id, child_req_id, parent_product_id, parent_req_id)\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "4389d0a8409264d9632475f191e2ef24b52b9689d34d703d8560ddc8369c6d84"
+}

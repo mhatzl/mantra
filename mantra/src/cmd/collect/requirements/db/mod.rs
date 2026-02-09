@@ -12,13 +12,13 @@ impl<'db> Collection<'db> {
         req_schemas: Vec<RequirementSchema>,
     ) -> Result<(), anyhow::Error> {
         for reqs in req_schemas {
-            self.update_per_schema(reqs).await?;
+            self.update_per_req_schema(reqs).await?;
         }
 
         Ok(())
     }
 
-    async fn update_per_schema(
+    async fn update_per_req_schema(
         &mut self,
         req_schema: RequirementSchema,
     ) -> Result<(), anyhow::Error> {

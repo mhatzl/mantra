@@ -3,8 +3,8 @@ create table AnnotatedFileOrigins (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     filepath text not null,
-    origin_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (product_id, filepath, origin_hash),
+    base_origin_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (product_id, filepath, base_origin_hash),
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
 );
 
@@ -61,7 +61,7 @@ create table DirectProductReqTraces (
     primary key (product_id, req_id, filepath, file_hash, line),
     foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
-    foreign key (req_id, file_hash, line) references Traces (req_id, file_hash, line) on delete cascade
+    foreign key (req_id, file_hash, line) references DirectReqTraces (req_id, file_hash, line) on delete cascade
 );
 
 -- Table to store language elements such as functions, tests, structs, enums, classes, ...
@@ -183,6 +183,6 @@ create table CoverageLineExcludes (
     -- Line that must be excluded from code coverage analysis.
     line integer not null,
     -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
-    comment text not null references GeneralTexts (hash) on delete restrict,
+    comment_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (file_hash, line)
 );
