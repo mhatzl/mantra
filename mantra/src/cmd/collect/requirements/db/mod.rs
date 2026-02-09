@@ -1,9 +1,10 @@
 use mantra_schema::{
-    FmtHash, Origin, Properties,
+    FmtHash, Properties,
     requirements::{Requirement, RequirementSchema},
 };
 
 use crate::cmd::collect::Collection;
+use crate::cmd::collect::merge_local_and_base_properties;
 
 impl<'db> Collection<'db> {
     pub(super) async fn update_requirements(
@@ -23,7 +24,7 @@ impl<'db> Collection<'db> {
     ) -> Result<(), anyhow::Error> {
         let base_origin_hash = req_schema.origin.as_ref().map(FmtHash::from);
 
-        if let Some(hash) = base_origin_hash
+        if let Some(hash) = &base_origin_hash
             && let Some(origin) = req_schema.origin
         {
             self.insert_general_json(&hash, origin.clone()).await?;
@@ -47,7 +48,9 @@ impl<'db> Collection<'db> {
     ) -> Result<(), anyhow::Error> {
         // TODO: optimize by checking src-hash first and skip if unchanged
 
-        let src_hash = FmtHash::from(serde_json::json!({
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+        let src_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_props": base_props,
             "req": &req
@@ -102,7 +105,7 @@ impl<'db> Collection<'db> {
                 description_hash = excluded.description_hash,
                 src_hash = excluded.src_hash
             ",
-            self.collect_nr(),
+            collect_nr,
             req.id,
             product_id,
             req.manual_verification,
@@ -143,7 +146,7 @@ impl<'db> Collection<'db> {
                         last_collect_nr = excluded.last_collect_nr,
                         value_hash = excluded.value_hash
                     ",
-                    self.collect_nr(),
+                    collect_nr,
                     req.id,
                     product_id,
                     prop.0,
@@ -178,38 +181,19 @@ impl<'db> Collection<'db> {
                     do update set
                         last_collect_nr = excluded.last_collect_nr
                     ",
-                    self.collect_nr(),
-                    req.id,
+                    collect_nr,
                     product_id,
-                    prop.0,
-                    value_hash
+                    req.id,
+                    parent_product_id,
+                    parent.id
                 )
                 .execute(&mut *self.connection())
                 .await?;
             }
         }
+
+        Ok(())
     }
-}
-
-fn merge_local_and_base_properties(
-    local_props: Option<Properties>,
-    base_props: &Option<Properties>,
-) -> Option<Properties> {
-    if local_props.is_none() && base_props.is_none() {
-        return None;
-    }
-
-    let mut props = local_props.unwrap_or_default();
-
-    if let Some(base_props) = base_props {
-        for base_prop in base_props {
-            if !props.contains_key(base_prop.0) {
-                props.insert(base_prop.0.clone(), base_prop.1.clone());
-            }
-        }
-    }
-
-    Some(props)
 }
 
 // impl<'db> CollectTransaction<'db> {

@@ -1,5 +1,5 @@
 use mantra_schema::{
-    FmtHash,
+    FmtHash, Properties,
     path::{RelativePath, RelativePathBuf},
     product::{Product, ProductId},
     time::OffsetDateTime,
@@ -358,4 +358,25 @@ async fn insert_general_json<'db>(
     }
 
     Ok(())
+}
+
+fn merge_local_and_base_properties(
+    local_props: Option<Properties>,
+    base_props: &Option<Properties>,
+) -> Option<Properties> {
+    if local_props.is_none() && base_props.is_none() {
+        return None;
+    }
+
+    let mut props = local_props.unwrap_or_default();
+
+    if let Some(base_props) = base_props {
+        for base_prop in base_props {
+            if !props.contains_key(base_prop.0) {
+                props.insert(base_prop.0.clone(), base_prop.1.clone());
+            }
+        }
+    }
+
+    Some(props)
 }
