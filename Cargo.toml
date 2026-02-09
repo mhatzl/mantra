@@ -24,7 +24,7 @@ sqlx = "0.8.6"
 
 [workspace.package]
 version = "0.7.6"
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"
 

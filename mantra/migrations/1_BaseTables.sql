@@ -31,7 +31,7 @@ create table FileHashes (
 -- [req("lifecycle.product", "changes.track")]
 create table Collections (
     nr integer primary key autoincrement,
-    run_at_utc text not null,
+    collected_at_utc text not null,
     -- Filepath to the `mantra.toml` file that was used to collect the data.
     -- Path is relativ to the invocation of `mantra collect`.
     -- [req("changes.track.origin")]

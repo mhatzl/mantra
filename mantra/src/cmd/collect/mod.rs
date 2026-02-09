@@ -1,22 +1,98 @@
 use mantra_schema::{
+    FmtHash,
     path::{RelativePath, RelativePathBuf},
     product::{Product, ProductId},
     time::OffsetDateTime,
-    FmtHash,
 };
 
 use crate::db::{MantraConnection, MantraDb, MantraTransaction};
 
 // pub mod db;
+pub mod annotations;
 pub mod products;
 pub mod requirements;
 pub mod reviews;
 pub mod testcov;
-pub mod traces;
 
 pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
     let mut collection = Collection::new(db, &cfg).await?;
     collection.update_product(cfg.product).await?;
+
+    // requirements
+    // - dot-notation hierarchy setup after all reqs are collected
+    //   => needed to *jump* over non-existent parent IDs (put out warning)
+    // annotations
+    // test runs
+    // reviews
+
+    // delete olds:
+    // remove from all *data*-tables with collect-nr & product-id
+    // the entries that are not at current collect-nr
+    // except tables related to test runs and reviews
+    // => means entries for requirement and product information, which did not get collected this time
+    //
+    // data-tables are all non-history tables containing data that cannot be computed from other tables
+    // test run and review related tables are kept, because not every collect run might add test/review info
+    // due to timestamp, test run and review entries are better set to *oboslete*
+    //
+    // deletion separate from this fn to allow use of the collect fn for LSPs.
+    // LSPs will only add/update infos per file, so older collected data unrelated to the file is likely still accurate
+    // old info related to the file must however be deleted. e.g. requirement properties and hierarchy
+
+    // checks
+    // - req cycles
+    // - test run cycles
+
+    // update aggregated-tables (everything related to prod-id)
+    // - with history + collect-nr
+    //   - allows to see changes in aggregated tables
+    // - deprecated requirements
+    //   - either marked directly
+    //   - any children of it
+    // - ignored requirements
+    //   - either marked directly
+    //   - any children of it
+    //   - do not list such reqs in table of req-traces for product-id
+    // - manual requirements
+    //   - either marked directly
+    //   - any children of it
+    // - traces directly covered by test (run)
+    //   - apply overrides for coverage from reviews
+    //     - new table for coverage with overrides applied
+    //     - do not consider review if obsolete: review date older than test run => warn if so
+    //   - traced line in statement coverage of test (run) with hit > 0
+    //   - trace linked to element and at least one line of element span in statement coverage with hit > 0
+    //   - calc percentage of statement lines that link to trace and have hit > 0 to get accurate requirements coverage
+    //     not just covered/uncovered, but covered to xx% statement coverage (adding other coverage in future)
+    // - test states
+    //   - apply overrides from reviews if not obsolete (same as for coverage)
+    //   - test runs fail if one or more test cases or child test runs fail
+    // - satisfied requirements
+    //   - either satisfies-trace or review for manual req
+    //   - must not be deprecated => warn if so
+    //   - ignored reqs must not be considered => info if so
+    //     - since ignored for traces, could only be through reviews
+    // - verified requirements
+    //   - either via passed test or review
+    //   - fail verification if one or more tests fail that would verify req
+    //     state from review overrides wins of actual test state
+    //   - detect obsolete tests and reviews per req-id
+    //     - obsolete if:
+    //       - requirement histories (several tables) contain at least one entry
+    //         that is younger than the test or review
+    //       - test (run) covers lines in files that had changes since test (run) execution
+    //       - make a "WouldVerifyReq" intermediate table for test (runs) to see if it would verify
+    //         and then check if test (run) is obsolete due to changed files
+    //   - test must at least have one verifies-trace that is covered by it
+    //     - if at least one satisfies-trace exists, it must also be passed by the test
+    //     - test must not be obsolete
+    //   - review only counts for manual reqs and must not be obsolete
+    //   - must not be deprecated => warn if so
+    //   - ignored reqs must not be considered => info if so
+    //     - since ignored for traces, could only be through reviews or test runs
+    //   - indirectly satisfied/verified
+    //     - all children are satisfied/verified
+    //
 
     Ok(())
 }
@@ -57,13 +133,13 @@ struct Collection<'db> {
     transaction: MantraTransaction<'db>,
     nr: i64,
     product_id: ProductId,
-    run_at_utc: OffsetDateTime,
+    collected_at_utc: OffsetDateTime,
     replace_hashed: bool,
 }
 
 impl<'db> Collection<'db> {
     async fn new(db: &'db MantraDb, cfg: &CollectConfig) -> Result<Self, anyhow::Error> {
-        let run_at_utc = OffsetDateTime::now_utc();
+        let collected_at_utc = OffsetDateTime::now_utc();
         let mut transaction = db.start_transaction().await?;
         let config_value = serde_json::json!({
             "product": cfg.product,
@@ -83,7 +159,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into Collections (
-                run_at_utc,
+                collected_at_utc,
                 config_filepath,
                 config_hash,
                 arguments_hash,
@@ -97,7 +173,7 @@ impl<'db> Collection<'db> {
                 null
             )
             ",
-            run_at_utc,
+            collected_at_utc,
             config_filepath,
             config_hash
         )
@@ -113,7 +189,7 @@ impl<'db> Collection<'db> {
             transaction,
             nr,
             product_id: cfg.product.id(),
-            run_at_utc,
+            collected_at_utc,
             replace_hashed: cfg.args.replace_hashed,
         })
     }
