@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert or ignore into CoverageBlockExcludes (\n                        file_hash,\n                        start_line,\n                        end_line,\n                        comment_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "7ea62053a890e86cde94d9b22498580ea1fe3890a27fac0e1044a2dfd5f25ab1"
+}

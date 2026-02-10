@@ -1,0 +1,701 @@
+use mantra_schema::{
+    FmtHash, Properties,
+    test_runs::{TestRun, TestRunSchema},
+    time::Duration,
+};
+
+use crate::{
+    cmd::collect::{Collection, merge_local_and_base_properties},
+    db::FilepathExt,
+};
+
+impl<'db> Collection<'db> {
+    pub(super) async fn update_test_runs(
+        &mut self,
+        test_runn_schemas: Vec<TestRunSchema>,
+    ) -> Result<(), anyhow::Error> {
+        // TODO: if hash should be replaced => first remove every entry linked to file-hashes that will be added
+
+        for schema in test_runn_schemas {
+            self.update_per_test_run_schema(schema).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_per_test_run_schema(
+        &mut self,
+        test_run_schema: TestRunSchema,
+    ) -> Result<(), anyhow::Error> {
+        let base_origin_hash = test_run_schema.origin.as_ref().map(FmtHash::from);
+
+        if let Some(hash) = &base_origin_hash
+            && let Some(origin) = test_run_schema.origin
+        {
+            self.insert_general_json(&hash, origin.clone()).await?;
+        }
+
+        // TODO: do not stop at first collect error
+
+        for test_run in test_run_schema.test_runs {
+            self.update_per_test_run(test_run, &base_origin_hash, &test_run_schema.properties)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_per_test_run(
+        &mut self,
+        test_run: TestRun,
+        base_origin_hash: &Option<FmtHash>,
+        base_props: &Option<Properties>,
+    ) -> Result<(), anyhow::Error> {
+        // TODO: optimize by checking src-hash first and skip if unchanged
+
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+        let src_hash = FmtHash::from(&serde_json::json!({
+            "base_origin_hash": base_origin_hash,
+            "base_props": base_props,
+            "test_run": &test_run
+        }));
+
+        let origin_hash = &test_run.origin.as_ref().map(FmtHash::from);
+        if let Some(hash) = &origin_hash
+            && let Some(origin) = test_run.origin
+        {
+            self.insert_general_json(hash, origin).await?;
+        }
+        let description_hash = test_run.description.as_ref().map(FmtHash::from);
+        if let Some(hash) = &description_hash
+            && let Some(description) = test_run.description
+        {
+            self.insert_general_text(hash, description).await?;
+        }
+        // TODO: maybe handle serde error
+        let duration = duration_to_text(test_run.duration);
+
+        sqlx::query!(
+            "
+            insert into TestRuns (
+                last_collect_nr,
+                product_id,
+                name,
+                utc_date,
+                description_hash,
+                duration,
+                nr_of_test_cases,
+                base_origin_hash,
+                origin_hash,
+                src_hash
+            )
+            values (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8,
+                $9,
+                $10
+            )
+            on conflict (product_id, name, utc_date)
+            do update set
+                last_collect_nr = excluded.last_collect_nr,
+                description_hash = excluded.description_hash,
+                duration = excluded.duration,
+                nr_of_test_cases = excluded.nr_of_test_cases,
+                base_origin_hash = excluded.base_origin_hash,
+                origin_hash = excluded.origin_hash,
+                src_hash = excluded.src_hash
+            ",
+            collect_nr,
+            product_id,
+            test_run.name,
+            test_run.utc_date,
+            duration,
+            test_run.nr_of_test_cases,
+            base_origin_hash,
+            origin_hash,
+            description_hash,
+            src_hash
+        )
+        .execute(&mut *self.connection())
+        .await?;
+
+        if let Some(props) = merge_local_and_base_properties(test_run.properties, base_props) {
+            for prop in props {
+                let value_hash = FmtHash::from(&prop.1);
+                self.insert_general_json(&value_hash, prop.1).await?;
+
+                sqlx::query!(
+                    "
+                    insert into TestRunProperties (
+                        last_collect_nr,
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        property_key,
+                        value_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6
+                    )
+                    on conflict (product_id, test_run_name, test_run_date, property_key)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        value_hash = excluded.value_hash
+                    ",
+                    collect_nr,
+                    product_id,
+                    test_run.name,
+                    test_run.utc_date,
+                    prop.0,
+                    value_hash
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        if let Some(revisions) = test_run.revisions {
+            for revision in revisions {
+                sqlx::query!(
+                    "
+                    insert into TestRunRevisions (
+                        last_collect_nr,
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        revision,
+                        authors,
+                        comment
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6,
+                        $7
+                    )
+                    on conflict (product_id, test_run_name, test_run_date, revision)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        authors = excluded.authors,
+                        comment = excluded.comment
+                    ",
+                    collect_nr,
+                    product_id,
+                    test_run.name,
+                    test_run.utc_date,
+                    revision.nr,
+                    revision.authors,
+                    revision.comment
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        for child_test_run in test_run.test_runs {
+            sqlx::query!(
+                "
+                    insert into TestRunHierarchies (
+                        last_collect_nr,
+                        parent_product_id,
+                        parent_name,
+                        parent_date,
+                        child_product_id,
+                        child_name,
+                        child_date
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6,
+                        $7
+                    )
+                    on conflict (
+                        parent_product_id,
+                        parent_name,
+                        parent_date,
+                        child_product_id,
+                        child_name,
+                        child_date
+                    )
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                collect_nr,
+                product_id,
+                test_run.name,
+                test_run.utc_date,
+                product_id,
+                child_test_run.name,
+                child_test_run.utc_date
+            )
+            .execute(&mut *self.connection())
+            .await?;
+
+            // foreign key constraints are not checked during the transaction
+            // => safe to add child test run after hierarchy
+            Box::pin(self.update_per_test_run(child_test_run, base_origin_hash, base_props))
+                .await?;
+        }
+
+        if let Some(logs) = test_run.logs {
+            // TODO: ensure that log srcs only appear once
+            for log in logs {
+                let log_src = log.source.as_nr();
+                let log_hash = FmtHash::from(&log.content);
+                self.insert_general_text(&log_hash, log.content).await?;
+
+                sqlx::query!(
+                    "
+                        insert into TestRunLogs (
+                            last_collect_nr,
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            log_src,
+                            log_hash
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6
+                        )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            log_src
+                        )
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr,
+                            log_hash = excluded.log_hash
+                        ",
+                    collect_nr,
+                    product_id,
+                    test_run.name,
+                    test_run.utc_date,
+                    log_src,
+                    log_hash
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        for covered_file in test_run.covered_files {
+            let filepath = covered_file.filepath.to_filepath();
+
+            for line in covered_file.lines {
+                sqlx::query!(
+                    "
+                    insert into TestRunStatementCoverage (
+                        last_collect_nr,
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        stmnt_filepath,
+                        stmnt_file_hash,
+                        stmnt_line,
+                        hits
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6,
+                        $7,
+                        $8
+                    )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        stmnt_filepath,
+                        stmnt_line
+                    )
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        hits = excluded.hits
+                    ",
+                    collect_nr,
+                    product_id,
+                    test_run.name,
+                    test_run.utc_date,
+                    filepath,
+                    covered_file.file_hash,
+                    line.nr,
+                    line.hits
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+        }
+
+        for test_case in test_run.test_cases {
+            let state = test_case.state.as_nr();
+            let duration = duration_to_text(test_case.duration);
+            let description_hash = test_case.description.as_ref().map(FmtHash::from);
+            if let Some(hash) = &description_hash
+                && let Some(description) = test_case.description
+            {
+                self.insert_general_text(hash, description).await?;
+            }
+
+            sqlx::query!(
+                "
+                insert into TestCases (
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    name,
+                    state,
+                    description_hash,
+                    utc_date,
+                    duration
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    $6,
+                    $7,
+                    $8,
+                    $9
+                )
+                on conflict (
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    name
+                )
+                do update set
+                    last_collect_nr = excluded.last_collect_nr,
+                    state = excluded.state,
+                    description_hash = excluded.description_hash,
+                    utc_date = excluded.utc_date,
+                    duration = excluded.duration
+                ",
+                collect_nr,
+                product_id,
+                test_run.name,
+                test_run.utc_date,
+                test_case.name,
+                state,
+                description_hash,
+                test_case.utc_date,
+                duration
+            )
+            .execute(&mut *self.connection())
+            .await?;
+
+            for verified_req in test_case.verified_reqs {
+                sqlx::query!(
+                    "
+                    insert into TestCaseVerifiedRequirements (
+                        last_collect_nr,
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        test_case_name,
+                        req_id
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6
+                    )
+                    on conflict (product_id, test_run_name, test_run_date, test_case_name, req_id)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                    collect_nr,
+                    product_id,
+                    test_run.name,
+                    test_run.utc_date,
+                    test_case.name,
+                    verified_req
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+
+            if let Some(properties) = test_case.properties {
+                for property in properties {
+                    let value_hash = FmtHash::from(&property.1);
+                    self.insert_general_json(&value_hash, property.1).await?;
+
+                    sqlx::query!(
+                        "
+                        insert into TestCaseProperties (
+                            last_collect_nr,
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            test_case_name,
+                            property_key,
+                            value_hash
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7
+                        )
+                        on conflict (product_id, test_run_name, test_run_date, test_case_name, property_key)
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr,
+                            value_hash = excluded.value_hash
+                        ",
+                        collect_nr,
+                        product_id,
+                        test_run.name,
+                        test_run.utc_date,
+                        test_case.name,
+                        property.0,
+                        value_hash
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
+            }
+
+            if let Some(logs) = test_case.logs {
+                // TODO: ensure that log srcs only appear once
+                for log in logs {
+                    let log_src = log.source.as_nr();
+                    let log_hash = FmtHash::from(&log.content);
+                    self.insert_general_text(&log_hash, log.content).await?;
+
+                    sqlx::query!(
+                        "
+                            insert into TestCaseLogs (
+                                last_collect_nr,
+                                product_id,
+                                test_run_name,
+                                test_run_date,
+                                test_case_name,
+                                log_src,
+                                log_hash
+                            )
+                            values (
+                                $1,
+                                $2,
+                                $3,
+                                $4,
+                                $5,
+                                $6,
+                                $7
+                            )
+                            on conflict (
+                                product_id,
+                                test_run_name,
+                                test_run_date,
+                                test_case_name,
+                                log_src
+                            )
+                            do update set
+                                last_collect_nr = excluded.last_collect_nr,
+                                log_hash = excluded.log_hash
+                            ",
+                        collect_nr,
+                        product_id,
+                        test_run.name,
+                        test_run.utc_date,
+                        test_case.name,
+                        log_src,
+                        log_hash
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
+            }
+
+            if let Some(location) = test_case.location {
+                let filepath = location.filepath.to_filepath();
+
+                sqlx::query!(
+                    "
+                        insert into TestCaseLocations (
+                            last_collect_nr,
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            test_case_name,
+                            filepath,
+                            file_hash,
+                            line
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7,
+                            $8
+                        )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            test_case_name,
+                            filepath
+                        )
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr,
+                            file_hash = excluded.file_hash,
+                            line = excluded.line
+                        ",
+                    collect_nr,
+                    product_id,
+                    test_run.name,
+                    test_run.utc_date,
+                    test_case.name,
+                    filepath,
+                    location.file_hash,
+                    location.line
+                )
+                .execute(&mut *self.connection())
+                .await?;
+            }
+
+            if let Some(state_props) = test_case.state_properties {
+                for property in state_props {
+                    let value_hash = FmtHash::from(&property.1);
+                    self.insert_general_json(&value_hash, property.1).await?;
+
+                    sqlx::query!(
+                        "
+                        insert into TestCaseStateProperties (
+                            last_collect_nr,
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            test_case_name,
+                            property_key,
+                            value_hash
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7
+                        )
+                        on conflict (product_id, test_run_name, test_run_date, test_case_name, property_key)
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr,
+                            value_hash = excluded.value_hash
+                        ",
+                        collect_nr,
+                        product_id,
+                        test_run.name,
+                        test_run.utc_date,
+                        test_case.name,
+                        property.0,
+                        value_hash
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
+            }
+
+            for covered_file in test_case.covered_files {
+                let filepath = covered_file.filepath.to_filepath();
+
+                for line in covered_file.lines {
+                    sqlx::query!(
+                        "
+                        insert into TestCaseStatementCoverage (
+                            last_collect_nr,
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            test_case_name,
+                            stmnt_filepath,
+                            stmnt_file_hash,
+                            stmnt_line,
+                            hits
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7,
+                            $8,
+                            $9
+                        )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            test_case_name,
+                            stmnt_filepath,
+                            stmnt_line
+                        )
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr,
+                            hits = excluded.hits
+                        ",
+                        collect_nr,
+                        product_id,
+                        test_run.name,
+                        test_run.utc_date,
+                        test_case.name,
+                        filepath,
+                        covered_file.file_hash,
+                        line.nr,
+                        line.hits
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn duration_to_text(duration: Option<Duration>) -> Option<String> {
+    // TODO: maybe handle serde error
+    duration.map(|d| serde_json::to_string(&d).ok()).flatten()
+}

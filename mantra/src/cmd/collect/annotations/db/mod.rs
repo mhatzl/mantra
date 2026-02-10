@@ -45,7 +45,7 @@ impl<'db> Collection<'db> {
             .await?;
         }
 
-        todo!()
+        Ok(())
     }
 
     async fn update_per_annotation_file(

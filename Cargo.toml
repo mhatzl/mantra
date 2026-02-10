@@ -16,7 +16,7 @@ tree-sitter = "0.22.0"
 tree-sitter-rust = "0.21.0"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0" }
-time = { version = "0.3.36", features = ["serde", "formatting", "parsing", "macros"] }
+time = { version = "0.3.47", features = ["serde-human-readable", "macros"] }
 log = "0.4.21"
 env_logger = "0.11.3"
 schemars = "0.8.21"

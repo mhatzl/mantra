@@ -12,7 +12,7 @@ pub mod annotations;
 pub mod products;
 pub mod requirements;
 pub mod reviews;
-pub mod testcov;
+pub mod test_runs;
 
 pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
     let mut collection = Collection::new(db, &cfg).await?;

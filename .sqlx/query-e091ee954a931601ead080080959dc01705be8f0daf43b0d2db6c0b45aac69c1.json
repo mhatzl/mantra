@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into TestRunHierarchies (\n                        last_collect_nr,\n                        parent_product_id,\n                        parent_name,\n                        parent_date,\n                        child_product_id,\n                        child_name,\n                        child_date\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6,\n                        $7\n                    )\n                    on conflict (\n                        parent_product_id,\n                        parent_name,\n                        parent_date,\n                        child_product_id,\n                        child_name,\n                        child_date\n                    )\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "e091ee954a931601ead080080959dc01705be8f0daf43b0d2db6c0b45aac69c1"
+}

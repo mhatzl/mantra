@@ -9,8 +9,10 @@ create table TestRuns (
     name text not null,
     -- The UTC date and time at which the test run was executed.
     utc_date text not null,
+    -- Optional description hash
+    description_hash text references GeneralTexts (hash) on delete restrict,
     -- Optional duration about how long the test run took.
-    duration integer,
+    duration Text,
     -- The number of expected test cases mapped to the test run.
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
@@ -35,7 +37,7 @@ create table TestRunProperties (
     test_run_name text not null,
     test_run_date text not null,
     property_key text not null,
-    property_value text references GeneralJson (hash) on delete restrict,
+    value_hash text references GeneralJson (hash) on delete restrict,
     primary key (product_id, test_run_name, test_run_date, property_key),
     foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade
 );
@@ -53,7 +55,7 @@ create table TestRunRevisions (
     -- Comment for the revision.
     -- [req("changes.comment")]
     comment text not null,
-    primary key (product_id, test_run_name, test_run_date),
+    primary key (product_id, test_run_name, test_run_date, revision),
     foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade
 );
 
@@ -135,7 +137,9 @@ create table TestRunStatementCoverage (
     -- Line that was covered.
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
-    hits integer not null,
+    -- If null, the line is ignored from statement coverage analysis.
+    -- Unless it is not null for test cases or child test runs of this test run.
+    hits integer,
     primary key (
         product_id,
         test_run_name,
@@ -166,6 +170,8 @@ create table TestCases (
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     -- [req("testcov.test_case.state")]
     state integer not null,
+    -- Optional description hash
+    description_hash text references GeneralTexts (hash) on delete restrict,
     -- Optional utc date and time for the test case.
     utc_date text,
     -- Optional duration of the test case.
@@ -205,7 +211,7 @@ create table TestCaseProperties (
     test_run_date text not null,
     test_case_name text not null,
     property_key text not null,
-    property_value text references GeneralJson (hash) on delete restrict,
+    value_hash text references GeneralJson (hash) on delete restrict,
     primary key (product_id, test_run_name, test_run_date, test_case_name, property_key),
     foreign key (product_id, test_run_name, test_run_date, test_case_name) references TestCases (product_id, test_run_name, test_run_date, name) on delete cascade
 );
@@ -272,7 +278,8 @@ create table TestCaseLocations (
         product_id,
         test_run_name,
         test_run_date,
-        test_case_name
+        test_case_name,
+        filepath
     ),
     foreign key (
         product_id,
@@ -302,7 +309,7 @@ create table TestCaseStateProperties (
     test_case_name text not null,
     -- The key of the additional property for the state of a test case.
     property_key text not null,
-    property_value text references GeneralJson (hash) on delete restrict,
+    value_hash text references GeneralJson (hash) on delete restrict,
     primary key (
         product_id,
         test_run_name,
@@ -342,7 +349,8 @@ create table TestCaseStatementCoverage (
     -- Line that was covered.
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during the test case execution.
-    hits integer not null,
+    -- If null, the line is ignored from statement coverage analysis for this test case.
+    hits integer,
     primary key (
         product_id,
         test_run_name,

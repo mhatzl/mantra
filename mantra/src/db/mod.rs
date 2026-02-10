@@ -1,12 +1,17 @@
-use sqlx::Pool;
+use mantra_schema::path::RelativePathBuf;
+use sqlx::SqlitePool;
 
-pub(crate) mod add;
+// pub(crate) mod add;
 
-pub type DB = sqlx::sqlite::Sqlite;
+#[cfg(test)]
+mod test_setup;
+
+pub type MantraConnection = sqlx::sqlite::SqliteConnection;
+pub type MantraTransaction<'db> = sqlx::Transaction<'db, sqlx::sqlite::Sqlite>;
 
 #[derive(Debug)]
 pub struct MantraDb {
-    pool: Pool<DB>,
+    pool: SqlitePool,
 }
 
 #[derive(Debug, Clone, clap::Args)]
@@ -41,20 +46,49 @@ pub enum DbError {
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 
 impl MantraDb {
-    pub async fn new(cfg: &Config) -> Result<Self, DbError> {
-        let url = cfg
-            .url
-            .clone()
-            .unwrap_or("sqlite://mantra.db?mode=rwc".to_string());
-        let pool = Pool::<DB>::connect(&url)
-            .await
-            .map_err(|err| DbError::Connect(err.to_string()))?;
+    pub async fn new(url: Option<&str>) -> Result<Self, DbError> {
+        let db_url = url.unwrap_or("sqlite://mantra.db?mode=rwc");
+        let db = match sqlx::sqlite::SqlitePool::connect(db_url).await {
+            Ok(pool) => MantraDb { pool },
+            Err(err) => {
+                panic!(
+                    "Faild to connect to SQLite database. Note: only SQLite is currently supported. Error: {err}"
+                );
+            }
+        };
 
         MIGRATOR
-            .run(&pool)
+            .run(&db.pool)
             .await
             .map_err(|err| DbError::Migrate(err.to_string()))?;
 
-        Ok(Self { pool })
+        Ok(db)
+    }
+
+    pub(crate) async fn start_transaction(&self) -> Result<MantraTransaction<'_>, DbError> {
+        match self.pool.try_begin().await {
+            Ok(Some(t)) => Ok(t),
+            Ok(None) => Err(DbError::Connect(
+                "Failed to start a transaction.".to_string(),
+            )),
+            Err(err) => Err(DbError::Connect(err.to_string())),
+        }
+    }
+}
+
+pub(crate) type Filepath = sqlx::types::Text<RelativePathBuf>;
+
+pub(crate) trait FilepathExt {
+    fn to_filepath(self) -> Filepath;
+    fn from_filepath(filepath: Filepath) -> Self;
+}
+
+impl FilepathExt for RelativePathBuf {
+    fn to_filepath(self) -> Filepath {
+        sqlx::types::Text(self)
+    }
+
+    fn from_filepath(filepath: Filepath) -> Self {
+        filepath.0
     }
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into TestRunProperties (\n                        last_collect_nr,\n                        product_id,\n                        test_run_name,\n                        test_run_date,\n                        property_key,\n                        value_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6\n                    )\n                    on conflict (product_id, test_run_name, test_run_date, property_key)\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr,\n                        value_hash = excluded.value_hash\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "7be6a9abe4a604506084ecfb7e348e530a15aed56ed704e92976f10a6335e723"
+}

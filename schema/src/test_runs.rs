@@ -1,4 +1,4 @@
-use std::time::Duration;
+use time::Duration;
 
 use crate::FmtHash;
 use crate::path::RelativePathBuf;
@@ -47,6 +47,8 @@ pub struct TestRun {
     )]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
+    /// Optional description of the test run.
+    pub description: Option<String>,
     /// Optional revisions for the test run.
     pub revisions: Option<Vec<Revision>>,
     /// Optional origin of the test run.
@@ -63,6 +65,8 @@ pub struct TestRun {
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,
     /// Optional duration about how long the test run took.
+    /// Will be displayed in seconds with nanosecond precision in decimal form.
+    #[schemars(with = "String")]
     pub duration: Option<Duration>,
     /// Optional logs that were output during the execution of the test run.
     ///
@@ -113,18 +117,33 @@ pub struct TestCase {
     /// The name of the test case.
     /// [req("testcov.test_case.id")]
     pub name: String,
-    /// Optional field to store custom properties per test case.
-    /// [req("testcov.test_case.metadata")]
-    pub properties: Option<Properties>,
-    /// Optional location of the test case.
-    /// [req("testcov.test_case.origin")]
-    pub location: Option<TestCaseLocation>,
+    /// Optional description of the test case.
+    pub description: Option<String>,
     /// State of the test case.
     /// [req("testcov.test_case.state")]
     pub state: TestCaseState,
     /// Optional reason for the test case state.
     /// [req("testcov.test_case.state.reason")]
     pub state_properties: Option<Properties>,
+    /// Optional location of the test case.
+    /// [req("testcov.test_case.origin")]
+    pub location: Option<TestCaseLocation>,
+    /// Optional UTC date the test case execution started.
+    ///
+    /// **Note:** The date must be given in ISO8601 format.
+    #[serde(
+        serialize_with = "time::serde::iso8601::option::serialize",
+        deserialize_with = "time::serde::iso8601::option::deserialize"
+    )]
+    #[schemars(with = "String")]
+    pub utc_date: Option<time::OffsetDateTime>,
+    /// Optional duration about how long the test case took.
+    /// Will be displayed in seconds with nanosecond precision in decimal form.
+    #[schemars(with = "String")]
+    pub duration: Option<Duration>,
+    /// Optional field to store custom properties per test case.
+    /// [req("testcov.test_case.metadata")]
+    pub properties: Option<Properties>,
     /// Optional logs that were output during the test case execution.
     // TODO: add req
     pub logs: Option<Vec<LogOutput>>,
@@ -158,7 +177,15 @@ pub struct TestCaseLocation {
 /// Possible states a test case may be in.
 /// [req("testcov.test_case.state")]
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum TestCaseState {
@@ -174,6 +201,12 @@ pub enum TestCaseState {
     /// and is treated as *failed* state.
     /// [req("testcov.test_case.state.unknown")]
     Unknown = 3,
+}
+
+impl TestCaseState {
+    pub fn as_nr(&self) -> i32 {
+        *self as i32
+    }
 }
 
 /// Represents coverage information per file.
@@ -197,26 +230,27 @@ pub struct CoveredFile {
 /// Coverage information of a line in a file.
 /// [req("testcov.cov.lines")]
 #[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    PartialOrd,
-    Eq,
-    Hash,
-    serde::Serialize,
-    serde::Deserialize,
-    schemars::JsonSchema,
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct CoveredLine {
     /// The line number.
     pub nr: Line,
     /// The number of times this line has been reached during execution of a test run or test case.
-    pub hits: usize,
+    pub hits: Option<i64>,
+}
+
+impl std::cmp::PartialOrd for CoveredLine {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl std::cmp::Ord for CoveredLine {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.nr.cmp(&other.nr)
+        match self.nr.cmp(&other.nr) {
+            std::cmp::Ordering::Equal => self.hits.cmp(&other.hits),
+            cmp => cmp,
+        }
     }
 }
 
@@ -243,6 +277,7 @@ pub struct LogOutput {
 #[derive(
     Debug,
     Clone,
+    Copy,
     PartialEq,
     PartialOrd,
     Eq,
@@ -254,4 +289,10 @@ pub struct LogOutput {
 pub enum LogSource {
     Stdout = 0,
     Stderr = 1,
+}
+
+impl LogSource {
+    pub fn as_nr(&self) -> i32 {
+        *self as i32
+    }
 }

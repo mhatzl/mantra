@@ -16,7 +16,7 @@ pub const SCHEMA_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Represents a line in a text file.
 /// Line numbers start at 1 in *mantra*.
-pub type Line = u32;
+pub type Line = i64;
 pub type Origin = serde_json::Value;
 pub type Properties = serde_json::value::Map<String, serde_json::Value>;
 
@@ -47,7 +47,7 @@ where
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct Revision {
-    pub nr: usize,
+    pub nr: u32,
     pub authors: String,
     pub comment: String,
 }
