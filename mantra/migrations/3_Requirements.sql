@@ -29,9 +29,8 @@ create table Requirements (
     -- Optional description content of the requirement.
     -- [req("req.description")]
     description_hash text references GeneralTexts (hash) on delete restrict,
-    -- Hash of the source the requirement was defined in.
-    -- e.g. Markdown or JSON file
-    src_hash text not null references FileHashes (hash) on delete restrict,
+    -- Hash of the content the requirement was collected from.
+    src_hash text not null,
     constraint RequirementsPk primary key (id, product_id)
 );
 

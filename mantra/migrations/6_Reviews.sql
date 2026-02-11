@@ -9,9 +9,6 @@ create table Reviews (
     name text not null,
     -- UTC date and time at which the review was held.
     utc_date text not null,
-    -- The reviewers of the review.
-    -- [req("review.reviewer")]
-    reviewer text not null,
     -- Optional origin data of the review that was set for multiple reviews.
     -- [req("review.origin")]
     base_origin_hash text references GeneralJson (hash) on delete restrict,
@@ -21,9 +18,21 @@ create table Reviews (
     -- Hash of the optional decription for the review.
     -- [req("review.description")]
     description_hash text references GeneralTexts (hash) on delete restrict,
-    -- The hash of the file content the review was collected from to detect changes.
-    src_hash text not null references FileHashes (hash) on delete restrict,
+    -- The hash of the content the review was collected from to detect changes.
+    src_hash text not null,
     primary key (product_id, name, utc_date)
+);
+
+-- Table to store reviewers of a review.
+-- [req("review.reviewer")]
+create table ReviewReviewers (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    reviewer text not null,
+    primary key (product_id, review_name, review_date, reviewer),
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
 );
 
 -- Table to store optional metadata of a review.
@@ -33,9 +42,9 @@ create table ReviewProperties (
     review_name text not null,
     review_date text not null,
     property_key text not null,
-    property_value text references GeneralJson (hash) on delete restrict,
+    value_hash text references GeneralJson (hash) on delete restrict,
     primary key (product_id, review_name, review_date, property_key),
-    foreign key (product_id, review_name, review_date) references TestRuns (product_id, name, utc_date) on delete cascade
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
 );
 
 create table ReviewRevisions (
@@ -45,14 +54,27 @@ create table ReviewRevisions (
     review_date text not null,
     -- Indicates the revision
     revision integer not null,
-    -- Names of authors of the revision.
-    -- [req("changes.authors")]
-    authors text not null,
     -- Comment for the revision.
     -- [req("changes.comment")]
     comment text not null,
-    primary key (product_id, review_name, review_date),
+    primary key (product_id, review_name, review_date, revision),
     foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
+);
+
+-- Names of authors of a review revision.
+-- [req("changes.authors")]
+create table ReviewRevisionAuthors (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    -- Indicates the revision
+    revision integer not null,
+    -- Names of an author of the revision.
+    -- [req("changes.authors")]
+    author text not null,
+    primary key (product_id, review_name, review_date, revision, author),
+    foreign key (product_id, review_name, review_date, revision) references ReviewRevisions (product_id, review_name, review_date, revision) on delete cascade
 );
 
 -- Table to store requirement IDs that were manually verified in a review,
@@ -145,7 +167,8 @@ create table TestRunStatementCoverageOverrides (
     -- Line that was covered.
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
-    hits integer not null,
+    -- If null, the line is ignored from statement coverage analysis for this test run.
+    hits integer,
     -- Hash of the comment explaining why this statement coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
@@ -197,7 +220,8 @@ create table TestCaseStatementCoverageOverrides (
     -- Line that was covered.
     stmnt_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
-    hits integer not null,
+    -- If null, the line is ignored from statement coverage analysis for this test case.
+    hits integer,
     -- Hash of the comment explaining why this statement coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
@@ -226,4 +250,17 @@ create table TestCaseStatementCoverageOverrides (
         stmnt_filepath,
         stmnt_line
     )
+);
+
+-- Contains collected entries that could not be mapped to existing data.
+-- e.g. verified requirements, test case state or code coverage overrides
+create table IgnoredReviewEntries (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    -- Hash of the content of the entry in the review that got ignored.
+    entry_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (product_id, review_name, review_date, entry_hash),
+    foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
 );

@@ -48,7 +48,7 @@ where
 )]
 pub struct Revision {
     pub nr: u32,
-    pub authors: String,
+    pub authors: Vec<String>,
     pub comment: String,
 }
 

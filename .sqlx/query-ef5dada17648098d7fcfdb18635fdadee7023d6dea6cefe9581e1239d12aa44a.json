@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TestCaseStatementCoverage (\n                            last_collect_nr,\n                            product_id,\n                            test_run_name,\n                            test_run_date,\n                            test_case_name,\n                            stmnt_filepath,\n                            stmnt_file_hash,\n                            stmnt_line,\n                            hits\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5,\n                            $6,\n                            $7,\n                            $8,\n                            $9\n                        )\n                        on conflict (\n                            product_id,\n                            test_run_name,\n                            test_run_date,\n                            test_case_name,\n                            stmnt_filepath,\n                            stmnt_line\n                        )\n                        do update set\n                            last_collect_nr = excluded.last_collect_nr,\n                            hits = excluded.hits\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "ef5dada17648098d7fcfdb18635fdadee7023d6dea6cefe9581e1239d12aa44a"
+}

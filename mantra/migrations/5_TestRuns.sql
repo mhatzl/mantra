@@ -24,8 +24,7 @@ create table TestRuns (
     -- [req("testcov.test_run.origin")]
     origin_hash text not null references GeneralJson (hash) on delete restrict,
     -- Hash of the source the test run data was collected from.
-    -- e.g. JSON file
-    src_hash text not null references FileHashes (hash) on delete restrict,
+    src_hash text not null,
     primary key (product_id, name, utc_date)
 );
 
@@ -49,14 +48,27 @@ create table TestRunRevisions (
     test_run_date text not null,
     -- Indicates the revision
     revision integer not null,
-    -- Names of authors of the revision.
-    -- [req("changes.authors")]
-    authors text not null,
     -- Comment for the revision.
     -- [req("changes.comment")]
     comment text not null,
     primary key (product_id, test_run_name, test_run_date, revision),
     foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade
+);
+
+-- Names of authors of a test run revision.
+-- [req("changes.authors")]
+create table TestRunRevisionAuthors (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    -- Indicates the revision
+    revision integer not null,
+    -- Names of an author of the revision.
+    -- [req("changes.authors")]
+    author text not null,
+    primary key (product_id, test_run_name, test_run_date, revision, author),
+    foreign key (product_id, test_run_name, test_run_date, revision) references TestRunRevisions (product_id, test_run_name, test_run_date, revision) on delete cascade
 );
 
 -- Table to store test run hierarchies.

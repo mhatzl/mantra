@@ -2,8 +2,8 @@ use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
 use crate::{
-    test_runs::{TestCaseState, TestRunPk},
     Line, Origin, Properties, Revision,
+    test_runs::{TestCaseState, TestRunPk},
 };
 
 use super::requirements::ReqId;
@@ -65,10 +65,10 @@ pub struct Review {
             pattern = r"(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(T| )(?<hour>\d{2}):(?<minute>\d{2})(?<second>:\d{2}(?<subsecond>\.\d{3})?)?utc(?<utc>(-|+)\d{2})"
         )
     )]
-    pub date: OffsetDateTime,
+    pub utc_date: OffsetDateTime,
     /// The reviewer that were part of the review.
     /// [req("review.reviewer")]
-    pub reviewer: String,
+    pub reviewer: Vec<String>,
     /// Optional description of the review.
     /// [req("review.description")]
     pub description: Option<String>,
@@ -186,7 +186,8 @@ pub struct OverrideCoveredLineInfo {
     #[serde(alias = "nr")]
     pub nrs: Vec<Line>,
     /// The new number of times the set lines are reached during a test run or test case execution.
-    pub hits: usize,
+    /// If None, the line is marked to be ignored from statement coverage analysis.
+    pub hits: Option<i64>,
     /// Mandatory comment explaining the change to the code coverage information.
     pub comment: String,
 }

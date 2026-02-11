@@ -176,7 +176,6 @@ impl<'db> Collection<'db> {
                         test_run_name,
                         test_run_date,
                         revision,
-                        authors,
                         comment
                     )
                     values (
@@ -185,13 +184,11 @@ impl<'db> Collection<'db> {
                         $3,
                         $4,
                         $5,
-                        $6,
-                        $7
+                        $6
                     )
                     on conflict (product_id, test_run_name, test_run_date, revision)
                     do update set
                         last_collect_nr = excluded.last_collect_nr,
-                        authors = excluded.authors,
                         comment = excluded.comment
                     ",
                     collect_nr,
@@ -199,11 +196,44 @@ impl<'db> Collection<'db> {
                     test_run.name,
                     test_run.utc_date,
                     revision.nr,
-                    revision.authors,
                     revision.comment
                 )
                 .execute(&mut *self.connection())
                 .await?;
+
+                for author in revision.authors {
+                    sqlx::query!(
+                        "
+                        insert into TestRunRevisionAuthors (
+                            last_collect_nr,
+                            product_id,
+                            test_run_name,
+                            test_run_date,
+                            revision,
+                            author
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6
+                        )
+                        on conflict (product_id, test_run_name, test_run_date, revision, author)
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr
+                        ",
+                        collect_nr,
+                        product_id,
+                        test_run.name,
+                        test_run.utc_date,
+                        revision.nr,
+                        author
+                    )
+                    .execute(&mut *self.connection())
+                    .await?;
+                }
             }
         }
 
