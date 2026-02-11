@@ -1,14 +1,18 @@
 use mantra_schema::{
-    FmtHash, Properties,
+    FmtHash, Origin, Properties,
     path::{RelativePath, RelativePathBuf},
     product::{Product, ProductId},
     time::OffsetDateTime,
 };
 
-use crate::db::{MantraConnection, MantraDb, MantraTransaction};
+use crate::{
+    cmd::collect::cfg::CollectConfig,
+    db::{MantraConnection, MantraDb, MantraTransaction},
+};
 
 // pub mod db;
 pub mod annotations;
+pub mod cfg;
 pub mod products;
 pub mod requirements;
 pub mod reviews;
@@ -97,38 +101,6 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     Ok(())
 }
 
-pub struct CollectConfig {
-    filepath: RelativePathBuf,
-    args: CollectArguments,
-    envs: CollectEnvironmentVariables,
-    product: Product,
-    sections: Vec<CollectSectionConfig>,
-}
-
-pub struct CollectArguments {
-    /// `true`: tells mantra to replace previously collected content
-    /// even if the stored hash is equal to the new one.
-    replace_hashed: bool,
-}
-pub struct CollectEnvironmentVariables {}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub enum CollectSectionConfig {
-    Requirements(CollectRequirementsConfig),
-    Annotations(CollectAnnotationsConfig),
-    TestRuns(CollectTestRunsConfig),
-    Reviews(CollectReviewsConfig),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct CollectRequirementsConfig {}
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct CollectAnnotationsConfig {}
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct CollectTestRunsConfig {}
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct CollectReviewsConfig {}
-
 struct Collection<'db> {
     transaction: MantraTransaction<'db>,
     nr: i64,
@@ -143,7 +115,10 @@ impl<'db> Collection<'db> {
         let mut transaction = db.start_transaction().await?;
         let config_value = serde_json::json!({
             "product": cfg.product,
-            "sections": cfg.sections,
+            "req-cfg": cfg.requirements,
+            "annotation-cfg": cfg.annotations,
+            "test-run-cfg": cfg.test_runs,
+            "review-cfg": cfg.reviews
         });
         let config_hash = FmtHash::from(&config_value);
 
@@ -155,7 +130,7 @@ impl<'db> Collection<'db> {
         )
         .await?;
 
-        let config_filepath = cfg.filepath.as_str();
+        let config_filepath = cfg.cfg_filepath.as_str();
         sqlx::query!(
             "
             insert into Collections (

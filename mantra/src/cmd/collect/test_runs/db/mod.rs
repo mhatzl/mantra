@@ -12,11 +12,11 @@ use crate::{
 impl<'db> Collection<'db> {
     pub(super) async fn update_test_runs(
         &mut self,
-        test_runn_schemas: Vec<TestRunSchema>,
+        test_run_schemas: Vec<TestRunSchema>,
     ) -> Result<(), anyhow::Error> {
         // TODO: if hash should be replaced => first remove every entry linked to file-hashes that will be added
 
-        for schema in test_runn_schemas {
+        for schema in test_run_schemas {
             self.update_per_test_run_schema(schema).await?;
         }
 
@@ -38,8 +38,13 @@ impl<'db> Collection<'db> {
         // TODO: do not stop at first collect error
 
         for test_run in test_run_schema.test_runs {
-            self.update_per_test_run(test_run, &base_origin_hash, &test_run_schema.properties)
-                .await?;
+            self.update_per_test_run(
+                test_run,
+                &base_origin_hash,
+                &test_run_schema.test_run_properties,
+                &test_run_schema.test_case_properties,
+            )
+            .await?;
         }
 
         Ok(())
@@ -49,7 +54,8 @@ impl<'db> Collection<'db> {
         &mut self,
         test_run: TestRun,
         base_origin_hash: &Option<FmtHash>,
-        base_props: &Option<Properties>,
+        base_test_run_props: &Option<Properties>,
+        base_test_case_props: &Option<Properties>,
     ) -> Result<(), anyhow::Error> {
         // TODO: optimize by checking src-hash first and skip if unchanged
 
@@ -57,7 +63,8 @@ impl<'db> Collection<'db> {
         let product_id = &self.product_id();
         let src_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
-            "base_props": base_props,
+            "base_test_run_props": base_test_run_props,
+            "base_test_case_props": base_test_case_props,
             "test_run": &test_run
         }));
 
@@ -126,7 +133,9 @@ impl<'db> Collection<'db> {
         .execute(&mut *self.connection())
         .await?;
 
-        if let Some(props) = merge_local_and_base_properties(test_run.properties, base_props) {
+        if let Some(props) =
+            merge_local_and_base_properties(test_run.properties, base_test_run_props)
+        {
             for prop in props {
                 let value_hash = FmtHash::from(&prop.1);
                 self.insert_general_json(&value_hash, prop.1).await?;
@@ -282,8 +291,13 @@ impl<'db> Collection<'db> {
 
             // foreign key constraints are not checked during the transaction
             // => safe to add child test run after hierarchy
-            Box::pin(self.update_per_test_run(child_test_run, base_origin_hash, base_props))
-                .await?;
+            Box::pin(self.update_per_test_run(
+                child_test_run,
+                base_origin_hash,
+                base_test_run_props,
+                base_test_case_props,
+            ))
+            .await?;
         }
 
         if let Some(logs) = test_run.logs {
@@ -478,7 +492,9 @@ impl<'db> Collection<'db> {
                 .await?;
             }
 
-            if let Some(properties) = test_case.properties {
+            if let Some(properties) =
+                merge_local_and_base_properties(test_case.properties, base_test_case_props)
+            {
                 for property in properties {
                     let value_hash = FmtHash::from(&property.1);
                     self.insert_general_json(&value_hash, property.1).await?;

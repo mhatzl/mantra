@@ -1,157 +1,178 @@
-use std::path::PathBuf;
+use mantra_schema::product::Product;
 
-use crate::{cmd::Cmd, db};
+use crate::cmd::collect::cfg::{
+    CollectAnnotationsConfig, CollectRequirementsConfig, CollectReviewsConfig,
+    CollectTestRunsConfig,
+};
 
-#[derive(clap::Parser)]
-pub struct Config {
-    #[command(flatten)]
-    pub db: db::Config,
-
-    #[command(subcommand)]
-    pub cmd: Cmd,
-}
-
-#[derive(Debug, Clone, clap::Args)]
-pub struct MantraConfigPath {
-    #[arg(default_value = "mantra.toml")]
-    pub filepath: PathBuf,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct MantraConfigFile {
-    #[serde(default)]
-    pub requirements: Vec<crate::cmd::requirements::Format>,
-    #[serde(default)]
-    pub traces: Vec<crate::cmd::trace::TraceKind>,
-    pub coverage: Option<crate::cmd::coverage::Config>,
-    pub review: Option<crate::cmd::review::ReviewConfig>,
-    #[serde(default, skip_serializing_if = "crate::cfg::Project::is_none")]
-    pub project: Project,
-    #[serde(
-        alias = "report-template",
-        default,
-        skip_serializing_if = "crate::cmd::report::ReportTemplate::is_none"
-    )]
-    pub report_template: crate::cmd::report::ReportTemplate,
+    product: Product,
+    #[serde(default, alias = "requirement")]
+    requirements: Vec<CollectRequirementsConfig>,
+    #[serde(default, alias = "annotation")]
+    annotations: Vec<CollectAnnotationsConfig>,
+    #[serde(default, alias = "test-run")]
+    test_runs: Vec<CollectTestRunsConfig>,
+    #[serde(default, alias = "review")]
+    reviews: Vec<CollectReviewsConfig>,
 }
 
-#[derive(
-    Default,
-    Debug,
-    Clone,
-    PartialEq,
-    serde::Serialize,
-    serde::Deserialize,
-    clap::Args,
-    schemars::JsonSchema,
-)]
-pub struct Project {
-    #[arg(id = "project-name", long = "project-name")]
-    pub name: Option<String>,
-    #[arg(id = "project-version", long = "project-version")]
-    pub version: Option<String>,
-    #[arg(id = "project-repository", long = "project-repository")]
-    pub repository: Option<String>,
-    #[arg(id = "project-homepage", long = "project-homepage")]
-    pub homepage: Option<String>,
-}
+// use std::path::PathBuf;
 
-impl Project {
-    pub(crate) fn is_none(&self) -> bool {
-        self.name.is_none()
-            && self.version.is_none()
-            && self.repository.is_none()
-            && self.homepage.is_none()
-    }
-}
+// use crate::{cmd::Cmd, db};
 
-#[derive(Debug, Clone, clap::Args)]
-pub struct DeleteOldConfig {
-    /// Delete test runs and reviews that have no linked requirement or coverage remaining.
-    #[arg(long)]
-    pub clean: bool,
-}
+// #[derive(clap::Parser)]
+// pub struct Config {
+//     #[command(flatten)]
+//     pub db: db::Config,
 
-#[derive(Debug, Clone, clap::Args)]
-pub struct DeleteReqsConfig {
-    #[arg(long)]
-    pub ids: Option<Vec<String>>,
-    /// Delete requirements before the set generation.
-    #[arg(long)]
-    pub before: Option<i64>,
-}
+//     #[command(subcommand)]
+//     pub cmd: Cmd,
+// }
 
-#[derive(Debug, Clone, clap::Args)]
-pub struct DeleteTracesConfig {
-    #[arg(long, alias = "id")]
-    pub req_ids: Option<Vec<String>>,
-    /// Delete traces before the set generation.
-    #[arg(long)]
-    pub before: Option<i64>,
-}
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct MantraConfigPath {
+//     #[arg(default_value = "mantra.toml")]
+//     pub filepath: PathBuf,
+// }
 
-#[derive(Debug, Clone, clap::Args)]
-pub struct DeleteTestRunsConfig {
-    #[arg(long, alias = "older-than")]
-    pub before: Option<String>,
-}
+// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+// pub struct MantraConfigFile {
+//     #[serde(default)]
+//     pub requirements: Vec<crate::cmd::requirements_old::Format>,
+//     #[serde(default)]
+//     pub traces: Vec<crate::cmd::trace_old::TraceKind>,
+//     pub coverage: Option<crate::cmd::coverage_old::Config>,
+//     pub review: Option<crate::cmd::review_old::ReviewConfig>,
+//     #[serde(default, skip_serializing_if = "crate::cfg::Project::is_none")]
+//     pub project: Project,
+//     #[serde(
+//         alias = "report-template",
+//         default,
+//         skip_serializing_if = "crate::cmd::report::ReportTemplate::is_none"
+//     )]
+//     pub report_template: crate::cmd::report_old::ReportTemplate,
+// }
 
-#[derive(Debug, Clone, clap::Args)]
-pub struct DeleteCoverageConfig {
-    #[arg(long, alias = "id")]
-    pub req_ids: Option<Vec<String>>,
-}
+// #[derive(
+//     Default,
+//     Debug,
+//     Clone,
+//     PartialEq,
+//     serde::Serialize,
+//     serde::Deserialize,
+//     clap::Args,
+//     schemars::JsonSchema,
+// )]
+// pub struct Project {
+//     #[arg(id = "project-name", long = "project-name")]
+//     pub name: Option<String>,
+//     #[arg(id = "project-version", long = "project-version")]
+//     pub version: Option<String>,
+//     #[arg(id = "project-repository", long = "project-repository")]
+//     pub repository: Option<String>,
+//     #[arg(id = "project-homepage", long = "project-homepage")]
+//     pub homepage: Option<String>,
+// }
 
-#[derive(Debug, Clone, clap::Args)]
-pub struct DeleteReviewsConfig {
-    #[arg(long, alias = "older-than")]
-    pub before: Option<String>,
-}
+// impl Project {
+//     pub(crate) fn is_none(&self) -> bool {
+//         self.name.is_none()
+//             && self.version.is_none()
+//             && self.repository.is_none()
+//             && self.homepage.is_none()
+//     }
+// }
 
-#[cfg(test)]
-mod test {
-    use std::path::PathBuf;
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct DeleteOldConfig {
+//     /// Delete test runs and reviews that have no linked requirement or coverage remaining.
+//     #[arg(long)]
+//     pub clean: bool,
+// }
 
-    #[test]
-    fn collect_file_syntax() {
-        let content = r#"
-                            [project]
-                            name = "test-proj"
-                            version = "0.1.0"
-                            repository = "some.link"
-                            homepage = "some-other.link"
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct DeleteReqsConfig {
+//     #[arg(long)]
+//     pub ids: Option<Vec<String>>,
+//     /// Delete requirements before the set generation.
+//     #[arg(long)]
+//     pub before: Option<i64>,
+// }
 
-                            [report-template]
-                            base = "base-template.html"
-                            req-data = "req-template.html"
-                            test-run-data = "test-run-template.html"
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct DeleteTracesConfig {
+//     #[arg(long, alias = "id")]
+//     pub req_ids: Option<Vec<String>>,
+//     /// Delete traces before the set generation.
+//     #[arg(long)]
+//     pub before: Option<i64>,
+// }
 
-                            [[requirements]]
-                            root = "reqs.md"
-                            origin = "cloud-repo.something"
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct DeleteTestRunsConfig {
+//     #[arg(long, alias = "older-than")]
+//     pub before: Option<String>,
+// }
 
-                            [[requirements]]
-                            files = ["extern-reqs.json"]
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct DeleteCoverageConfig {
+//     #[arg(long, alias = "id")]
+//     pub req_ids: Option<Vec<String>>,
+// }
 
-                            [[traces]]
-                            root = ""
+// #[derive(Debug, Clone, clap::Args)]
+// pub struct DeleteReviewsConfig {
+//     #[arg(long, alias = "older-than")]
+//     pub before: Option<String>,
+// }
 
-                            [[traces]]
-                            files = ["extern-traces.json"]
+// #[cfg(test)]
+// mod test {
+//     use std::path::PathBuf;
 
-                            [coverage]
-                            files = ["coverage.json"]
+//     #[test]
+//     fn collect_file_syntax() {
+//         let content = r#"
+//                             [project]
+//                             name = "test-proj"
+//                             version = "0.1.0"
+//                             repository = "some.link"
+//                             homepage = "some-other.link"
 
-                            [review]
-                            files = ["first_review.toml"]
-                            "#;
+//                             [report-template]
+//                             base = "base-template.html"
+//                             req-data = "req-template.html"
+//                             test-run-data = "test-run-template.html"
 
-        let file: crate::cfg::MantraConfigFile = toml::from_str(content).unwrap();
+//                             [[requirements]]
+//                             root = "reqs.md"
+//                             origin = "cloud-repo.something"
 
-        assert_eq!(
-            file.coverage.unwrap().files.first().unwrap(),
-            &PathBuf::from("coverage.json"),
-            "Coverage info not correctly extracted."
-        );
-    }
-}
+//                             [[requirements]]
+//                             files = ["extern-reqs.json"]
+
+//                             [[traces]]
+//                             root = ""
+
+//                             [[traces]]
+//                             files = ["extern-traces.json"]
+
+//                             [coverage]
+//                             files = ["coverage.json"]
+
+//                             [review]
+//                             files = ["first_review.toml"]
+//                             "#;
+
+//         let file: crate::cfg::MantraConfigFile = toml::from_str(content).unwrap();
+
+//         assert_eq!(
+//             file.coverage.unwrap().files.first().unwrap(),
+//             &PathBuf::from("coverage.json"),
+//             "Coverage info not correctly extracted."
+//         );
+//     }
+// }

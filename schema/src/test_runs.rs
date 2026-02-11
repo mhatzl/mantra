@@ -21,7 +21,12 @@ pub struct TestRunSchema {
     ///
     /// **Note:** If a test run sets a property key directly,
     /// the value set at the test run will be taken.
-    pub properties: Option<Properties>,
+    pub test_run_properties: Option<Properties>,
+    /// Optional properties related to all test cases in this entry.
+    ///
+    /// **Note:** If a test case sets a property key directly,
+    /// the value set at the test case will be taken.
+    pub test_case_properties: Option<Properties>,
     /// Optional base origin of the test runs in this entry.
     /// e.g. specific branch or commit from a git repository
     pub origin: Option<Origin>,
