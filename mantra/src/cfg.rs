@@ -8,15 +8,23 @@ use crate::cmd::collect::cfg::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct MantraConfigFile {
-    product: Product,
+    #[serde(alias = "product")]
+    pub products: Vec<ProductConfig>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProductConfig {
+    #[serde(flatten)]
+    pub product: Product,
     #[serde(default, alias = "requirement")]
-    requirements: Vec<CollectRequirementsConfig>,
+    pub requirements: Vec<CollectRequirementsConfig>,
     #[serde(default, alias = "annotation")]
-    annotations: Vec<CollectAnnotationsConfig>,
+    pub annotations: Vec<CollectAnnotationsConfig>,
     #[serde(default, alias = "test-run")]
-    test_runs: Vec<CollectTestRunsConfig>,
+    pub test_runs: Vec<CollectTestRunsConfig>,
     #[serde(default, alias = "review")]
-    reviews: Vec<CollectReviewsConfig>,
+    pub reviews: Vec<CollectReviewsConfig>,
 }
 
 // use std::path::PathBuf;

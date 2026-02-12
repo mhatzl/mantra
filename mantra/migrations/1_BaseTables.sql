@@ -32,10 +32,6 @@ create table FileHashes (
 create table Collections (
     nr integer primary key autoincrement,
     collected_at_utc text not null,
-    -- Filepath to the `mantra.toml` file that was used to collect the data.
-    -- Path is relativ to the invocation of `mantra collect`.
-    -- [req("changes.track.origin")]
-    config_filepath text not null,
     -- The hash of the configuration content in `mantra.toml` for this collection.
     -- [req("cli.collect.config")]
     config_hash text not null references GeneralJson (hash) on delete restrict,

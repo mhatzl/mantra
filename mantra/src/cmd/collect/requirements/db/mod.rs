@@ -7,7 +7,7 @@ use crate::cmd::collect::Collection;
 use crate::cmd::collect::merge_local_and_base_properties;
 
 impl<'db> Collection<'db> {
-    pub(super) async fn update_requirements(
+    pub(crate) async fn update_requirements(
         &mut self,
         req_schemas: Vec<RequirementSchema>,
     ) -> Result<(), anyhow::Error> {
@@ -18,7 +18,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_per_req_schema(
+    pub(crate) async fn update_per_req_schema(
         &mut self,
         req_schema: RequirementSchema,
     ) -> Result<(), anyhow::Error> {
@@ -37,7 +37,7 @@ impl<'db> Collection<'db> {
                 .await?;
         }
 
-        todo!()
+        Ok(())
     }
 
     async fn update_requirement(

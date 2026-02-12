@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
 use mantra_schema::{Origin, Properties, path::RelativePathBuf, product::Product};
 
 pub struct CollectConfig {
     /// Path to the mantra config file that is used to collect the data.
-    pub cfg_filepath: RelativePathBuf,
+    pub cfg_filepath: PathBuf,
     pub args: CollectArguments,
     pub envs: CollectEnvironmentVariables,
     pub product: Product,
@@ -26,6 +28,8 @@ pub struct CollectRequirementsConfig {
     pub source: RequirementSourceVariant,
     pub origin: Option<Origin>,
     pub properties: Option<Properties>,
+    /// Optional pattern a filepath must match to be considered as requirement source.
+    pub pattern: Option<String>,
 }
 
 /// Supported source variants to define requirements.
@@ -50,6 +54,8 @@ pub struct CollectAnnotationsConfig {
     pub source: AnnotationSourceVariant,
     pub origin: Option<Origin>,
     pub trace_properties: Option<Properties>,
+    /// Optional pattern a filepath must match to be considered as annotation source.
+    pub pattern: Option<String>,
 }
 
 /// Supported source variants to retrieve annotations.
@@ -74,6 +80,8 @@ pub struct CollectTestRunsConfig {
     pub origin: Option<Origin>,
     pub test_run_properties: Option<Properties>,
     pub test_case_properties: Option<Properties>,
+    /// Optional pattern a filepath must match to be considered as test run source.
+    pub pattern: Option<String>,
 }
 
 /// Supported source variants to retrieve test runs.
@@ -93,9 +101,9 @@ pub enum TestRunSourceVariant {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct WellKnownTest {
     /// The well-known test format the data is stored in.
-    format: WellKnownTestFormat,
-    /// Optional pattern a file must match to be considered as test run source.
-    pattern: Option<String>,
+    pub format: WellKnownTestFormat,
+    /// Optional pattern a filepath must match to be considered as test output source.
+    pub pattern: Option<String>,
 }
 
 /// Supported source variants to define reviews.
@@ -112,9 +120,9 @@ pub enum WellKnownTestFormat {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct WellKnownCoverage {
     /// The well-known coverage format the data is stored in.
-    format: WellKnownCoverageFormat,
-    /// Optional pattern a file must match to be considered as coverage source.
-    pattern: Option<String>,
+    pub format: WellKnownCoverageFormat,
+    /// Optional pattern a filepath must match to be considered as coverage source.
+    pub pattern: Option<String>,
 }
 
 /// Supported well-known coverage formats mantra is able to extract coverage data from.
@@ -137,6 +145,8 @@ pub struct CollectReviewsConfig {
     pub source: ReviewSourceVariant,
     pub origin: Option<Origin>,
     pub properties: Option<Properties>,
+    /// Optional pattern a filepath must match to be considered as review source.
+    pub pattern: Option<String>,
 }
 
 /// Supported source variants to define reviews.

@@ -24,8 +24,8 @@ tokio = { version = "1.37.0", features = ["full"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
 sqlx = { workspace = true, features = ["any", "derive", "macros", "migrate", "sqlite", "json", "runtime-tokio", "time"] }
 toml = { version = "0.8.13", features = ["parse"] }
-ignore = "0.4.20"
-mime_guess = "2.0.4"
+ignore = "0.4.25"
+mime_guess = "2.0.5"
 thiserror = "1.0.59"
 tera = "1.19.1"
 encoding_rs_io = "0.1.7"
@@ -33,3 +33,5 @@ anyhow = "1.0.100"
 covcon = "0.3.0"
 quick-junit = "0.5.2"
 chrono = "0.4.43"
+glob = "0.3.3"
+json5 = "1.3.1"
