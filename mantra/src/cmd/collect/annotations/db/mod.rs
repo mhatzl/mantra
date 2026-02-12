@@ -22,7 +22,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_per_annotation_schema(
+    pub(super) async fn update_per_annotation_schema(
         &mut self,
         annotaiton_schema: AnnotationSchema,
     ) -> Result<(), anyhow::Error> {
@@ -63,31 +63,33 @@ impl<'db> Collection<'db> {
         self.insert_file_hash(&file_annotations.filepath, &file_annotations.file_hash)
             .await?;
 
-        sqlx::query!(
-            "
-            insert into AnnotatedFileOrigins (
-                last_collect_nr,
+        if let Some(base_origin_hash) = base_origin_hash {
+            sqlx::query!(
+                "
+                insert into AnnotatedFileOrigins (
+                    last_collect_nr,
+                    product_id,
+                    filepath,
+                    base_origin_hash
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4
+                )
+                on conflict (product_id, filepath, base_origin_hash)
+                do update set
+                    last_collect_nr = excluded.last_collect_nr
+                ",
+                collect_nr,
                 product_id,
                 filepath,
                 base_origin_hash
             )
-            values (
-                $1,
-                $2,
-                $3,
-                $4
-            )
-            on conflict (product_id, filepath, base_origin_hash)
-            do update set
-                last_collect_nr = excluded.last_collect_nr
-            ",
-            collect_nr,
-            product_id,
-            filepath,
-            base_origin_hash
-        )
-        .execute(&mut *self.connection())
-        .await?;
+            .execute(&mut *self.connection())
+            .await?;
+        }
 
         // **Note:** Adding elements first to be able to map traces to elements later
         for element in file_annotations.elements {

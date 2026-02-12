@@ -12,13 +12,17 @@ use mantra_schema::{
 use tokio::task::JoinSet;
 
 use crate::{
-    cmd::collect::cfg::{CollectConfig, RequirementSourceVariant},
+    cmd::collect::{
+        cfg::{CollectConfig, RequirementSourceVariant},
+        collector::SingleFileCollector,
+    },
     db::{MantraConnection, MantraDb, MantraTransaction},
 };
 
 // pub mod db;
 pub mod annotations;
 pub mod cfg;
+pub mod collector;
 pub mod products;
 pub mod requirements;
 pub mod reviews;
@@ -29,87 +33,99 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     let mut collection = Collection::new(db, &cfg).await?;
     collection.update_product(cfg.product).await?;
 
-    let cfg_file_dir_path = collection.abs_cfg_file_parent_path()?;
+    let req_collector = SingleFileCollector::new(collection);
+    let collection = req_collector.collect(cfg.requirements).await?;
 
-    let (req_tx, mut req_rx) = tokio::sync::mpsc::unbounded_channel();
-    let req_cfg = cfg.requirements;
-    let root_path = cfg_file_dir_path.clone();
-    let req_collection = tokio::spawn(async move {
-        let mut task_set: JoinSet<Result<(), anyhow::Error>> = JoinSet::new();
-        for cfg in req_cfg {
-            let req_sender = req_tx.clone();
-            let start_path = cfg.path.to_logical_path(&root_path);
-            let glob_pattern = cfg
-                .pattern
-                .as_deref()
-                .and_then(|p| glob::Pattern::new(p).ok());
-            task_set.spawn(async move {
-                let mut walk_builder = walker::base_mantra_walker(start_path);
-                walk_builder.add_custom_ignore_filename(".mantraignore-requirements");
-                if let Some(pattern) = glob_pattern {
-                    walk_builder.filter_entry(move |entry| {
-                        entry.path().is_dir()
-                            || match RelativePathBuf::from_path(entry.path()) {
-                                Ok(rel_path) => pattern.matches(rel_path.as_str()),
-                                Err(_) => false,
-                            }
-                    });
-                }
+    let annotation_collector = SingleFileCollector::new(collection);
+    let collection = annotation_collector.collect(cfg.annotations).await?;
 
-                let collect_fn: fn(&str, &str) -> Result<RequirementSchema, anyhow::Error> =
-                    match cfg.source {
-                        RequirementSourceVariant::Markup => {
-                            walk_builder.types(TypesBuilder::new().select("markdown").build()?);
-                            |extension: &str, content: &str| todo!()
-                        }
-                        RequirementSourceVariant::Schema => {
-                            walk_builder.types(walker::base_schema_types()?);
-                            walker::content_to_schema::<RequirementSchema>
-                        }
-                    };
+    // TODO: collect test runs here
+    // Note: cannot use single file collector, because well-known formats require two files..
 
-                walk_builder.build_parallel().run(|| {
-                    let sender = req_sender.clone();
-                    Box::new(move |path_res| {
-                        if let Ok(path) = path_res {
-                            let filepath = path.path();
-                            if filepath.is_file() {
-                                if let Some(ext) = filepath.extension()
-                                    && let Some(extension) = ext.to_str()
-                                    && let Ok(content) = std::fs::read_to_string(filepath)
-                                {
-                                    // TODO: proper logging + error handling
-                                    match collect_fn(extension, &content) {
-                                        Ok(req_schema) => {
-                                            let _ = sender.send(req_schema);
-                                        }
-                                        Err(err) => eprintln!(
-                                            "Failed reading schema from '{}'. Err: {err}",
-                                            filepath.display()
-                                        ),
-                                    }
-                                }
-                            }
-                        }
-
-                        WalkState::Continue
-                    })
-                });
-
-                Ok(())
-            });
-        }
-
-        let _ = task_set.join_all().await;
-    });
-
-    while let Some(req_schema) = req_rx.recv().await {
-        collection.update_per_req_schema(req_schema).await?;
-    }
-
-    req_collection.await?;
+    let review_collector = SingleFileCollector::new(collection);
+    let collection = review_collector.collect(cfg.reviews).await?;
 
     collection.commit().await?;
+
+    // let cfg_file_dir_path = collection.abs_cfg_file_parent_path()?;
+
+    // let (req_tx, mut req_rx) = tokio::sync::mpsc::unbounded_channel();
+    // let req_cfg = cfg.requirements;
+    // let root_path = cfg_file_dir_path.clone();
+    // let req_collection = tokio::spawn(async move {
+    //     let mut task_set: JoinSet<Result<(), anyhow::Error>> = JoinSet::new();
+    //     for cfg in req_cfg {
+    //         let req_sender = req_tx.clone();
+    //         let start_path = cfg.path.to_logical_path(&root_path);
+    //         let glob_pattern = cfg
+    //             .pattern
+    //             .as_deref()
+    //             .and_then(|p| glob::Pattern::new(p).ok());
+    //         task_set.spawn(async move {
+    //             let mut walk_builder = walker::base_mantra_walker(start_path);
+    //             walk_builder.add_custom_ignore_filename(".mantraignore-requirements");
+    //             if let Some(pattern) = glob_pattern {
+    //                 walk_builder.filter_entry(move |entry| {
+    //                     entry.path().is_dir()
+    //                         || match RelativePathBuf::from_path(entry.path()) {
+    //                             Ok(rel_path) => pattern.matches(rel_path.as_str()),
+    //                             Err(_) => false,
+    //                         }
+    //                 });
+    //             }
+
+    //             let collect_fn: fn(&str, &str) -> Result<RequirementSchema, anyhow::Error> =
+    //                 match cfg.source {
+    //                     RequirementSourceVariant::Markup => {
+    //                         walk_builder.types(TypesBuilder::new().select("markdown").build()?);
+    //                         |extension: &str, content: &str| todo!()
+    //                     }
+    //                     RequirementSourceVariant::Schema => {
+    //                         walk_builder.types(walker::base_schema_types()?);
+    //                         walker::content_to_schema::<RequirementSchema>
+    //                     }
+    //                 };
+
+    //             walk_builder.build_parallel().run(|| {
+    //                 let sender = req_sender.clone();
+    //                 Box::new(move |path_res| {
+    //                     if let Ok(path) = path_res {
+    //                         let filepath = path.path();
+    //                         if filepath.is_file() {
+    //                             if let Some(ext) = filepath.extension()
+    //                                 && let Some(extension) = ext.to_str()
+    //                                 && let Ok(content) = std::fs::read_to_string(filepath)
+    //                             {
+    //                                 // TODO: proper logging + error handling
+    //                                 match collect_fn(extension, &content) {
+    //                                     Ok(req_schema) => {
+    //                                         let _ = sender.send(req_schema);
+    //                                     }
+    //                                     Err(err) => eprintln!(
+    //                                         "Failed reading schema from '{}'. Err: {err}",
+    //                                         filepath.display()
+    //                                     ),
+    //                                 }
+    //                             }
+    //                         }
+    //                     }
+
+    //                     WalkState::Continue
+    //                 })
+    //             });
+
+    //             Ok(())
+    //         });
+    //     }
+
+    //     let _ = task_set.join_all().await;
+    // });
+
+    // while let Some(req_schema) = req_rx.recv().await {
+    //     collection.update_per_req_schema(req_schema).await?;
+    // }
+
+    // req_collection.await?;
 
     // requirements
     // - dot-notation hierarchy setup after all reqs are collected

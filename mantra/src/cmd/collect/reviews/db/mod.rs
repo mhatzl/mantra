@@ -25,7 +25,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_per_review_schema(
+    pub(super) async fn update_per_review_schema(
         &mut self,
         review_schema: ReviewSchema,
     ) -> Result<(), anyhow::Error> {
