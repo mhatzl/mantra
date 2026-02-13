@@ -9,7 +9,7 @@ use crate::{Line, Origin, Properties, Revision, requirements::ReqId};
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct TestRunSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -37,7 +37,7 @@ pub struct TestRunSchema {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct TestRun {
     /// The name of the test run.
     /// [req("testcov.test_run.id")]
@@ -64,7 +64,7 @@ pub struct TestRun {
     /// **Note:** Must match with the number of entries in the `test_cases` field,
     /// plus the number of entries in the `test_cases` fields of all child test runs.
     /// In case this differs, it indicates that not all test cases have finished execution.
-    #[serde(alias = "nr-of-tests")]
+    #[serde(alias = "nr_of_tests")]
     pub nr_of_test_cases: u32,
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
@@ -95,7 +95,7 @@ pub struct TestRun {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct TestRunPk {
     /// The name of the test run.
     /// [req("testcov.test_run.id")]
@@ -117,7 +117,7 @@ pub struct TestRunPk {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct TestCase {
     /// The name of the test case.
     /// [req("testcov.test_case.id")]
@@ -166,7 +166,7 @@ pub struct TestCase {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct TestCaseLocation {
     /// The filepath the test case is defined in.
     #[schemars(with = "String")]
@@ -192,7 +192,7 @@ pub struct TestCaseLocation {
     serde::Deserialize,
     schemars::JsonSchema,
 )]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum TestCaseState {
     /// Test case failed.
     Failed = 0,
@@ -219,6 +219,7 @@ impl TestCaseState {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "snake_case")]
 pub struct CoveredFile {
     /// File the coverage information is for.
     #[schemars(with = "String")]

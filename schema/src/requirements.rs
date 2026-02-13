@@ -1,4 +1,4 @@
-use crate::{product::ProductId, Origin, Properties};
+use crate::{Origin, Properties, product::ProductId};
 
 /// Defines the schema to exchange requirements related information.
 /// [req("exchange.requirements.schema")]
@@ -31,7 +31,7 @@ pub type ReqId = String;
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct Requirement {
     /// ID of the requirement.
     /// [req("req.id")]
@@ -76,7 +76,7 @@ pub struct Requirement {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct RequirementPk {
     /// ID of the parent requirement.
     /// [req("req.id")]

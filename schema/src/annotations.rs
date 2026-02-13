@@ -9,6 +9,7 @@ use super::requirements::ReqId;
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "snake_case")]
 pub struct AnnotationSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -31,7 +32,7 @@ pub struct AnnotationSchema {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct FileAnnotations {
     /// File that contains traces and/or elements.
     /// [req("trace.origin")]
@@ -71,6 +72,7 @@ pub struct CoverageExclude {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(rename_all = "snake_case")]
 pub enum CoverageExcludeKind {
     /// Excludes a code span from coverage metrics.
     /// Both lines are inclusive!
@@ -84,7 +86,7 @@ pub enum CoverageExcludeKind {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct Trace {
     /// The requirement IDs that are referenced by the trace.
     /// [req("trace.id", "trace.mult_reqs")]
@@ -142,7 +144,7 @@ impl std::fmt::Display for Trace {
     serde::Deserialize,
     schemars::JsonSchema,
 )]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum TraceKind {
     /// Trace links to an artifact that provides clarification for a requirement.
     Clarifies = 0,
@@ -179,7 +181,7 @@ impl TryFrom<i32> for TraceKind {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum TraceRelatedCodeVariant {
     /// Code block that is linked to the trace.
     /// [req("trace.code_block")]
@@ -196,7 +198,7 @@ pub enum TraceRelatedCodeVariant {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct CodeBlock {
     /// The kind of the code block.
     pub kind: CodeBlockKind,
@@ -220,7 +222,7 @@ pub struct CodeBlock {
     serde::Deserialize,
     schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum CodeBlockKind {
     Other = 0,
     If = 1,
@@ -263,7 +265,7 @@ impl TryFrom<i32> for CodeBlockKind {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct Element {
     /// The fully qualified identifier of the element.
     /// [req("trace.element.ident")]
@@ -314,7 +316,7 @@ impl std::fmt::Display for Element {
     serde::Deserialize,
     schemars::JsonSchema,
 )]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum ElementKind {
     /// Variant that should be used if no other one fits.
     Other = 0,

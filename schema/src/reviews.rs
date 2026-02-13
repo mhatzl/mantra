@@ -29,7 +29,7 @@ pub fn date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct ReviewSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -51,7 +51,7 @@ pub struct ReviewSchema {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct Review {
     /// The name of the review.
     /// [req("review.id")]
@@ -119,7 +119,7 @@ pub enum OneOrMultRequirementIds {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct OverrideTestRun {
     /// Identification of the test run the overrides are applied to.
     pub test_run: TestRunPk,
