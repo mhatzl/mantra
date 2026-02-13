@@ -63,6 +63,6 @@ create table RequirementHierarchies (
     -- The ID of the parent requirement.
     parent_req_id text not null,
     constraint RequirementHierarchiesPk primary key (child_product_id, child_req_id, parent_product_id, parent_req_id),
-    foreign key (child_product_id, child_req_id) references Requirements (product_id, id) on delete cascade,
-    foreign key (parent_product_id, parent_req_id) references Requirements (product_id, id) on delete cascade
+    foreign key (child_product_id, child_req_id) references Requirements (product_id, id) on delete cascade deferrable initially deferred,
+    foreign key (parent_product_id, parent_req_id) references Requirements (product_id, id) on delete cascade deferrable initially deferred
 );

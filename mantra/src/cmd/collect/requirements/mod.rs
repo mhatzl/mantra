@@ -26,7 +26,12 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
     fn modify_walker(&self, builder: &mut ignore::WalkBuilder) -> Result<(), anyhow::Error> {
         match self.source {
             RequirementSourceVariant::Markup => {
-                builder.types(TypesBuilder::new().select("markdown").build()?);
+                builder.types(
+                    TypesBuilder::new()
+                        .add_defaults()
+                        .select("markdown")
+                        .build()?,
+                );
             }
             RequirementSourceVariant::Schema => {
                 builder.types(walker::base_schema_types()?);

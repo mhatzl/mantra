@@ -20,9 +20,9 @@ create table TestRuns (
     -- Optional origin data of the test run that was set for multiple test runs.
     -- [req("testcov.test_run.origin")]
     base_origin_hash text references GeneralJson (hash) on delete restrict,
-    -- The hash of the origin data of the test run.
+    -- Optional hash of the origin data of the test run.
     -- [req("testcov.test_run.origin")]
-    origin_hash text not null references GeneralJson (hash) on delete restrict,
+    origin_hash text references GeneralJson (hash) on delete restrict,
     -- Hash of the source the test run data was collected from.
     src_hash text not null,
     primary key (product_id, name, utc_date)
@@ -97,8 +97,8 @@ create table TestRunHierarchies (
         child_name,
         child_date
     ),
-    foreign key (parent_product_id, parent_name, parent_date) references TestRuns (product_id, name, utc_date) on delete cascade,
-    foreign key (child_product_id, child_name, child_date) references TestRuns (product_id, name, utc_date) on delete cascade
+    foreign key (parent_product_id, parent_name, parent_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred,
+    foreign key (child_product_id, child_name, child_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred
 );
 
 -- Table to store logs that were captured during test run execution.

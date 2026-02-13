@@ -23,7 +23,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_per_test_run_schema(
+    pub(super) async fn update_per_test_run_schema(
         &mut self,
         test_run_schema: TestRunSchema,
     ) -> Result<(), anyhow::Error> {
@@ -123,11 +123,11 @@ impl<'db> Collection<'db> {
             product_id,
             test_run.name,
             test_run.utc_date,
+            description_hash,
             duration,
             test_run.nr_of_test_cases,
             base_origin_hash,
             origin_hash,
-            description_hash,
             src_hash
         )
         .execute(&mut *self.connection())
@@ -289,8 +289,8 @@ impl<'db> Collection<'db> {
             .execute(&mut *self.connection())
             .await?;
 
-            // foreign key constraints are not checked during the transaction
-            // => safe to add child test run after hierarchy
+            // foreign key constraints are deferred for test run hierarchies
+            // => safe to add child test run after hierarchy inside the same transaction
             Box::pin(self.update_per_test_run(
                 child_test_run,
                 base_origin_hash,

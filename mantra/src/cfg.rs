@@ -6,14 +6,14 @@ use crate::cmd::collect::cfg::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct MantraConfigFile {
     #[serde(alias = "product")]
     pub products: Vec<ProductConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct ProductConfig {
     #[serde(flatten)]
     pub product: Product,

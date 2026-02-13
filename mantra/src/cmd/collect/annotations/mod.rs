@@ -25,7 +25,6 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
     fn modify_walker(&self, builder: &mut ignore::WalkBuilder) -> Result<(), anyhow::Error> {
         match self.source {
             AnnotationSourceVariant::Content => {
-                builder.types(TypesBuilder::new().add_defaults().build()?);
                 // CI configuration is often in dot-folder which is considered "hidden"
                 // We want to detect traces in CI configuration files.
                 builder.hidden(false);

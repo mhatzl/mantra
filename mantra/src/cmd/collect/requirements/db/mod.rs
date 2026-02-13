@@ -161,6 +161,8 @@ impl<'db> Collection<'db> {
             for parent in parents {
                 let parent_product_id = parent.product_id.unwrap_or(self.product_id());
 
+                // Safe to insert, because foreign key constraints are deferred for the hierarchy.
+                // Constraint will be checked when committing the transaction
                 sqlx::query!(
                     "
                     insert into RequirementHierarchies (

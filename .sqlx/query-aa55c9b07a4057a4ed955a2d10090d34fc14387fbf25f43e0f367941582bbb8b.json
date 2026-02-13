@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            select * from TestRunStatementCoverage\n                            where\n                                product_id = $1 and test_run_name = $2\n                                and test_run_date = $3 and stmnt_filepath = $4\n                                and stmnt_line = $5\n                            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "stmnt_filepath",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "stmnt_file_hash",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "stmnt_line",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "hits",
+        "ordinal": 7,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "aa55c9b07a4057a4ed955a2d10090d34fc14387fbf25f43e0f367941582bbb8b"
+}

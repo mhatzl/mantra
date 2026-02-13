@@ -36,7 +36,7 @@ pub struct CollectRequirementsConfig {
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum RequirementSourceVariant {
     /// Following specific markup syntax in supported markup languages.
     /// e.g. Markdown
@@ -47,7 +47,7 @@ pub enum RequirementSourceVariant {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct CollectAnnotationsConfig {
     pub path: RelativePathBuf,
     #[serde(default)]
@@ -62,7 +62,7 @@ pub struct CollectAnnotationsConfig {
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum AnnotationSourceVariant {
     /// Extracts annotations from file content.
     #[default]
@@ -72,10 +72,10 @@ pub enum AnnotationSourceVariant {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub struct CollectTestRunsConfig {
     pub path: RelativePathBuf,
-    #[serde(default)]
+    // #[serde(default)]
     pub source: TestRunSourceVariant,
     pub origin: Option<Origin>,
     pub test_run_properties: Option<Properties>,
@@ -86,7 +86,7 @@ pub struct CollectTestRunsConfig {
 
 /// Supported source variants to retrieve test runs.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case", untagged)]
 pub enum TestRunSourceVariant {
     /// Following well-known formats for test and code coverage results.
     WellKnown {
@@ -101,16 +101,17 @@ pub enum TestRunSourceVariant {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct WellKnownTest {
     /// The well-known test format the data is stored in.
+    #[serde(default)]
     pub format: WellKnownTestFormat,
-    /// Optional pattern a filepath must match to be considered as test output source.
-    pub pattern: Option<String>,
+    /// Pattern a filepath must match to be considered as test output source.
+    pub pattern: String,
 }
 
 /// Supported source variants to define reviews.
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum WellKnownTestFormat {
     /// Following the [Jenkins JUnit](https://llg.cubic.org/docs/junit/) format.
     #[default]
@@ -120,16 +121,17 @@ pub enum WellKnownTestFormat {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct WellKnownCoverage {
     /// The well-known coverage format the data is stored in.
+    #[serde(default)]
     pub format: WellKnownCoverageFormat,
-    /// Optional pattern a filepath must match to be considered as coverage source.
-    pub pattern: Option<String>,
+    /// Pattern a filepath must match to be considered as coverage source.
+    pub pattern: String,
 }
 
 /// Supported well-known coverage formats mantra is able to extract coverage data from.
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum WellKnownCoverageFormat {
     /// Following the [Cobertura Loose] format.
     ///
@@ -153,7 +155,7 @@ pub struct CollectReviewsConfig {
 #[derive(
     Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
 )]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum ReviewSourceVariant {
     /// Following specific markup syntax in supported markup languages.
     /// e.g. Markdown

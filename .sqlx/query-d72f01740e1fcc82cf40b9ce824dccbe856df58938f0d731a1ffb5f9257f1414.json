@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            insert into TestCaseOverrides (\n                                last_collect_nr,\n                                product_id,\n                                test_run_name,\n                                test_run_date,\n                                test_case_name,\n                                review_name,\n                                review_date,\n                                state,\n                                comment_hash\n                            )\n                            values (\n                                $1,\n                                $2,\n                                $3,\n                                $4,\n                                $5,\n                                $6,\n                                $7,\n                                $8,\n                                $9\n                            )\n                            on conflict (\n                                product_id,\n                                test_run_name,\n                                test_run_date,\n                                test_case_name,\n                                review_name,\n                                review_date\n                            )\n                            do update set\n                                last_collect_nr = excluded.last_collect_nr,\n                                state = excluded.state,\n                                comment_hash = excluded.comment_hash\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "d72f01740e1fcc82cf40b9ce824dccbe856df58938f0d731a1ffb5f9257f1414"
+}

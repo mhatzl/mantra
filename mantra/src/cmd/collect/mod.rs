@@ -36,11 +36,12 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     let req_collector = SingleFileCollector::new(collection);
     let collection = req_collector.collect(cfg.requirements).await?;
 
-    let annotation_collector = SingleFileCollector::new(collection);
-    let collection = annotation_collector.collect(cfg.annotations).await?;
+    // TODO: update dot-notation parents here
 
-    // TODO: collect test runs here
-    // Note: cannot use single file collector, because well-known formats require two files..
+    let annotation_collector = SingleFileCollector::new(collection);
+    let mut collection = annotation_collector.collect(cfg.annotations).await?;
+
+    test_runs::collect(&mut collection, cfg.test_runs).await?;
 
     let review_collector = SingleFileCollector::new(collection);
     let collection = review_collector.collect(cfg.reviews).await?;

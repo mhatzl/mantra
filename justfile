@@ -7,3 +7,11 @@ db-reset:
 
 db-prep:
     cargo sqlx prepare --workspace
+
+profraw-file := justfile_directory() + "/target/nextest/default/raw-coverage/profdata-%p-%m.profraw"
+
+testcov:
+    rm -rf target/nextest/default
+    mkdir -p target/nextest/default/coverage/raw-coverage
+    RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="{{ profraw-file }}" cargo nextest run -p mantra
+    grcov . -s . --binary-path ./target/debug/ -t html -t cobertura-pretty --ignore-not-existing -o ./target/nextest/default/coverage/ --ignore='/**/*'

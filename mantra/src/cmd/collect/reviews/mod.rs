@@ -25,7 +25,12 @@ impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
     fn modify_walker(&self, builder: &mut ignore::WalkBuilder) -> Result<(), anyhow::Error> {
         match self.source {
             ReviewSourceVariant::Markup => {
-                builder.types(TypesBuilder::new().select("markdown").build()?);
+                builder.types(
+                    TypesBuilder::new()
+                        .add_defaults()
+                        .select("markdown")
+                        .build()?,
+                );
             }
             ReviewSourceVariant::Schema => {
                 builder.types(walker::base_schema_types()?);
