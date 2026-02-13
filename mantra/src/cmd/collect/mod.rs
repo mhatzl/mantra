@@ -1,21 +1,10 @@
-use std::{ffi::OsStr, path::PathBuf};
-
-use anyhow::bail;
-use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use mantra_schema::{
-    FmtHash, Origin, Properties,
-    path::{RelativePath, RelativePathBuf},
-    product::{Product, ProductId},
-    requirements::RequirementSchema,
-    time::OffsetDateTime,
+    FmtHash, Properties, path::RelativePath, product::ProductId, time::OffsetDateTime,
 };
-use tokio::task::JoinSet;
+use std::path::PathBuf;
 
 use crate::{
-    cmd::collect::{
-        cfg::{CollectConfig, RequirementSourceVariant},
-        collector::SingleFileCollector,
-    },
+    cmd::collect::{cfg::CollectConfig, collector::SingleFileCollector},
     db::{MantraConnection, MantraDb, MantraTransaction},
 };
 
@@ -34,9 +23,11 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     collection.update_product(cfg.product).await?;
 
     let req_collector = SingleFileCollector::new(collection);
-    let collection = req_collector.collect(cfg.requirements).await?;
-
-    // TODO: update dot-notation parents here
+    let mut collection = req_collector.collect(cfg.requirements).await?;
+    // Note: dot-hierarchy updated explicitely after collecting all requirements,
+    // because not all *dot-parts* may have been added as requirements.
+    // e.g. top.missing.lead-id => skipping "missing" if not available as requirement
+    collection.update_dot_hierarchy().await?;
 
     let annotation_collector = SingleFileCollector::new(collection);
     let mut collection = annotation_collector.collect(cfg.annotations).await?;
@@ -47,86 +38,6 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     let collection = review_collector.collect(cfg.reviews).await?;
 
     collection.commit().await?;
-
-    // let cfg_file_dir_path = collection.abs_cfg_file_parent_path()?;
-
-    // let (req_tx, mut req_rx) = tokio::sync::mpsc::unbounded_channel();
-    // let req_cfg = cfg.requirements;
-    // let root_path = cfg_file_dir_path.clone();
-    // let req_collection = tokio::spawn(async move {
-    //     let mut task_set: JoinSet<Result<(), anyhow::Error>> = JoinSet::new();
-    //     for cfg in req_cfg {
-    //         let req_sender = req_tx.clone();
-    //         let start_path = cfg.path.to_logical_path(&root_path);
-    //         let glob_pattern = cfg
-    //             .pattern
-    //             .as_deref()
-    //             .and_then(|p| glob::Pattern::new(p).ok());
-    //         task_set.spawn(async move {
-    //             let mut walk_builder = walker::base_mantra_walker(start_path);
-    //             walk_builder.add_custom_ignore_filename(".mantraignore-requirements");
-    //             if let Some(pattern) = glob_pattern {
-    //                 walk_builder.filter_entry(move |entry| {
-    //                     entry.path().is_dir()
-    //                         || match RelativePathBuf::from_path(entry.path()) {
-    //                             Ok(rel_path) => pattern.matches(rel_path.as_str()),
-    //                             Err(_) => false,
-    //                         }
-    //                 });
-    //             }
-
-    //             let collect_fn: fn(&str, &str) -> Result<RequirementSchema, anyhow::Error> =
-    //                 match cfg.source {
-    //                     RequirementSourceVariant::Markup => {
-    //                         walk_builder.types(TypesBuilder::new().select("markdown").build()?);
-    //                         |extension: &str, content: &str| todo!()
-    //                     }
-    //                     RequirementSourceVariant::Schema => {
-    //                         walk_builder.types(walker::base_schema_types()?);
-    //                         walker::content_to_schema::<RequirementSchema>
-    //                     }
-    //                 };
-
-    //             walk_builder.build_parallel().run(|| {
-    //                 let sender = req_sender.clone();
-    //                 Box::new(move |path_res| {
-    //                     if let Ok(path) = path_res {
-    //                         let filepath = path.path();
-    //                         if filepath.is_file() {
-    //                             if let Some(ext) = filepath.extension()
-    //                                 && let Some(extension) = ext.to_str()
-    //                                 && let Ok(content) = std::fs::read_to_string(filepath)
-    //                             {
-    //                                 // TODO: proper logging + error handling
-    //                                 match collect_fn(extension, &content) {
-    //                                     Ok(req_schema) => {
-    //                                         let _ = sender.send(req_schema);
-    //                                     }
-    //                                     Err(err) => eprintln!(
-    //                                         "Failed reading schema from '{}'. Err: {err}",
-    //                                         filepath.display()
-    //                                     ),
-    //                                 }
-    //                             }
-    //                         }
-    //                     }
-
-    //                     WalkState::Continue
-    //                 })
-    //             });
-
-    //             Ok(())
-    //         });
-    //     }
-
-    //     let _ = task_set.join_all().await;
-    // });
-
-    // while let Some(req_schema) = req_rx.recv().await {
-    //     collection.update_per_req_schema(req_schema).await?;
-    // }
-
-    // req_collection.await?;
 
     // requirements
     // - dot-notation hierarchy setup after all reqs are collected
@@ -275,7 +186,7 @@ impl<'db> Collection<'db> {
         })
     }
 
-    fn connection(&mut self) -> &mut MantraConnection {
+    fn connection_mut(&mut self) -> &mut MantraConnection {
         self.transaction.as_mut()
     }
 
@@ -319,7 +230,7 @@ impl<'db> Collection<'db> {
                 hash,
                 content
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
         } else {
             sqlx::query!(
@@ -336,7 +247,7 @@ impl<'db> Collection<'db> {
                 hash,
                 content
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
         }
 
@@ -359,7 +270,7 @@ impl<'db> Collection<'db> {
             ",
             file_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         let filepath = filepath.as_str();
@@ -389,7 +300,7 @@ impl<'db> Collection<'db> {
             filepath,
             file_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         Ok(())

@@ -1,6 +1,7 @@
 use mantra_schema::{
     FmtHash, Properties,
-    requirements::{Requirement, RequirementSchema},
+    product::ProductId,
+    requirements::{ReqId, Requirement, RequirementSchema},
 };
 
 use crate::cmd::collect::Collection;
@@ -35,6 +36,57 @@ impl<'db> Collection<'db> {
         for req in req_schema.requirements {
             self.update_requirement(req, &base_origin_hash, &req_schema.properties)
                 .await?;
+        }
+
+        Ok(())
+    }
+
+    pub(crate) async fn update_dot_hierarchy(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        let records = sqlx::query!(
+            "
+                select id from Requirements
+                where product_id = $1 and instr(id, '.') > 0
+            ",
+            product_id
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        for record in records {
+            // TODO: log missing dot-parent
+            if let Some(parent_id) = self.get_dot_parent(&product_id, &record.id).await {
+                sqlx::query!(
+                    "
+                    insert into RequirementHierarchies (
+                        last_collect_nr,
+                        child_product_id,
+                        child_req_id,
+                        parent_product_id,
+                        parent_req_id
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5
+                    )
+                    on conflict (child_product_id, child_req_id, parent_product_id, parent_req_id)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                    collect_nr,
+                    product_id,
+                    record.id,
+                    product_id,
+                    parent_id
+                )
+                .execute(self.connection_mut())
+                .await?;
+            }
         }
 
         Ok(())
@@ -117,7 +169,7 @@ impl<'db> Collection<'db> {
             description_hash,
             src_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         if let Some(props) = merge_local_and_base_properties(req.properties, base_props) {
@@ -152,7 +204,7 @@ impl<'db> Collection<'db> {
                     prop.0,
                     value_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -189,12 +241,41 @@ impl<'db> Collection<'db> {
                     parent_product_id,
                     parent.id
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
 
         Ok(())
+    }
+
+    async fn get_dot_parent(&mut self, product_id: &ProductId, req_id: &ReqId) -> Option<ReqId> {
+        let mut req_id = req_id.as_str();
+        while let Some((parent, _)) = req_id.rsplit_once('.') {
+            let parent_exists = self.req_exists(product_id, &parent.to_string()).await;
+
+            if parent_exists {
+                return Some(parent.to_string());
+            } else {
+                req_id = parent;
+            }
+        }
+
+        None
+    }
+
+    async fn req_exists(&mut self, product_id: &ProductId, req_id: &ReqId) -> bool {
+        sqlx::query!(
+            "
+                select id from Requirements
+                where product_id = $1 and id = $2
+            ",
+            product_id,
+            req_id
+        )
+        .fetch_one(self.connection_mut())
+        .await
+        .is_ok()
     }
 }
 
@@ -214,7 +295,7 @@ impl<'db> Collection<'db> {
 //             ",
 //             section_ref
 //         )
-//         .execute(&mut *self.connection())
+//         .execute(self.connection())
 //         .await?;
 
 //         for req in requirements {
@@ -238,7 +319,7 @@ impl<'db> Collection<'db> {
 //                 req.id,
 //                 product_id,
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             sqlx::query!(
@@ -261,7 +342,7 @@ impl<'db> Collection<'db> {
 //                 req.id,
 //                 fmt_content_hash
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             let hierarchies_hash = if req.parents.is_some() {
@@ -295,7 +376,7 @@ impl<'db> Collection<'db> {
 //                 req.manual_verification,
 //                 req.deprecated
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             sqlx::query!(
@@ -312,7 +393,7 @@ impl<'db> Collection<'db> {
 //                 fmt_title_hash,
 //                 req.title
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             if let Some(description) = &req.description {
@@ -330,7 +411,7 @@ impl<'db> Collection<'db> {
 //                     fmt_description_hash,
 //                     description
 //                 )
-//                 .execute(&mut *self.connection())
+//                 .execute(self.connection())
 //                 .await?;
 //             }
 
@@ -348,7 +429,7 @@ impl<'db> Collection<'db> {
 //                 fmt_origin_hash,
 //                 req.origin
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             let description_hash = if req.description.is_some() {
@@ -376,7 +457,7 @@ impl<'db> Collection<'db> {
 //                 fmt_origin_hash,
 //                 description_hash
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             sqlx::query!(
@@ -390,7 +471,7 @@ impl<'db> Collection<'db> {
 //                 ",
 //                 fmt_properties_hash
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             for prop in &req.properties {
@@ -410,7 +491,7 @@ impl<'db> Collection<'db> {
 //                     fmt_prop_val_hash,
 //                     prop.value
 //                 )
-//                 .execute(&mut *self.connection())
+//                 .execute(self.connection())
 //                 .await?;
 
 //                 sqlx::query!(
@@ -430,7 +511,7 @@ impl<'db> Collection<'db> {
 //                     prop.key,
 //                     fmt_prop_val_hash
 //                 )
-//                 .execute(&mut *self.connection())
+//                 .execute(self.connection())
 //                 .await?;
 //             }
 
@@ -446,7 +527,7 @@ impl<'db> Collection<'db> {
 //                     ",
 //                     fmt_hierarchies_hash
 //                 )
-//                 .execute(&mut *self.connection())
+//                 .execute(self.connection())
 //                 .await?;
 
 //                 for parent in parents {
@@ -475,7 +556,7 @@ impl<'db> Collection<'db> {
 //                         parent_product_id,
 //                         parent.id,
 //                     )
-//                     .execute(&mut *self.connection())
+//                     .execute(self.connection())
 //                     .await?;
 //                 }
 //             }

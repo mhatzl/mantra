@@ -130,7 +130,7 @@ impl<'db> Collection<'db> {
             origin_hash,
             src_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         if let Some(props) =
@@ -170,7 +170,7 @@ impl<'db> Collection<'db> {
                     prop.0,
                     value_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -207,7 +207,7 @@ impl<'db> Collection<'db> {
                     revision.nr,
                     revision.comment
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
 
                 for author in revision.authors {
@@ -240,7 +240,7 @@ impl<'db> Collection<'db> {
                         revision.nr,
                         author
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }
@@ -286,7 +286,7 @@ impl<'db> Collection<'db> {
                 child_test_run.name,
                 child_test_run.utc_date
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
 
             // foreign key constraints are deferred for test run hierarchies
@@ -342,7 +342,7 @@ impl<'db> Collection<'db> {
                     log_src,
                     log_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -393,7 +393,7 @@ impl<'db> Collection<'db> {
                     line.nr,
                     line.hits
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -455,7 +455,7 @@ impl<'db> Collection<'db> {
                 test_case.utc_date,
                 duration
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
 
             for verified_req in test_case.verified_reqs {
@@ -488,7 +488,7 @@ impl<'db> Collection<'db> {
                     test_case.name,
                     verified_req
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
 
@@ -532,7 +532,7 @@ impl<'db> Collection<'db> {
                         property.0,
                         value_hash
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }
@@ -583,7 +583,7 @@ impl<'db> Collection<'db> {
                         log_src,
                         log_hash
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }
@@ -634,7 +634,7 @@ impl<'db> Collection<'db> {
                     location.file_hash,
                     location.line
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
 
@@ -676,7 +676,7 @@ impl<'db> Collection<'db> {
                         property.0,
                         value_hash
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }
@@ -731,7 +731,7 @@ impl<'db> Collection<'db> {
                         line.nr,
                         line.hits
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }

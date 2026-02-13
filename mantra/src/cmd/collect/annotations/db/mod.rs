@@ -87,7 +87,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 base_origin_hash
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
         }
 
@@ -166,7 +166,7 @@ impl<'db> Collection<'db> {
             kind,
             content_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         if let Some(ident) = element.ident {
@@ -199,7 +199,7 @@ impl<'db> Collection<'db> {
                 element.definition_line,
                 ident
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
         }
 
@@ -237,7 +237,7 @@ impl<'db> Collection<'db> {
             trace.line,
             kind
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         if let Some(props) = merge_local_and_base_properties(trace.properties, base_trace_props) {
@@ -268,7 +268,7 @@ impl<'db> Collection<'db> {
                     prop.0,
                     value_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -291,7 +291,7 @@ impl<'db> Collection<'db> {
                 file_hash,
                 trace.line
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
 
             let req_available = sqlx::query!(
@@ -302,7 +302,7 @@ impl<'db> Collection<'db> {
                 req_id,
                 product_id
             )
-            .fetch_optional(&mut *self.connection())
+            .fetch_optional(self.connection_mut())
             .await?
             .is_some();
 
@@ -336,7 +336,7 @@ impl<'db> Collection<'db> {
                     file_hash,
                     trace.line
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -384,7 +384,7 @@ impl<'db> Collection<'db> {
                         kind,
                         content_hash
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
                 TraceRelatedCodeVariant::ElementAtLine(def_line) => {
@@ -405,7 +405,7 @@ impl<'db> Collection<'db> {
                         trace.line,
                         def_line
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }
@@ -445,7 +445,7 @@ impl<'db> Collection<'db> {
                     end,
                     comment_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
             CoverageExcludeKind::Line(line) => {
@@ -466,7 +466,7 @@ impl<'db> Collection<'db> {
                     line,
                     comment_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }

@@ -115,7 +115,7 @@ impl<'db> Collection<'db> {
             description_hash,
             src_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         for reviewer in review.reviewer {
@@ -145,7 +145,7 @@ impl<'db> Collection<'db> {
                 review.utc_date,
                 reviewer
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
         }
 
@@ -184,7 +184,7 @@ impl<'db> Collection<'db> {
                     prop.0,
                     value_hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -221,7 +221,7 @@ impl<'db> Collection<'db> {
                     revision.nr,
                     revision.comment
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
 
                 for author in revision.authors {
@@ -254,7 +254,7 @@ impl<'db> Collection<'db> {
                         revision.nr,
                         author
                     )
-                    .execute(&mut *self.connection())
+                    .execute(self.connection_mut())
                     .await?;
                 }
             }
@@ -304,7 +304,7 @@ impl<'db> Collection<'db> {
                         test_run_override.test_run.utc_date,
                         test_case_override.name
                     )
-                    .fetch_optional(&mut *self.connection())
+                    .fetch_optional(self.connection_mut())
                     .await?
                     .is_some();
 
@@ -356,7 +356,7 @@ impl<'db> Collection<'db> {
                             state,
                             comment_hash
                         )
-                        .execute(&mut *self.connection())
+                        .execute(self.connection_mut())
                         .await?;
                     } else {
                         let entry = IgnoredEntry::from_test_case_state(
@@ -395,7 +395,7 @@ impl<'db> Collection<'db> {
                                 filepath,
                                 line_nr
                             )
-                            .fetch_optional(&mut *self.connection())
+                            .fetch_optional(self.connection_mut())
                             .await?
                             .is_some();
 
@@ -455,7 +455,7 @@ impl<'db> Collection<'db> {
                                     line_info.hits,
                                     comment_hash
                                 )
-                                .execute(&mut *self.connection())
+                                .execute(self.connection_mut())
                                 .await?;
                             } else {
                                 let entry = IgnoredEntry::from_test_case_statement_coverage(
@@ -498,7 +498,7 @@ impl<'db> Collection<'db> {
                             filepath,
                             line_nr
                         )
-                        .fetch_optional(&mut *self.connection())
+                        .fetch_optional(self.connection_mut())
                         .await?
                         .is_some();
 
@@ -554,7 +554,7 @@ impl<'db> Collection<'db> {
                                 line_info.hits,
                                 comment_hash
                             )
-                            .execute(&mut *self.connection())
+                            .execute(self.connection_mut())
                             .await?;
                         } else {
                             let entry = IgnoredEntry::from_test_run_statement_coverage(
@@ -594,7 +594,7 @@ impl<'db> Collection<'db> {
             req_id,
             product_id
         )
-        .fetch_optional(&mut *self.connection())
+        .fetch_optional(self.connection_mut())
         .await?
         .is_some();
 
@@ -629,7 +629,7 @@ impl<'db> Collection<'db> {
                 review_date,
                 comment_hash
             )
-            .execute(&mut *self.connection())
+            .execute(self.connection_mut())
             .await?;
         } else {
             let ignored_entry =
@@ -679,7 +679,7 @@ impl<'db> Collection<'db> {
             review_date,
             entry_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         Ok(())

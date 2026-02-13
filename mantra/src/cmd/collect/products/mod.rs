@@ -5,7 +5,7 @@
 // #[cfg(test)]
 // mod test;
 
-use mantra_schema::{product::Product, FmtHash};
+use mantra_schema::{FmtHash, product::Product};
 
 use crate::cmd::collect::Collection;
 
@@ -67,7 +67,7 @@ impl<'db> Collection<'db> {
             product.license,
             description_hash
         )
-        .execute(&mut *self.connection())
+        .execute(self.connection_mut())
         .await?;
 
         if let Some(properties) = product.properties {
@@ -102,7 +102,7 @@ impl<'db> Collection<'db> {
                     key,
                     hash
                 )
-                .execute(&mut *self.connection())
+                .execute(self.connection_mut())
                 .await?;
             }
         }
@@ -143,7 +143,7 @@ impl<'db> Collection<'db> {
 //                 hash_ref,
 //                 metadata
 //             )
-//             .execute(&mut *self.connection())
+//             .execute(self.connection())
 //             .await?;
 
 //             Some(hash)
@@ -158,7 +158,7 @@ impl<'db> Collection<'db> {
 //             ",
 //             section_ref
 //         )
-//         .execute(&mut *self.connection())
+//         .execute(self.connection())
 //         .await?;
 
 //         sqlx::query!(
@@ -168,7 +168,7 @@ impl<'db> Collection<'db> {
 //             ",
 //             ref_id,
 //         )
-//         .execute(&mut *self.connection())
+//         .execute(self.connection())
 //         .await?;
 
 //         sqlx::query!(
@@ -188,7 +188,7 @@ impl<'db> Collection<'db> {
 //             product.base,
 //             product.version
 //         )
-//         .execute(&mut *self.connection())
+//         .execute(self.connection())
 //         .await?;
 
 //         sqlx::query!(
@@ -217,7 +217,7 @@ impl<'db> Collection<'db> {
 //             product.license,
 //             fmt_metadata_hash
 //         )
-//         .execute(&mut *self.connection())
+//         .execute(self.connection())
 //         .await?;
 
 //         sqlx::query!(
@@ -240,7 +240,7 @@ impl<'db> Collection<'db> {
 //             product.base,
 //             fmt_details_hash
 //         )
-//         .execute(&mut *self.connection())
+//         .execute(self.connection())
 //         .await?;
 
 //         Ok((section_hash, product_id))
