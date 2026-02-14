@@ -50,6 +50,224 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    pub(crate) async fn delete_outdated_test_runs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        let updated_records = sqlx::query!(
+            "
+                select name, utc_date from TestRuns
+                where product_id = $1 and last_collect_nr = $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        // Note: always deleting outdated data for collected test runs,
+        // because this means that the data got removed in the original source.
+        for record in updated_records {
+            sqlx::query!(
+                "
+                delete from TestRunProperties
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestRunRevisions
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestRunRevisionAuthors
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestRunHierarchies
+                where last_collect_nr < $2 and product_id = $1
+                and ((parent_name = $3 and parent_date = $4)
+                or (child_name = $3 and child_date = $4))
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestRunLogs
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestRunStatementCoverage
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCases
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseVerifiedRequirements
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseProperties
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseLogs
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseLocations
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseStateProperties
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseStatementCoverage
+                where product_id = $1 and last_collect_nr < $2
+                and test_run_name = $3 and test_run_date = $4
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+        }
+
+        // Note: due to cascade rules, deletions in the base TestRuns table
+        // cascade to the other tables
+        sqlx::query!(
+            "
+                delete from TestRuns
+                where product_id = $1 and last_collect_nr < $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
     async fn update_per_test_run(
         &mut self,
         test_run: TestRun,
@@ -251,10 +469,9 @@ impl<'db> Collection<'db> {
                 "
                     insert into TestRunHierarchies (
                         last_collect_nr,
-                        parent_product_id,
+                        product_id,
                         parent_name,
                         parent_date,
-                        child_product_id,
                         child_name,
                         child_date
                     )
@@ -264,14 +481,12 @@ impl<'db> Collection<'db> {
                         $3,
                         $4,
                         $5,
-                        $6,
-                        $7
+                        $6
                     )
                     on conflict (
-                        parent_product_id,
+                        product_id,
                         parent_name,
                         parent_date,
-                        child_product_id,
                         child_name,
                         child_date
                     )
@@ -282,7 +497,6 @@ impl<'db> Collection<'db> {
                 product_id,
                 test_run.name,
                 test_run.utc_date,
-                product_id,
                 child_test_run.name,
                 child_test_run.utc_date
             )

@@ -4,7 +4,7 @@ create table AnnotatedFileOrigins (
     product_id text not null,
     filepath text not null,
     base_origin_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (product_id, filepath, base_origin_hash),
+    primary key (product_id, filepath),
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
 );
 

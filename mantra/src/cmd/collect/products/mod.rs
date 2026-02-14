@@ -109,6 +109,35 @@ impl<'db> Collection<'db> {
 
         Ok(())
     }
+
+    pub(crate) async fn delete_outdated_product_info(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            delete from ProductProperties
+            where product_id = $1 and last_collect_nr < $2
+        ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+                delete from ProductRelatedFiles
+                where product_id = $1 and last_collect_nr < $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
 }
 
 // impl<'db> CollectTransaction<'db> {

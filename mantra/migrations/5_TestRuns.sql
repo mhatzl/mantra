@@ -74,31 +74,31 @@ create table TestRunRevisionAuthors (
 -- Table to store test run hierarchies.
 -- This allows to have nested test runs,
 -- while each test run may additionally have regular test cases.
+--
+-- **Note:** Both test runs must refer to the same product ID,
+-- because test results should not span across products.
 -- [req("testcov.test_run.nested")]
 create table TestRunHierarchies (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
-    -- The product ID of the parent test run.
-    parent_product_id text not null,
+    -- The product ID of both test runs.
+    product_id text not null,
     -- The name of the parent test run.
     parent_name text not null,
     -- The UTC date and time of the parent test run.
     parent_date text not null,
-    -- The product ID of the child test run.
-    child_product_id text not null,
     -- The name of the child test run.
     child_name text not null,
     -- The UTC date and time of the child test run.
     child_date text not null,
     primary key (
-        parent_product_id,
+        product_id,
         parent_name,
         parent_date,
-        child_product_id,
         child_name,
         child_date
     ),
-    foreign key (parent_product_id, parent_name, parent_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred,
-    foreign key (child_product_id, child_name, child_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred
+    foreign key (product_id, parent_name, parent_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred,
+    foreign key (product_id, child_name, child_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred
 );
 
 -- Table to store logs that were captured during test run execution.

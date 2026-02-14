@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from AnnotatedFileOrigins\n                where product_id = $1 and last_collect_nr < $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9229b736fac921514915527c351a087419f56165ca3ba16c374d5da075c6f18a"
+}

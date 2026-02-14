@@ -48,6 +48,46 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    pub(crate) async fn delete_outdated_annotations(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+                delete from AnnotatedFileOrigins
+                where product_id = $1 and last_collect_nr < $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+                delete from DirectProductReqTraces
+                where product_id = $1 and last_collect_nr < $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+                delete from ElementIdents
+                where product_id = $1 and last_collect_nr < $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
     async fn update_per_annotation_file(
         &mut self,
         file_annotations: FileAnnotations,
@@ -78,9 +118,10 @@ impl<'db> Collection<'db> {
                     $3,
                     $4
                 )
-                on conflict (product_id, filepath, base_origin_hash)
+                on conflict (product_id, filepath)
                 do update set
-                    last_collect_nr = excluded.last_collect_nr
+                    last_collect_nr = excluded.last_collect_nr,
+                    base_origin_hash = excluded.base_origin_hash
                 ",
                 collect_nr,
                 product_id,

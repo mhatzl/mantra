@@ -41,23 +41,32 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    pub(crate) async fn update_dot_hierarchy(&mut self) -> Result<(), anyhow::Error> {
+    pub(crate) async fn update_req_dot_hierarchy(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
+        // Only update newly collected requirements that have dots '.' in their ID.
         let records = sqlx::query!(
             "
                 select id from Requirements
-                where product_id = $1 and instr(id, '.') > 0
+                where product_id = $1 and last_collect_nr = $2
+                and instr(id, '.') > 0
             ",
-            product_id
+            product_id,
+            collect_nr
         )
         .fetch_all(self.connection_mut())
         .await?;
 
+        let mut missing_parent = Vec::new();
+
         for record in records {
             // TODO: log missing dot-parent
-            if let Some(parent_id) = self.get_dot_parent(&product_id, &record.id).await {
+            // Only allow parent to be collected in the same (latest) collection.
+            if let Some(parent_id) = self
+                .get_dot_parent(&product_id, collect_nr, &record.id)
+                .await
+            {
                 sqlx::query!(
                     "
                     insert into RequirementHierarchies (
@@ -86,8 +95,119 @@ impl<'db> Collection<'db> {
                 )
                 .execute(self.connection_mut())
                 .await?;
+            } else {
+                missing_parent.push(record.id);
             }
         }
+
+        if !missing_parent.is_empty() {
+            for bad in missing_parent {
+                eprintln!("Parent of requirement '{bad}' was not collected!");
+            }
+            anyhow::bail!("Missing parent requirement!");
+        }
+
+        Ok(())
+    }
+
+    pub(crate) async fn delete_outdated_reqs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        let updated_records = sqlx::query!(
+            "
+                select id from Requirements
+                where product_id = $1 and last_collect_nr = $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        // Note: always deleting outdated data for collected reqs,
+        // because this means that the data got removed in the original source.
+        for record in updated_records {
+            sqlx::query!(
+                "
+                delete from RequirementProperties
+                where product_id = $1 and req_id = $2
+                and last_collect_nr < $3
+            ",
+                product_id,
+                record.id,
+                collect_nr
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from RequirementHierarchies
+                where ((child_product_id = $1 and child_req_id = $2)
+                or (parent_product_id = $1 and parent_req_id = $2))
+                and last_collect_nr < $3
+            ",
+                product_id,
+                record.id,
+                collect_nr
+            )
+            .execute(self.connection_mut())
+            .await?;
+        }
+
+        // Check bad req-hierarchies before deleting olds.
+        // Only parent IDs relevant, because the hierarchy is entered when collecting the child
+        // Bad ones are:
+        // - same product id, but parent was not collected in a run before the child
+        //   indicates that the parent got deleted
+        // - different product id, but the parent req was not collected in latest run for the product
+        //   indicates that the parent got deleted
+        let bad_hierarchies = sqlx::query!(
+            "
+                select rh.child_req_id, rh.parent_req_id
+                from RequirementHierarchies rh, Requirements r
+                where r.id = rh.parent_req_id
+                and r.last_collect_nr < rh.last_collect_nr
+                and rh.child_product_id = $1
+                and rh.parent_product_id = $1
+                union
+                select rh.child_req_id, rh.parent_req_id
+                from RequirementHierarchies rh, Requirements r, Products p
+                where r.id = rh.parent_req_id
+                and r.last_collect_nr != rh.last_collect_nr
+                and rh.child_product_id = $1
+                and rh.parent_product_id != rh.child_product_id
+                and p.id = rh.parent_product_id
+                and r.last_collect_nr != p.last_collect_nr
+            ",
+            product_id
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        if !bad_hierarchies.is_empty() {
+            for bad in bad_hierarchies {
+                eprintln!(
+                    "Bad requirement hierarchy! Child '{}' references deleted parent '{}'",
+                    bad.child_req_id, bad.parent_req_id
+                );
+            }
+            anyhow::bail!("Bad requirement hierarchy detected!");
+        }
+
+        // Note: due to cascade rules, deletions in the base Requirements table
+        // cascade to the other tables
+        sqlx::query!(
+            "
+            delete from Requirements
+            where product_id = $1 and last_collect_nr < $2
+        ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         Ok(())
     }
@@ -249,10 +369,17 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn get_dot_parent(&mut self, product_id: &ProductId, req_id: &ReqId) -> Option<ReqId> {
+    async fn get_dot_parent(
+        &mut self,
+        product_id: &ProductId,
+        collect_nr: i64,
+        req_id: &ReqId,
+    ) -> Option<ReqId> {
         let mut req_id = req_id.as_str();
         while let Some((parent, _)) = req_id.rsplit_once('.') {
-            let parent_exists = self.req_exists(product_id, &parent.to_string()).await;
+            let parent_exists = self
+                .req_exists(product_id, collect_nr, &parent.to_string())
+                .await;
 
             if parent_exists {
                 return Some(parent.to_string());
@@ -264,326 +391,24 @@ impl<'db> Collection<'db> {
         None
     }
 
-    async fn req_exists(&mut self, product_id: &ProductId, req_id: &ReqId) -> bool {
+    async fn req_exists(
+        &mut self,
+        product_id: &ProductId,
+        collect_nr: i64,
+        req_id: &ReqId,
+    ) -> bool {
         sqlx::query!(
             "
-                select id from Requirements
-                where product_id = $1 and id = $2
-            ",
+                    select id from Requirements
+                    where product_id = $1 and id = $2
+                    and last_collect_nr = $3
+                ",
             product_id,
-            req_id
+            req_id,
+            collect_nr
         )
         .fetch_one(self.connection_mut())
         .await
         .is_ok()
     }
 }
-
-// impl<'db> CollectTransaction<'db> {
-//     pub async fn update_requirements(
-//         &'db mut self,
-//         product_id: &ProductId,
-//         requirements: &[Requirement],
-//     ) -> Result<FmtHash, anyhow::Error> {
-//         let section_hash = requirements.fmt_hash();
-//         let section_ref = &section_hash;
-
-//         sqlx::query!(
-//             "
-//             insert or ignore into CollectedSections (hash)
-//             values ($1)
-//             ",
-//             section_ref
-//         )
-//         .execute(self.connection())
-//         .await?;
-
-//         for req in requirements {
-//             let fmt_title_hash = &req.title.hash().finalize();
-//             let fmt_origin_hash = &req.origin.hash().finalize();
-//             let fmt_description_hash = &req.description.hash().finalize();
-//             let details_hash = req_details_hash(req);
-//             let fmt_details_hash = &details_hash.clone().finalize();
-//             let properties_hash = req_properties_hash(req);
-//             let fmt_properties_hash = &properties_hash.clone().finalize();
-//             let hierarchies_hash = req_hierarchies_hash(req);
-//             let fmt_hierarchies_hash = &hierarchies_hash.clone().finalize();
-//             let content_hash = req_content_hash(details_hash, properties_hash, hierarchies_hash);
-//             let fmt_content_hash = &content_hash.finalize();
-
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into Requirements (id, product_id)
-//                 values ($1, $2)
-//                 ",
-//                 req.id,
-//                 product_id,
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into RequirementCollections (
-//                     section_hash,
-//                     product_id,
-//                     req_id,
-//                     req_content_hash
-//                 )
-//                 values (
-//                     $1,
-//                     $2,
-//                     $3,
-//                     $4
-//                 )
-//                 ",
-//                 section_ref,
-//                 product_id,
-//                 req.id,
-//                 fmt_content_hash
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             let hierarchies_hash = if req.parents.is_some() {
-//                 Some(fmt_hierarchies_hash)
-//             } else {
-//                 None
-//             };
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into RequirementContents (
-//                     hash,
-//                     req_details_hash,
-//                     req_properties_hash,
-//                     req_hierarchies_hash,
-//                     manual_verification,
-//                     deprecated
-//                 )
-//                 values (
-//                     $1,
-//                     $2,
-//                     $3,
-//                     $4,
-//                     $5,
-//                     $6
-//                 )
-//                 ",
-//                 fmt_content_hash,
-//                 fmt_details_hash,
-//                 fmt_properties_hash,
-//                 hierarchies_hash,
-//                 req.manual_verification,
-//                 req.deprecated
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into GeneralContents (
-//                     hash,
-//                     content
-//                 )
-//                 values (
-//                     $1,
-//                     $2
-//                 )
-//                 ",
-//                 fmt_title_hash,
-//                 req.title
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             if let Some(description) = &req.description {
-//                 sqlx::query!(
-//                     "
-//                     insert or ignore into GeneralContents (
-//                         hash,
-//                         content
-//                     )
-//                     values (
-//                         $1,
-//                         $2
-//                     )
-//                     ",
-//                     fmt_description_hash,
-//                     description
-//                 )
-//                 .execute(self.connection())
-//                 .await?;
-//             }
-
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into GeneralJson (
-//                     hash,
-//                     data
-//                 )
-//                 values (
-//                     $1,
-//                     $2
-//                 )
-//                 ",
-//                 fmt_origin_hash,
-//                 req.origin
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             let description_hash = if req.description.is_some() {
-//                 Some(fmt_description_hash)
-//             } else {
-//                 None
-//             };
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into RequirementDetails (
-//                     hash,
-//                     title_hash,
-//                     origin_hash,
-//                     description_hash
-//                 )
-//                 values (
-//                     $1,
-//                     $2,
-//                     $3,
-//                     $4
-//                 )
-//                 ",
-//                 fmt_details_hash,
-//                 fmt_title_hash,
-//                 fmt_origin_hash,
-//                 description_hash
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             sqlx::query!(
-//                 "
-//                 insert or ignore into RequirementPropertiesHashes (
-//                     hash
-//                 )
-//                 values (
-//                     $1
-//                 )
-//                 ",
-//                 fmt_properties_hash
-//             )
-//             .execute(self.connection())
-//             .await?;
-
-//             for prop in &req.properties {
-//                 let fmt_prop_val_hash = prop.value.hash().finalize();
-
-//                 sqlx::query!(
-//                     "
-//                     insert or ignore into GeneralJson (
-//                         hash,
-//                         data
-//                     )
-//                     values (
-//                         $1,
-//                         $2
-//                     )
-//                     ",
-//                     fmt_prop_val_hash,
-//                     prop.value
-//                 )
-//                 .execute(self.connection())
-//                 .await?;
-
-//                 sqlx::query!(
-//                     "
-//                     insert or ignore into RequirementProperties (
-//                         req_properties_hash,
-//                         property_key,
-//                         value_hash
-//                     )
-//                     values (
-//                         $1,
-//                         $2,
-//                         $3
-//                     )
-//                     ",
-//                     fmt_properties_hash,
-//                     prop.key,
-//                     fmt_prop_val_hash
-//                 )
-//                 .execute(self.connection())
-//                 .await?;
-//             }
-
-//             if let Some(parents) = &req.parents {
-//                 sqlx::query!(
-//                     "
-//                     insert or ignore into RequirementHierarchiesHashes (
-//                         hash
-//                     )
-//                     values (
-//                         $1
-//                     )
-//                     ",
-//                     fmt_hierarchies_hash
-//                 )
-//                 .execute(self.connection())
-//                 .await?;
-
-//                 for parent in parents {
-//                     let parent_product_id = parent.product_id.as_ref().unwrap_or(product_id);
-
-//                     sqlx::query!(
-//                         "
-//                         insert or ignore into RequirementHierarchies (
-//                             req_hierarchies_hash,
-//                             child_product_id,
-//                             child_req_id,
-//                             parent_product_id,
-//                             parent_req_id
-//                         )
-//                         values (
-//                             $1,
-//                             $2,
-//                             $3,
-//                             $4,
-//                             $5
-//                         )
-//                         ",
-//                         fmt_hierarchies_hash,
-//                         product_id,
-//                         req.id,
-//                         parent_product_id,
-//                         parent.id,
-//                     )
-//                     .execute(self.connection())
-//                     .await?;
-//                 }
-//             }
-//         }
-
-//         Ok(section_hash)
-//     }
-// }
-
-// fn req_content_hash(details_hash: Hash, properties_hash: Hash, hierarchies_hash: Hash) -> Hash {
-//     let mut hash = details_hash;
-//     hash.extend(properties_hash);
-//     hash.extend(hierarchies_hash);
-//     hash
-// }
-
-// fn req_details_hash(req: &Requirement) -> Hash {
-//     let mut hash = req.title.hash();
-//     hash.extend(req.origin.hash());
-//     hash.extend(req.description.hash());
-//     hash
-// }
-
-// fn req_properties_hash(req: &Requirement) -> Hash {
-//     req.properties.hash()
-// }
-
-// fn req_hierarchies_hash(req: &Requirement) -> Hash {
-//     req.parents.hash()
-// }

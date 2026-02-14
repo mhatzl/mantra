@@ -47,6 +47,176 @@ impl<'db> Collection<'db> {
         todo!()
     }
 
+    pub(crate) async fn delete_outdated_reviews(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        let updated_records = sqlx::query!(
+            "
+                select name, utc_date from Reviews
+                where product_id = $1 and last_collect_nr = $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        // Note: always deleting outdated data for collected reviews,
+        // because this means that the data got removed in the original source.
+        for record in updated_records {
+            sqlx::query!(
+                "
+                delete from ReviewReviewers
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from ReviewProperties
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from ReviewRevisions
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from ReviewRevisionAuthors
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from ManuallyVerifiedRequirements
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseOverrides
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestRunStatementCoverageOverrides
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from TestCaseStatementCoverageOverrides
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            sqlx::query!(
+                "
+                delete from IgnoredReviewEntries
+                where product_id = $1 and last_collect_nr < $2
+                and review_name = $3 and review_date = $4
+
+            ",
+                product_id,
+                collect_nr,
+                record.name,
+                record.utc_date
+            )
+            .execute(self.connection_mut())
+            .await?;
+        }
+
+        // Note: due to cascade rules, deletions in the base Reviews table
+        // cascade to the other tables
+        sqlx::query!(
+            "
+                delete from Reviews
+                where product_id = $1 and last_collect_nr < $2
+            ",
+            product_id,
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
     async fn update_review(
         &mut self,
         review: Review,

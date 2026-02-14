@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from RequirementProperties\n                where product_id = $1 and req_id = $2\n                and last_collect_nr < $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "563882b0d904a754dd12fe876db974100183a3b112c566d365d64e0115a63c8d"
+}

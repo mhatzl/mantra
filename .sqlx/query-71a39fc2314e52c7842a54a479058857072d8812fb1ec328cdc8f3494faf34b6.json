@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from TestCaseLogs\n                where product_id = $1 and last_collect_nr < $2\n                and test_run_name = $3 and test_run_date = $4\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "71a39fc2314e52c7842a54a479058857072d8812fb1ec328cdc8f3494faf34b6"
+}

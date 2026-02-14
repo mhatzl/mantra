@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from TestRunStatementCoverage\n                where product_id = $1 and last_collect_nr < $2\n                and test_run_name = $3 and test_run_date = $4\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0a68b67a5656f119c44598d5c3a62a3f0a8875a36cfc2bd587c18716092350c7"
+}
