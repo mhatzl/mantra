@@ -2,6 +2,13 @@ use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_annotations_data(&mut self) -> Result<(), anyhow::Error> {
+        self.update_trace_spans().await?;
+        self.update_coverage_exclude_lines().await?;
+
+        Ok(())
+    }
+
+    async fn update_trace_spans(&mut self) -> Result<(), anyhow::Error> {
         sqlx::query!(
             "
             insert or replace into TraceSpans (
@@ -36,6 +43,37 @@ impl<'db> Collection<'db> {
                 from CodeBlockTraces
             )
             group by file_hash, traced_line
+            "
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_coverage_exclude_lines(&mut self) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "
+            with recursive block_line as (
+                select
+                    file_hash,
+                    start_line as line,
+                    end_line
+                from CoverageBlockExcludes
+                union all
+                select
+                    bl.file_hash,
+                    bl.line + 1 as line,
+                    bl.end_line
+                from block_line bl
+                where bl.line <= bl.end_line
+            )
+            insert or ignore into ExcludedCoverageLines (file_hash, line)
+            select file_hash, line
+            from block_line
+            union all
+            select file_hash, line
+            from CoverageLineExcludes
             "
         )
         .execute(self.connection_mut())

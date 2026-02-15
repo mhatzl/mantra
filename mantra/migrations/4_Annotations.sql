@@ -91,7 +91,7 @@ create table Elements (
     content_hash text references GeneralTexts (hash) on delete restrict,
     primary key (file_hash, definition_line),
     constraint start_le_end check (start_line <= end_line),
-    constraint def_in_span check (start_line <= definition_line <= end_line)
+    constraint def_in_span check (start_line <= definition_line and definition_line <= end_line)
 );
 
 create table ElementIdents (
@@ -128,7 +128,7 @@ create table TracedCodeBlocks (
     content_hash text references GeneralTexts (hash) on delete restrict,
     primary key (file_hash, traced_line),
     foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade,
-    constraint start_le_trace_le_end check (start_line <= traced_line <= end_line)
+    constraint start_le_trace_le_end check (start_line <= traced_line and traced_line <= end_line)
 );
 
 -- Table to store direct links between elements and traces.

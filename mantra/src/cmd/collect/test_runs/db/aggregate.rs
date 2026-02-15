@@ -11,6 +11,8 @@ impl<'db> Collection<'db> {
         self.update_skipped_test_runs().await?;
         self.update_passed_test_runs().await?;
         self.update_usable_test_runs().await?;
+        self.update_test_run_trace_coverage().await?;
+        self.update_test_case_trace_coverage().await?;
 
         Ok(())
     }
@@ -492,6 +494,128 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             delete from UsableTestRuns
+            where last_collect_nr != $1
+            and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_test_run_trace_coverage(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into TraceCoveragePerTestRuns (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                filepath,
+                file_hash,
+                traced_line,
+                stmnt_line,
+                hits
+            )
+            select
+                sc.last_collect_nr,
+                sc.product_id,
+                sc.test_run_name,
+                sc.test_run_date,
+                sc.stmnt_filepath,
+                ts.file_hash,
+                ts.traced_line,
+                sc.stmnt_line,
+                sc.hits
+            from TestRunStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
+            where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
+            and sc.product_id = $2 and sc.product_id = pf.product_id
+            and sc.hits not null and sc.stmnt_filepath = pf.filepath
+            and pf.file_hash = ts.file_hash and sc.stmnt_line >= ts.start_line
+            and sc.stmnt_line <= ts.end_line
+            and sc.stmnt_line not in (
+                select line
+                from ExcludedCoverageLines
+                where file_hash = ts.file_hash
+            )
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from TraceCoveragePerTestRuns
+            where last_collect_nr != $1
+            and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_test_case_trace_coverage(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into TraceCoveragePerTestCases (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                filepath,
+                file_hash,
+                traced_line,
+                stmnt_line,
+                hits
+            )
+            select
+                sc.last_collect_nr,
+                sc.product_id,
+                sc.test_run_name,
+                sc.test_run_date,
+                sc.test_case_name,
+                sc.stmnt_filepath,
+                ts.file_hash,
+                ts.traced_line,
+                sc.stmnt_line,
+                sc.hits
+            from TestCaseStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
+            where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
+            and sc.product_id = $2 and sc.product_id = pf.product_id
+            and sc.hits not null and sc.stmnt_filepath = pf.filepath
+            and pf.file_hash = ts.file_hash and sc.stmnt_line >= ts.start_line
+            and sc.stmnt_line <= ts.end_line
+            and sc.stmnt_line not in (
+                select line
+                from ExcludedCoverageLines
+                where file_hash = ts.file_hash
+            )
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from TraceCoveragePerTestCases
             where last_collect_nr != $1
             and product_id = $2
             ",

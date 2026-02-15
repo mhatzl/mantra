@@ -100,7 +100,15 @@ create table TraceSpans (
     end_line integer not null,
     primary key (file_hash, traced_line, start_line),
     foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade,
-    constraint start_le_end check (start_line <= traced_line <= end_line)
+    constraint start_le_end check (start_line <= traced_line and traced_line <= end_line)
+);
+
+-- Contains lines that must be excluded from coverage analysis.
+-- Aggregate from block and line exclusion marker.
+create table ExcludedCoverageLines (
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    line integer not null,
+    primary key (file_hash, line)
 );
 
 -- Contains test runs that are obsolete and must **not** be used for further analysis.
