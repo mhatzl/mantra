@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into UsableManualRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select ur.last_collect_nr, ur.product_id, ur.id\n            from UsableRequirements ur, ManualRequirements mr\n            where ur.last_collect_nr = $1 and ur.product_id = $2\n            and mr.last_collect_nr = $1 and mr.product_id = $2\n            and ur.id = mr.id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ab488b2a3c1533c94aded297e268dd9769f47f1e8b342de47e0021c1d5d60fb9"
+}

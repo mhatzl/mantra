@@ -181,7 +181,7 @@ impl TryFrom<i32> for TraceKind {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
 pub enum TraceRelatedCodeVariant {
     /// Code block that is linked to the trace.
     /// [req("trace.code_block")]

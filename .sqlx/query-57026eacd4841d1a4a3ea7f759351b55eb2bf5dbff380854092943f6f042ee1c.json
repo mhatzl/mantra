@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into DirectlySatisfiedRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with NonManualSatisfyTraced (product_id, id) as (\n                select ur.product_id, ur.id\n                from UsableNonManualRequirements ur, DirectProductReqTraces dt, Traces t\n                where ur.last_collect_nr = $1 and ur.product_id = $2\n                and dt.last_collect_nr = $1 and dt.product_id = $2\n                and ur.id = dt.req_id and dt.file_hash = t.file_hash\n                and dt.line = t.line\n                and t.kind = $3\n            ),\n            ManualReviewed (product_id, id) as (\n                select mr.product_id, mr.id\n                from UsableManualRequirements mr, ManuallyVerifiedRequirements vr\n                where mr.last_collect_nr = $1 and vr.last_collect_nr = $1\n                and mr.product_id = $2 and vr.product_id = $2\n                and mr.id = vr.req_id\n            )\n            select $1 as last_collect_nr, product_id, id\n            from NonManualSatisfyTraced\n            union\n            select $1 as last_collect_nr, product_id, id\n            from ManualReviewed\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "57026eacd4841d1a4a3ea7f759351b55eb2bf5dbff380854092943f6f042ee1c"
+}

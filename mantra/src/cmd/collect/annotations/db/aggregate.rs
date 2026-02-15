@@ -1,10 +1,45 @@
-use mantra_schema::annotations::TraceKind;
-
 use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_annotations_data(&mut self) -> Result<(), anyhow::Error> {
-        // Note: order is important, because later queries build on updated tables
+        sqlx::query!(
+            "
+            insert or replace into TraceSpans (
+                file_hash,
+                traced_line,
+                start_line,
+                end_line
+            )
+            with SingleLineTraces as (
+                select file_hash, line as traced_line, line as start_line, line as end_line
+                from Traces
+            ),
+            ElementTraces as (
+                select e.file_hash, de.traced_line, e.start_line, e.end_line
+                from Traces t, DirectTracedElements de, Elements e
+                where t.file_hash = de.file_hash and t.file_hash = e.file_hash
+                and t.line = de.traced_line and de.element_definition_line = e.definition_line
+            ),
+            CodeBlockTraces as (
+                select file_hash, traced_line, start_line, end_line
+                from TracedCodeBlocks
+            )
+            select file_hash, traced_line, min(start_line), max(end_line)
+            from (
+                select file_hash, traced_line, start_line, end_line
+                from SingleLineTraces
+                union all
+                select file_hash, traced_line, start_line, end_line
+                from ElementTraces
+                union all
+                select file_hash, traced_line, start_line, end_line
+                from CodeBlockTraces
+            )
+            group by file_hash, traced_line
+            "
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         Ok(())
     }

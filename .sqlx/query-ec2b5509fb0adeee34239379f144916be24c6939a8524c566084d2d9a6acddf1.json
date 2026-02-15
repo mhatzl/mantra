@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into TraceSpans (\n                file_hash,\n                traced_line,\n                start_line,\n                end_line\n            )\n            with SingleLineTraces as (\n                select file_hash, line as traced_line, line as start_line, line as end_line\n                from Traces\n            ),\n            ElementTraces as (\n                select e.file_hash, de.traced_line, e.start_line, e.end_line\n                from Traces t, DirectTracedElements de, Elements e\n                where t.file_hash = de.file_hash and t.file_hash = e.file_hash\n                and t.line = de.traced_line and de.element_definition_line = e.definition_line\n            ),\n            CodeBlockTraces as (\n                select file_hash, traced_line, start_line, end_line\n                from TracedCodeBlocks\n            )\n            select file_hash, traced_line, min(start_line), max(end_line)\n            from (\n                select file_hash, traced_line, start_line, end_line\n                from SingleLineTraces\n                union all\n                select file_hash, traced_line, start_line, end_line\n                from ElementTraces\n                union all\n                select file_hash, traced_line, start_line, end_line\n                from CodeBlockTraces\n            )\n            group by file_hash, traced_line\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "ec2b5509fb0adeee34239379f144916be24c6939a8524c566084d2d9a6acddf1"
+}

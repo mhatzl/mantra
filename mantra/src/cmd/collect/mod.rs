@@ -23,6 +23,7 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     let mut collection = collect_data(db, cfg).await?;
 
     collection.aggregate_requirements_data().await?;
+    collection.aggregate_annotations_data().await?;
 
     collection.commit().await?;
 
