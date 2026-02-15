@@ -8,6 +8,8 @@ use mantra_schema::{
 
 use crate::cmd::collect::{Collection, merge_local_and_base_properties};
 
+pub mod aggregate;
+
 impl<'db> Collection<'db> {
     pub(super) async fn update_annotations(
         &mut self,

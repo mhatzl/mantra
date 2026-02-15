@@ -23,15 +23,15 @@ create table Reviews (
     primary key (product_id, name, utc_date)
 );
 
--- Table to store reviewers of a review.
--- [req("review.reviewer")]
-create table ReviewReviewers (
+-- Table to store authors of a review.
+-- [req("review.authors")]
+create table ReviewAuthors (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     review_name text not null,
     review_date text not null,
-    reviewer text not null,
-    primary key (product_id, review_name, review_date, reviewer),
+    author text not null,
+    primary key (product_id, review_name, review_date, author),
     foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
 );
 
@@ -142,7 +142,9 @@ create table TestCaseOverrides (
         test_run_name,
         test_run_date,
         name
-    )
+    ),
+    -- ensure the test run happened before the review
+    constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
 );
 
 -- Table to store overrides from reviews for statement coverage entries of test runs.
@@ -193,7 +195,9 @@ create table TestRunStatementCoverageOverrides (
         test_run_date,
         stmnt_filepath,
         stmnt_line
-    )
+    ),
+    -- ensure the test run happened before the review
+    constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
 );
 
 -- Table to store overrides from reviews for statement coverage entries of test cases.
@@ -249,7 +253,9 @@ create table TestCaseStatementCoverageOverrides (
         test_case_name,
         stmnt_filepath,
         stmnt_line
-    )
+    ),
+    -- ensure the test run happened before the review
+    constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
 );
 
 -- Contains collected entries that could not be mapped to existing data.

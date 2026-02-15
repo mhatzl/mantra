@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into IgnoredRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with MarkedIgnore(product_id, id) as (\n                select product_id, id\n                from Requirements\n                where ignore = true\n                and last_collect_nr = $1\n                and product_id = $2\n            ),\n            ParentMarkedIgnore(product_id, id) as (\n                select rd.descendant_product_id, rd.descendant_id\n                from RequirementDescendants rd, MarkedIgnore md\n                where rd.product_id = md.product_id and rd.id = md.id\n            )\n            select $1 as last_collect_nr, product_id, id\n            from MarkedIgnore\n            union all\n            select $1 as last_collect_nr, product_id, id\n            from ParentMarkedIgnore\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "fd72afea56d1973ddbcb9accf38e61df805fc617845b64d6baed65c64d6b0454"
+}

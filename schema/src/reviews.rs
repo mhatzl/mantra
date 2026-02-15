@@ -66,9 +66,9 @@ pub struct Review {
         )
     )]
     pub utc_date: OffsetDateTime,
-    /// The reviewer that were part of the review.
-    /// [req("review.reviewer")]
-    pub reviewer: Vec<String>,
+    /// The authors that were part of the review.
+    /// [req("review.authors")]
+    pub authors: Vec<String>,
     /// Optional description of the review.
     /// [req("review.description")]
     pub description: Option<String>,

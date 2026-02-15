@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into AnnotatedFileOrigins (\n                    last_collect_nr,\n                    product_id,\n                    filepath,\n                    base_origin_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4\n                )\n                on conflict (product_id, filepath)\n                do update set\n                    last_collect_nr = excluded.last_collect_nr,\n                    base_origin_hash = excluded.base_origin_hash\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "f4605680254206f4333e2c291640b19549b66bd5d1e6fa297935b77028dcfee1"
+}

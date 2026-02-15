@@ -1,6 +1,7 @@
 use mantra_schema::{
     FmtHash, Properties, path::RelativePath, product::ProductId, time::OffsetDateTime,
 };
+use sqlx::migrate::Migrate;
 use std::path::PathBuf;
 
 use crate::{
@@ -19,31 +20,9 @@ pub mod test_runs;
 pub mod walker;
 
 pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
-    let mut collection = Collection::new(db, &cfg).await?;
-    collection.update_product(cfg.product).await?;
+    let mut collection = collect_data(db, cfg).await?;
 
-    let req_collector = SingleFileCollector::new(collection);
-    let mut collection = req_collector.collect(cfg.requirements).await?;
-    // Note: dot-hierarchy updated explicitely after collecting all requirements,
-    // because not all *dot-parts* may have been added as requirements.
-    // e.g. top.missing.lead-id => skipping "missing" if not available as requirement
-    collection.update_req_dot_hierarchy().await?;
-    collection.delete_outdated_reqs().await?;
-
-    let annotation_collector = SingleFileCollector::new(collection);
-    let mut collection = annotation_collector.collect(cfg.annotations).await?;
-    collection.delete_outdated_annotations().await?;
-
-    test_runs::collect(&mut collection, cfg.test_runs).await?;
-    collection.delete_outdated_test_runs().await?;
-
-    let review_collector = SingleFileCollector::new(collection);
-    let mut collection = review_collector.collect(cfg.reviews).await?;
-    collection.delete_outdated_reviews().await?;
-
-    // product cleanup after all other data was collected,
-    // because product data may get updated from any source.
-    collection.delete_outdated_product_info().await?;
+    collection.aggregate_requirements_data().await?;
 
     collection.commit().await?;
 
@@ -124,6 +103,39 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     //
 
     Ok(())
+}
+
+async fn collect_data<'db>(
+    db: &'db MantraDb,
+    cfg: CollectConfig,
+) -> Result<Collection<'db>, anyhow::Error> {
+    let mut collection = Collection::new(db, &cfg).await?;
+    collection.update_product(cfg.product).await?;
+
+    let req_collector = SingleFileCollector::new(collection);
+    let mut collection = req_collector.collect(cfg.requirements).await?;
+    // Note: dot-hierarchy updated explicitely after collecting all requirements,
+    // because not all *dot-parts* may have been added as requirements.
+    // e.g. top.missing.lead-id => skipping "missing" if not available as requirement
+    collection.update_req_dot_hierarchy().await?;
+    collection.delete_outdated_reqs().await?;
+
+    let annotation_collector = SingleFileCollector::new(collection);
+    let mut collection = annotation_collector.collect(cfg.annotations).await?;
+    collection.delete_outdated_annotations().await?;
+
+    test_runs::collect(&mut collection, cfg.test_runs).await?;
+    collection.delete_outdated_test_runs().await?;
+
+    let review_collector = SingleFileCollector::new(collection);
+    let mut collection = review_collector.collect(cfg.reviews).await?;
+    collection.delete_outdated_reviews().await?;
+
+    // product cleanup after all other data was collected,
+    // because product data may get updated from any source.
+    collection.delete_outdated_product_info().await?;
+
+    Ok(collection)
 }
 
 struct Collection<'db> {

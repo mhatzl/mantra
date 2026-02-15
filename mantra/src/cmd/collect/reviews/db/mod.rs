@@ -67,7 +67,7 @@ impl<'db> Collection<'db> {
         for record in updated_records {
             sqlx::query!(
                 "
-                delete from ReviewReviewers
+                delete from ReviewAuthors
                 where product_id = $1 and last_collect_nr < $2
                 and review_name = $3 and review_date = $4
 
@@ -288,15 +288,15 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        for reviewer in review.reviewer {
+        for author in review.authors {
             sqlx::query!(
                 "
-                insert into ReviewReviewers (
+                insert into ReviewAuthors (
                     last_collect_nr,
                     product_id,
                     review_name,
                     review_date,
-                    reviewer
+                    author
                 )
                 values (
                     $1,
@@ -305,7 +305,7 @@ impl<'db> Collection<'db> {
                     $4,
                     $5
                 )
-                on conflict (product_id, review_name, review_date, reviewer)
+                on conflict (product_id, review_name, review_date, author)
                 do update set
                     last_collect_nr = excluded.last_collect_nr
                 ",
@@ -313,7 +313,7 @@ impl<'db> Collection<'db> {
                 product_id,
                 review.name,
                 review.utc_date,
-                reviewer
+                author
             )
             .execute(self.connection_mut())
             .await?;

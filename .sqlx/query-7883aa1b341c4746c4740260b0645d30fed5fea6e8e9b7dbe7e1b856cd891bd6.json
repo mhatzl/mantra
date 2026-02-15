@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RequirementDescendants\n            where last_collect_nr != $1\n            and (product_id = $2 or descendant_product_id = $2)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "7883aa1b341c4746c4740260b0645d30fed5fea6e8e9b7dbe7e1b856cd891bd6"
+}

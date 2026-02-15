@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into ManualRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with MarkedManual(product_id, id) as (\n                select product_id, id\n                from Requirements\n                where manual_verification = true\n                and last_collect_nr = $1\n                and product_id = $2\n            ),\n            ParentMarkedManual(product_id, id) as (\n                select rd.descendant_product_id, rd.descendant_id\n                from RequirementDescendants rd, MarkedManual md\n                where rd.product_id = md.product_id and rd.id = md.id\n            )\n            select $1 as last_collect_nr, product_id, id\n            from MarkedManual\n            union all\n            select $1 as last_collect_nr, product_id, id\n            from ParentMarkedManual\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "563c13098f1660130a84ddd2190f4e57d416a86197d5b03f18685f427b1666ad"
+}

@@ -7,6 +7,8 @@ use mantra_schema::{
 use crate::cmd::collect::Collection;
 use crate::cmd::collect::merge_local_and_base_properties;
 
+pub mod aggregate;
+
 impl<'db> Collection<'db> {
     pub(crate) async fn update_requirements(
         &mut self,

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into DeprecatedRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with MarkedDeprecated(product_id, id) as (\n                select product_id, id\n                from Requirements\n                where deprecated = true\n                and last_collect_nr = $1\n                and product_id = $2\n            ),\n            ParentMarkedDeprecated(product_id, id) as (\n                select rd.descendant_product_id, rd.descendant_id\n                from RequirementDescendants rd, MarkedDeprecated md\n                where rd.product_id = md.product_id and rd.id = md.id\n            )\n            select $1 as last_collect_nr, product_id, id\n            from MarkedDeprecated\n            union all\n            select $1 as last_collect_nr, product_id, id\n            from ParentMarkedDeprecated\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2bdb80afc62c3466cde15fd3bcff49c4c42e26223576403f8f518710f922d638"
+}
