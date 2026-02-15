@@ -136,7 +136,19 @@ create table LikelyObsoleteTestRuns (
     foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
 );
 
-create table PassedTestRun (
+create table TestRunDescendants (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    descendant_test_run_name text not null,
+    descendant_test_run_date text not null,
+    primary key (product_id, test_run_name, test_run_date, descendant_test_run_name, descendant_test_run_date),
+    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade,
+    foreign key (product_id, descendant_test_run_name, descendant_test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+);
+
+create table LeafTestRuns (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -145,7 +157,7 @@ create table PassedTestRun (
     foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
 );
 
-create table FailedTestRun (
+create table PassedTestRuns (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -154,7 +166,16 @@ create table FailedTestRun (
     foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
 );
 
-create table SkippedTestRun (
+create table FailedTestRuns (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    primary key (product_id, test_run_name, test_run_date),
+    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+);
+
+create table SkippedTestRuns (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,

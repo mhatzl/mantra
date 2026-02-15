@@ -24,6 +24,7 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
 
     collection.aggregate_requirements_data().await?;
     collection.aggregate_annotations_data().await?;
+    collection.aggregate_test_run_data().await?;
 
     collection.commit().await?;
 

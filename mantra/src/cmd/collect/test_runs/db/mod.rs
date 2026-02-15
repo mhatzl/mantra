@@ -9,6 +9,8 @@ use crate::{
     db::FilepathExt,
 };
 
+pub mod aggregate;
+
 impl<'db> Collection<'db> {
     pub(super) async fn update_test_runs(
         &mut self,
