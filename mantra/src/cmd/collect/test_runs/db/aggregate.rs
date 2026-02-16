@@ -537,7 +537,9 @@ impl<'db> Collection<'db> {
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
             and sc.hits not null and sc.stmnt_filepath = pf.filepath
-            and pf.file_hash = ts.file_hash and sc.stmnt_line >= ts.start_line
+            and pf.file_hash = ts.file_hash
+            and (sc.stmnt_file_hash is null or sc.stmnt_file_hash = ts.file_hash)
+            and sc.stmnt_line >= ts.start_line
             and sc.stmnt_line <= ts.end_line
             and sc.stmnt_line not in (
                 select line
@@ -599,8 +601,9 @@ impl<'db> Collection<'db> {
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
             and sc.hits not null and sc.stmnt_filepath = pf.filepath
-            and pf.file_hash = ts.file_hash and sc.stmnt_line >= ts.start_line
-            and sc.stmnt_line <= ts.end_line
+            and pf.file_hash = ts.file_hash
+            and (sc.stmnt_file_hash is null or sc.stmnt_file_hash = ts.file_hash)
+            and sc.stmnt_line >= ts.start_line and sc.stmnt_line <= ts.end_line
             and sc.stmnt_line not in (
                 select line
                 from ExcludedCoverageLines
