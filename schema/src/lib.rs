@@ -72,6 +72,12 @@ impl FmtHash {
     pub fn hash(&self) -> &str {
         &self.0
     }
+
+    pub fn new(s: &str) -> Self {
+        let mut hash = sha2::Sha256::new();
+        hash.update(s.as_bytes());
+        Self(base16ct::lower::encode_string(&hash.finalize()))
+    }
 }
 
 impl std::fmt::Display for FmtHash {
@@ -85,9 +91,7 @@ impl<S: serde::Serialize> From<&S> for FmtHash {
         let content = serde_json::to_string(value).expect(
             "Types that implement serde::Serialize should never fail to serialize to JSON.",
         );
-        let mut hash = sha2::Sha256::new();
-        hash.update(content.as_bytes());
-        Self(base16ct::lower::encode_string(&hash.finalize()))
+        Self::new(&content)
     }
 }
 
@@ -95,7 +99,7 @@ impl std::str::FromStr for FmtHash {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::from(&s.to_string()))
+        Ok(Self::new(s))
     }
 }
 
