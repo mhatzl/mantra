@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into AnnotatedDataSources (\n                last_collect_nr,\n                product_id,\n                filepath\n            )\n            values ($1, $2, $3)\n            on conflict (product_id, filepath)\n            do update set\n                last_collect_nr = excluded.last_collect_nr\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "30c767840562b82bf795ded59554380c2b606368e0fc0e80f9dae31b70dad688"
+}

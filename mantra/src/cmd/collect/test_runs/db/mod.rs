@@ -1,5 +1,6 @@
 use mantra_schema::{
     FmtHash, Properties,
+    path::RelativePath,
     test_runs::{TestRun, TestRunSchema},
     time::Duration,
 };
@@ -12,21 +13,9 @@ use crate::{
 pub mod aggregate;
 
 impl<'db> Collection<'db> {
-    pub(super) async fn update_test_runs(
-        &mut self,
-        test_run_schemas: Vec<TestRunSchema>,
-    ) -> Result<(), anyhow::Error> {
-        // TODO: if hash should be replaced => first remove every entry linked to file-hashes that will be added
-
-        for schema in test_run_schemas {
-            self.update_per_test_run_schema(schema).await?;
-        }
-
-        Ok(())
-    }
-
     pub(super) async fn update_per_test_run_schema(
         &mut self,
+        filepath: Option<&RelativePath>,
         test_run_schema: TestRunSchema,
     ) -> Result<(), anyhow::Error> {
         let base_origin_hash = test_run_schema.origin.as_ref().map(FmtHash::from);
@@ -41,6 +30,7 @@ impl<'db> Collection<'db> {
 
         for test_run in test_run_schema.test_runs {
             self.update_per_test_run(
+                filepath,
                 test_run,
                 &base_origin_hash,
                 &test_run_schema.test_run_properties,
@@ -272,16 +262,17 @@ impl<'db> Collection<'db> {
 
     async fn update_per_test_run(
         &mut self,
+        filepath: Option<&RelativePath>,
         test_run: TestRun,
         base_origin_hash: &Option<FmtHash>,
         base_test_run_props: &Option<Properties>,
         base_test_case_props: &Option<Properties>,
     ) -> Result<(), anyhow::Error> {
-        // TODO: optimize by checking src-hash first and skip if unchanged
+        // TODO: optimize by checking data-hash first and skip if unchanged
 
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
-        let src_hash = FmtHash::from(&serde_json::json!({
+        let data_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_test_run_props": base_test_run_props,
             "base_test_case_props": base_test_case_props,
@@ -315,7 +306,7 @@ impl<'db> Collection<'db> {
                 nr_of_test_cases,
                 base_origin_hash,
                 origin_hash,
-                src_hash
+                data_hash
             )
             values (
                 $1,
@@ -337,7 +328,7 @@ impl<'db> Collection<'db> {
                 nr_of_test_cases = excluded.nr_of_test_cases,
                 base_origin_hash = excluded.base_origin_hash,
                 origin_hash = excluded.origin_hash,
-                src_hash = excluded.src_hash
+                data_hash = excluded.data_hash
             ",
             collect_nr,
             product_id,
@@ -348,7 +339,7 @@ impl<'db> Collection<'db> {
             test_run.nr_of_test_cases,
             base_origin_hash,
             origin_hash,
-            src_hash
+            data_hash
         )
         .execute(self.connection_mut())
         .await?;
@@ -466,6 +457,43 @@ impl<'db> Collection<'db> {
             }
         }
 
+        if let Some(path) = filepath {
+            let filepath = path.as_str();
+            sqlx::query!(
+                "
+                    insert into TestRunDataFilepaths (
+                        last_collect_nr,
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        filepath
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5
+                    )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        filepath
+                    )
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                collect_nr,
+                product_id,
+                test_run.name,
+                test_run.utc_date,
+                filepath,
+            )
+            .execute(self.connection_mut())
+            .await?;
+        }
+
         for child_test_run in test_run.test_runs {
             sqlx::query!(
                 "
@@ -508,6 +536,7 @@ impl<'db> Collection<'db> {
             // foreign key constraints are deferred for test run hierarchies
             // => safe to add child test run after hierarchy inside the same transaction
             Box::pin(self.update_per_test_run(
+                filepath,
                 child_test_run,
                 base_origin_hash,
                 base_test_run_props,

@@ -1,5 +1,5 @@
 use ignore::types::TypesBuilder;
-use mantra_schema::reviews::ReviewSchema;
+use mantra_schema::{path::RelativePath, reviews::ReviewSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},
@@ -51,8 +51,9 @@ impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
 
     async fn update_db(
         collection: &mut super::Collection<'db>,
+        filepath: &RelativePath,
         schema: ReviewSchema,
     ) -> Result<(), anyhow::Error> {
-        collection.update_per_review_schema(schema).await
+        collection.update_per_review_schema(filepath, schema).await
     }
 }

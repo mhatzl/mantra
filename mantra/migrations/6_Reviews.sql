@@ -18,9 +18,12 @@ create table Reviews (
     -- Hash of the optional decription for the review.
     -- [req("review.description")]
     description_hash text references GeneralTexts (hash) on delete restrict,
-    -- The hash of the content the review was collected from to detect changes.
-    src_hash text not null,
-    primary key (product_id, name, utc_date)
+    -- The hash of the data the review was collected from to detect changes.
+    data_hash text not null,
+    -- Filepath the data was collected from
+    data_filepath text not null,
+    primary key (product_id, name, utc_date),
+    foreign key (product_id, data_filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
 );
 
 -- Table to store authors of a review.

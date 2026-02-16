@@ -143,6 +143,7 @@ async fn collect_data<'db>(
 struct Collection<'db> {
     transaction: MantraTransaction<'db>,
     cfg_filepath: PathBuf,
+    abs_cfg_file_parent_path: PathBuf,
     nr: i64,
     product_id: ProductId,
     collected_at_utc: OffsetDateTime,
@@ -201,6 +202,12 @@ impl<'db> Collection<'db> {
         Ok(Self {
             transaction,
             cfg_filepath: cfg.cfg_filepath.clone(),
+            abs_cfg_file_parent_path: std::path::absolute(
+                cfg.cfg_filepath
+                    .parent()
+                    .map(|p| p.to_path_buf())
+                    .unwrap_or(PathBuf::from("./")),
+            )?,
             nr,
             product_id: cfg.product.id(),
             collected_at_utc,
@@ -329,13 +336,8 @@ impl<'db> Collection<'db> {
     }
 
     /// Returns the absolute path to the directory the used mantra config file is located in.
-    fn abs_cfg_file_parent_path(&self) -> std::io::Result<PathBuf> {
-        std::path::absolute(
-            self.cfg_filepath
-                .parent()
-                .map(|p| p.to_path_buf())
-                .unwrap_or(PathBuf::from("./")),
-        )
+    fn abs_cfg_file_parent_path(&self) -> PathBuf {
+        self.abs_cfg_file_parent_path.clone()
     }
 }
 

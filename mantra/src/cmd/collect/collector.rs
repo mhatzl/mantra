@@ -1,7 +1,10 @@
 use std::marker::PhantomData;
 
 use ignore::{WalkBuilder, WalkState};
-use mantra_schema::path::{RelativePath, RelativePathBuf};
+use mantra_schema::{
+    FmtHash,
+    path::{PathExt, RelativePath, RelativePathBuf},
+};
 use tokio::task::JoinSet;
 
 use crate::cmd::collect::{Collection, walker};
@@ -18,7 +21,17 @@ pub(super) trait SingleFileCollectable<'db, T> {
     fn custom_ignore_filename(&self) -> &'static str;
     fn modify_walker(&self, builder: &mut WalkBuilder) -> Result<(), anyhow::Error>;
     fn collect_fn(&self) -> Result<fn(&str, &str) -> Result<T, anyhow::Error>, anyhow::Error>;
-    async fn update_db(collection: &mut Collection<'db>, schema: T) -> Result<(), anyhow::Error>;
+    async fn update_db(
+        collection: &mut Collection<'db>,
+        filepath: &RelativePath,
+        schema: T,
+    ) -> Result<(), anyhow::Error>;
+}
+
+struct SentData<T> {
+    schema: T,
+    filepath: RelativePathBuf,
+    file_hash: FmtHash,
 }
 
 impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
@@ -37,15 +50,16 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
             return Ok(self.collection);
         }
 
-        let cfg_file_dir_path = self.collection.abs_cfg_file_parent_path()?;
+        let abs_cfg_file_dir_path = self.collection.abs_cfg_file_parent_path();
 
         let (schema_tx, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
-        let root_path = cfg_file_dir_path.clone();
+        let root = abs_cfg_file_dir_path.clone();
         let schema_collection = tokio::spawn(async move {
             let mut task_set: JoinSet<Result<(), anyhow::Error>> = JoinSet::new();
             for cfg in cfgs {
                 let schema_sender = schema_tx.clone();
-                let start_path = cfg.path().to_logical_path(&root_path);
+                let root_path = root.clone();
+                let start_path = cfg.path().to_logical_path(&root);
                 let glob_pattern = cfg.pattern().and_then(|p| glob::Pattern::new(p).ok());
                 task_set.spawn(async move {
                     let mut walk_builder = walker::base_mantra_walker(start_path, glob_pattern);
@@ -56,6 +70,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                     let collect_fn = cfg.collect_fn()?;
 
                     walk_builder.build_parallel().run(|| {
+                        let root_path = root_path.clone();
                         let sender = schema_sender.clone();
                         Box::new(move |path_res| {
                             if let Ok(path) = path_res {
@@ -68,7 +83,16 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                         // TODO: proper logging + error handling
                                         match collect_fn(extension, &content) {
                                             Ok(schema) => {
-                                                let _ = sender.send(schema);
+                                                let rel_filepath = filepath
+                                                    .relative_to(&root_path)
+                                                    .expect("Creating relative path succeeds, because root path for walker is absolute.");
+
+                                                let data = SentData {
+                                                    schema,
+                                                    filepath: rel_filepath,
+                                                    file_hash: FmtHash::new(&content),
+                                                };
+                                                let _ = sender.send(data);
                                             }
                                             Err(err) => eprintln!(
                                                 "Failed reading schema from '{}'. Err: {err}",
@@ -90,8 +114,11 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
             let _ = task_set.join_all().await;
         });
 
-        while let Some(schema) = schema_rx.recv().await {
-            C::update_db(&mut self.collection, schema).await?;
+        while let Some(sent_data) = schema_rx.recv().await {
+            self.collection
+                .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
+                .await?;
+            C::update_db(&mut self.collection, &sent_data.filepath, sent_data.schema).await?;
         }
 
         schema_collection.await?;

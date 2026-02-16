@@ -1,5 +1,6 @@
 use mantra_schema::{
     FmtHash, Properties,
+    path::RelativePath,
     product::ProductId,
     requirements::{ReqId, Requirement, RequirementSchema},
 };
@@ -10,19 +11,9 @@ use crate::cmd::collect::merge_local_and_base_properties;
 pub mod aggregate;
 
 impl<'db> Collection<'db> {
-    pub(crate) async fn update_requirements(
-        &mut self,
-        req_schemas: Vec<RequirementSchema>,
-    ) -> Result<(), anyhow::Error> {
-        for reqs in req_schemas {
-            self.update_per_req_schema(reqs).await?;
-        }
-
-        Ok(())
-    }
-
     pub(crate) async fn update_per_req_schema(
         &mut self,
+        filepath: &RelativePath,
         req_schema: RequirementSchema,
     ) -> Result<(), anyhow::Error> {
         let base_origin_hash = req_schema.origin.as_ref().map(FmtHash::from);
@@ -36,7 +27,7 @@ impl<'db> Collection<'db> {
         // TODO: do not stop at first collect error
 
         for req in req_schema.requirements {
-            self.update_requirement(req, &base_origin_hash, &req_schema.properties)
+            self.update_requirement(filepath, req, &base_origin_hash, &req_schema.properties)
                 .await?;
         }
 
@@ -216,6 +207,7 @@ impl<'db> Collection<'db> {
 
     async fn update_requirement(
         &mut self,
+        filepath: &RelativePath,
         req: Requirement,
         base_origin_hash: &Option<FmtHash>,
         base_props: &Option<Properties>,
@@ -224,11 +216,12 @@ impl<'db> Collection<'db> {
 
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
-        let src_hash = FmtHash::from(&serde_json::json!({
+        let data_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_props": base_props,
             "req": &req
         }));
+        let data_filepath = filepath.as_str();
 
         let origin_hash = FmtHash::from(&req.origin);
         self.insert_general_json(&origin_hash, req.origin).await?;
@@ -252,7 +245,8 @@ impl<'db> Collection<'db> {
                 base_origin_hash,
                 origin_hash,
                 description_hash,
-                src_hash
+                data_hash,
+                data_filepath
             )
             values (
                 $1,
@@ -265,7 +259,8 @@ impl<'db> Collection<'db> {
                 $8,
                 $9,
                 $10,
-                $11
+                $11,
+                $12
             )
             on conflict (id, product_id)
             do update set
@@ -277,7 +272,8 @@ impl<'db> Collection<'db> {
                 base_origin_hash = excluded.base_origin_hash,
                 origin_hash = excluded.origin_hash,
                 description_hash = excluded.description_hash,
-                src_hash = excluded.src_hash
+                data_hash = excluded.data_hash,
+                data_filepath = excluded.data_filepath
             ",
             collect_nr,
             req.id,
@@ -289,7 +285,8 @@ impl<'db> Collection<'db> {
             base_origin_hash,
             origin_hash,
             description_hash,
-            src_hash
+            data_hash,
+            data_filepath
         )
         .execute(self.connection_mut())
         .await?;

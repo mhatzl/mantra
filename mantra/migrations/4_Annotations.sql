@@ -1,4 +1,14 @@
 
+-- Table to store the filepaths of files that contained annotations.
+-- The related file hash is stored in the ProductRelatedFiles table.
+create table AnnotatedDataSources (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    filepath text not null,
+    primary key (product_id, filepath),
+    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
+);
+
 create table AnnotatedFileOrigins (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,

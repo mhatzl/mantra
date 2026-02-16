@@ -1,5 +1,4 @@
-use ignore::types::TypesBuilder;
-use mantra_schema::annotations::AnnotationSchema;
+use mantra_schema::{annotations::AnnotationSchema, path::RelativePath};
 
 use crate::cmd::collect::{
     cfg::{AnnotationSourceVariant, CollectAnnotationsConfig},
@@ -48,8 +47,11 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
 
     async fn update_db(
         collection: &mut super::Collection<'db>,
+        filepath: &RelativePath,
         schema: AnnotationSchema,
     ) -> Result<(), anyhow::Error> {
-        collection.update_per_annotation_schema(schema).await
+        collection
+            .update_per_annotation_schema(filepath, schema)
+            .await
     }
 }

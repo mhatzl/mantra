@@ -1,6 +1,7 @@
 use mantra_schema::FmtHash;
 use mantra_schema::Line;
 use mantra_schema::Properties;
+use mantra_schema::path::RelativePath;
 use mantra_schema::path::RelativePathBuf;
 use mantra_schema::requirements::ReqId;
 use mantra_schema::reviews::OneOrMultRequirementIds;
@@ -14,19 +15,9 @@ use crate::cmd::collect::merge_local_and_base_properties;
 use crate::db::FilepathExt;
 
 impl<'db> Collection<'db> {
-    pub(super) async fn update_reviews(
-        &mut self,
-        review_schemas: Vec<ReviewSchema>,
-    ) -> Result<(), anyhow::Error> {
-        for reviews in review_schemas {
-            self.update_per_review_schema(reviews).await?;
-        }
-
-        Ok(())
-    }
-
     pub(super) async fn update_per_review_schema(
         &mut self,
+        filepath: &RelativePath,
         review_schema: ReviewSchema,
     ) -> Result<(), anyhow::Error> {
         let base_origin_hash = review_schema.origin.as_ref().map(FmtHash::from);
@@ -40,11 +31,16 @@ impl<'db> Collection<'db> {
         // TODO: do not stop at first collect error
 
         for review in review_schema.reviews {
-            self.update_review(review, &base_origin_hash, &review_schema.properties)
-                .await?;
+            self.update_review(
+                filepath,
+                review,
+                &base_origin_hash,
+                &review_schema.properties,
+            )
+            .await?;
         }
 
-        todo!()
+        Ok(())
     }
 
     pub(crate) async fn delete_outdated_reviews(&mut self) -> Result<(), anyhow::Error> {
@@ -219,6 +215,7 @@ impl<'db> Collection<'db> {
 
     async fn update_review(
         &mut self,
+        filepath: &RelativePath,
         review: Review,
         base_origin_hash: &Option<FmtHash>,
         base_props: &Option<Properties>,
@@ -227,11 +224,12 @@ impl<'db> Collection<'db> {
 
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
-        let src_hash = FmtHash::from(&serde_json::json!({
+        let data_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_props": base_props,
             "review": &review
         }));
+        let data_filepath = filepath.as_str();
 
         let origin_hash = review.origin.as_ref().map(FmtHash::from);
         if let Some(hash) = &origin_hash
@@ -256,7 +254,8 @@ impl<'db> Collection<'db> {
                 base_origin_hash,
                 origin_hash,
                 description_hash,
-                src_hash
+                data_hash,
+                data_filepath
             )
             values (
                 $1,
@@ -266,7 +265,8 @@ impl<'db> Collection<'db> {
                 $5,
                 $6,
                 $7,
-                $8
+                $8,
+                $9
             )
             on conflict (product_id, name, utc_date)
             do update set
@@ -274,7 +274,8 @@ impl<'db> Collection<'db> {
                 base_origin_hash = excluded.base_origin_hash,
                 origin_hash = excluded.origin_hash,
                 description_hash = excluded.description_hash,
-                src_hash = excluded.src_hash
+                data_hash = excluded.data_hash,
+                data_filepath = excluded.data_filepath
             ",
             collect_nr,
             product_id,
@@ -283,7 +284,8 @@ impl<'db> Collection<'db> {
             base_origin_hash,
             origin_hash,
             description_hash,
-            src_hash
+            data_hash,
+            data_filepath
         )
         .execute(self.connection_mut())
         .await?;

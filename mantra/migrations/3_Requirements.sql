@@ -29,8 +29,11 @@ create table Requirements (
     -- Optional description content of the requirement.
     -- [req("req.description")]
     description_hash text references GeneralTexts (hash) on delete restrict,
-    -- Hash of the content the requirement was collected from.
-    src_hash text not null,
+    -- Hash of the data the requirement was collected from.
+    data_hash text not null,
+    -- Filepath the data was collected from
+    data_filepath text not null,
+    foreign key (product_id, data_filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     constraint RequirementsPk primary key (id, product_id)
 );
 

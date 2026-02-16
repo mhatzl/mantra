@@ -4,6 +4,7 @@ use mantra_schema::{
         AnnotationSchema, CoverageExclude, CoverageExcludeKind, Element, FileAnnotations, Trace,
         TraceRelatedCodeVariant,
     },
+    path::RelativePath,
 };
 
 use crate::cmd::collect::{Collection, merge_local_and_base_properties};
@@ -11,21 +12,9 @@ use crate::cmd::collect::{Collection, merge_local_and_base_properties};
 pub mod aggregate;
 
 impl<'db> Collection<'db> {
-    pub(super) async fn update_annotations(
-        &mut self,
-        annotation_schemas: Vec<AnnotationSchema>,
-    ) -> Result<(), anyhow::Error> {
-        // TODO: if hash should be replaced => first remove every entry linked to file-hashes that will be added
-
-        for schema in annotation_schemas {
-            self.update_per_annotation_schema(schema).await?;
-        }
-
-        Ok(())
-    }
-
     pub(super) async fn update_per_annotation_schema(
         &mut self,
+        filepath: &RelativePath,
         annotaiton_schema: AnnotationSchema,
     ) -> Result<(), anyhow::Error> {
         let base_origin_hash = annotaiton_schema.origin.as_ref().map(FmtHash::from);
@@ -35,6 +24,29 @@ impl<'db> Collection<'db> {
         {
             self.insert_general_json(&hash, origin.clone()).await?;
         }
+
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let data_filepath = filepath.as_str();
+
+        sqlx::query!(
+            "
+            insert into AnnotatedDataSources (
+                last_collect_nr,
+                product_id,
+                filepath
+            )
+            values ($1, $2, $3)
+            on conflict (product_id, filepath)
+            do update set
+                last_collect_nr = excluded.last_collect_nr
+            ",
+            collect_nr,
+            product_id,
+            data_filepath
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         // TODO: do not stop at first collect error
 

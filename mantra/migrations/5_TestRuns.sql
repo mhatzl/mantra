@@ -23,9 +23,27 @@ create table TestRuns (
     -- Optional hash of the origin data of the test run.
     -- [req("testcov.test_run.origin")]
     origin_hash text references GeneralJson (hash) on delete restrict,
-    -- Hash of the source the test run data was collected from.
-    src_hash text not null,
+    -- Hash of the data the test run was collected from.
+    data_hash text not null,
     primary key (product_id, name, utc_date)
+);
+
+-- Table to store filepaths from which test run data was collected.
+-- Due to test runs potentially  being created from multiple well-known formats
+-- such as JUnit and Cobertura, multiple filepaths may be set per test run.
+--
+-- Note: Test runs created internally to map covered files to test runs do not have source filepaths.
+create table TestRunDataFilepaths (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    -- Filepath the data was collected from
+    filepath text not null,
+    primary key (product_id, test_run_name, test_run_date, filepath),
+    -- Note: may be inserted while collecting well-known data before test run is inserted => defer foreign key check
+    foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade deferrable initially deferred,
+    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
 );
 
 -- Table to store optional metadata of a test run.

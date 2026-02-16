@@ -7,7 +7,7 @@ use ignore::{
 };
 use mantra_schema::{
     FmtHash, Origin, Properties,
-    path::RelativePath,
+    path::{PathExt, RelativePath, RelativePathBuf},
     test_runs::{CoveredFile, TestRun, TestRunSchema},
     time::OffsetDateTime,
 };
@@ -78,12 +78,15 @@ async fn collect_well_known<'db>(
     test: WellKnownTest,
     coverage: WellKnownCoverage,
 ) -> Result<(), anyhow::Error> {
-    let cfg_file_dir_path = collection.abs_cfg_file_parent_path()?;
+    let collect_nr = collection.collect_nr();
+    let product_id = collection.product_id();
+
+    let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
     let mut shallow_test_runs = Vec::new();
     let mut coverage_data = Vec::new();
 
     let (well_known_sender, mut well_known_rx) = tokio::sync::mpsc::unbounded_channel();
-    let start_path = path.to_logical_path(&cfg_file_dir_path);
+    let start_path = path.to_logical_path(&abs_cfg_file_dir_path);
     let general_glob_pattern = pattern.and_then(|p| glob::Pattern::new(p).ok());
     let test_glob_pattern = glob::Pattern::new(&test.pattern)?;
     let coverage_glob_pattern = glob::Pattern::new(&coverage.pattern)?;
@@ -94,7 +97,7 @@ async fn collect_well_known<'db>(
 
         walk_builder.build_parallel().run(|| {
             let sender = well_known_sender.clone();
-            let root_path = cfg_file_dir_path.clone();
+            let root_path = abs_cfg_file_dir_path.clone();
             let test_format = test.format;
             let coverage_format = coverage.format;
             let test_glob_pattern = test_glob_pattern.clone();
@@ -112,11 +115,20 @@ async fn collect_well_known<'db>(
                                 && let Some(extension) = ext.to_str()
                                 && let Ok(content) = std::fs::read_to_string(filepath)
                             {
+                                let rel_filepath = filepath.relative_to(&root_path)
+                                    .expect("Creating relative path succeeds, because root path for walker is absolute.");
+                                let file_hash = FmtHash::new(&content);
+
                                 if matches_test_format {
                                     // TODO: proper logging + error handling
-                                    match test_format.to_test_run(&root_path, extension, &content) {
+                                    match test_format.to_shallow_test_run(&root_path, extension, &content) {
                                         Ok(shallow_test_run) => {
-                                            let _ = sender.send(CollectedWellKnown::Test(shallow_test_run));
+                                            let data = SentWellKnownData {
+                                                data: CollectedWellKnown::Test(shallow_test_run),
+                                                filepath: rel_filepath,
+                                                file_hash
+                                            };
+                                            let _ = sender.send(data);
                                         }
                                         Err(err) => eprintln!(
                                             "Failed reading from well-known test format '{}'. Err: {err}",
@@ -127,7 +139,12 @@ async fn collect_well_known<'db>(
                                     // must match coverage format
                                     match coverage_format.to_well_known_coverage(&root_path, extension, &content) {
                                         Ok(coverage_data) => {
-                                            let _ = sender.send(CollectedWellKnown::Coverage(coverage_data));
+                                            let data = SentWellKnownData {
+                                                data: CollectedWellKnown::Coverage(coverage_data),
+                                                filepath: rel_filepath,
+                                                file_hash
+                                            };
+                                            let _ = sender.send(data);
                                         }
                                         Err(err) => eprintln!(
                                             "Failed reading from well-known coverage format '{}'. Err: {err}",
@@ -147,13 +164,42 @@ async fn collect_well_known<'db>(
         Ok(())
     });
 
-    while let Some(well_known) = well_known_rx.recv().await {
-        match well_known {
+    while let Some(sent_data) = well_known_rx.recv().await {
+        match sent_data.data {
             CollectedWellKnown::Test(shallow_test_run) => {
+                collection
+                    .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
+                    .await?;
+
+                let filepath = sent_data.filepath.as_str();
+                sqlx::query!(
+                    "
+                    insert into TestRunDataFilepaths (
+                        last_collect_nr,
+                        product_id,
+                        test_run_name,
+                        test_run_date,
+                        filepath
+                    )
+                    values ($1, $2, $3, $4, $5)
+                    ",
+                    collect_nr,
+                    product_id,
+                    shallow_test_run.name,
+                    shallow_test_run.utc_date,
+                    filepath
+                )
+                .execute(collection.connection_mut())
+                .await?;
+
                 shallow_test_runs.push(shallow_test_run);
             }
             CollectedWellKnown::Coverage(well_known_coverage_data) => {
-                coverage_data.push(well_known_coverage_data);
+                coverage_data.push((
+                    sent_data.filepath,
+                    sent_data.file_hash,
+                    well_known_coverage_data,
+                ));
             }
         }
     }
@@ -166,7 +212,8 @@ async fn collect_well_known<'db>(
         return Ok(());
     }
 
-    let (covered_files, coverage_timestamp) = merge_well_known_coverage_data(coverage_data);
+    let (coverage_source_files, covered_files, coverage_timestamp) =
+        merge_well_known_coverage_data(coverage_data);
 
     let test_run = if shallow_test_runs.len() == 1 {
         // only one test run => place all coverage data into it
@@ -196,6 +243,33 @@ async fn collect_well_known<'db>(
         }
     };
 
+    for source_file in coverage_source_files {
+        collection
+            .insert_file_hash(&source_file.0, &source_file.1)
+            .await?;
+
+        let filepath = source_file.0.as_str();
+        sqlx::query!(
+            "
+            insert into TestRunDataFilepaths (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                filepath
+            )
+            values ($1, $2, $3, $4, $5)
+            ",
+            collect_nr,
+            product_id,
+            test_run.name,
+            test_run.utc_date,
+            filepath
+        )
+        .execute(collection.connection_mut())
+        .await?;
+    }
+
     let test_run_schema = TestRunSchema {
         version: None,
         test_runs: vec![test_run],
@@ -204,8 +278,9 @@ async fn collect_well_known<'db>(
         origin,
     };
 
+    // Note: filepaths for collected well-known data has been inserted above
     collection
-        .update_per_test_run_schema(test_run_schema)
+        .update_per_test_run_schema(None, test_run_schema)
         .await?;
 
     Ok(())
@@ -249,31 +324,48 @@ fn to_sub_test_runs(
 }
 
 fn merge_well_known_coverage_data(
-    coverage_data: Vec<WellKnownCoverageData>,
-) -> (Vec<CoveredFile>, Option<OffsetDateTime>) {
+    coverage_data: Vec<(RelativePathBuf, FmtHash, WellKnownCoverageData)>,
+) -> (
+    Vec<(RelativePathBuf, FmtHash)>,
+    Vec<CoveredFile>,
+    Option<OffsetDateTime>,
+) {
     if coverage_data.is_empty() {
-        (vec![], None)
+        (vec![], vec![], None)
     } else if coverage_data.len() == 1 {
         let coverage = coverage_data
             .into_iter()
             .next()
             .expect("Checked above that one coverage element was collected");
-        (coverage.covered_files, coverage.timestamp)
+        (
+            vec![(coverage.0, coverage.1)],
+            coverage.2.covered_files,
+            coverage.2.timestamp,
+        )
     } else {
+        let mut source_files = Vec::with_capacity(coverage_data.len());
         let mut covered_files = Vec::new();
         let mut timestamp = None;
 
         for coverage in coverage_data {
-            covered_files.extend(coverage.covered_files);
+            source_files.push((coverage.0, coverage.1));
+            covered_files.extend(coverage.2.covered_files);
+
             if timestamp.is_none()
-                && let Some(coverage_timestamp) = coverage.timestamp
+                && let Some(coverage_timestamp) = coverage.2.timestamp
             {
                 timestamp = Some(coverage_timestamp);
             }
         }
 
-        (covered_files, timestamp)
+        (source_files, covered_files, timestamp)
     }
+}
+
+struct SentWellKnownData {
+    data: CollectedWellKnown,
+    filepath: RelativePathBuf,
+    file_hash: FmtHash,
 }
 
 enum CollectedWellKnown {
@@ -308,6 +400,12 @@ fn allowed_types(
     Ok(builder.build()?)
 }
 
+struct SentSchemaData {
+    schema: TestRunSchema,
+    filepath: RelativePathBuf,
+    file_hash: FmtHash,
+}
+
 async fn collect_schema<'db>(
     collection: &mut Collection<'db>,
     path: &RelativePath,
@@ -316,10 +414,10 @@ async fn collect_schema<'db>(
     test_case_properties: Option<Properties>,
     pattern: Option<&str>,
 ) -> Result<(), anyhow::Error> {
-    let cfg_file_dir_path = collection.abs_cfg_file_parent_path()?;
+    let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
 
     let (schema_sender, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
-    let start_path = path.to_logical_path(&cfg_file_dir_path);
+    let start_path = path.to_logical_path(&abs_cfg_file_dir_path);
     let glob_pattern = pattern.and_then(|p| glob::Pattern::new(p).ok());
     let schema_collection: JoinHandle<Result<(), anyhow::Error>> = tokio::spawn(async move {
         let mut walk_builder = base_test_run_walker(start_path, glob_pattern);
@@ -328,6 +426,7 @@ async fn collect_schema<'db>(
         let collect_fn = walker::content_to_schema::<TestRunSchema>;
 
         walk_builder.build_parallel().run(|| {
+            let root_path = abs_cfg_file_dir_path.clone();
             let sender = schema_sender.clone();
             Box::new(move |path_res| {
                 if let Ok(path) = path_res {
@@ -340,7 +439,15 @@ async fn collect_schema<'db>(
                             // TODO: proper logging + error handling
                             match collect_fn(extension, &content) {
                                 Ok(schema) => {
-                                    let _ = sender.send(schema);
+                                    let rel_filepath = filepath
+                                        .relative_to(&root_path)
+                                        .expect("Creating relative path succeeds, because root path for walker is absolute.");
+                                    let data = SentSchemaData {
+                                        schema,
+                                        filepath: rel_filepath,
+                                        file_hash: FmtHash::new(&content),
+                                    };
+                                    let _ = sender.send(data);
                                 }
                                 Err(err) => eprintln!(
                                     "Failed reading schema from '{}'. Err: {err}",
@@ -358,8 +465,13 @@ async fn collect_schema<'db>(
         Ok(())
     });
 
-    while let Some(schema) = schema_rx.recv().await {
-        collection.update_per_test_run_schema(schema).await?;
+    while let Some(data) = schema_rx.recv().await {
+        collection
+            .insert_file_hash(&data.filepath, &data.file_hash)
+            .await?;
+        collection
+            .update_per_test_run_schema(Some(&data.filepath), data.schema)
+            .await?;
     }
 
     let _ = schema_collection.await?;

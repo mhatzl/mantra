@@ -89,7 +89,7 @@ impl ShallowTestRun {
 }
 
 pub trait WellKnownTestConversion {
-    fn to_test_run(
+    fn to_shallow_test_run(
         &self,
         root_path: &Path,
         extension: &str,
@@ -98,7 +98,7 @@ pub trait WellKnownTestConversion {
 }
 
 impl WellKnownTestConversion for WellKnownTestFormat {
-    fn to_test_run(
+    fn to_shallow_test_run(
         &self,
         root_path: &Path,
         extension: &str,

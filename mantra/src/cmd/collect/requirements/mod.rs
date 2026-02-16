@@ -1,5 +1,5 @@
 use ignore::types::TypesBuilder;
-use mantra_schema::requirements::RequirementSchema;
+use mantra_schema::{path::RelativePath, requirements::RequirementSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectRequirementsConfig, RequirementSourceVariant},
@@ -52,8 +52,9 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
 
     async fn update_db(
         collection: &mut super::Collection<'db>,
+        filepath: &RelativePath,
         schema: RequirementSchema,
     ) -> Result<(), anyhow::Error> {
-        collection.update_per_req_schema(schema).await
+        collection.update_per_req_schema(filepath, schema).await
     }
 }
