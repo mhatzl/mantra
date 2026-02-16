@@ -1,0 +1,63 @@
+{
+    files: [{
+        filepath: "test.rs",
+        file_hash: "<place hash here>",
+        traces: [{
+            ids: ["req-1"],
+            line: 10,
+            kind: "satisfies",
+        },{
+            ids: ["req-1"],
+            line: 20,
+            kind: "satisfies",
+            related_code: {
+                kind: "other",
+                span: {
+                    start: 20,
+                    end: 25
+                }
+            }
+        },{
+            ids: ["req-1"],
+            line: 50,
+            kind: "satisfies",
+            related_code: {
+                kind: "other",
+                span: {
+                    start: 45,
+                    end: 50
+                }
+            }
+        },{
+            ids: ["req-1"],
+            line: 70,
+            kind: "satisfies",
+            related_code: 72
+        }],
+        elements: [{
+            name: "elem",
+            definition_line: 72,
+            span: {
+                start: 68,
+                end: 80,
+            },
+            kind: "other",
+        }]
+    },
+    {
+        filepath: "mantra/tests/well_known_tests.rs",
+        file_hash: "<second file>",
+        traces: [{
+            ids: ["req-2"],
+            line: 1,
+            kind: "satisfies",
+            related_code: {
+                kind: "other",
+                span: {
+                    start: 1,
+                    end: 7
+                }
+            }
+        }]
+    }]
+}

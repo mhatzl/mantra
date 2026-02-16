@@ -1,0 +1,27 @@
+{
+  products: [{
+    name: "mantra",
+    base: "main",
+    requirements: [{
+        path: "test-content/reqs/",
+        source: "schema",
+    }],
+    annotations: [{
+        path: "test-content/annotations/",
+        source: "schema",
+    }],
+    test_runs: [{
+        path: "target/nextest/default",
+        source: {
+            test: {
+                format: "junit",
+                pattern: "*junit.xml",
+            },
+            coverage: {
+                format: "cobertura_loose",
+                pattern: "*cobertura.xml",
+            }
+        }
+    }]
+  }]
+}

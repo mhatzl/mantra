@@ -1,0 +1,43 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First requirement",
+        origin: "JSON schema",
+    },
+    {
+        id: "req-1.sub-1",
+        title: "First sub-requirement",
+        origin: "JSON schema",
+    },
+    {
+        id: "req-2",
+        title: "Second requirement",
+        origin: "JSON schema"
+    },
+    {
+        id: "req-2.jumped.req-3",
+        title: "Third requirement",
+        origin: "JSON schema",
+        parents: [{ id: "req-2" }]
+    },
+    {
+        id: "ignore-req",
+        title: "ignore requirement",
+        origin: "JSON schema",
+        parents: [{ id: "req-2" }],
+        ignore: true
+    },
+    {
+        id: "depr-req",
+        title: "deprecated requirement",
+        origin: "JSON schema",
+        parents: [{ id: "req-2" }],
+        deprecated: true
+    },
+    {
+        id: "depr-sub-req",
+        title: "indirect deprecated requirement",
+        origin: "JSON schema",
+        parents: [{ id: "depr-req" }, { id: "req-2" }],
+    }]
+}

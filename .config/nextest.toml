@@ -1,0 +1,5 @@
+[profile.default]
+status-level = "all"
+
+[profile.default.junit]
+path = "junit.xml"
