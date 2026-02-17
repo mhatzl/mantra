@@ -8,6 +8,7 @@ impl<'db> Collection<'db> {
         self.update_leaf_test_runs().await?;
         self.update_obsolete_test_runs().await?;
         self.resolve_test_case_states().await?;
+        self.update_usable_test_cases().await?;
         self.resolve_statement_coverage().await?;
         self.update_failed_test_runs().await?;
         self.update_skipped_test_runs().await?;
@@ -187,31 +188,6 @@ impl<'db> Collection<'db> {
                 test_case_name,
                 state
             )
-            with TestCasesWithoutOverrides (
-                last_collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date,
-                test_case_name
-            ) as (
-                select
-                    last_collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    name as test_case_name
-                from TestCases
-                where last_collect_nr = $1 and product_id = $2
-                except
-                select
-                    last_collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    test_case_name
-                from TestCaseOverrides
-                where last_collect_nr = $1 and product_id = $2
-            )
             select
                 last_collect_nr,
                 product_id,
@@ -229,12 +205,22 @@ impl<'db> Collection<'db> {
                 t.test_run_date,
                 t.name as test_case_name,
                 t.state
-            from TestCasesWithoutOverrides wo, TestCases t
-            where wo.last_collect_nr = t.last_collect_nr
-                and wo.product_id = t.product_id
-                and wo.test_run_name = t.test_run_name
-                and wo.test_run_date = t.test_run_date
-                and wo.test_case_name = t.name
+            from TestCases t
+            where not exists (
+                select
+                    o.last_collect_nr,
+                    o.product_id,
+                    o.test_run_name,
+                    o.test_run_date,
+                    o.test_case_name
+                from TestCaseOverrides o
+                where t.last_collect_nr = $1 and t.product_id = $2
+                and t.last_collect_nr = o.last_collect_nr
+                and t.product_id = o.product_id
+                and t.test_run_name = o.test_run_name
+                and t.test_run_date = o.test_run_date
+                and t.name = o.test_case_name
+            )
             ",
             collect_nr,
             product_id
@@ -247,6 +233,61 @@ impl<'db> Collection<'db> {
             delete from ResolvedTestCaseStates
             where last_collect_nr != $1
                 and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_usable_test_cases(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into UsableTestCases (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name
+            )
+            select
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name
+            from PassedTestCases pc
+            where last_collect_nr = $1 and product_id = $2
+            and not exists (
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from ObsoleteTestRuns o
+                where pc.last_collect_nr =  o.last_collect_nr
+                and pc.product_id = o.product_id
+                and pc.test_run_name = o.test_run_name
+                and pc.test_run_date = o.test_run_date
+            )
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from UsableTestCases
+            where last_collect_nr != $1
+            and product_id = $2
             ",
             collect_nr,
             product_id
@@ -272,34 +313,6 @@ impl<'db> Collection<'db> {
                 stmnt_line,
                 hits
             )
-            with TestRunStatementsWithoutOverrides (
-                last_collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date,
-                stmnt_filepath,
-                stmnt_line
-            ) as (
-                select
-                    last_collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    stmnt_filepath,
-                    stmnt_line
-                from TestRunStatementCoverage
-                where last_collect_nr = $1 and product_id = $2
-                except
-                select
-                    last_collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    stmnt_filepath,
-                    stmnt_line
-                from TestRunStatementCoverageOverrides
-                where last_collect_nr = $1 and product_id = $2
-            )
             select
                 last_collect_nr,
                 product_id,
@@ -319,13 +332,24 @@ impl<'db> Collection<'db> {
                 t.stmnt_filepath,
                 t.stmnt_line,
                 t.hits
-            from TestRunStatementsWithoutOverrides wo, TestRunStatementCoverage t
-            where wo.last_collect_nr = t.last_collect_nr
-                and wo.product_id = t.product_id
-                and wo.test_run_name = t.test_run_name
-                and wo.test_run_date = t.test_run_date
-                and wo.stmnt_filepath = t.stmnt_filepath
-                and wo.stmnt_line = t.stmnt_line
+            from TestRunStatementCoverage t
+            where not exists (
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    stmnt_filepath,
+                    stmnt_line
+                from TestRunStatementCoverageOverrides o
+                where t.last_collect_nr = $1 and t.product_id = $2
+                and t.last_collect_nr = o.last_collect_nr
+                and t.product_id = o.product_id
+                and t.test_run_name = o.test_run_name
+                and t.test_run_date = o.test_run_date
+                and t.stmnt_filepath = o.stmnt_filepath
+                and t.stmnt_line = o.stmnt_line
+            )
             ",
             collect_nr,
             product_id
@@ -357,37 +381,6 @@ impl<'db> Collection<'db> {
                 stmnt_line,
                 hits
             )
-            with TestCaseStatementsWithoutOverrides (
-                last_collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date,
-                test_case_name,
-                stmnt_filepath,
-                stmnt_line
-            ) as (
-                select
-                    last_collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    test_case_name,
-                    stmnt_filepath,
-                    stmnt_line
-                from TestCaseStatementCoverage
-                where last_collect_nr = $1 and product_id = $2
-                except
-                select
-                    last_collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    test_case_name,
-                    stmnt_filepath,
-                    stmnt_line
-                from TestCaseStatementCoverageOverrides
-                where last_collect_nr = $1 and product_id = $2
-            )
             select
                 last_collect_nr,
                 product_id,
@@ -409,14 +402,26 @@ impl<'db> Collection<'db> {
                 t.stmnt_filepath,
                 t.stmnt_line,
                 t.hits
-            from TestCaseStatementsWithoutOverrides wo, TestCaseStatementCoverage t
-            where wo.last_collect_nr = t.last_collect_nr
-                and wo.product_id = t.product_id
-                and wo.test_run_name = t.test_run_name
-                and wo.test_run_date = t.test_run_date
-                and wo.test_case_name = t.test_case_name
-                and wo.stmnt_filepath = t.stmnt_filepath
-                and wo.stmnt_line = t.stmnt_line
+            from TestCaseStatementCoverage t
+            where not exists (
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    test_case_name,
+                    stmnt_filepath,
+                    stmnt_line
+                from TestCaseStatementCoverageOverrides o
+                where t.last_collect_nr = $1 and t.product_id = $2
+                and t.last_collect_nr = o.last_collect_nr
+                and t.product_id = o.product_id
+                and t.test_run_name = o.test_run_name
+                and t.test_run_date = o.test_run_date
+                and t.test_case_name = o.test_case_name
+                and t.stmnt_filepath = o.stmnt_filepath
+                and t.stmnt_line = o.stmnt_line
+            )
             ",
             collect_nr,
             product_id

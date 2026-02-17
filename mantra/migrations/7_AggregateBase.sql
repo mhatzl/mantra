@@ -81,7 +81,7 @@ create table UsableManualRequirements (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
--- Contains requirements that are satisfied either by a direct *satisfies* trace mentioning the ID,
+-- Contains requirements that are satisfied either by a *satisfies* trace mentioning the ID,
 -- or it is verified by a review if the requirement is part of the ManualRequirements table.
 create table DirectlySatisfiedRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
@@ -127,19 +127,6 @@ create table LikelyObsoleteReviews (
     foreign key (product_id, review_name, review_date) references Reviews(product_id, name, utc_date) on delete cascade
 );
 
--- Contains the resolved state of test cases considering potential overrides from reviews.
-create table ResolvedTestCaseStates (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
-    product_id text not null,
-    test_run_name text not null,
-    test_run_date text not null,
-    test_case_name text not null,
-    -- State of the test case.
-    -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
-    -- [req("testcov.test_case.state")]
-    state integer not null
-);
-
 -- Contains test runs that are obsolete and must **not** be used for further analysis.
 -- Reasons why a test run may be obsolete:
 -- - test case location contains file hash for filepath that differs to the hash collected in the latest run
@@ -171,6 +158,59 @@ create table LikelyObsoleteTestRuns (
     test_run_date text not null,
     primary key (product_id, test_run_name, test_run_date),
     foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+);
+
+-- Contains the resolved state of test cases considering potential overrides from reviews.
+create table ResolvedTestCaseStates (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    test_case_name text not null,
+    -- State of the test case.
+    -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
+    -- [req("testcov.test_case.state")]
+    state integer not null
+);
+
+create view PassedTestCases as
+select
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    test_case_name
+from ResolvedTestCaseStates
+where state = 1;
+
+create view SkippedTestCases as
+select
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    test_case_name
+from ResolvedTestCaseStates
+where state = 2;
+
+create view FailedTestCases as
+select
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    test_case_name
+from ResolvedTestCaseStates
+-- Note: `unknown` is also considered as failure
+where state != 1 and state != 2;
+
+-- Contains test cases that passed and are **not** part of an obsolete test run.
+create table UsableTestCases (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    test_case_name text not null
 );
 
 create table TestRunDescendants (

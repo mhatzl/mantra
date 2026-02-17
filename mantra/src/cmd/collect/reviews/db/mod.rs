@@ -456,7 +456,7 @@ impl<'db> Collection<'db> {
             }
         }
 
-        for test_run_override in review.overrides {
+        for test_run_override in review.test_run_overrides {
             for test_case_override in test_run_override.test_cases {
                 if let Some(override_state) = test_case_override.state {
                     let comment_hash = FmtHash::from(&override_state.comment);
@@ -468,12 +468,16 @@ impl<'db> Collection<'db> {
                         "
                         select * from TestCases
                         where
-                            product_id = $1 and test_run_name = $2
-                            and test_run_date = $3 and name = $4
+                            last_collect_nr = $1
+                            and product_id = $2
+                            and test_run_name = $3
+                            and test_run_date = $4
+                            and name = $5
                         ",
+                        collect_nr,
                         product_id,
-                        test_run_override.test_run.name,
-                        test_run_override.test_run.utc_date,
+                        test_run_override.name,
+                        test_run_override.utc_date,
                         test_case_override.name
                     )
                     .fetch_optional(self.connection_mut())
@@ -520,8 +524,8 @@ impl<'db> Collection<'db> {
                             ",
                             collect_nr,
                             product_id,
-                            test_run_override.test_run.name,
-                            test_run_override.test_run.utc_date,
+                            test_run_override.name,
+                            test_run_override.utc_date,
                             test_case_override.name,
                             review.name,
                             review.utc_date,
@@ -532,8 +536,8 @@ impl<'db> Collection<'db> {
                         .await?;
                     } else {
                         let entry = IgnoredEntry::from_test_case_state(
-                            test_run_override.test_run.name.clone(),
-                            test_run_override.test_run.utc_date.clone(),
+                            test_run_override.name.clone(),
+                            test_run_override.utc_date.clone(),
                             test_case_override.name.clone(),
                             override_state.new,
                             comment_hash,
@@ -561,8 +565,8 @@ impl<'db> Collection<'db> {
                                     and stmnt_filepath = $5 and stmnt_line = $6
                                 ",
                                 product_id,
-                                test_run_override.test_run.name,
-                                test_run_override.test_run.utc_date,
+                                test_run_override.name,
+                                test_run_override.utc_date,
                                 test_case_override.name,
                                 filepath,
                                 line_nr
@@ -617,8 +621,8 @@ impl<'db> Collection<'db> {
                                     ",
                                     collect_nr,
                                     product_id,
-                                    test_run_override.test_run.name,
-                                    test_run_override.test_run.utc_date,
+                                    test_run_override.name,
+                                    test_run_override.utc_date,
                                     test_case_override.name,
                                     review.name,
                                     review.utc_date,
@@ -631,8 +635,8 @@ impl<'db> Collection<'db> {
                                 .await?;
                             } else {
                                 let entry = IgnoredEntry::from_test_case_statement_coverage(
-                                    test_run_override.test_run.name.clone(),
-                                    test_run_override.test_run.utc_date.clone(),
+                                    test_run_override.name.clone(),
+                                    test_run_override.utc_date.clone(),
                                     test_case_override.name.clone(),
                                     coverage_override.filepath.clone(),
                                     line_nr,
@@ -665,8 +669,8 @@ impl<'db> Collection<'db> {
                                 and stmnt_line = $5
                             ",
                             product_id,
-                            test_run_override.test_run.name,
-                            test_run_override.test_run.utc_date,
+                            test_run_override.name,
+                            test_run_override.utc_date,
                             filepath,
                             line_nr
                         )
@@ -717,8 +721,8 @@ impl<'db> Collection<'db> {
                                 ",
                                 collect_nr,
                                 product_id,
-                                test_run_override.test_run.name,
-                                test_run_override.test_run.utc_date,
+                                test_run_override.name,
+                                test_run_override.utc_date,
                                 review.name,
                                 review.utc_date,
                                 filepath,
@@ -730,8 +734,8 @@ impl<'db> Collection<'db> {
                             .await?;
                         } else {
                             let entry = IgnoredEntry::from_test_run_statement_coverage(
-                                test_run_override.test_run.name.clone(),
-                                test_run_override.test_run.utc_date.clone(),
+                                test_run_override.name.clone(),
+                                test_run_override.utc_date.clone(),
                                 coverage_override.filepath.clone(),
                                 line_nr,
                                 line_info.hits,

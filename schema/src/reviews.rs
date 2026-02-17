@@ -1,10 +1,7 @@
 use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
-use crate::{
-    Line, Origin, Properties, Revision,
-    test_runs::{TestCaseState, TestRunPk},
-};
+use crate::{Line, Origin, Properties, Revision, test_runs::TestCaseState};
 
 use super::requirements::ReqId;
 
@@ -86,7 +83,7 @@ pub struct Review {
     /// List of test run overrides added with this review.
     /// [req("review.test_case_state", "review.coverage")]
     #[serde(alias = "override", default)]
-    pub overrides: Vec<OverrideTestRun>,
+    pub test_run_overrides: Vec<OverrideTestRun>,
 }
 
 /// Represents a verification entry affecting one or more requirements.
@@ -121,8 +118,15 @@ pub enum OneOrMultRequirementIds {
 )]
 #[serde(rename_all = "snake_case")]
 pub struct OverrideTestRun {
-    /// Identification of the test run the overrides are applied to.
-    pub test_run: TestRunPk,
+    /// Name of the test run.
+    pub name: String,
+    /// The UTC date the test run execution started.
+    #[serde(
+        serialize_with = "time::serde::iso8601::serialize",
+        deserialize_with = "time::serde::iso8601::deserialize"
+    )]
+    #[schemars(with = "String")]
+    pub utc_date: time::OffsetDateTime,
     /// List of test case state overrides.
     /// [req("review.test_case_state")]
     #[serde(alias = "test", default)]

@@ -1,7 +1,6 @@
 use mantra_schema::{
     FmtHash, Properties, path::RelativePath, product::ProductId, time::OffsetDateTime,
 };
-use sqlx::migrate::Migrate;
 use std::path::PathBuf;
 
 use crate::{
@@ -9,10 +8,10 @@ use crate::{
     db::{MantraConnection, MantraDb, MantraTransaction},
 };
 
-// pub mod db;
 pub mod annotations;
 pub mod cfg;
 pub mod collector;
+pub mod db;
 pub mod products;
 pub mod requirements;
 pub mod reviews;
@@ -25,6 +24,8 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     collection.aggregate_requirements_data().await?;
     collection.aggregate_annotations_data().await?;
     collection.aggregate_test_run_data().await?;
+
+    collection.aggregate_verification_data().await?;
 
     collection.commit().await?;
 

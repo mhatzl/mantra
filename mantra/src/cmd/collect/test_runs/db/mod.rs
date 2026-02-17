@@ -2,7 +2,7 @@ use mantra_schema::{
     FmtHash, Properties,
     path::RelativePath,
     test_runs::{TestRun, TestRunSchema},
-    time::Duration,
+    time::{Duration, OffsetDateTime},
 };
 
 use crate::{
@@ -253,6 +253,42 @@ impl<'db> Collection<'db> {
             ",
             product_id,
             collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    pub(super) async fn insert_test_run_data_filepaths(
+        &mut self,
+        test_run_name: &str,
+        test_run_date: &OffsetDateTime,
+        filepath: &RelativePath,
+    ) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        let filepath = filepath.as_str();
+        sqlx::query!(
+            "
+            insert into TestRunDataFilepaths (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                filepath
+            )
+            values ($1, $2, $3, $4, $5)
+            on conflict
+            do update set
+                last_collect_nr = excluded.last_collect_nr
+            ",
+            collect_nr,
+            product_id,
+            test_run_name,
+            test_run_date,
+            filepath
         )
         .execute(self.connection_mut())
         .await?;

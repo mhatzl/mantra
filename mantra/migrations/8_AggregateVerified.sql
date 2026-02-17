@@ -1,5 +1,5 @@
 -- Contains statement lines mapped to traces that are only covered by passed test runs
-create table PassedCoveredTracesPerTestRuns (
+create table TracesOnlyCoveredByPassedTestRuns (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -16,7 +16,7 @@ create table PassedCoveredTracesPerTestRuns (
 );
 
 -- Contains statement lines mapped to traces that are only covered by passed test cases
-create table PassedCoveredTracesPerTestCases (
+create table TracesOnlyCoveredByPassedTestCases (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -57,12 +57,12 @@ create table PassedCoveredTracesPerTestCases (
 --       then those must also fulfill the conditions above
 --
 -- - failed:
---   if one of the conditions for `passed` is not met, the requirement verification failed
+--   if at least one of the test runs or test cases failed that would verifiy the requirement
 --
 -- - skipped:
 --   a requirement verificiation is `skipped`, if there are no satisfies or verifies traces,
 --   the requirement is not part of the ManualRequirements table,
---   it is explicitly verified by at least one test case and all those test cases have state `skipped`.
+--   it is explicitly verified by at least one test case, and all such test cases have state `skipped`.
 --
 -- - unverified: none of the conditions for passed or skipped applied
 --   e.g. no satisfies or verifies traces exist, no review for ManualRequirements,

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into TracesOnlyCoveredByPassedTestRuns (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                filepath,\n                file_hash,\n                traced_line,\n                stmnt_line\n            )\n            select\n                tc.last_collect_nr,\n                tc.product_id,\n                tc.test_run_name,\n                tc.test_run_date,\n                tc.filepath,\n                tc.file_hash,\n                tc.traced_line,\n                tc.stmnt_line\n            from TraceCoveragePerTestRuns tc, UsableTestRuns pt\n            where tc.last_collect_nr = $1 and pt.last_collect_nr = $1\n            and tc.product_id = $2 and pt.product_id = $2\n            and tc.test_run_name = pt.test_run_name\n            and tc.test_run_date = pt.test_run_date\n            and tc.hits > 0\n            and not exists (\n                select sc.stmnt_filepath, sc.stmnt_file_hash, sc.stmnt_line\n                from FailedTestRuns f, ResolvedTestRunStatementCoverage sc\n                where f.last_collect_nr = $1 and f.product_id = $2\n                and sc.last_collect_nr = $1 and sc.product_id = $2\n                and f.test_run_name = sc.test_run_name\n                and f.test_run_date = sc.test_run_date\n                and sc.stmnt_filepath = tc.filepath\n                and (sc.stmnt_file_hash is null or tc.file_hash is null\n                    or sc.stmnt_file_hash = tc.file_hash)\n                and sc.stmnt_line = tc.stmnt_line\n            )\n            and not exists (\n                select sc.stmnt_filepath, sc.stmnt_file_hash, sc.stmnt_line\n                from SkippedTestRuns s, ResolvedTestRunStatementCoverage sc\n                where s.last_collect_nr = $1 and s.product_id = $2\n                and sc.last_collect_nr = $1 and sc.product_id = $2\n                and s.test_run_name = sc.test_run_name\n                and s.test_run_date = sc.test_run_date\n                and sc.stmnt_filepath = tc.filepath\n                and (sc.stmnt_file_hash is null or tc.file_hash is null\n                    or sc.stmnt_file_hash = tc.file_hash)\n                and sc.stmnt_line = tc.stmnt_line\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "646c57c80d4febec3ad791d944a8cc9f373100d2f69a0e7ec799bca38b0c8cae"
+}

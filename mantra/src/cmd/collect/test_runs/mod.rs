@@ -82,7 +82,7 @@ async fn collect_well_known<'db>(
     let product_id = collection.product_id();
 
     let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
-    let mut shallow_test_runs = Vec::new();
+    let mut shallow_test_run_data = Vec::new();
     let mut coverage_data = Vec::new();
 
     let (well_known_sender, mut well_known_rx) = tokio::sync::mpsc::unbounded_channel();
@@ -170,29 +170,7 @@ async fn collect_well_known<'db>(
                 collection
                     .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
                     .await?;
-
-                let filepath = sent_data.filepath.as_str();
-                sqlx::query!(
-                    "
-                    insert into TestRunDataFilepaths (
-                        last_collect_nr,
-                        product_id,
-                        test_run_name,
-                        test_run_date,
-                        filepath
-                    )
-                    values ($1, $2, $3, $4, $5)
-                    ",
-                    collect_nr,
-                    product_id,
-                    shallow_test_run.name,
-                    shallow_test_run.utc_date,
-                    filepath
-                )
-                .execute(collection.connection_mut())
-                .await?;
-
-                shallow_test_runs.push(shallow_test_run);
+                shallow_test_run_data.push((sent_data.filepath, shallow_test_run));
             }
             CollectedWellKnown::Coverage(well_known_coverage_data) => {
                 coverage_data.push((
@@ -207,7 +185,7 @@ async fn collect_well_known<'db>(
     let _ = well_known_collection.await?;
 
     // merge shallow test runs + coverage data to proper test run
-    if shallow_test_runs.is_empty() {
+    if shallow_test_run_data.is_empty() {
         eprintln!("No well-known test outputs found.");
         return Ok(());
     }
@@ -215,17 +193,32 @@ async fn collect_well_known<'db>(
     let (coverage_source_files, covered_files, coverage_timestamp) =
         merge_well_known_coverage_data(coverage_data);
 
-    let test_run = if shallow_test_runs.len() == 1 {
+    let test_run = if shallow_test_run_data.len() == 1 {
         // only one test run => place all coverage data into it
-        let shallow_test_run = shallow_test_runs
+        let shallow_data = shallow_test_run_data
             .into_iter()
             .next()
             .expect("Checked above that one test run was collected");
-        shallow_test_run.to_test_run(covered_files, coverage_timestamp)
+        let test_run = shallow_data
+            .1
+            .to_test_run(covered_files, coverage_timestamp);
+        collection
+            .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &shallow_data.0)
+            .await?;
+
+        test_run
     } else {
         // unclear which test run maps to which coverage data => create new test run whith the collected ones as children
-        let (name, utc_date, nr_test_cases, test_runs) =
-            to_sub_test_runs(shallow_test_runs, coverage_timestamp);
+        let (name, utc_date, nr_test_cases, test_run_data) =
+            to_sub_test_runs(shallow_test_run_data, coverage_timestamp);
+
+        let mut test_runs = Vec::with_capacity(test_run_data.len());
+        for data in test_run_data {
+            collection
+                .insert_test_run_data_filepaths(&data.1.name, &data.1.utc_date, &data.0)
+                .await?;
+            test_runs.push(data.1);
+        }
 
         TestRun {
             name,
@@ -247,27 +240,9 @@ async fn collect_well_known<'db>(
         collection
             .insert_file_hash(&source_file.0, &source_file.1)
             .await?;
-
-        let filepath = source_file.0.as_str();
-        sqlx::query!(
-            "
-            insert into TestRunDataFilepaths (
-                last_collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date,
-                filepath
-            )
-            values ($1, $2, $3, $4, $5)
-            ",
-            collect_nr,
-            product_id,
-            test_run.name,
-            test_run.utc_date,
-            filepath
-        )
-        .execute(collection.connection_mut())
-        .await?;
+        collection
+            .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &source_file.0)
+            .await?;
     }
 
     let test_run_schema = TestRunSchema {
@@ -287,26 +262,26 @@ async fn collect_well_known<'db>(
 }
 
 fn to_sub_test_runs(
-    shallow_test_runs: Vec<ShallowTestRun>,
+    shallow_test_run_data: Vec<(RelativePathBuf, ShallowTestRun)>,
     coverage_timestamp: Option<OffsetDateTime>,
-) -> (String, OffsetDateTime, u32, Vec<TestRun>) {
+) -> (String, OffsetDateTime, u32, Vec<(RelativePathBuf, TestRun)>) {
     let mut test_run_names = Vec::new();
     let mut earliest_utc_date = None;
     let mut nr_test_cases = 0;
 
-    let test_runs = shallow_test_runs
+    let test_run_data = shallow_test_run_data
         .into_iter()
         .map(|s| {
-            test_run_names.push(s.name.clone());
-            nr_test_cases += s.nr_of_test_cases;
+            test_run_names.push(s.1.name.clone());
+            nr_test_cases += s.1.nr_of_test_cases;
 
-            if s.utc_date.is_some()
-                && (earliest_utc_date.is_none() || earliest_utc_date > s.utc_date)
+            if s.1.utc_date.is_some()
+                && (earliest_utc_date.is_none() || earliest_utc_date > s.1.utc_date)
             {
-                earliest_utc_date = s.utc_date;
+                earliest_utc_date = s.1.utc_date;
             }
 
-            s.to_test_run(vec![], coverage_timestamp)
+            (s.0, s.1.to_test_run(vec![], coverage_timestamp))
         })
         .collect();
 
@@ -320,7 +295,7 @@ fn to_sub_test_runs(
         }
     };
 
-    (name, utc_date, nr_test_cases, test_runs)
+    (name, utc_date, nr_test_cases, test_run_data)
 }
 
 fn merge_well_known_coverage_data(

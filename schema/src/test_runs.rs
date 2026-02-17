@@ -91,27 +91,6 @@ pub struct TestRun {
     pub test_runs: Vec<TestRun>,
 }
 
-/// Represents the primary key for a test run.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-#[serde(rename_all = "snake_case")]
-pub struct TestRunPk {
-    /// The name of the test run.
-    /// [req("testcov.test_run.id")]
-    pub name: String,
-    /// The UTC date the test run execution started.
-    ///
-    /// **Note:** The date must be given in ISO8601 format.
-    /// [req("testcov.test_run.date")]
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
-}
-
 /// Represents a test case in *mantra*.
 /// [req("testcov.test_case")]
 #[derive(

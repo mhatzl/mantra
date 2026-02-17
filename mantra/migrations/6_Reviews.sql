@@ -14,7 +14,7 @@ create table Reviews (
     base_origin_hash text references GeneralJson (hash) on delete restrict,
     -- The hash of the origin data of the review.
     -- [req("review.origin")]
-    origin_hash text not null references GeneralTexts (hash) on delete restrict,
+    origin_hash text references GeneralJson (hash) on delete restrict,
     -- Hash of the optional decription for the review.
     -- [req("review.description")]
     description_hash text references GeneralTexts (hash) on delete restrict,
