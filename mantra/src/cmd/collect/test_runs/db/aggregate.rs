@@ -7,6 +7,8 @@ impl<'db> Collection<'db> {
         self.update_test_run_descendants().await?;
         self.update_leaf_test_runs().await?;
         self.update_obsolete_test_runs().await?;
+        self.resolve_test_case_states().await?;
+        self.resolve_statement_coverage().await?;
         self.update_failed_test_runs().await?;
         self.update_skipped_test_runs().await?;
         self.update_passed_test_runs().await?;
@@ -171,6 +173,272 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    async fn resolve_test_case_states(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into ResolvedTestCaseStates (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                state
+            )
+            with TestCasesWithoutOverrides (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name
+            ) as (
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    name as test_case_name
+                from TestCases
+                where last_collect_nr = $1 and product_id = $2
+                except
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    test_case_name
+                from TestCaseOverrides
+                where last_collect_nr = $1 and product_id = $2
+            )
+            select
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                state
+            from TestCaseOverrides
+            where last_collect_nr = $1 and product_id = $2
+            union all
+            select
+                t.last_collect_nr,
+                t.product_id,
+                t.test_run_name,
+                t.test_run_date,
+                t.name as test_case_name,
+                t.state
+            from TestCasesWithoutOverrides wo, TestCases t
+            where wo.last_collect_nr = t.last_collect_nr
+                and wo.product_id = t.product_id
+                and wo.test_run_name = t.test_run_name
+                and wo.test_run_date = t.test_run_date
+                and wo.test_case_name = t.name
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from ResolvedTestCaseStates
+            where last_collect_nr != $1
+                and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn resolve_statement_coverage(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into ResolvedTestRunStatementCoverage (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                stmnt_filepath,
+                stmnt_line,
+                hits
+            )
+            with TestRunStatementsWithoutOverrides (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                stmnt_filepath,
+                stmnt_line
+            ) as (
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    stmnt_filepath,
+                    stmnt_line
+                from TestRunStatementCoverage
+                where last_collect_nr = $1 and product_id = $2
+                except
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    stmnt_filepath,
+                    stmnt_line
+                from TestRunStatementCoverageOverrides
+                where last_collect_nr = $1 and product_id = $2
+            )
+            select
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                stmnt_filepath,
+                stmnt_line,
+                hits
+            from TestRunStatementCoverageOverrides
+            where last_collect_nr = $1 and product_id = $2
+            union all
+            select
+                t.last_collect_nr,
+                t.product_id,
+                t.test_run_name,
+                t.test_run_date,
+                t.stmnt_filepath,
+                t.stmnt_line,
+                t.hits
+            from TestRunStatementsWithoutOverrides wo, TestRunStatementCoverage t
+            where wo.last_collect_nr = t.last_collect_nr
+                and wo.product_id = t.product_id
+                and wo.test_run_name = t.test_run_name
+                and wo.test_run_date = t.test_run_date
+                and wo.stmnt_filepath = t.stmnt_filepath
+                and wo.stmnt_line = t.stmnt_line
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from ResolvedTestRunStatementCoverage
+            where last_collect_nr != $1
+            and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            insert or replace into ResolvedTestCaseStatementCoverage (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                stmnt_filepath,
+                stmnt_line,
+                hits
+            )
+            with TestCaseStatementsWithoutOverrides (
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                stmnt_filepath,
+                stmnt_line
+            ) as (
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    test_case_name,
+                    stmnt_filepath,
+                    stmnt_line
+                from TestCaseStatementCoverage
+                where last_collect_nr = $1 and product_id = $2
+                except
+                select
+                    last_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    test_case_name,
+                    stmnt_filepath,
+                    stmnt_line
+                from TestCaseStatementCoverageOverrides
+                where last_collect_nr = $1 and product_id = $2
+            )
+            select
+                last_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                stmnt_filepath,
+                stmnt_line,
+                hits
+            from TestCaseStatementCoverageOverrides
+            where last_collect_nr = $1 and product_id = $2
+            union all
+            select
+                t.last_collect_nr,
+                t.product_id,
+                t.test_run_name,
+                t.test_run_date,
+                t.test_case_name,
+                t.stmnt_filepath,
+                t.stmnt_line,
+                t.hits
+            from TestCaseStatementsWithoutOverrides wo, TestCaseStatementCoverage t
+            where wo.last_collect_nr = t.last_collect_nr
+                and wo.product_id = t.product_id
+                and wo.test_run_name = t.test_run_name
+                and wo.test_run_date = t.test_run_date
+                and wo.test_case_name = t.test_case_name
+                and wo.stmnt_filepath = t.stmnt_filepath
+                and wo.stmnt_line = t.stmnt_line
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from ResolvedTestCaseStatementCoverage
+            where last_collect_nr != $1
+            and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
     async fn update_failed_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
@@ -196,7 +464,7 @@ impl<'db> Collection<'db> {
                     product_id,
                     test_run_name,
                     test_run_date
-                from TestCases
+                from ResolvedTestCaseStates
                 where last_collect_nr = $1
                 and product_id = $2
                 and state != $3 and state != $4
@@ -278,7 +546,7 @@ impl<'db> Collection<'db> {
                     product_id,
                     test_run_name,
                     test_run_date
-                from TestCases
+                from ResolvedTestCaseStates
                 where last_collect_nr = $1
                 and product_id = $2
                 and state = $3
@@ -373,7 +641,7 @@ impl<'db> Collection<'db> {
                     product_id,
                     test_run_name,
                     test_run_date
-                from TestCases
+                from ResolvedTestCaseStates
                 where last_collect_nr = $1
                 and product_id = $2
                 and state = $3
@@ -533,7 +801,7 @@ impl<'db> Collection<'db> {
                 ts.traced_line,
                 sc.stmnt_line,
                 sc.hits
-            from TestRunStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
+            from ResolvedTestRunStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
             and sc.hits not null and sc.stmnt_filepath = pf.filepath
@@ -597,7 +865,7 @@ impl<'db> Collection<'db> {
                 ts.traced_line,
                 sc.stmnt_line,
                 sc.hits
-            from TestCaseStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
+            from ResolvedTestCaseStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
             and sc.hits not null and sc.stmnt_filepath = pf.filepath

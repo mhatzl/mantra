@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into SkippedTestRuns (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            with TestRunsWithSkippedTestCase (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            ) as (\n                select\n                    last_collect_nr,\n                    product_id,\n                    test_run_name,\n                    test_run_date\n                from ResolvedTestCaseStates\n                where last_collect_nr = $1\n                and product_id = $2\n                and state = $3\n            ), IndirectSkippedTestRun (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            ) as (\n                select\n                d.last_collect_nr,\n                d.product_id,\n                d.test_run_name,\n                d.test_run_date\n                from TestRunDescendants d, TestRunsWithSkippedTestCase s\n                where d.last_collect_nr = s.last_collect_nr\n                and d.product_id = s.product_id\n                and d.descendant_test_run_name = s.test_run_name\n                and d.descendant_test_run_date = s.test_run_date\n            )\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            from (\n                select\n                    last_collect_nr,\n                    product_id,\n                    test_run_name,\n                    test_run_date\n                from TestRunsWithSkippedTestCase\n                union all\n                select\n                    last_collect_nr,\n                    product_id,\n                    test_run_name,\n                    test_run_date\n                from IndirectSkippedTestRun\n            )\n            except\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            from FailedTestRuns\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "0671707b4a186cb1027d18061ad772687c7f19ce835b7f505c60f4dc9256e18f"
+}
