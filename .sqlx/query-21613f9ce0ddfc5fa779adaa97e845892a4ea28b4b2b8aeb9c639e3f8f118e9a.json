@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into ResolvedTestCaseStates (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                state\n            )\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                state\n            from TestCaseOverrides\n            where last_collect_nr = $1 and product_id = $2\n            union all\n            select\n                t.last_collect_nr,\n                t.product_id,\n                t.test_run_name,\n                t.test_run_date,\n                t.name as test_case_name,\n                t.state\n            from TestCases t\n            where not exists (\n                select\n                    o.last_collect_nr,\n                    o.product_id,\n                    o.test_run_name,\n                    o.test_run_date,\n                    o.test_case_name\n                from TestCaseOverrides o\n                where t.last_collect_nr = $1 and t.product_id = $2\n                and t.last_collect_nr = o.last_collect_nr\n                and t.product_id = o.product_id\n                and t.test_run_name = o.test_run_name\n                and t.test_run_date = o.test_run_date\n                and t.name = o.test_case_name\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "21613f9ce0ddfc5fa779adaa97e845892a4ea28b4b2b8aeb9c639e3f8f118e9a"
+}

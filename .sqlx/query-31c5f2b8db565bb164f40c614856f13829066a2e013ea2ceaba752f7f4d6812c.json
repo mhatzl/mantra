@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from TraceMappedStmntsOnlyCoveredByPassedTestRuns\n            where last_collect_nr != $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "31c5f2b8db565bb164f40c614856f13829066a2e013ea2ceaba752f7f4d6812c"
+}

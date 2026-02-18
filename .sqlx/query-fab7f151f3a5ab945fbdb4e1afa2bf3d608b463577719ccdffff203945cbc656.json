@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                        select * from TestCases\n                        where\n                            product_id = $1 and test_run_name = $2\n                            and test_run_date = $3 and name = $4\n                        ",
+  "query": "\n                        select * from TestCases\n                        where\n                            last_collect_nr = $1\n                            and product_id = $2\n                            and test_run_name = $3\n                            and test_run_date = $4\n                            and name = $5\n                        ",
   "describe": {
     "columns": [
       {
@@ -50,7 +50,7 @@
       }
     ],
     "parameters": {
-      "Right": 4
+      "Right": 5
     },
     "nullable": [
       false,
@@ -64,5 +64,5 @@
       true
     ]
   },
-  "hash": "c2cad00babc38c8a9c86d1413f6a1dfb1c482870b8aa066a78028bc418dbf5ae"
+  "hash": "fab7f151f3a5ab945fbdb4e1afa2bf3d608b463577719ccdffff203945cbc656"
 }

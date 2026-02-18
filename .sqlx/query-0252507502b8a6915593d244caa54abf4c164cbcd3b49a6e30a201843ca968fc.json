@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into UsableTestCases (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name\n            )\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name\n            from PassedTestCases pc\n            where last_collect_nr = $1 and product_id = $2\n            and not exists (\n                select\n                    last_collect_nr,\n                    product_id,\n                    test_run_name,\n                    test_run_date\n                from ObsoleteTestRuns o\n                where pc.last_collect_nr =  o.last_collect_nr\n                and pc.product_id = o.product_id\n                and pc.test_run_name = o.test_run_name\n                and pc.test_run_date = o.test_run_date\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "0252507502b8a6915593d244caa54abf4c164cbcd3b49a6e30a201843ca968fc"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TestRunDataFilepaths (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                filepath\n            )\n            values ($1, $2, $3, $4, $5)\n            on conflict\n            do update set\n                last_collect_nr = excluded.last_collect_nr\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "0ba7cfbad0c50c6194e8a1d668e17789a02738f1d14ba4c6a6ce403d40a61841"
+}

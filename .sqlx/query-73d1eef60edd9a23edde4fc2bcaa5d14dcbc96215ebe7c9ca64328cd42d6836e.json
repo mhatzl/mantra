@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into TracesOnlyCoveredByPassedTests (\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line\n            )\n            select\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line\n            from TraceMappedStmntsOnlyCoveredByPassedTests pt\n            where last_collect_nr = $1 and product_id = $2\n            and not exists (\n                select\n                    last_collect_nr,\n                    product_id,\n                    filepath,\n                    file_hash,\n                    traced_line\n                    stmnt_line\n                from TraceMappedStmntsCoveredByFailedTests ft\n                where ft.last_collect_nr = $1 and ft.product_id = $2\n                and pt.filepath = ft.filepath\n                and pt.file_hash = ft.file_hash\n                and pt.traced_line = ft.traced_line\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "73d1eef60edd9a23edde4fc2bcaa5d14dcbc96215ebe7c9ca64328cd42d6836e"
+}

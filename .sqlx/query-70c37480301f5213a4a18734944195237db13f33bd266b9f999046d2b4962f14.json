@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into TraceMappedStmntsCoveredByFailedTests (\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line,\n                stmnt_line\n            )\n            -- union, because tables may contain duplicate statement entries\n            select\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line,\n                stmnt_line\n            from TraceMappedStmntsCoveredByFailedTestRuns\n            where last_collect_nr = $1 and product_id = $2\n            union\n            select\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line,\n                stmnt_line\n            from TraceMappedStmntsCoveredByFailedTestCases\n            where last_collect_nr = $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "70c37480301f5213a4a18734944195237db13f33bd266b9f999046d2b4962f14"
+}
