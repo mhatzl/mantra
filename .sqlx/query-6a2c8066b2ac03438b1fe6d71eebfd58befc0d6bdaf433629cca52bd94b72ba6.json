@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n             delete from SkippedRequirements\n             where last_collect_nr != $1 and product_id = $2\n             ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6a2c8066b2ac03438b1fe6d71eebfd58befc0d6bdaf433629cca52bd94b72ba6"
+}

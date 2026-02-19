@@ -242,10 +242,11 @@ create table DirectRequirementVerificationStates (
 -- Contains verification states for requirements based on the requirement hierarchy.
 -- This table only contains non-leaf requirements (requirements that have at least one child).
 -- States:
--- - verified: all descendants are verified
+-- - verified: all non-optional descendants are verified
 -- - failed: at least one descendant failed (or is of unknown state)
--- - skipped: at least one descendant was skipped, but none failed
--- - unverified: at least one descendant was unverified, but none failed or were skipped
+--      also including optional descendants
+-- - skipped: at least one non-optional descendant was skipped, and none failed or are unverified
+-- - unverified: at least one non-optional descendant was unverified, but none failed or were skipped
 create table IndirectRequirementVerificationStates (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -257,8 +258,10 @@ create table IndirectRequirementVerificationStates (
 
 -- Contains requirements that are successfully verified.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is verified.
--- For non-leaf requirements, the IndirectRequirementVerificationStates must be verified,
--- and if an entry in DirectRequirementVerificationStates is available it must also be verified.
+-- For non-leaf requirements:
+-- - The IndirectRequirementVerificationStates must **not** be failed
+-- - If an entry in DirectRequirementVerificationStates exists it must be verified
+-- - If no entry in DirectRequirementVerificationStates exists the indirect state must be verified
 create table VerifiedRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -271,7 +274,7 @@ create table VerifiedRequirements (
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is skipped.
 -- For non-leaf requirements, either
 -- - IndirectRequirementVerificationStates = skipped
---   DirectRequirementVerificationStates = verified or skipped
+--   DirectRequirementVerificationStates = verified or skipped or unverified
 -- - IndirectRequirementVerificationStates = verified or skipped
 --   DirectRequirementVerificationStates = skipped
 create table SkippedRequirements (
@@ -294,12 +297,12 @@ create table FailedRequirements (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
--- Contains requirements that are skipped.
+-- Contains requirements that are unverified.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is unverified.
 -- For non-leaf requirements, either
 -- - IndirectRequirementVerificationStates = unverified
---   DirectRequirementVerificationStates = verified, skipped, or unverified
--- - IndirectRequirementVerificationStates = verified, skipped, or unverified
+--   DirectRequirementVerificationStates = unverified
+-- - IndirectRequirementVerificationStates = skipped, or unverified
 --   DirectRequirementVerificationStates = unverified
 create table UnverifiedRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,

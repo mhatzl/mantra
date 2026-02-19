@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into FailedRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select\n                r.last_collect_nr,\n                r.product_id,\n                r.id\n            from UsableRequirements r, DirectRequirementVerificationStates ds\n                left join IndirectRequirementVerificationStates ids on\n                r.last_collect_nr = ids.last_collect_nr\n                and r.product_id = ids.product_id\n                and r.id = ids.id\n            where r.last_collect_nr = $1 and r.product_id = $2\n            and ds.last_collect_nr = $1 and ds.product_id = $2\n            and r.id = ds.id\n            and ((ids.state is not null and ids.state = $3) or ds.state = $3)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "cc33fe7795da18c2d95deb53e897480715902f03d9d2207bb31541e938ed4359"
+}

@@ -22,6 +22,12 @@ impl<'db> Collection<'db> {
         self.update_traces_covered_by_failed_tests().await?;
 
         self.update_direct_req_verification_states().await?;
+        self.update_indirect_req_verification_states().await?;
+
+        self.update_verified_reqs().await?;
+        self.update_failed_reqs().await?;
+        self.update_skipped_reqs().await?;
+        self.update_unverified_reqs().await?;
 
         Ok(())
     }
@@ -967,6 +973,390 @@ impl<'db> Collection<'db> {
          )
          .execute(self.connection_mut())
          .await?;
+
+        sqlx::query!(
+            "
+             delete from DirectRequirementVerificationStates
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_indirect_req_verification_states(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
+        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
+        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
+        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into IndirectRequirementVerificationStates (
+                last_collect_nr,
+                product_id,
+                id,
+                state
+            )
+            with UsableNonLeafRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            ) as (
+                select
+                    ur.last_collect_nr,
+                    ur.product_id,
+                    ur.id
+                from UsableRequirements ur, RequirementDescendants rd
+                where ur.last_collect_nr = $1 and ur.product_id = $2
+                and rd.last_collect_nr = $1 and rd.product_id = $2
+                and ur.id = rd.id
+            ), ReqsWithFailedDescendants (id) as (
+                select r.id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rd.id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates s
+                    where rd.last_collect_nr = $1 and rd.product_id = $2
+                    and rd.id = r.id and rd.descendant_id = s.id
+                    and rd.descendant_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
+                    and s.state = $4
+                )
+            ), ReqsWithUnverifiedNonOptionalDescendants (id) as (
+                select r.id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rd.id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates s
+                        left join OptionalRequirements opt on
+                            s.last_collect_nr = opt.last_collect_nr
+                            and s.product_id = opt.product_id
+                            and s.id = opt.id
+                    where rd.last_collect_nr = $1 and rd.product_id = $2
+                    and rd.id = r.id and rd.descendant_id = s.id
+                    and rd.descendant_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
+                    and opt.id is null
+                    and s.state = $6
+                )
+            ), ReqsWithSkippedNonOptionalDescendants (id) as (
+                select r.id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rd.id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates s
+                        left join OptionalRequirements opt on
+                            s.last_collect_nr = opt.last_collect_nr
+                            and s.product_id = opt.product_id
+                            and s.id = opt.id
+                    where rd.last_collect_nr = $1 and rd.product_id = $2
+                    and rd.id = r.id and rd.descendant_id = s.id
+                    and rd.descendant_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
+                    and opt.id is null
+                    and s.state = $5
+                )
+            ), ReqsWithVerifiedNonOptionalDescendants (id) as (
+                select r.id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rd.id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates s
+                        left join OptionalRequirements opt on
+                            s.last_collect_nr = opt.last_collect_nr
+                            and s.product_id = opt.product_id
+                            and s.id = opt.id
+                    where rd.last_collect_nr = $1 and rd.product_id = $2
+                    and rd.id = r.id and rd.descendant_id = s.id
+                    and rd.descendant_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
+                    and opt.id is null
+                    and s.state = $3
+                )
+            )
+            select
+                r.last_collect_nr,
+                r.product_id,
+                r.id,
+                case
+                    when exists (
+                        select f.id
+                        from ReqsWithFailedDescendants f
+                        where r.id = f.id
+                    ) then $4
+                    when exists (
+                        select f.id
+                        from ReqsWithUnverifiedNonOptionalDescendants f
+                        where r.id = f.id
+                    ) then $6
+                    when exists (
+                        select f.id
+                        from ReqsWithSkippedNonOptionalDescendants f
+                        where r.id = f.id
+                    ) then $5
+                    when exists (
+                        select f.id
+                        from ReqsWithVerifiedNonOptionalDescendants f
+                        where r.id = f.id
+                    ) then $3
+                    else $6
+                end
+            from UsableNonLeafRequirements r
+            ",
+            collect_nr,
+            product_id,
+            req_verified_nr,
+            req_failed_nr,
+            req_skipped_nr,
+            req_unverified_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+             delete from IndirectRequirementVerificationStates
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_verified_reqs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
+        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
+        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
+        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into VerifiedRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            select
+                r.last_collect_nr,
+                r.product_id,
+                r.id
+            from UsableRequirements r, DirectRequirementVerificationStates ds
+                left join IndirectRequirementVerificationStates ids on
+                r.last_collect_nr = ids.last_collect_nr
+                and r.product_id = ids.product_id
+                and r.id = ids.id
+            where r.last_collect_nr = $1 and r.product_id = $2
+            and ds.last_collect_nr = $1 and ds.product_id = $2
+            and r.id = ds.id
+            and (ids.state is null or ids.state != $4)
+            and (ds.state = $3
+                or (ds.state = $5 and (ids.state is not null and ids.state = $3))
+            )
+            ",
+            collect_nr,
+            product_id,
+            req_verified_nr,
+            req_failed_nr,
+            req_unverified_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+             delete from VerifiedRequirements
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_skipped_reqs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
+        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
+        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
+        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into SkippedRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            select
+                r.last_collect_nr,
+                r.product_id,
+                r.id
+            from UsableRequirements r, DirectRequirementVerificationStates ds
+                left join IndirectRequirementVerificationStates ids on
+                r.last_collect_nr = ids.last_collect_nr
+                and r.product_id = ids.product_id
+                and r.id = ids.id
+            where r.last_collect_nr = $1 and r.product_id = $2
+            and ds.last_collect_nr = $1 and ds.product_id = $2
+            and r.id = ds.id
+            and (ids.state is null or ids.state != $4)
+            and (ds.state = $3
+                or (ds.state = $5 and (ids.state is not null and ids.state = $3))
+            )
+            ",
+            collect_nr,
+            product_id,
+            req_skipped_nr,
+            req_failed_nr,
+            req_unverified_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+             delete from SkippedRequirements
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_failed_reqs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
+        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
+        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
+        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into FailedRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            select
+                r.last_collect_nr,
+                r.product_id,
+                r.id
+            from UsableRequirements r, DirectRequirementVerificationStates ds
+                left join IndirectRequirementVerificationStates ids on
+                r.last_collect_nr = ids.last_collect_nr
+                and r.product_id = ids.product_id
+                and r.id = ids.id
+            where r.last_collect_nr = $1 and r.product_id = $2
+            and ds.last_collect_nr = $1 and ds.product_id = $2
+            and r.id = ds.id
+            and ((ids.state is not null and ids.state = $3) or ds.state = $3)
+            ",
+            collect_nr,
+            product_id,
+            req_failed_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+             delete from FailedRequirements
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_unverified_reqs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
+        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
+        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
+        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into UnverifiedRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            select
+                r.last_collect_nr,
+                r.product_id,
+                r.id
+            from UsableRequirements r, DirectRequirementVerificationStates ds
+                left join IndirectRequirementVerificationStates ids on
+                r.last_collect_nr = ids.last_collect_nr
+                and r.product_id = ids.product_id
+                and r.id = ids.id
+            where r.last_collect_nr = $1 and r.product_id = $2
+            and ds.last_collect_nr = $1 and ds.product_id = $2
+            and r.id = ds.id
+            and ds.state = $3 and (ids.state is null or ids.state = $3 or ids.state = $4)
+            ",
+            collect_nr,
+            product_id,
+            req_unverified_nr,
+            req_skipped_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+             delete from UnverifiedRequirements
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         Ok(())
     }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n             delete from IndirectRequirementVerificationStates\n             where last_collect_nr != $1 and product_id = $2\n             ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b669ccbc07baef9d1b89abb3e3795f554f61f6ad7c5452402d7802604db29f30"
+}
