@@ -67,6 +67,12 @@ pub struct Requirement {
     /// [req("req.ignore")]
     #[serde(default)]
     pub ignore: bool,
+    /// true: Instructs mantra to treat the requirement for the product as optional.
+    ///
+    /// **Note:** All potential children of such a requirement are also marked as optional.
+    /// [req("req.ignore")]
+    #[serde(default)]
+    pub optional: bool,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,

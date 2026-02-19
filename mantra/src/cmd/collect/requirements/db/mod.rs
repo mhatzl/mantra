@@ -241,6 +241,7 @@ impl<'db> Collection<'db> {
                 manual_verification,
                 deprecated,
                 ignore,
+                optional,
                 title,
                 base_origin_hash,
                 origin_hash,
@@ -260,7 +261,8 @@ impl<'db> Collection<'db> {
                 $9,
                 $10,
                 $11,
-                $12
+                $12,
+                $13
             )
             on conflict (id, product_id)
             do update set
@@ -268,6 +270,7 @@ impl<'db> Collection<'db> {
                 manual_verification = excluded.manual_verification,
                 deprecated = excluded.deprecated,
                 ignore = excluded.ignore,
+                optional = excluded.optional,
                 title = excluded.title,
                 base_origin_hash = excluded.base_origin_hash,
                 origin_hash = excluded.origin_hash,
@@ -281,6 +284,7 @@ impl<'db> Collection<'db> {
             req.manual_verification,
             req.deprecated,
             req.ignore,
+            req.optional,
             req.title,
             base_origin_hash,
             origin_hash,

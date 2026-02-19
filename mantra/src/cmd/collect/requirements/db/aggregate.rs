@@ -9,6 +9,7 @@ impl<'db> Collection<'db> {
         self.update_leaf_requirements().await?;
         self.update_deprecated_requirements().await?;
         self.update_ignored_requirements().await?;
+        self.update_optional_requirements().await?;
         self.update_manual_requirements().await?;
         self.update_usable_requirements().await?;
         self.update_usable_manual_requirements().await?;
@@ -276,6 +277,56 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             delete from IgnoredRequirements
+            where last_collect_nr != $1
+            and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_optional_requirements(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into OptionalRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            with MarkedOptional(product_id, id) as (
+                select product_id, id
+                from Requirements
+                where optional = true
+                and last_collect_nr = $1
+                and product_id = $2
+            ),
+            ParentMarkedOptional(product_id, id) as (
+                select rd.descendant_product_id, rd.descendant_id
+                from RequirementDescendants rd, MarkedOptional md
+                where rd.product_id = md.product_id and rd.id = md.id
+            )
+            select $1 as last_collect_nr, product_id, id
+            from MarkedOptional
+            union all
+            select $1 as last_collect_nr, product_id, id
+            from ParentMarkedOptional
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from OptionalRequirements
             where last_collect_nr != $1
             and product_id = $2
             ",

@@ -17,6 +17,12 @@ create table Requirements (
     -- `true`: The requirement must be ignored.
     -- [req("req.ignored")]
     ignore bool not null,
+    -- Flag indicating whether the requirement is optional to be verified.
+    -- Verification state of optional requirements does **not** affect the state of parents.
+    -- All children of an optional requirement are also optional.
+    -- `true`: The requirement is optional.
+    -- [req("req.optional")]
+    optional bool not null,
     -- The title of the requirement.
     -- [req("req.title")]
     title text not null,

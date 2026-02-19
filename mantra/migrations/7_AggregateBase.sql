@@ -23,7 +23,7 @@ create table LeafRequirements (
 
 -- Contains requirements that are marked as `deprecated`.
 --
--- **Note:** Children of requirements that are explicitly marked are also affected.
+-- **Note:** Children of explicitly marked requirements are also affected.
 create table DeprecatedRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -34,8 +34,19 @@ create table DeprecatedRequirements (
 
 -- Contains requirements that are marked to `ignore` them.
 --
--- **Note:** Children of requirements that are explicitly marked are also affected.
+-- **Note:** Children of explicitly marked requirements are also affected.
 create table IgnoredRequirements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
+-- Contains requirements that are marked as `optional`.
+--
+-- **Note:** Children of explicitly marked requirements are also affected.
+create table OptionalRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     id text not null,
@@ -45,7 +56,7 @@ create table IgnoredRequirements (
 
 -- Contains requirements that are marked to require `manual verification`.
 --
--- **Note:** Children of requirements that are explicitly marked are also affected.
+-- **Note:** Children of explicitly marked requirements are also affected.
 create table ManualRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
