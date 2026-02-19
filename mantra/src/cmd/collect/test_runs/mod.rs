@@ -78,9 +78,6 @@ async fn collect_well_known<'db>(
     test: WellKnownTest,
     coverage: WellKnownCoverage,
 ) -> Result<(), anyhow::Error> {
-    let collect_nr = collection.collect_nr();
-    let product_id = collection.product_id();
-
     let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
     let mut shallow_test_run_data = Vec::new();
     let mut coverage_data = Vec::new();

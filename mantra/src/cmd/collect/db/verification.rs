@@ -1155,7 +1155,6 @@ impl<'db> Collection<'db> {
         let product_id = self.product_id();
         let req_verified_nr = RequirementVerificationState::Verified.as_nr();
         let req_failed_nr = RequirementVerificationState::Failed.as_nr();
-        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
         let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
 
         sqlx::query!(
@@ -1208,7 +1207,6 @@ impl<'db> Collection<'db> {
     async fn update_skipped_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
         let req_failed_nr = RequirementVerificationState::Failed.as_nr();
         let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
         let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
@@ -1263,10 +1261,7 @@ impl<'db> Collection<'db> {
     async fn update_failed_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
         let req_failed_nr = RequirementVerificationState::Failed.as_nr();
-        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
-        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
 
         sqlx::query!(
             "
@@ -1313,8 +1308,6 @@ impl<'db> Collection<'db> {
     async fn update_unverified_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
-        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
         let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
         let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
 
