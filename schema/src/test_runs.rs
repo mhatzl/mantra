@@ -120,6 +120,7 @@ pub struct TestCase {
         deserialize_with = "time::serde::iso8601::option::deserialize"
     )]
     #[schemars(with = "String")]
+    #[serde(default)] // Needed due to: https://github.com/serde-rs/serde/issues/2878
     pub utc_date: Option<time::OffsetDateTime>,
     /// Optional duration about how long the test case took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.

@@ -22,6 +22,8 @@
                 pattern: "*cobertura.xml",
             }
         }
+    },{
+        path: "test-content/test-runs/",
     }],
     reviews: [{
         path: "test-content/reviews/",

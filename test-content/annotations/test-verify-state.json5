@@ -1,0 +1,86 @@
+{
+    files: [{
+        filepath: "verified_traces.rs",
+        file_hash: "<hash for verified_traces.rs>",
+        traces: [{
+            ids: [
+                "no_satisfy_but_verify.verified",
+                "satisfy_and_verify.verified",
+                "direct_verify_test.traced.verified",
+                "manual_req.traced.verified",
+                // fulfills trace condition, but not reviewed
+                "manual_req.traced.unverified"
+            ],
+            line: 1,
+            kind: "verifies",
+        },{
+            ids: [
+                "satisfy_and_verify.verified",
+                "no_verify_but_satisfy.verified",
+                "direct_verify_test.traced.verified",
+                "manual_req.traced.verified",
+                "manual_req.traced.unverified"
+            ],
+            line: 2,
+            kind: "satisfies",
+        }],
+    },{
+        filepath: "failed_traces.rs",
+        file_hash: "<hash for failed_traces.rs>",
+        traces: [{
+            ids: [
+                "no_satisfy_but_verify.failed",
+                "satisfy_and_verify.failed",
+                "direct_verify_test.traced.failed",
+                "manual_req.traced.failed"
+            ],
+            line: 1,
+            kind: "verifies",
+        },{
+            ids: [
+                "satisfy_and_verify.failed",
+                "no_verify_but_satisfy.failed",
+                "direct_verify_test.traced.failed",
+                "manual_req.traced.failed"
+            ],
+            line: 2,
+            kind: "satisfies",
+        }],
+    },{
+        filepath: "unverified_traces.rs",
+        file_hash: "<hash for unverified_traces.rs>",
+        traces: [{
+            ids: [
+                "satisfy_and_verify.unverified",
+            ],
+            line: 1,
+            kind: "verifies",
+        },{
+            ids: [
+                "no_verify_but_satisfy.unverified",
+                "direct_verify_test.traced.unverified",
+            ],
+            line: 2,
+            kind: "satisfies",
+        },{
+            // not covering this trace via tests to stay unverified
+            ids: [
+                // this satisfy trace not covered => not all satisfy traces covered
+                "no_verify_but_satisfy.unverified",
+                // verify trace does not cover satisfy trace in same test
+                "satisfy_and_verify.unverified",
+                // ensures to not fulfill "all satisfy traces covered", but still traced
+                "direct_verify_test.traced.unverified",
+            ],
+            line: 3,
+            kind: "satisfies",
+        },{
+            // not covering this trace via tests to stay unverified
+            ids: [
+                "no_satisfy_but_verify.unverified",
+            ],
+            line: 4,
+            kind: "verifies",
+        },],
+    }]
+}

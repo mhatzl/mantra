@@ -616,9 +616,10 @@ impl<'db> Collection<'db> {
                     where st.last_collect_nr = $1 and dt.product_id = $2
                     and st.last_collect_nr = dt.last_collect_nr
                     and st.product_id = dt.product_id
-                    and st.file_hash = dt.file_hash and st.traced_line = rt.line
+                    and st.file_hash = dt.file_hash and st.traced_line = dt.line
                     and st.file_hash = tr.file_hash and st.traced_line = tr.line
                     and st.filepath = dt.filepath
+                    and dt.req_id = rt.req_id
                     -- same test run
                     and ct.test_run_name = st.test_run_name
                     and ct.test_run_date = st.test_run_date
@@ -645,9 +646,10 @@ impl<'db> Collection<'db> {
                     where st.last_collect_nr = $1 and dt.product_id = $2
                     and st.last_collect_nr = dt.last_collect_nr
                     and st.product_id = dt.product_id
-                    and st.file_hash = dt.file_hash and st.traced_line = rt.line
+                    and st.file_hash = dt.file_hash and st.traced_line = dt.line
                     and st.file_hash = tr.file_hash and st.traced_line = tr.line
                     and st.filepath = dt.filepath
+                    and dt.req_id = rt.req_id
                     -- same test case
                     and ct.test_run_name = st.test_run_name
                     and ct.test_run_date = st.test_run_date
@@ -683,9 +685,10 @@ impl<'db> Collection<'db> {
                     where st.last_collect_nr = $1 and dt.product_id = $2
                     and st.last_collect_nr = dt.last_collect_nr
                     and st.product_id = dt.product_id
-                    and st.file_hash = dt.file_hash and st.traced_line = rt.line
+                    and st.file_hash = dt.file_hash and st.traced_line = dt.line
                     and st.file_hash = tr.file_hash and st.traced_line = tr.line
                     and st.filepath = dt.filepath
+                    and dt.req_id = rt.req_id
                     -- same test run
                     and ct.test_run_name = st.test_run_name
                     and ct.test_run_date = st.test_run_date
@@ -712,9 +715,10 @@ impl<'db> Collection<'db> {
                     where st.last_collect_nr = $1 and dt.product_id = $2
                     and st.last_collect_nr = dt.last_collect_nr
                     and st.product_id = dt.product_id
-                    and st.file_hash = dt.file_hash and st.traced_line = rt.line
+                    and st.file_hash = dt.file_hash and st.traced_line = dt.line
                     and st.file_hash = tr.file_hash and st.traced_line = tr.line
                     and st.filepath = dt.filepath
+                    and dt.req_id = rt.req_id
                     -- same test case
                     and ct.test_run_name = st.test_run_name
                     and ct.test_run_date = st.test_run_date
@@ -871,20 +875,55 @@ impl<'db> Collection<'db> {
                     from TestCaseVerifiedRequirements
                     where last_collect_nr = $1 and product_id = $2
                 ) vr
-            ), ManualReqsVerifiedByReview (
-                id
+            ), ManualReqStates (
+                id,
+                state
             ) as (
-                select mr.id
-                from UsableManualRequirements mr, ManuallyVerifiedRequirements vr
+                select
+                    mr.id,
+                    case
+                        when exists (
+                            select ts.id
+                            from TracedReqStates ts
+                            where mr.id = ts.id and ts.state = $6
+                        ) or exists (
+                            select ts.id
+                            from ReqsExplicitlyVerifiedByTestCasesState ts
+                            where mr.id = ts.id and ts.state = $6
+                        ) then $6
+                        when exists (
+                            select vr.req_id
+                            from ManuallyVerifiedRequirements vr
+                            where vr.last_collect_nr = $1 and vr.product_id = $2
+                            and mr.id = vr.req_id
+                        ) then case
+                            -- verify trace exists, but wasn't verified => unverified
+                            -- independent of review
+                            when exists (
+                                select ts.id
+                                from TracedReqStates ts, VerifyTraceExists vt
+                                where mr.id = ts.id and mr.id = vt.req_id
+                                and ts.state = $8
+                            ) then $8
+                            -- explicit verify test exists, but is skipped
+                            when exists (
+                                select ts.id
+                                from ReqsExplicitlyVerifiedByTestCasesState ts
+                                where mr.id = ts.id and ts.state = $7
+                            ) then $7
+                            else $5
+                            end
+                        else $8
+                    end
+                from UsableManualRequirements mr
                 where mr.last_collect_nr = $1 and mr.product_id = $2
-                and vr.last_collect_nr = $1 and vr.product_id = $2
-                and mr.id = vr.req_id
             )
             select
                 r.last_collect_nr,
                 r.product_id,
                 r.id,
                 case
+                    when mr.id not null then mr.state
                     when exists (
                         select ts.id
                         from TracedReqStates ts
@@ -895,11 +934,6 @@ impl<'db> Collection<'db> {
                         from ReqsExplicitlyVerifiedByTestCasesState ts
                         where r.id = ts.id and ts.state = $6
                     ) then $6
-                    when exists (
-                        select mr.id
-                        from ManualReqsVerifiedByReview mr
-                        where r.id = mr.id
-                    ) then $5
                     when exists (
                         select ts.id
                         from ReqsExplicitlyVerifiedByTestCasesState ts
@@ -917,7 +951,7 @@ impl<'db> Collection<'db> {
                     ) then $5
                     else $8
                 end
-            from UsableRequirements r
+            from UsableRequirements r left join ManualReqStates mr on r.id = mr.id
             where r.last_collect_nr = $1 and r.product_id = $2
             ",
             collect_nr,

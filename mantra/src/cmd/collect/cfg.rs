@@ -75,7 +75,7 @@ pub enum AnnotationSourceVariant {
 #[serde(rename_all = "snake_case")]
 pub struct CollectTestRunsConfig {
     pub path: RelativePathBuf,
-    // #[serde(default)]
+    #[serde(default)]
     pub source: TestRunSourceVariant,
     pub origin: Option<Origin>,
     pub test_run_properties: Option<Properties>,

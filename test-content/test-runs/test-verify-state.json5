@@ -1,0 +1,74 @@
+{
+    test_runs: [{
+        name: "test-verify-state",
+        utc_date: "2026-02-19T11:16:58Z",
+        nr_of_test_cases: 6,
+        test_cases: [{
+            name: "passed-covering-traces",
+            state: "passed",
+            covered_files: [{
+                filepath: "verified_traces.rs",
+                lines: [{
+                    nr: 1,
+                    hits: 1,
+                },{
+                    nr: 2,
+                    hits: 1,
+                }]
+            }]
+        },{
+            name: "failed-covering-traces",
+            state: "failed",
+            covered_files: [{
+                filepath: "failed_traces.rs",
+                lines: [{
+                    nr: 1,
+                    hits: 1,
+                },{
+                    nr: 2,
+                    hits: 1,
+                }]
+            }]
+        },{
+            name: "passed-but-unverified-trace-conditions",
+            state: "passed",
+            covered_files: [{
+                filepath: "unverified_traces.rs",
+                lines: [{
+                    nr: 1,
+                    hits: 1,
+                },{
+                    nr: 2,
+                    hits: 1,
+                }]
+            }]
+        },{
+            name: "passed-directly-verifies",
+            state: "passed",
+            verified_reqs: [
+                "direct_verify_test.no_trace.verified",
+                "direct_verify_test.traced.verified",
+                // fails, because traced in failed test
+                "direct_verify_test.traced.failed",
+                "manual_req.test_verified.verified",
+                // not mentioned in review => unverified
+                "manual_req.test_verified.unverified"
+            ]
+        },{
+            name: "failed-directly-verifies",
+            state: "failed",
+            verified_reqs: [
+                "direct_verify_test.no_trace.failed",
+                "manual_req.test_verified.failed"
+            ]
+        },{
+            name: "skipped-directly-verifies",
+            state: "skipped",
+            verified_reqs: [
+                "direct_verify_test.no_trace.skipped",
+                "direct_verify_test.traced.skipped",
+                "manual_req.test_verified.skipped"
+            ]
+        }]
+    }]
+}
