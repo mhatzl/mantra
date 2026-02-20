@@ -147,12 +147,12 @@ impl<'db> Collection<'db> {
         }
 
         // **Note:** Adding elements first to be able to map traces to elements later
-        for element in file_annotations.elements {
+        for element in file_annotations.annotations.elements {
             self.update_element(filepath, &file_annotations.file_hash, element)
                 .await?;
         }
 
-        for trace in file_annotations.traces {
+        for trace in file_annotations.annotations.traces {
             self.update_trace(
                 filepath,
                 &file_annotations.file_hash,
@@ -162,7 +162,7 @@ impl<'db> Collection<'db> {
             .await?;
         }
 
-        for coverage_exclude in file_annotations.coverage_excludes {
+        for coverage_exclude in file_annotations.annotations.coverage_excludes {
             self.update_coverage_exclude(&file_annotations.file_hash, coverage_exclude)
                 .await?;
         }

@@ -3,7 +3,7 @@ use mantra_schema::{path::RelativePath, requirements::RequirementSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectRequirementsConfig, RequirementSourceVariant},
-    collector::SingleFileCollectable,
+    collector::{CollectableFile, SingleFileCollectable},
     walker,
 };
 
@@ -43,9 +43,10 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
 
     fn collect_fn(
         &self,
-    ) -> Result<fn(&str, &str) -> Result<RequirementSchema, anyhow::Error>, anyhow::Error> {
+    ) -> Result<fn(&CollectableFile) -> Result<RequirementSchema, anyhow::Error>, anyhow::Error>
+    {
         match self.source {
-            RequirementSourceVariant::Markup => Ok(|extension: &str, content: &str| todo!()),
+            RequirementSourceVariant::Markup => Ok(|file: &CollectableFile| todo!()),
             RequirementSourceVariant::Schema => Ok(walker::content_to_schema::<RequirementSchema>),
         }
     }

@@ -3,7 +3,7 @@ use mantra_schema::{path::RelativePath, reviews::ReviewSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},
-    collector::SingleFileCollectable,
+    collector::{CollectableFile, SingleFileCollectable},
     walker,
 };
 
@@ -42,9 +42,9 @@ impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
 
     fn collect_fn(
         &self,
-    ) -> Result<fn(&str, &str) -> Result<ReviewSchema, anyhow::Error>, anyhow::Error> {
+    ) -> Result<fn(&CollectableFile) -> Result<ReviewSchema, anyhow::Error>, anyhow::Error> {
         match self.source {
-            ReviewSourceVariant::Markup => Ok(|extension: &str, content: &str| todo!()),
+            ReviewSourceVariant::Markup => Ok(|file: &CollectableFile| todo!()),
             ReviewSourceVariant::Schema => Ok(walker::content_to_schema::<ReviewSchema>),
         }
     }

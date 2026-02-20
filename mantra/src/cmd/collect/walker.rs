@@ -1,11 +1,14 @@
 use std::path::PathBuf;
 
+use anyhow::bail;
 use glob::Pattern;
 use ignore::{
     WalkBuilder,
     types::{Types, TypesBuilder},
 };
 use mantra_schema::path::RelativePathBuf;
+
+use crate::cmd::collect::collector::CollectableFile;
 
 pub(super) fn base_mantra_walker(
     start_path: PathBuf,
@@ -39,18 +42,18 @@ pub(super) fn base_schema_types() -> Result<Types, anyhow::Error> {
 }
 
 pub(super) fn content_to_schema<T: serde::de::DeserializeOwned>(
-    extension: &str,
-    content: &str,
+    file: &CollectableFile,
 ) -> Result<T, anyhow::Error> {
-    match extension {
-        "toml" => Ok(toml::from_str::<T>(content)?),
+    match file.extension() {
+        Some("toml") => Ok(toml::from_str::<T>(file.content)?),
         // JSON5 is a superset of JSON, so JSON files are also accepted by JSON5
-        "json" | "json5" => Ok(json5::from_str::<T>(content)?),
-        _ => Ok(json5::from_str::<T>(content).inspect_err(|_| {
+        Some("json") | Some("json5") => Ok(json5::from_str::<T>(file.content)?),
+        Some(extension) => Ok(json5::from_str::<T>(file.content).inspect_err(|_| {
             eprintln!(
                 "Tried to read content from unsupported extension '{}'",
                 extension
             )
         })?),
+        None => bail!("No extension to determine collector."),
     }
 }

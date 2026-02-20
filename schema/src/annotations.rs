@@ -40,6 +40,16 @@ pub struct FileAnnotations {
     pub filepath: RelativePathBuf,
     /// Hash of the file content to detect changes.
     pub file_hash: FmtHash,
+    /// Annotations found in the file.
+    pub annotations: Annotations,
+}
+
+/// The annotation information mantra can collect.
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct Annotations {
     /// Traces detected in the file.
     #[serde(default)]
     pub traces: Vec<Trace>,

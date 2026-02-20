@@ -20,6 +20,7 @@ env_logger.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 schemars.workspace = true
+anyhow.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
 clap = { version = "4.5.4", features = ["derive", "env"] }
 sqlx = { workspace = true, features = ["any", "derive", "macros", "migrate", "sqlite", "json", "runtime-tokio", "time"] }
@@ -29,7 +30,6 @@ mime_guess = "2.0.5"
 thiserror = "1.0.59"
 tera = "1.19.1"
 encoding_rs_io = "0.1.7"
-anyhow = "1.0.100"
 covcon = "0.3.0"
 quick-junit = "0.5.2"
 chrono = "0.4.43"

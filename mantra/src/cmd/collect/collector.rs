@@ -15,12 +15,33 @@ pub(super) struct SingleFileCollector<'db, T, C: SingleFileCollectable<'db, T>> 
     schema: PhantomData<T>,
 }
 
+pub(super) struct CollectableFile<'a> {
+    pub(super) filepath: RelativePathBuf,
+    pub(super) file_hash: FmtHash,
+    pub(super) content: &'a str,
+}
+
+impl<'a> CollectableFile<'a> {
+    pub(super) fn new(filepath: &RelativePath, file_hash: &FmtHash, content: &'a str) -> Self {
+        Self {
+            filepath: filepath.to_relative_path_buf(),
+            file_hash: file_hash.clone(),
+            content,
+        }
+    }
+
+    pub(super) fn extension(&self) -> Option<&str> {
+        self.filepath.extension()
+    }
+}
+
 pub(super) trait SingleFileCollectable<'db, T> {
     fn path(&self) -> &RelativePath;
     fn pattern(&self) -> Option<&str>;
     fn custom_ignore_filename(&self) -> &'static str;
     fn modify_walker(&self, builder: &mut WalkBuilder) -> Result<(), anyhow::Error>;
-    fn collect_fn(&self) -> Result<fn(&str, &str) -> Result<T, anyhow::Error>, anyhow::Error>;
+    fn collect_fn(&self)
+    -> Result<fn(&CollectableFile) -> Result<T, anyhow::Error>, anyhow::Error>;
     async fn update_db(
         collection: &mut Collection<'db>,
         filepath: &RelativePath,
@@ -76,21 +97,23 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                             if let Ok(path) = path_res {
                                 let filepath = path.path();
                                 if filepath.is_file() {
-                                    if let Some(ext) = filepath.extension()
-                                        && let Some(extension) = ext.to_str()
-                                        && let Ok(content) = std::fs::read_to_string(filepath)
+                                    if let Ok(content) = std::fs::read_to_string(filepath)
+                                        && let Ok(rel_filepath) = filepath.relative_to(&root_path)
                                     {
-                                        // TODO: proper logging + error handling
-                                        match collect_fn(extension, &content) {
-                                            Ok(schema) => {
-                                                let rel_filepath = filepath
-                                                    .relative_to(&root_path)
-                                                    .expect("Creating relative path succeeds, because root path for walker is absolute.");
+                                        let file_hash = FmtHash::new(&content);
+                                        let file = CollectableFile::new(
+                                            &rel_filepath,
+                                            &file_hash,
+                                            &content,
+                                        );
 
+                                        // TODO: proper logging + error handling
+                                        match collect_fn(&file) {
+                                            Ok(schema) => {
                                                 let data = SentData {
                                                     schema,
                                                     filepath: rel_filepath,
-                                                    file_hash: FmtHash::new(&content),
+                                                    file_hash,
                                                 };
                                                 let _ = sender.send(data);
                                             }

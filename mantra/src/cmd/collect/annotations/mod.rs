@@ -2,7 +2,7 @@ use mantra_schema::{annotations::AnnotationSchema, path::RelativePath};
 
 use crate::cmd::collect::{
     cfg::{AnnotationSourceVariant, CollectAnnotationsConfig},
-    collector::SingleFileCollectable,
+    collector::{CollectableFile, SingleFileCollectable},
     walker,
 };
 
@@ -38,9 +38,10 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
 
     fn collect_fn(
         &self,
-    ) -> Result<fn(&str, &str) -> Result<AnnotationSchema, anyhow::Error>, anyhow::Error> {
+    ) -> Result<fn(&CollectableFile) -> Result<AnnotationSchema, anyhow::Error>, anyhow::Error>
+    {
         match self.source {
-            AnnotationSourceVariant::Content => Ok(|extension: &str, content: &str| todo!()),
+            AnnotationSourceVariant::Content => Ok(|file: &CollectableFile| todo!()),
             AnnotationSourceVariant::Schema => Ok(walker::content_to_schema::<AnnotationSchema>),
         }
     }

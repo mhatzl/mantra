@@ -19,6 +19,7 @@ use crate::cmd::collect::{
         CollectTestRunsConfig, TestRunSourceVariant, WellKnownCoverage, WellKnownCoverageFormat,
         WellKnownTest, WellKnownTestFormat,
     },
+    collector::CollectableFile,
     test_runs::convert::{
         ShallowTestRun, WellKnownCoverageConversion, WellKnownCoverageData, WellKnownTestConversion,
     },
@@ -404,20 +405,19 @@ async fn collect_schema<'db>(
                 if let Ok(path) = path_res {
                     let filepath = path.path();
                     if filepath.is_file() {
-                        if let Some(ext) = filepath.extension()
-                            && let Some(extension) = ext.to_str()
-                            && let Ok(content) = std::fs::read_to_string(filepath)
+                        if let Ok(content) = std::fs::read_to_string(filepath)
+                            && let Ok(rel_filepath) = filepath.relative_to(&root_path)
                         {
+                            let file_hash = FmtHash::new(&content);
+                            let file = CollectableFile::new(&rel_filepath, &file_hash, &content);
+
                             // TODO: proper logging + error handling
-                            match collect_fn(extension, &content) {
+                            match collect_fn(&file) {
                                 Ok(schema) => {
-                                    let rel_filepath = filepath
-                                        .relative_to(&root_path)
-                                        .expect("Creating relative path succeeds, because root path for walker is absolute.");
                                     let data = SentSchemaData {
                                         schema,
                                         filepath: rel_filepath,
-                                        file_hash: FmtHash::new(&content),
+                                        file_hash,
                                     };
                                     let _ = sender.send(data);
                                 }
