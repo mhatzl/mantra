@@ -6,14 +6,14 @@ members = [
     "langs/rust/mantra-rust-procm",
     "langs/rust/mantra-rust-macros",
     "langs/rust/mantra-rust-trace",
-    "langs/rust/examples/*", "schema", "schema-gen",
+    "schema", "schema-gen",
 ]
 
 [workspace.dependencies]
 proc-macro2 = "1.0.81"
 regex = "1.10.4"
-tree-sitter = "0.22.0"
-tree-sitter-rust = "0.21.0"
+tree-sitter = "0.26.5"
+tree-sitter-rust = "0.24.0"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0" }
 time = { version = "0.3.47", features = ["serde-human-readable", "macros"] }

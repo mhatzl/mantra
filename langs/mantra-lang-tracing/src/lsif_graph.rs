@@ -69,7 +69,7 @@ pub struct LsifGraph {
 }
 
 impl LsifGraph {
-    pub fn create(lsif_content: &str) -> Result<Self, serde_json::Error> {
+    pub fn create(lsif_content: &str) -> Result<Self, anyhow::Error> {
         let nr_elems = lsif_content.lines().count();
 
         let mut elements = HashMap::with_capacity(nr_elems);
