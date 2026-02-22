@@ -12,6 +12,7 @@ pub struct CollectConfig {
     pub annotations: Vec<CollectAnnotationsConfig>,
     pub test_runs: Vec<CollectTestRunsConfig>,
     pub reviews: Vec<CollectReviewsConfig>,
+    pub lsif: Vec<CollectLsifConfig>,
 }
 
 pub struct CollectArguments {
@@ -69,6 +70,16 @@ pub enum AnnotationSourceVariant {
     Content,
     /// Following the JSON schema.
     Schema,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CollectLsifConfig {
+    pub path: RelativePathBuf,
+    /// The LSIF specification version.
+    pub version: Option<String>,
+    /// Optional pattern a filepath must match to be considered as LSIF source.
+    pub pattern: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

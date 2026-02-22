@@ -1,5 +1,5 @@
-{"id":0,"type":"vertex","label":"metaData","version":"0.5.0","projectRoot":"file:///C:/Users/ManuelHatzl/Seafile/02_OwnProjects/mantra/lsif_test","positionEncoding":"utf-16","toolInfo":{"name":"rust-analyzer","version":"1.80.1 (3f5fd8dd 2024-08-06)"}}
-{"id":1,"type":"vertex","label":"document","uri":"file:///C:/Users/ManuelHatzl/Seafile/02_OwnProjects/mantra/lsif_test/src/main.rs","languageId":"rust"}
+{"id":0,"type":"vertex","label":"metaData","version":"0.5.0","projectRoot":"file:////mantra/lsif_test","positionEncoding":"utf-16","toolInfo":{"name":"rust-analyzer","version":"1.80.1 (3f5fd8dd 2024-08-06)"}}
+{"id":1,"type":"vertex","label":"document","uri":"file:////mantra/lsif_test/src/main.rs","languageId":"rust"}
 {"id":2,"type":"vertex","label":"foldingRangeResult","result":[{"startLine":2,"startCharacter":10,"endLine":5,"endCharacter":1}]}
 {"id":3,"type":"edge","label":"textDocument/foldingRange","inV":2,"outV":1}
 {"id":4,"type":"vertex","label":"range","start":{"line":0,"character":4},"end":{"line":0,"character":13}}
@@ -27,7 +27,7 @@
 {"id":26,"type":"vertex","label":"range","start":{"line":10,"character":2},"end":{"line":10,"character":5}}
 {"id":27,"type":"edge","label":"next","inV":21,"outV":26}
 {"id":28,"type":"edge","label":"contains","inVs":[4,7,10,13,16,18,20,23,26],"outV":1}
-{"id":29,"type":"vertex","label":"document","uri":"file:///C:/Users/ManuelHatzl/Seafile/02_OwnProjects/mantra/lsif_test/src/lib.rs","languageId":"rust"}
+{"id":29,"type":"vertex","label":"document","uri":"file:////mantra/lsif_test/src/lib.rs","languageId":"rust"}
 {"id":30,"type":"vertex","label":"foldingRangeResult","result":[{"startLine":0,"startCharacter":13,"endLine":2,"endCharacter":1}]}
 {"id":31,"type":"edge","label":"textDocument/foldingRange","inV":30,"outV":29}
 {"id":32,"type":"vertex","label":"range","start":{"line":0,"character":7},"end":{"line":0,"character":10}}

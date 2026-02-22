@@ -7,7 +7,7 @@ use mantra_schema::{
 };
 use tokio::task::JoinSet;
 
-use crate::cmd::collect::{Collection, walker};
+use crate::cmd::collect::{Collection, sync_read_encoding_independent, walker};
 
 pub(super) struct SingleFileCollector<'db, T, C: SingleFileCollectable<'db, T>> {
     collection: Collection<'db>,
@@ -97,7 +97,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                             if let Ok(path) = path_res {
                                 let filepath = path.path();
                                 if filepath.is_file() {
-                                    if let Ok(content) = std::fs::read_to_string(filepath)
+                                    if let Ok(content) = sync_read_encoding_independent(filepath)
                                         && let Ok(rel_filepath) = filepath.relative_to(&root_path)
                                     {
                                         let file_hash = FmtHash::new(&content);

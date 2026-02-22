@@ -78,6 +78,10 @@ impl FmtHash {
         hash.update(s.as_bytes());
         Self(base16ct::lower::encode_string(&hash.finalize()))
     }
+
+    pub fn with_inner(hash: String) -> Self {
+        Self(hash)
+    }
 }
 
 impl std::fmt::Display for FmtHash {

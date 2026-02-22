@@ -1,7 +1,7 @@
 use mantra_schema::product::Product;
 
 use crate::cmd::collect::cfg::{
-    CollectAnnotationsConfig, CollectRequirementsConfig, CollectReviewsConfig,
+    CollectAnnotationsConfig, CollectLsifConfig, CollectRequirementsConfig, CollectReviewsConfig,
     CollectTestRunsConfig,
 };
 
@@ -21,6 +21,8 @@ pub struct ProductConfig {
     pub requirements: Vec<CollectRequirementsConfig>,
     #[serde(default, alias = "annotation")]
     pub annotations: Vec<CollectAnnotationsConfig>,
+    #[serde(default, alias = "language_server_index_format")]
+    pub lsif: Vec<CollectLsifConfig>,
     #[serde(default, alias = "test-run")]
     pub test_runs: Vec<CollectTestRunsConfig>,
     #[serde(default, alias = "review")]

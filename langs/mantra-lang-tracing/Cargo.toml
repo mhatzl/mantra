@@ -13,7 +13,6 @@ serde.workspace = true
 tree-sitter.workspace = true
 tree-sitter-rust.workspace = true
 serde_json.workspace = true
-lsp-types = "0.97.0"
 
 # proc-macro2 = { workspace = true, optional = true }
 # regex = { workspace = true, optional = true }

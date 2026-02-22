@@ -1,7 +1,7 @@
+use std::str::FromStr;
+
 use mantra_schema::path::RelativePathBuf;
 use sqlx::SqlitePool;
-
-// pub(crate) mod add;
 
 #[cfg(test)]
 mod test_setup;
@@ -23,24 +23,16 @@ pub struct Config {
     pub url: Option<String>,
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum DbError {
     #[error("Could not get connection to database. Cause: {}", .0)]
-    Connect(String),
+    Connect(anyhow::Error),
     #[error("Could not run migration on database. Cause: {}", .0)]
-    Migrate(String),
-    #[error("Could query database. Cause: {}", .0)]
-    Query(String),
-    #[error("Could not insert data into database. Cause: {}", .0)]
-    Insert(String),
-    #[error("Failed to delete table content. Cause: {}", .0)]
-    Delete(String),
-    #[error("Failed to update table content. Cause: {}", .0)]
-    Update(String),
+    Migrate(anyhow::Error),
+    #[error("Failed to execute a SQL statement against the database. Cause: {}", .0)]
+    Execute(anyhow::Error),
     #[error("The database contains invalid data. Cause: {}", .0)]
-    Validate(String),
-    // #[error("{}", .0)]
-    // ForeignKeyViolation(String),
+    Validate(anyhow::Error),
 }
 
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
@@ -48,19 +40,16 @@ static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 impl MantraDb {
     pub async fn new(url: Option<&str>) -> Result<Self, DbError> {
         let db_url = url.unwrap_or("sqlite://mantra.db?mode=rwc");
-        let db = match sqlx::sqlite::SqlitePool::connect(db_url).await {
-            Ok(pool) => MantraDb { pool },
-            Err(err) => {
-                panic!(
-                    "Faild to connect to SQLite database. Note: only SQLite is currently supported. Error: {err}"
-                );
-            }
-        };
+        let pool = sqlx::sqlite::SqlitePool::connect(db_url)
+            .await
+            .map_err(|err| DbError::Connect(err.into()))?;
+
+        let db = MantraDb { pool };
 
         MIGRATOR
             .run(&db.pool)
             .await
-            .map_err(|err| DbError::Migrate(err.to_string()))?;
+            .map_err(|err| DbError::Migrate(err.into()))?;
 
         Ok(db)
     }
@@ -68,15 +57,18 @@ impl MantraDb {
     pub(crate) async fn start_transaction(&self) -> Result<MantraTransaction<'_>, DbError> {
         match self.pool.try_begin().await {
             Ok(Some(t)) => Ok(t),
-            Ok(None) => Err(DbError::Connect(
-                "Failed to start a transaction.".to_string(),
-            )),
-            Err(err) => Err(DbError::Connect(err.to_string())),
+            Ok(None) => Err(DbError::Execute(anyhow::anyhow!(
+                "Failed to start a transaction."
+            ))),
+            Err(err) => Err(DbError::Execute(err.into())),
         }
     }
 }
 
-pub(crate) type Filepath = sqlx::types::Text<RelativePathBuf>;
+pub(crate) type Filepath = sqlx::types::Text<SqlFilepath>;
+
+#[derive(Debug, Clone)]
+pub(crate) struct SqlFilepath(RelativePathBuf);
 
 pub(crate) trait FilepathExt {
     fn to_filepath(self) -> Filepath;
@@ -85,10 +77,24 @@ pub(crate) trait FilepathExt {
 
 impl FilepathExt for RelativePathBuf {
     fn to_filepath(self) -> Filepath {
-        sqlx::types::Text(self)
+        sqlx::types::Text(SqlFilepath(self))
     }
 
     fn from_filepath(filepath: Filepath) -> Self {
-        filepath.0
+        filepath.0.0
+    }
+}
+
+impl FromStr for SqlFilepath {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(SqlFilepath(RelativePathBuf::from_path(s)?))
+    }
+}
+
+impl std::fmt::Display for SqlFilepath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

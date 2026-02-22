@@ -59,6 +59,7 @@ async fn main() {
             annotations: product_cfg.annotations,
             test_runs: product_cfg.test_runs,
             reviews: product_cfg.reviews,
+            lsif: product_cfg.lsif,
         };
 
         collect::collect(&db, collect_cfg).await.unwrap();
