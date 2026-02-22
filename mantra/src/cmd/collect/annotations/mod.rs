@@ -1,4 +1,8 @@
-use mantra_schema::{annotations::AnnotationSchema, path::RelativePath};
+use mantra_lang_tracing::collect::collector::AnnotationCollector;
+use mantra_schema::{
+    annotations::{AnnotationSchema, Annotations, FileAnnotations},
+    path::RelativePath,
+};
 
 use crate::cmd::collect::{
     cfg::{AnnotationSourceVariant, CollectAnnotationsConfig},
@@ -41,7 +45,7 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
     ) -> Result<fn(&CollectableFile) -> Result<AnnotationSchema, anyhow::Error>, anyhow::Error>
     {
         match self.source {
-            AnnotationSourceVariant::Content => Ok(|file: &CollectableFile| todo!()),
+            AnnotationSourceVariant::Content => Ok(collect_from_content),
             AnnotationSourceVariant::Schema => Ok(walker::content_to_schema::<AnnotationSchema>),
         }
     }
@@ -54,5 +58,42 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
         collection
             .update_per_annotation_schema(filepath, schema)
             .await
+    }
+}
+
+fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyhow::Error> {
+    if file.extension() == Some("rs") {
+        let annotations =
+            mantra_lang_tracing::collect::rust::RustCodeCollector::collect(file.content)?;
+        Ok(AnnotationSchema {
+            version: None,
+            files: vec![FileAnnotations {
+                filepath: file.filepath.clone(),
+                file_hash: file.file_hash.clone(),
+                annotations,
+            }],
+            trace_properties: None,
+            origin: None,
+        })
+    } else {
+        eprintln!(
+            "Got unsupported file type to collect annotations from '{}'. No traces or elements are collected.",
+            file.filepath
+        );
+
+        Ok(AnnotationSchema {
+            version: None,
+            files: vec![FileAnnotations {
+                filepath: file.filepath.clone(),
+                file_hash: file.file_hash.clone(),
+                annotations: Annotations {
+                    traces: vec![],
+                    elements: vec![],
+                    coverage_excludes: vec![],
+                },
+            }],
+            trace_properties: None,
+            origin: None,
+        })
     }
 }

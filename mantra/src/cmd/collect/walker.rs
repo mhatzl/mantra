@@ -6,7 +6,6 @@ use ignore::{
     WalkBuilder,
     types::{Types, TypesBuilder},
 };
-use mantra_schema::path::RelativePathBuf;
 
 use crate::cmd::collect::collector::CollectableFile;
 
@@ -14,17 +13,12 @@ pub(super) fn base_mantra_walker(
     start_path: PathBuf,
     glob_pattern: Option<Pattern>,
 ) -> WalkBuilder {
-    let mut builder = WalkBuilder::new(start_path);
+    let mut builder = WalkBuilder::new(&start_path);
     builder.add_custom_ignore_filename(".mantraignore");
 
     if let Some(pattern) = glob_pattern {
-        builder.filter_entry(move |entry| {
-            entry.path().is_dir()
-                || match RelativePathBuf::from_path(entry.path()) {
-                    Ok(rel_path) => pattern.matches(rel_path.as_str()),
-                    Err(_) => false,
-                }
-        });
+        builder
+            .filter_entry(move |entry| entry.path().is_dir() || pattern.matches_path(entry.path()));
     }
 
     builder

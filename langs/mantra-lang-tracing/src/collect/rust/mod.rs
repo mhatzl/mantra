@@ -129,6 +129,7 @@ fn get_element(
     )?);
 
     let name = if item.kind() == "function_item"
+        || item.kind() == "function_signature_item"
         || item.kind() == "mod_item"
         || item.kind() == "const_item"
         || item.kind() == "static_item"
@@ -184,6 +185,7 @@ fn get_element(
 fn get_element_kind(kind: &str) -> ElementKind {
     match kind {
         "function_item" => ElementKind::Function,
+        "function_signature_item" => ElementKind::Function,
         "mod_item" => ElementKind::Module,
         "const_item" => ElementKind::Const,
         "static_item" => ElementKind::Variable,

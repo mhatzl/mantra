@@ -9,6 +9,10 @@
     annotations: [{
         path: "test-content/annotations/",
         source: "schema",
+    },{
+        path: "./",
+        source: "content",
+        pattern: "*.rs"
     }],
     test_runs: [{
         path: "target/nextest/default",
