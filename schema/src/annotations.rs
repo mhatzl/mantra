@@ -331,7 +331,7 @@ pub enum ElementKind {
     /// Variant that should be used if no other one fits.
     Other = 0,
     /// Marks an element as a test or test case.
-    #[serde(alias = "test-case")]
+    #[serde(alias = "test_case")]
     Test = 1,
     /// A module or package.
     #[serde(alias = "mod", alias = "package")]
@@ -351,8 +351,11 @@ pub enum ElementKind {
     #[serde(alias = "property")]
     Field = 7,
     /// A trait, interface, or other abstract type.
-    #[serde(alias = "interface", alias = "abstract-type")]
+    #[serde(alias = "interface", alias = "abstract_type")]
     Trait = 8,
+    /// A function signature or virtual function that has no *body*. It is likely declared inside a trait/interface.
+    #[serde(alias = "virtual_function")]
+    FunctionSignature = 9,
 }
 
 impl ElementKind {

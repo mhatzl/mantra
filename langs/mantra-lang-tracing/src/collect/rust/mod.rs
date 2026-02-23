@@ -8,6 +8,7 @@ use mantra_schema::{
     },
     requirements::ReqId,
 };
+use serde_json::Map;
 use tree_sitter::{Node, Parser, TreeCursor};
 
 use crate::{
@@ -49,27 +50,42 @@ impl AnnotationCollector for RustCodeCollector {
             if node_kind == "attribute_item"
                 && let Some(attribute_node) = node.named_child(0)
             {
-                if let Some(name_node) = attribute_node.named_child(0)
-                    && let Some(trace_kind) = get_attrb_macro_trace_kind(&name_node, content_bytes)
-                    && let Some(args_node) = attribute_node.named_child(1)
-                    && args_node.kind() == "token_tree"
-                {
-                    let ids = get_req_ids(&args_node, content_bytes, start_line)?;
-                    let traced_line: Line =
-                        attribute_node.start_position().row.try_into().unwrap_or(-1) + start_line; // TODO: handle bad line
+                if let Some(name_node) = attribute_node.named_child(0) {
+                    if let Some(trace_kind) = get_attrb_macro_trace_kind(&name_node, content_bytes)
+                        && let Some(args_node) = attribute_node.named_child(1)
+                        && args_node.kind() == "token_tree"
+                    {
+                        let ids = get_req_ids(&args_node, content_bytes, start_line)?;
+                        let traced_line: Line =
+                            attribute_node.start_position().row.try_into().unwrap_or(-1)
+                                + start_line; // TODO: handle bad line
 
-                    let element_def_line =
-                        get_related_element_def_line(&mut cursor.clone(), start_line)?;
+                        let element_def_line =
+                            get_related_element_def_line(&mut cursor.clone(), start_line)?;
 
-                    traces.push(Trace {
-                        ids,
-                        line: traced_line,
-                        related_code: Some(TraceRelatedCodeVariant::ElementAtLine(
-                            element_def_line,
-                        )),
-                        kind: trace_kind,
-                        properties: None,
-                    });
+                        traces.push(Trace {
+                            ids,
+                            line: traced_line,
+                            related_code: Some(TraceRelatedCodeVariant::ElementAtLine(
+                                element_def_line,
+                            )),
+                            kind: trace_kind,
+                            properties: None,
+                        });
+                    } else if name_node.utf8_text(content_bytes) == Ok("cfg_attr")
+                        && let Some(mut attr_traces) =
+                            parse_cfg_attr_for_traces(&attribute_node, content_bytes, start_line)
+                    {
+                        // patch in related element
+                        let element_def_line =
+                            get_related_element_def_line(&mut cursor.clone(), start_line)?;
+                        for trace in &mut attr_traces {
+                            trace.related_code =
+                                Some(TraceRelatedCodeVariant::ElementAtLine(element_def_line));
+                        }
+
+                        traces.extend(attr_traces);
+                    }
                 }
 
                 reached_innermost_item = true;
@@ -111,6 +127,114 @@ impl AnnotationCollector for RustCodeCollector {
             elements,
             coverage_excludes: vec![],
         })
+    }
+}
+
+fn parse_cfg_attr_for_traces(
+    attrb_node: &Node<'_>,
+    content_bytes: &[u8],
+    start_line: Line,
+) -> Option<Vec<Trace>> {
+    let token_tree = attrb_node.named_child(1)?;
+
+    traces_in_cfg_attr_token_tree(token_tree, content_bytes, start_line, &vec![])
+}
+
+fn traces_in_cfg_attr(
+    identifier_node: Node<'_>,
+    token_tree: Node<'_>,
+    content_bytes: &[u8],
+    start_line: Line,
+    cfg_conditions: &[serde_json::Value],
+) -> Option<Vec<Trace>> {
+    if identifier_node.kind() != "identifier" || token_tree.kind() != "token_tree" {
+        return None;
+    }
+
+    if let Some(trace_kind) = get_attrb_macro_trace_kind(&identifier_node, content_bytes) {
+        if let Ok(ids) = get_req_ids(&token_tree, content_bytes, start_line) {
+            let mut trace_props = Map::new();
+            trace_props.insert(
+                "cfg_attr".to_string(),
+                serde_json::Value::Array(cfg_conditions.to_vec()),
+            );
+
+            Some(vec![Trace {
+                ids,
+                line: identifier_node
+                    .start_position()
+                    .row
+                    .try_into()
+                    .unwrap_or(-1)
+                    + start_line,
+                related_code: None,
+                kind: trace_kind,
+                properties: Some(trace_props),
+            }])
+        } else {
+            // TODO: warn of invalid mantra trace
+            None
+        }
+    } else if identifier_node.utf8_text(content_bytes) == Ok("cfg_attr") {
+        traces_in_cfg_attr_token_tree(token_tree, content_bytes, start_line, cfg_conditions)
+    } else {
+        None
+    }
+}
+
+fn traces_in_cfg_attr_token_tree(
+    token_tree: Node<'_>,
+    content_bytes: &[u8],
+    start_line: Line,
+    cfg_conditions: &[serde_json::Value],
+) -> Option<Vec<Trace>> {
+    let mut cursor = token_tree.walk();
+    let mut children = token_tree.children(&mut cursor).skip(1).peekable(); // skip initial `(`
+
+    let mut condition = String::new();
+    while let Some(node) = children.next()
+        && node.kind() != ","
+        && let Ok(content) = node.utf8_text(content_bytes)
+    {
+        condition.push_str(content);
+    }
+
+    let mut conditions = cfg_conditions.to_vec();
+    conditions.push(serde_json::Value::String(condition.clone()));
+    let mut traces = Vec::new();
+
+    loop {
+        let next_node = children.next();
+
+        if let Some(ident_node) = next_node
+            && ident_node.kind() == "identifier"
+            && let Some(inner_token_tree) = children.peek()
+            && inner_token_tree.kind() == "token_tree"
+        {
+            let inner_tree = children.next().expect("Peek succeeded for next node");
+
+            if let Some(inner_traces) = traces_in_cfg_attr(
+                ident_node,
+                inner_tree,
+                content_bytes,
+                start_line,
+                &conditions,
+            ) {
+                traces.extend(inner_traces);
+            }
+        } else if let Some(node) = next_node
+            && node.kind() == ")"
+        {
+            break;
+        } else if next_node.is_none() {
+            break;
+        }
+    }
+
+    if traces.is_empty() {
+        None
+    } else {
+        Some(traces)
     }
 }
 
@@ -185,7 +309,7 @@ fn get_element(
 fn get_element_kind(kind: &str) -> ElementKind {
     match kind {
         "function_item" => ElementKind::Function,
-        "function_signature_item" => ElementKind::Function,
+        "function_signature_item" => ElementKind::FunctionSignature,
         "mod_item" => ElementKind::Module,
         "const_item" => ElementKind::Const,
         "static_item" => ElementKind::Variable,

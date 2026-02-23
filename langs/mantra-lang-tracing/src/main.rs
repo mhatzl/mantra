@@ -7,14 +7,12 @@ pub fn main() {
     //     "#;
 
     let content = r#"
-        #[req_note("ID-1", "ID-2")]
-        fn foo() {
-            let i = 0;
-        }
-
-        /// some comment
-        #[req_satisfied("ID-2")]
-        trait MyTrait {}
+        #[cfg_attr(
+       	    feature = "some", req("ID-1"),
+            cfg_attr(any(feature = "other", target = "none"),
+            submod::req_note("ID-2"))
+        )]
+        fn foo() {}
         "#;
 
     // let mut parser = Parser::new();
@@ -28,8 +26,22 @@ pub fn main() {
     // let mut cursor = tree.walk();
 
     // cursor.goto_first_child();
+    // cursor.goto_first_child();
+    // cursor.goto_next_sibling();
+    // cursor.goto_next_sibling();
+    // cursor.goto_first_child();
+    // cursor.goto_next_sibling();
+
     // let node = cursor.node();
     // println!("kind='{}' node='{:?}'", node.kind(), node);
+
+    // for child in node.children(&mut cursor) {
+    //     println!(
+    //         "grammar name: {}; kind = {}",
+    //         child.grammar_name(),
+    //         child.kind()
+    //     );
+    // }
 
     // let ident = node.child_by_field_name("name").unwrap();
     // println!("kind='{}' node='{:?}'", ident.kind(), ident);
