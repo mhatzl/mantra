@@ -6,8 +6,7 @@ use mantra_schema::{
 use tokio::task::JoinSet;
 
 use crate::cmd::collect::{
-    Collection, cfg::CollectLsifConfig, lsif::lsif_graph::LsifGraph,
-    sync_read_encoding_independent, walker,
+    Collection, cfg::CollectLsifConfig, lsif::lsif_graph::LsifGraph, walker,
 };
 
 pub mod db;
@@ -55,7 +54,8 @@ impl<'db> Collection<'db> {
                             if let Ok(path) = path_res {
                                 let filepath = path.path();
                                 if filepath.is_file() {
-                                    if let Ok(content) = sync_read_encoding_independent(filepath)
+                                    if let Ok(content) =
+                                        crate::io::sync_read_encoding_independent(filepath)
                                         && let Ok(rel_filepath) = filepath.relative_to(&root_path)
                                     {
                                         let file_hash = FmtHash::new(&content);

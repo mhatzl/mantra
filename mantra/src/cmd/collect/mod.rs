@@ -1,7 +1,7 @@
 use mantra_schema::{
     FmtHash, Properties, path::RelativePath, product::ProductId, time::OffsetDateTime,
 };
-use std::{io::Read, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::{
     cmd::collect::{cfg::CollectConfig, collector::SingleFileCollector},
@@ -31,16 +31,6 @@ pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), a
     collection.commit().await?;
 
     Ok(())
-}
-
-pub fn sync_read_encoding_independent(
-    path: impl AsRef<std::path::Path>,
-) -> Result<String, anyhow::Error> {
-    let raw_content = std::fs::read(path)?;
-    let mut decoder = encoding_rs_io::DecodeReaderBytes::new(raw_content.as_slice());
-    let mut content = String::with_capacity(raw_content.len());
-    decoder.read_to_string(&mut content)?;
-    Ok(content)
 }
 
 async fn collect_data<'db>(
@@ -143,6 +133,7 @@ impl<'db> Collection<'db> {
                 cfg.cfg_filepath
                     .parent()
                     .map(|p| p.to_path_buf())
+                    .filter(|p| p != &PathBuf::from(""))
                     .unwrap_or(PathBuf::from("./")),
             )?,
             nr,

@@ -20,7 +20,6 @@ use crate::cmd::collect::{
         WellKnownTest, WellKnownTestFormat,
     },
     collector::CollectableFile,
-    sync_read_encoding_independent,
     test_runs::convert::{
         ShallowTestRun, WellKnownCoverageConversion, WellKnownCoverageData, WellKnownTestConversion,
     },
@@ -112,7 +111,7 @@ async fn collect_well_known<'db>(
                         if matches_test_format || matches_coverage_format {
                             if let Some(ext) = filepath.extension()
                                 && let Some(extension) = ext.to_str()
-                                && let Ok(content) = sync_read_encoding_independent(filepath)
+                                && let Ok(content) = crate::io::sync_read_encoding_independent(filepath)
                             {
                                 let rel_filepath = filepath.relative_to(&root_path)
                                     .expect("Creating relative path succeeds, because root path for walker is absolute.");
@@ -406,7 +405,7 @@ async fn collect_schema<'db>(
                 if let Ok(path) = path_res {
                     let filepath = path.path();
                     if filepath.is_file() {
-                        if let Ok(content) = sync_read_encoding_independent(filepath)
+                        if let Ok(content) = crate::io::sync_read_encoding_independent(filepath)
                             && let Ok(rel_filepath) = filepath.relative_to(&root_path)
                         {
                             let file_hash = FmtHash::new(&content);

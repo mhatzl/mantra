@@ -37,43 +37,43 @@ async fn main() {
     //     }
     // }
 
-    let cfg_path = PathBuf::from("./mantra.json5");
-    let cfg_content = tokio::fs::read_to_string(&cfg_path).await.unwrap();
-    let cfg = json5::from_str::<MantraConfigFile>(&cfg_content).unwrap();
+    // let cfg_path = PathBuf::from("./mantra.json5");
+    // let cfg_content = tokio::fs::read_to_string(&cfg_path).await.unwrap();
+    // let cfg = json5::from_str::<MantraConfigFile>(&cfg_content).unwrap();
 
-    // let cfg = json5::from_str::<collect::cfg::CollectTestRunsConfig>(&cfg_content).unwrap();
+    // // let cfg = json5::from_str::<collect::cfg::CollectTestRunsConfig>(&cfg_content).unwrap();
 
-    let db = MantraDb::new(Some("sqlite://mantra_test.db?mode=rwc"))
-        .await
-        .unwrap();
+    // let db = MantraDb::new(Some("sqlite://mantra_test.db?mode=rwc"))
+    //     .await
+    //     .unwrap();
 
-    for product_cfg in cfg.products {
-        let collect_cfg = CollectConfig {
-            cfg_filepath: cfg_path.clone(),
-            args: CollectArguments {
-                replace_hashed: false,
-            },
-            envs: CollectEnvironmentVariables {},
-            product: product_cfg.product,
-            requirements: product_cfg.requirements,
-            annotations: product_cfg.annotations,
-            test_runs: product_cfg.test_runs,
-            reviews: product_cfg.reviews,
-            lsif: product_cfg.lsif,
-        };
+    // for product_cfg in cfg.products {
+    //     let collect_cfg = CollectConfig {
+    //         cfg_filepath: cfg_path.clone(),
+    //         args: CollectArguments {
+    //             replace_hashed: false,
+    //         },
+    //         envs: CollectEnvironmentVariables {},
+    //         product: product_cfg.product,
+    //         requirements: product_cfg.requirements,
+    //         annotations: product_cfg.annotations,
+    //         test_runs: product_cfg.test_runs,
+    //         reviews: product_cfg.reviews,
+    //         lsif: product_cfg.lsif,
+    //     };
 
-        collect::collect(&db, collect_cfg).await.unwrap();
-    }
-
-    // let cfg = mantra::cfg::Config::parse();
-
-    // env_logger::builder()
-    //     .filter_level(log::LevelFilter::Info)
-    //     .format_target(false)
-    //     .init();
-
-    // if let Err(err) = mantra::run(cfg).await {
-    //     println!("{err}");
-    //     std::process::exit(-1);
+    //     collect::collect(&db, collect_cfg).await.unwrap();
     // }
+
+    let cfg = mantra::cfg::CliConfig::parse();
+
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .format_target(false)
+        .init();
+
+    if let Err(err) = mantra::run(cfg).await {
+        println!("{err}");
+        std::process::exit(-1);
+    }
 }

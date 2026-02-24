@@ -8,7 +8,7 @@ use crate::cmd::collect::{
 };
 
 pub mod db;
-pub mod wiki;
+pub mod markup;
 
 impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsConfig {
     fn path(&self) -> &mantra_schema::path::RelativePath {
