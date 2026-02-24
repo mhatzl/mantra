@@ -3,6 +3,7 @@ use sha2::Digest;
 
 pub mod annotations;
 pub mod product;
+pub mod report;
 pub mod requirements;
 pub mod reviews;
 pub mod test_runs;

@@ -7,7 +7,10 @@
 
 use crate::{
     cfg::MantraConfigFile,
-    cmd::collect::cfg::{CollectArguments, CollectConfig, CollectEnvironmentVariables},
+    cmd::{
+        collect::cfg::{CollectConfig, CollectEnvironmentVariables},
+        report::cfg::{ReportConfig, ReportEnvironmentVariables},
+    },
     io::async_deserialize_from_path,
 };
 
@@ -22,30 +25,36 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
         .await
         .map_err(MantraError::Cfg)?;
 
-    for product_cfg in cfg_file.products {
-        match cfg.cmd {
-            cmd::Cmd::Report => todo!(),
-            cmd::Cmd::Collect => cmd::collect::collect(
-                &db,
-                CollectConfig {
-                    cfg_filepath: cfg.config_filepath.clone(),
-                    args: CollectArguments {
-                        replace_hashed: false,
+    match cfg.cmd {
+        cmd::Cmd::Report(args) => cmd::report::report(ReportConfig {
+            cfg_filepath: cfg.config_filepath,
+            args,
+            envs: ReportEnvironmentVariables {},
+        })
+        .await
+        .map_err(MantraError::Report)?,
+        cmd::Cmd::Collect(args) => {
+            for product_cfg in cfg_file.products {
+                cmd::collect::collect(
+                    &db,
+                    CollectConfig {
+                        cfg_filepath: cfg.config_filepath.clone(),
+                        args: args.clone(),
+                        envs: CollectEnvironmentVariables {},
+                        product: product_cfg.product,
+                        requirements: product_cfg.requirements,
+                        annotations: product_cfg.annotations,
+                        test_runs: product_cfg.test_runs,
+                        reviews: product_cfg.reviews,
+                        lsif: product_cfg.lsif,
                     },
-                    envs: CollectEnvironmentVariables {},
-                    product: product_cfg.product,
-                    requirements: product_cfg.requirements,
-                    annotations: product_cfg.annotations,
-                    test_runs: product_cfg.test_runs,
-                    reviews: product_cfg.reviews,
-                    lsif: product_cfg.lsif,
-                },
-            )
-            .await
-            .map_err(MantraError::Collect)?,
-            cmd::Cmd::Prune => todo!(),
-            cmd::Cmd::Clear => todo!(),
+                )
+                .await
+                .map_err(MantraError::Collect)?
+            }
         }
+        cmd::Cmd::Prune => todo!(),
+        cmd::Cmd::Clear => todo!(),
     }
 
     Ok(())

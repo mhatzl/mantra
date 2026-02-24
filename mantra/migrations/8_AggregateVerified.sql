@@ -256,6 +256,15 @@ create table IndirectRequirementVerificationStates (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
+create table RequirementVerificationStates (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    state integer not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
 -- Contains requirements that are successfully verified.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is verified.
 -- For non-leaf requirements:

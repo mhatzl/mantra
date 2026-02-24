@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into VerifiedRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select\n                rs.last_collect_nr,\n                rs.product_id,\n                rs.id\n            from RequirementVerificationStates rs\n            where rs.last_collect_nr = $1 and rs.product_id = $2\n            and rs.state == $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "6ef2b306850c106044fe5d5150e5f97708cb0a64f725686c94f8cc22b8b86b7e"
+}

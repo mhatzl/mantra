@@ -1,4 +1,6 @@
-use mantra_schema::{annotations::TraceKind, test_runs::TestCaseState};
+use mantra_schema::{
+    annotations::TraceKind, report::short::RequirementState, test_runs::TestCaseState,
+};
 
 use crate::cmd::collect::Collection;
 
@@ -23,6 +25,7 @@ impl<'db> Collection<'db> {
 
         self.update_direct_req_verification_states().await?;
         self.update_indirect_req_verification_states().await?;
+        self.update_req_verification_states().await?;
 
         self.update_verified_reqs().await?;
         self.update_failed_reqs().await?;
@@ -521,10 +524,10 @@ impl<'db> Collection<'db> {
         let product_id = self.product_id();
         let satisfies_trace_nr = TraceKind::Satisfies.as_nr();
         let verifies_trace_nr = TraceKind::Verifies.as_nr();
-        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
-        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
-        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
-        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+        let req_verified_nr = RequirementState::Verified.as_nr();
+        let req_failed_nr = RequirementState::Failed.as_nr();
+        let req_skipped_nr = RequirementState::Skipped.as_nr();
+        let req_unverified_nr = RequirementState::Unverified.as_nr();
         let test_case_passed_nr = TestCaseState::Passed.as_nr();
         let test_case_skipped_nr = TestCaseState::Skipped.as_nr();
 
@@ -991,10 +994,10 @@ impl<'db> Collection<'db> {
     async fn update_indirect_req_verification_states(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
-        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
-        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
-        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+        let req_verified_nr = RequirementState::Verified.as_nr();
+        let req_failed_nr = RequirementState::Failed.as_nr();
+        let req_skipped_nr = RequirementState::Skipped.as_nr();
+        let req_unverified_nr = RequirementState::Unverified.as_nr();
 
         sqlx::query!(
             "
@@ -1150,12 +1153,100 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    async fn update_req_verification_states(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let req_verified_nr = RequirementState::Verified.as_nr();
+        let req_failed_nr = RequirementState::Failed.as_nr();
+        let req_skipped_nr = RequirementState::Skipped.as_nr();
+        let req_unverified_nr = RequirementState::Unverified.as_nr();
+        let req_deprecated_nr = RequirementState::Deprecated.as_nr();
+        let req_ignored_nr = RequirementState::Ignored.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into RequirementVerificationStates (
+                last_collect_nr,
+                product_id,
+                id,
+                state
+            )
+            select
+                r.last_collect_nr,
+                r.product_id,
+                r.id,
+                case
+                    when exists (
+                        select dr.id
+                        from DeprecatedRequirements dr
+                        where r.last_collect_nr = dr.last_collect_nr
+                        and r.product_id = dr.product_id
+                        and r.id = dr.id
+                    ) then $7
+                    when exists (
+                        select ir.id
+                        from IgnoredRequirements ir
+                        where r.last_collect_nr = ir.last_collect_nr
+                        and r.product_id = ir.product_id
+                        and r.id = ir.id
+                    ) then $8
+                    -- failed
+                    when ((ids.state is not null and ids.state = $4) or (ds.state is not null and ds.state = $4))
+                    then $4
+                    -- skipped
+                    when (ids.state is null or ids.state != $4)
+                    and ds.state is not null and (ds.state = $5
+                        or (ds.state = $6 and (ids.state is not null and ids.state = $5))
+                    ) then $5
+                    -- verified
+                    when (ids.state is null or ids.state != $4)
+                    and ds.state is not null and (ds.state = $3
+                        or (ds.state = $6 and (ids.state is not null and ids.state = $3))
+                    ) then $3
+                    -- unverified
+                    else $6
+                end
+            from Requirements r
+                left join DirectRequirementVerificationStates ds on
+                r.last_collect_nr = ds.last_collect_nr
+                and r.product_id = ds.product_id
+                and r.id = ds.id
+                left join IndirectRequirementVerificationStates ids on
+                r.last_collect_nr = ids.last_collect_nr
+                and r.product_id = ids.product_id
+                and r.id = ids.id
+            where r.last_collect_nr = $1 and r.product_id = $2
+            ",
+            collect_nr,
+            product_id,
+            req_verified_nr,
+            req_failed_nr,
+            req_skipped_nr,
+            req_unverified_nr,
+            req_deprecated_nr,
+            req_ignored_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+             delete from RequirementVerificationStates
+             where last_collect_nr != $1 and product_id = $2
+             ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
     async fn update_verified_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_verified_nr = RequirementVerificationState::Verified.as_nr();
-        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
-        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+        let req_verified_nr = RequirementState::Verified.as_nr();
 
         sqlx::query!(
             "
@@ -1165,27 +1256,16 @@ impl<'db> Collection<'db> {
                 id
             )
             select
-                r.last_collect_nr,
-                r.product_id,
-                r.id
-            from UsableRequirements r, DirectRequirementVerificationStates ds
-                left join IndirectRequirementVerificationStates ids on
-                r.last_collect_nr = ids.last_collect_nr
-                and r.product_id = ids.product_id
-                and r.id = ids.id
-            where r.last_collect_nr = $1 and r.product_id = $2
-            and ds.last_collect_nr = $1 and ds.product_id = $2
-            and r.id = ds.id
-            and (ids.state is null or ids.state != $4)
-            and (ds.state = $3
-                or (ds.state = $5 and (ids.state is not null and ids.state = $3))
-            )
+                rs.last_collect_nr,
+                rs.product_id,
+                rs.id
+            from RequirementVerificationStates rs
+            where rs.last_collect_nr = $1 and rs.product_id = $2
+            and rs.state == $3
             ",
             collect_nr,
             product_id,
-            req_verified_nr,
-            req_failed_nr,
-            req_unverified_nr
+            req_verified_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -1207,9 +1287,7 @@ impl<'db> Collection<'db> {
     async fn update_skipped_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
-        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
-        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+        let req_skipped_nr = RequirementState::Skipped.as_nr();
 
         sqlx::query!(
             "
@@ -1219,27 +1297,16 @@ impl<'db> Collection<'db> {
                 id
             )
             select
-                r.last_collect_nr,
-                r.product_id,
-                r.id
-            from UsableRequirements r, DirectRequirementVerificationStates ds
-                left join IndirectRequirementVerificationStates ids on
-                r.last_collect_nr = ids.last_collect_nr
-                and r.product_id = ids.product_id
-                and r.id = ids.id
-            where r.last_collect_nr = $1 and r.product_id = $2
-            and ds.last_collect_nr = $1 and ds.product_id = $2
-            and r.id = ds.id
-            and (ids.state is null or ids.state != $4)
-            and (ds.state = $3
-                or (ds.state = $5 and (ids.state is not null and ids.state = $3))
-            )
+                rs.last_collect_nr,
+                rs.product_id,
+                rs.id
+            from RequirementVerificationStates rs
+            where rs.last_collect_nr = $1 and rs.product_id = $2
+            and rs.state == $3
             ",
             collect_nr,
             product_id,
             req_skipped_nr,
-            req_failed_nr,
-            req_unverified_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -1261,7 +1328,7 @@ impl<'db> Collection<'db> {
     async fn update_failed_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_failed_nr = RequirementVerificationState::Failed.as_nr();
+        let req_failed_nr = RequirementState::Failed.as_nr();
 
         sqlx::query!(
             "
@@ -1271,18 +1338,12 @@ impl<'db> Collection<'db> {
                 id
             )
             select
-                r.last_collect_nr,
-                r.product_id,
-                r.id
-            from UsableRequirements r, DirectRequirementVerificationStates ds
-                left join IndirectRequirementVerificationStates ids on
-                r.last_collect_nr = ids.last_collect_nr
-                and r.product_id = ids.product_id
-                and r.id = ids.id
-            where r.last_collect_nr = $1 and r.product_id = $2
-            and ds.last_collect_nr = $1 and ds.product_id = $2
-            and r.id = ds.id
-            and ((ids.state is not null and ids.state = $3) or ds.state = $3)
+                rs.last_collect_nr,
+                rs.product_id,
+                rs.id
+            from RequirementVerificationStates rs
+            where rs.last_collect_nr = $1 and rs.product_id = $2
+            and rs.state == $3
             ",
             collect_nr,
             product_id,
@@ -1308,8 +1369,7 @@ impl<'db> Collection<'db> {
     async fn update_unverified_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let req_skipped_nr = RequirementVerificationState::Skipped.as_nr();
-        let req_unverified_nr = RequirementVerificationState::Unverified.as_nr();
+        let req_unverified_nr = RequirementState::Unverified.as_nr();
 
         sqlx::query!(
             "
@@ -1319,23 +1379,16 @@ impl<'db> Collection<'db> {
                 id
             )
             select
-                r.last_collect_nr,
-                r.product_id,
-                r.id
-            from UsableRequirements r, DirectRequirementVerificationStates ds
-                left join IndirectRequirementVerificationStates ids on
-                r.last_collect_nr = ids.last_collect_nr
-                and r.product_id = ids.product_id
-                and r.id = ids.id
-            where r.last_collect_nr = $1 and r.product_id = $2
-            and ds.last_collect_nr = $1 and ds.product_id = $2
-            and r.id = ds.id
-            and ds.state = $3 and (ids.state is null or ids.state = $3 or ids.state = $4)
+                rs.last_collect_nr,
+                rs.product_id,
+                rs.id
+            from RequirementVerificationStates rs
+            where rs.last_collect_nr = $1 and rs.product_id = $2
+            and rs.state == $3
             ",
             collect_nr,
             product_id,
             req_unverified_nr,
-            req_skipped_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -1352,19 +1405,5 @@ impl<'db> Collection<'db> {
         .await?;
 
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum RequirementVerificationState {
-    Failed = 0,
-    Verified = 1,
-    Skipped = 2,
-    Unverified = 3,
-}
-
-impl RequirementVerificationState {
-    fn as_nr(&self) -> i32 {
-        *self as i32
     }
 }

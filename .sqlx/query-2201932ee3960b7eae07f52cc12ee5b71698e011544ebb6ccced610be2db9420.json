@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into SkippedRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select\n                rs.last_collect_nr,\n                rs.product_id,\n                rs.id\n            from RequirementVerificationStates rs\n            where rs.last_collect_nr = $1 and rs.product_id = $2\n            and rs.state == $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "2201932ee3960b7eae07f52cc12ee5b71698e011544ebb6ccced610be2db9420"
+}

@@ -14,7 +14,7 @@ pub const REVIEW_DATE_FORMAT: &[time::format_description::BorrowedFormatItem<'st
     "[year]-[month]-[day][first [T] [ ]][hour]:[minute][optional [:[second][optional [.[subsecond]]]]]utc[offset_hour sign:mandatory]"
 );
 
-time::serde::format_description!(review_date_format, OffsetDateTime, REVIEW_DATE_FORMAT);
+time::serde::format_description!(pub review_date_format, OffsetDateTime, REVIEW_DATE_FORMAT);
 
 /// Tries to convert the given string to an [`OffsetDateTime`] using the [`REVIEW_DATE_FORMAT`].
 pub fn date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into RequirementVerificationStates (\n                last_collect_nr,\n                product_id,\n                id,\n                state\n            )\n            select\n                r.last_collect_nr,\n                r.product_id,\n                r.id,\n                case\n                    when exists (\n                        select dr.id\n                        from DeprecatedRequirements dr\n                        where r.last_collect_nr = dr.last_collect_nr\n                        and r.product_id = dr.product_id\n                        and r.id = dr.id\n                    ) then $7\n                    when exists (\n                        select ir.id\n                        from IgnoredRequirements ir\n                        where r.last_collect_nr = ir.last_collect_nr\n                        and r.product_id = ir.product_id\n                        and r.id = ir.id\n                    ) then $8\n                    -- failed\n                    when ((ids.state is not null and ids.state = $4) or (ds.state is not null and ds.state = $4))\n                    then $4\n                    -- skipped\n                    when (ids.state is null or ids.state != $4)\n                    and ds.state is not null and (ds.state = $5\n                        or (ds.state = $6 and (ids.state is not null and ids.state = $5))\n                    ) then $5\n                    -- verified\n                    when (ids.state is null or ids.state != $4)\n                    and ds.state is not null and (ds.state = $3\n                        or (ds.state = $6 and (ids.state is not null and ids.state = $3))\n                    ) then $3\n                    -- unverified\n                    else $6\n                end\n            from Requirements r\n                left join DirectRequirementVerificationStates ds on\n                r.last_collect_nr = ds.last_collect_nr\n                and r.product_id = ds.product_id\n                and r.id = ds.id\n                left join IndirectRequirementVerificationStates ids on\n                r.last_collect_nr = ids.last_collect_nr\n                and r.product_id = ids.product_id\n                and r.id = ids.id\n            where r.last_collect_nr = $1 and r.product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "8af2b934018e6f40d3281191269604c62e5781d2088d1197b41c164a4200e8f5"
+}
