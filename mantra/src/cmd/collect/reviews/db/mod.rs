@@ -241,7 +241,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &description_hash
             && let Some(description) = review.description
         {
-            self.insert_general_text(hash, description).await?;
+            self.insert_general_text(hash, description, None).await?;
         }
 
         sqlx::query!(
@@ -434,7 +434,7 @@ impl<'db> Collection<'db> {
 
         for verified_req in review.requirements {
             let comment_hash = FmtHash::from(&verified_req.comment);
-            self.insert_general_text(&comment_hash, verified_req.comment)
+            self.insert_general_text(&comment_hash, verified_req.comment, None)
                 .await?;
 
             match verified_req.id {
@@ -460,7 +460,7 @@ impl<'db> Collection<'db> {
             for test_case_override in test_run_override.test_cases {
                 if let Some(override_state) = test_case_override.state {
                     let comment_hash = FmtHash::from(&override_state.comment);
-                    self.insert_general_text(&comment_hash, override_state.comment)
+                    self.insert_general_text(&comment_hash, override_state.comment, None)
                         .await?;
                     let state = override_state.new.as_nr();
 
@@ -552,7 +552,7 @@ impl<'db> Collection<'db> {
 
                     for line_info in coverage_override.lines {
                         let comment_hash = FmtHash::from(&line_info.comment);
-                        self.insert_general_text(&comment_hash, line_info.comment)
+                        self.insert_general_text(&comment_hash, line_info.comment, None)
                             .await?;
 
                         for line_nr in line_info.nrs {
@@ -656,7 +656,7 @@ impl<'db> Collection<'db> {
 
                 for line_info in coverage_override.lines {
                     let comment_hash = FmtHash::from(&line_info.comment);
-                    self.insert_general_text(&comment_hash, line_info.comment)
+                    self.insert_general_text(&comment_hash, line_info.comment, None)
                         .await?;
 
                     for line_nr in line_info.nrs {

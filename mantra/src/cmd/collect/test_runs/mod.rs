@@ -124,7 +124,8 @@ async fn collect_well_known<'db>(
                                             let data = SentWellKnownData {
                                                 data: CollectedWellKnown::Test(shallow_test_run),
                                                 filepath: rel_filepath,
-                                                file_hash
+                                                file_hash,
+                                                content,
                                             };
                                             let _ = sender.send(data);
                                         }
@@ -140,7 +141,8 @@ async fn collect_well_known<'db>(
                                             let data = SentWellKnownData {
                                                 data: CollectedWellKnown::Coverage(coverage_data),
                                                 filepath: rel_filepath,
-                                                file_hash
+                                                file_hash,
+                                                content,
                                             };
                                             let _ = sender.send(data);
                                         }
@@ -163,11 +165,19 @@ async fn collect_well_known<'db>(
     });
 
     while let Some(sent_data) = well_known_rx.recv().await {
+        collection
+            .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
+            .await?;
+        collection
+            .insert_file_content(
+                &sent_data.filepath,
+                &sent_data.file_hash,
+                &sent_data.content,
+            )
+            .await?;
+
         match sent_data.data {
             CollectedWellKnown::Test(shallow_test_run) => {
-                collection
-                    .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
-                    .await?;
                 shallow_test_run_data.push((sent_data.filepath, shallow_test_run));
             }
             CollectedWellKnown::Coverage(well_known_coverage_data) => {
@@ -235,9 +245,6 @@ async fn collect_well_known<'db>(
     };
 
     for source_file in coverage_source_files {
-        collection
-            .insert_file_hash(&source_file.0, &source_file.1)
-            .await?;
         collection
             .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &source_file.0)
             .await?;
@@ -339,6 +346,7 @@ struct SentWellKnownData {
     data: CollectedWellKnown,
     filepath: RelativePathBuf,
     file_hash: FmtHash,
+    content: String,
 }
 
 enum CollectedWellKnown {
@@ -377,6 +385,7 @@ struct SentSchemaData {
     schema: TestRunSchema,
     filepath: RelativePathBuf,
     file_hash: FmtHash,
+    content: String,
 }
 
 async fn collect_schema<'db>(
@@ -418,6 +427,7 @@ async fn collect_schema<'db>(
                                         schema,
                                         filepath: rel_filepath,
                                         file_hash,
+                                        content,
                                     };
                                     let _ = sender.send(data);
                                 }
@@ -440,6 +450,9 @@ async fn collect_schema<'db>(
     while let Some(data) = schema_rx.recv().await {
         collection
             .insert_file_hash(&data.filepath, &data.file_hash)
+            .await?;
+        collection
+            .insert_file_content(&data.filepath, &data.file_hash, &data.content)
             .await?;
         collection
             .update_per_test_run_schema(Some(&data.filepath), data.schema)

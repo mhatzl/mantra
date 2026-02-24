@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, bail};
 use mantra_schema::{
-    Line, LineSpan,
+    FmtHash, Line, LineSpan,
     annotations::{
         Annotations, CodeBlock, Element, ElementKind, Trace, TraceKind, TraceRelatedCodeVariant,
     },
@@ -99,13 +99,14 @@ impl AnnotationCollector for RustCodeCollector {
                 let traced_line: Line =
                     node.start_position().row.try_into().unwrap_or(-1) + start_line;
                 let end = node.end_position().row.try_into().unwrap_or(-1) + start_line;
+                let node_hash = Some(FmtHash::new(node.utf8_text(content_bytes)?));
 
                 traces.push(Trace {
                     ids,
                     line: traced_line,
                     related_code: Some(TraceRelatedCodeVariant::CodeBlock(CodeBlock {
                         kind: mantra_schema::annotations::CodeBlockKind::Other,
-                        content: None,
+                        content_hash: node_hash,
                         span: LineSpan {
                             start: traced_line,
                             end,
@@ -245,12 +246,12 @@ fn get_element(
 ) -> Result<Element, anyhow::Error> {
     let item = cursor.node();
     let element_start_node = get_element_start_node(cursor);
-    let element_content = Some(String::from_utf8(
+    let element_content_hash = Some(FmtHash::new(&String::from_utf8(
         content[element_start_node.start_byte()..=item.end_byte()]
             .iter()
             .copied()
             .collect(),
-    )?);
+    )?));
 
     let name = if item.kind() == "function_item"
         || item.kind() == "function_signature_item"
@@ -302,7 +303,7 @@ fn get_element(
             end: item.end_position().row.try_into().unwrap_or(-1) + start_line,
         },
         kind,
-        content: element_content,
+        content_hash: element_content_hash,
     })
 }
 

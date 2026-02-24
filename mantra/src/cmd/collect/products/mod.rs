@@ -16,7 +16,8 @@ impl<'db> Collection<'db> {
 
         let description_hash = if let Some(description) = &product.description {
             let hash = FmtHash::from(&description);
-            self.insert_general_text(&hash, description.clone()).await?;
+            self.insert_general_text(&hash, description.clone(), None)
+                .await?;
             Some(hash)
         } else {
             None

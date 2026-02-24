@@ -98,7 +98,7 @@ create table Elements (
     -- [req("trace.element.kind")]
     kind integer not null,
     -- Optional hash of the content of the element.
-    content_hash text references GeneralTexts (hash) on delete restrict,
+    content_hash text,
     primary key (file_hash, definition_line),
     constraint start_le_end check (start_line <= end_line),
     constraint def_in_span check (start_line <= definition_line and definition_line <= end_line)
@@ -135,7 +135,7 @@ create table TracedCodeBlocks (
     -- The code block kind. other=0, if=1, else-if=2, else=3, loop=4, while=5, for=6, match/case=7,
     kind integer not null,
     -- Optional hash of the code block.
-    content_hash text references GeneralTexts (hash) on delete restrict,
+    content_hash text,
     primary key (file_hash, traced_line),
     foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade,
     constraint start_le_trace_le_end check (start_line <= traced_line and traced_line <= end_line)

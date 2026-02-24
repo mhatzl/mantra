@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select pf.filepath as \"filepath: Filepath\", pf.file_hash, el.definition_line\n            from Elements el, ProductRelatedFiles pf\n            where pf.last_collect_nr = $1 and pf.product_id = $2\n            and pf.file_hash = el.file_hash\n            and not exists (\n                select *\n                from ElementIdents ei\n                where ei.last_collect_nr = $1 and ei.product_id = $2\n                and ei.filepath = pf.filepath\n                and ei.file_hash = pf.file_hash\n                and ei.definition_line = el.definition_line\n            )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath: Filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_hash",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "definition_line",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ce462ec45ab8e1e2c4506c2b40376cf3d141c4110ee4c1b83d324adca0c55726"
+}

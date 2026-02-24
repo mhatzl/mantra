@@ -229,7 +229,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &description_hash
             && let Some(description) = req.description
         {
-            self.insert_general_text(hash, description).await?;
+            self.insert_general_text(hash, description, None).await?;
         }
 
         sqlx::query!(

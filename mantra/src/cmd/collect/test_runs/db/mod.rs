@@ -325,7 +325,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &description_hash
             && let Some(description) = test_run.description
         {
-            self.insert_general_text(hash, description).await?;
+            self.insert_general_text(hash, description, None).await?;
         }
         // TODO: maybe handle serde error
         let duration = duration_to_text(test_run.duration);
@@ -586,7 +586,8 @@ impl<'db> Collection<'db> {
             for log in logs {
                 let log_src = log.source.as_nr();
                 let log_hash = FmtHash::from(&log.content);
-                self.insert_general_text(&log_hash, log.content).await?;
+                self.insert_general_text(&log_hash, log.content, None)
+                    .await?;
 
                 sqlx::query!(
                     "
@@ -686,7 +687,7 @@ impl<'db> Collection<'db> {
             if let Some(hash) = &description_hash
                 && let Some(description) = test_case.description
             {
-                self.insert_general_text(hash, description).await?;
+                self.insert_general_text(hash, description, None).await?;
             }
 
             sqlx::query!(
@@ -823,7 +824,8 @@ impl<'db> Collection<'db> {
                 for log in logs {
                     let log_src = log.source.as_nr();
                     let log_hash = FmtHash::from(&log.content);
-                    self.insert_general_text(&log_hash, log.content).await?;
+                    self.insert_general_text(&log_hash, log.content, None)
+                        .await?;
 
                     sqlx::query!(
                         "

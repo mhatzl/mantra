@@ -42,6 +42,8 @@ pub struct FileAnnotations {
     pub file_hash: FmtHash,
     /// Annotations found in the file.
     pub annotations: Annotations,
+    /// Content of the file.
+    pub content: Option<String>,
 }
 
 /// The annotation information mantra can collect.
@@ -212,12 +214,11 @@ pub enum TraceRelatedCodeVariant {
 pub struct CodeBlock {
     /// The kind of the code block.
     pub kind: CodeBlockKind,
-    /// The content of the code block.
-    /// [req("report.coverage.content"]
-    pub content: Option<String>,
     /// The line span of the code block.
     /// [req("trace.code_block.span")]
     pub span: LineSpan,
+    /// The SHA256 content hash of the code block.
+    pub content_hash: Option<FmtHash>,
 }
 
 /// The code block kind.
@@ -298,9 +299,8 @@ pub struct Element {
     /// The kind of the element.
     /// [req("trace.element.kind")]
     pub kind: ElementKind,
-    /// The content of the element.
-    /// [req("report.coverage.content"]
-    pub content: Option<String>,
+    /// The SHA256 content hash of the element.
+    pub content_hash: Option<FmtHash>,
 }
 
 impl std::fmt::Display for Element {

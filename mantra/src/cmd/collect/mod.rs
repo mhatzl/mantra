@@ -171,21 +171,25 @@ impl<'db> Collection<'db> {
         &mut self,
         hash: &FmtHash,
         content: String,
+        media_type: Option<&str>,
     ) -> Result<(), anyhow::Error> {
         if self.replace_hashed {
             sqlx::query!(
                 "
                 insert or replace into GeneralTexts (
                     hash,
-                    content
+                    content,
+                    media_type
                 )
                 values (
                     $1,
-                    $2
+                    $2,
+                    $3
                 )
                 ",
                 hash,
-                content
+                content,
+                media_type
             )
             .execute(self.connection_mut())
             .await?;
@@ -194,15 +198,71 @@ impl<'db> Collection<'db> {
                 "
                 insert or ignore into GeneralTexts (
                     hash,
-                    content
+                    content,
+                    media_type
                 )
                 values (
                     $1,
-                    $2
+                    $2,
+                    $3
                 )
                 ",
                 hash,
-                content
+                content,
+                media_type
+            )
+            .execute(self.connection_mut())
+            .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn insert_file_content(
+        &mut self,
+        filepath: &RelativePath,
+        file_hash: &FmtHash,
+        content: &str,
+    ) -> Result<(), anyhow::Error> {
+        let media_type = mime_guess::from_ext(filepath.extension().unwrap_or_default()).first_raw();
+
+        if self.replace_hashed {
+            sqlx::query!(
+                "
+                insert or replace into GeneralTexts (
+                    hash,
+                    content,
+                    media_type
+                )
+                values (
+                    $1,
+                    $2,
+                    $3
+                )
+                ",
+                file_hash,
+                content,
+                media_type
+            )
+            .execute(self.connection_mut())
+            .await?;
+        } else {
+            sqlx::query!(
+                "
+                insert or ignore into GeneralTexts (
+                    hash,
+                    content,
+                    media_type
+                )
+                values (
+                    $1,
+                    $2,
+                    $3
+                )
+                ",
+                file_hash,
+                content,
+                media_type
             )
             .execute(self.connection_mut())
             .await?;

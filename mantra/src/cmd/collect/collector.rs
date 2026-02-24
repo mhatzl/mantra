@@ -53,6 +53,7 @@ struct SentData<T> {
     schema: T,
     filepath: RelativePathBuf,
     file_hash: FmtHash,
+    content: String,
 }
 
 impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
@@ -115,6 +116,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                                     schema,
                                                     filepath: rel_filepath,
                                                     file_hash,
+                                                    content,
                                                 };
                                                 let _ = sender.send(data);
                                             }
@@ -141,6 +143,13 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
         while let Some(sent_data) = schema_rx.recv().await {
             self.collection
                 .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
+                .await?;
+            self.collection
+                .insert_file_content(
+                    &sent_data.filepath,
+                    &sent_data.file_hash,
+                    &sent_data.content,
+                )
                 .await?;
             C::update_db(&mut self.collection, &sent_data.filepath, sent_data.schema).await?;
         }

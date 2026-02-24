@@ -6,7 +6,9 @@ create table GeneralTexts (
     -- Hash of the content
     hash text not null primary key,
     -- Content that is either plain text or of unknown format to mantra.
-    content text not null
+    content text not null,
+    -- Optional MIME/media type of the stored content.
+    media_type text
 );
 
 -- Table to store JSON content and the related hash.

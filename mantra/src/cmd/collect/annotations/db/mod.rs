@@ -117,6 +117,15 @@ impl<'db> Collection<'db> {
         self.insert_file_hash(&file_annotations.filepath, &file_annotations.file_hash)
             .await?;
 
+        if let Some(content) = file_annotations.content {
+            self.insert_file_content(
+                &file_annotations.filepath,
+                &file_annotations.file_hash,
+                &content,
+            )
+            .await?;
+        }
+
         if let Some(base_origin_hash) = base_origin_hash {
             sqlx::query!(
                 "
@@ -179,12 +188,6 @@ impl<'db> Collection<'db> {
         let kind = element.kind.as_nr();
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
-        let content_hash = element.content.as_ref().map(FmtHash::from);
-        if let Some(hash) = &content_hash
-            && let Some(content) = element.content
-        {
-            self.insert_general_text(&hash, content).await?;
-        }
 
         sqlx::query!(
             "
@@ -219,7 +222,7 @@ impl<'db> Collection<'db> {
             element.span.start,
             element.span.end,
             kind,
-            content_hash
+            element.content_hash
         )
         .execute(self.connection_mut())
         .await?;
@@ -400,12 +403,6 @@ impl<'db> Collection<'db> {
             match related_code {
                 TraceRelatedCodeVariant::CodeBlock(code_block) => {
                     let kind = code_block.kind.as_nr();
-                    let content_hash = code_block.content.as_ref().map(FmtHash::from);
-                    if let Some(hash) = &content_hash
-                        && let Some(content) = code_block.content
-                    {
-                        self.insert_general_text(&hash, content).await?;
-                    }
 
                     sqlx::query!(
                         "
@@ -437,7 +434,7 @@ impl<'db> Collection<'db> {
                         code_block.span.start,
                         code_block.span.end,
                         kind,
-                        content_hash
+                        code_block.content_hash
                     )
                     .execute(self.connection_mut())
                     .await?;
@@ -475,7 +472,7 @@ impl<'db> Collection<'db> {
         coverage_exclude: CoverageExclude,
     ) -> Result<(), anyhow::Error> {
         let comment_hash = FmtHash::from(&coverage_exclude.comment);
-        self.insert_general_text(&comment_hash, coverage_exclude.comment)
+        self.insert_general_text(&comment_hash, coverage_exclude.comment, None)
             .await?;
 
         match coverage_exclude.kind {

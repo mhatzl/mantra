@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or replace into GeneralTexts (\n                    hash,\n                    content,\n                    media_type\n                )\n                values (\n                    $1,\n                    $2,\n                    $3\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "59316217f9c715d4687d180a606f6815af4918337e9780af5a6bee7e3c193372"
+}
