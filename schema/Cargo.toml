@@ -15,3 +15,4 @@ sha2 = "0.10.9"
 base16ct = { version = "1.0.0", features = ["alloc"] }
 relative-path = { version = "2.0.1", features = ["alloc", "serde"] }
 sqlx.workspace = true
+thiserror = "1.0.59"

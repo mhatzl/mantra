@@ -26,11 +26,14 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
         .map_err(MantraError::Cfg)?;
 
     match cfg.cmd {
-        cmd::Cmd::Report(args) => cmd::report::report(ReportConfig {
-            cfg_filepath: cfg.config_filepath,
-            args,
-            envs: ReportEnvironmentVariables {},
-        })
+        cmd::Cmd::Report(args) => cmd::report::report(
+            &db,
+            ReportConfig {
+                cfg_filepath: cfg.config_filepath,
+                args,
+                envs: ReportEnvironmentVariables {},
+            },
+        )
         .await
         .map_err(MantraError::Report)?,
         cmd::Cmd::Collect(args) => {

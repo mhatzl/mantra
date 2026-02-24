@@ -129,13 +129,7 @@ impl<'db> Collection<'db> {
         Ok(Self {
             transaction,
             cfg_filepath: cfg.cfg_filepath.clone(),
-            abs_cfg_file_parent_path: std::path::absolute(
-                cfg.cfg_filepath
-                    .parent()
-                    .map(|p| p.to_path_buf())
-                    .filter(|p| p != &PathBuf::from(""))
-                    .unwrap_or(PathBuf::from("./")),
-            )?,
+            abs_cfg_file_parent_path: crate::io::abs_parent_path(&cfg.cfg_filepath)?,
             nr,
             product_id: cfg.product.id(),
             collected_at_utc,

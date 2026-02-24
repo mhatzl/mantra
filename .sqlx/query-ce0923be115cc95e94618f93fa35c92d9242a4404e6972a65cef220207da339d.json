@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select r.product_id, r.id, rs.state, r.optional\n                from RequirementHierarchies rh, RequirementVerificationStates rs, Requirements r\n                where rh.child_product_id = $1 and rh.child_req_id = $2\n                and rh.parent_product_id = rs.product_id and rh.parent_req_id = rs.id\n                and r.product_id = rs.product_id and r.id = rs.id\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional",
+        "ordinal": 3,
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ce0923be115cc95e94618f93fa35c92d9242a4404e6972a65cef220207da339d"
+}

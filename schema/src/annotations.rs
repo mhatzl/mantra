@@ -174,10 +174,10 @@ impl TraceKind {
     }
 }
 
-impl TryFrom<i32> for TraceKind {
+impl TryFrom<i64> for TraceKind {
     type Error = ConversionError;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(TraceKind::Clarifies),
             1 => Ok(TraceKind::Satisfies),
@@ -252,10 +252,10 @@ impl CodeBlockKind {
     }
 }
 
-impl TryFrom<i32> for CodeBlockKind {
+impl TryFrom<i64> for CodeBlockKind {
     type Error = ConversionError;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(CodeBlockKind::Other),
             1 => Ok(CodeBlockKind::If),
@@ -364,10 +364,10 @@ impl ElementKind {
     }
 }
 
-impl TryFrom<i32> for ElementKind {
+impl TryFrom<i64> for ElementKind {
     type Error = ConversionError;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(ElementKind::Other),
             1 => Ok(ElementKind::Test),

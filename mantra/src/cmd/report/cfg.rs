@@ -11,6 +11,7 @@ pub struct ReportConfig {
 
 #[derive(Debug, Clone, clap::Args)]
 pub struct ReportArguments {
+    #[clap(long)]
     pub formats: Vec<ReportFormat>,
     #[clap(long = "output-path")]
     pub output_path: PathBuf,

@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    p.last_collect_nr,\n                    p.id,\n                    p.name,\n                    p.base,\n                    p.version,\n                    p.homepage,\n                    p.repository,\n                    p.license,\n                    gt.content as \"description?\"\n                from Products p left join GeneralTexts gt on p.description_hash = gt.hash\n                where id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "base",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "version",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "homepage",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "repository",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "license",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "description?",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "7312fb96c80e06533f5f9d533bed421e5744127d4b7dd4e4ce9856f2065a0bac"
+}

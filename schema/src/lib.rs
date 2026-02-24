@@ -108,6 +108,10 @@ impl std::str::FromStr for FmtHash {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
 pub enum ConversionError {
+    #[error("Number does not match to a known kind.")]
     UnknownKind,
+    #[error("Number does not match to a known state.")]
+    UnknownState,
 }

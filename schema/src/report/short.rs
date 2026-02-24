@@ -1,7 +1,9 @@
 use time::OffsetDateTime;
 
 use crate::{
-    product::{Product, ProductId},
+    ConversionError,
+    product::ProductId,
+    report::ReportProduct,
     requirements::ReqId,
     reviews::{OverrideTestRun, VerifiedRequirement, review_date_format},
     test_runs::TestCaseState,
@@ -12,7 +14,15 @@ use crate::{
 )]
 #[serde(rename_all = "snake_case")]
 pub struct ShortReport {
-    pub product: Product,
+    pub product_reports: Vec<ShortProductReport>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct ShortProductReport {
+    pub product: ReportProduct,
     pub requirements: Vec<RequirementOverview>,
     pub test_runs: Vec<TestRunOverview>,
     pub reviews: Vec<ReviewOverview>,
@@ -24,7 +34,6 @@ pub struct ShortReport {
 #[serde(rename_all = "snake_case")]
 pub struct RequirementOverview {
     pub id: ReqId,
-    pub product_id: Option<ProductId>,
     pub title: String,
     pub state: RequirementState,
     pub optional: bool,
@@ -39,7 +48,6 @@ pub struct RequirementOverview {
 pub struct RequirementReference {
     pub id: ReqId,
     pub product_id: Option<ProductId>,
-    pub title: String,
     pub state: RequirementState,
     pub optional: bool,
 }
@@ -68,6 +76,22 @@ pub enum RequirementState {
 impl RequirementState {
     pub fn as_nr(&self) -> i32 {
         *self as i32
+    }
+}
+
+impl TryFrom<i64> for RequirementState {
+    type Error = ConversionError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(RequirementState::Failed),
+            1 => Ok(RequirementState::Verified),
+            2 => Ok(RequirementState::Skipped),
+            3 => Ok(RequirementState::Unverified),
+            4 => Ok(RequirementState::Deprecated),
+            5 => Ok(RequirementState::Ignored),
+            _ => Err(ConversionError::UnknownState),
+        }
     }
 }
 

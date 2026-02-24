@@ -1,4 +1,7 @@
-use std::io::Read;
+use std::{
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 pub fn sync_read_encoding_independent(
     path: impl AsRef<std::path::Path>,
@@ -52,4 +55,13 @@ pub async fn async_deserialize_from_path<T: serde::de::DeserializeOwned>(
     let content = async_read_encoding_independent(path.as_ref()).await?;
     let extension = path.as_ref().extension().and_then(|ext| ext.to_str());
     deserialize_serde_content(extension, &content)
+}
+
+pub(crate) fn abs_parent_path(path: &Path) -> Result<PathBuf, anyhow::Error> {
+    Ok(std::path::absolute(
+        path.parent()
+            .map(|p| p.to_path_buf())
+            .filter(|p| p != &PathBuf::from(""))
+            .unwrap_or(PathBuf::from("./")),
+    )?)
 }
