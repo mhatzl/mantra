@@ -1,35 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ReviewSchema",
-  "description": "Defines the schema to exchange review related information. [req(\"exchange.review.schema\")]",
+  "title": "ShortReport",
   "type": "object",
   "required": [
-    "reviews"
+    "product_reports"
   ],
   "properties": {
-    "origin": {
-      "description": "Optional base origin of the reviews in this entry. e.g. specific branch or commit from a git repository"
-    },
-    "properties": {
-      "description": "Optional properties related to all reviews in this entry.\n\n**Note:** If a review sets a property key directly, the value set at the review will be taken.",
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": true
-    },
-    "reviews": {
+    "product_reports": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Review"
+        "$ref": "#/definitions/ShortProductReport"
       }
-    },
-    "version": {
-      "description": "The schema version. [req(\"exchange.versioned\")]",
-      "type": [
-        "string",
-        "null"
-      ]
     }
   },
   "definitions": {
@@ -188,65 +169,174 @@
         }
       }
     },
-    "Review": {
-      "description": "Defines the fields for a review. [req(\"exchange.review\")]",
+    "ReportProduct": {
       "type": "object",
       "required": [
-        "authors",
-        "name",
-        "utc_date"
+        "base",
+        "id",
+        "name"
       ],
       "properties": {
-        "authors": {
-          "description": "The authors that were part of the review. [req(\"review.authors\")]",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "base": {
+          "description": "Baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": "string"
         },
         "description": {
-          "description": "Optional description of the review. [req(\"review.description\")]",
+          "description": "Optional description of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
           "type": [
             "string",
             "null"
           ]
         },
         "name": {
-          "description": "The name of the review. [req(\"review.id\")]",
+          "description": "The name of the product.\n\nTODO: map to requirement",
           "type": "string"
         },
-        "origin": {
-          "description": "Optional origin of the review. [req(\"review.origin\")]"
-        },
         "properties": {
-          "description": "Optional properties related to this review.",
+          "description": "Optional properties of the product.\n\nTODO: map to requirement",
           "type": [
             "object",
             "null"
           ],
           "additionalProperties": true
         },
-        "requirements": {
-          "description": "List of requirements that are verified in this review. [req(\"review.verify_req\")]",
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/VerifiedRequirement"
-          }
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
         },
-        "revisions": {
-          "description": "Optional revisions for the review.",
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RequirementOverview": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "state",
+        "title"
+      ],
+      "properties": {
+        "children": {
           "type": [
             "array",
             "null"
           ],
           "items": {
-            "$ref": "#/definitions/Revision"
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "parents": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "ignored"
+      ]
+    },
+    "ReviewOverview": {
+      "type": "object",
+      "required": [
+        "authors",
+        "name",
+        "requirements",
+        "test_run_overrides",
+        "utc_date"
+      ],
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VerifiedRequirement"
           }
         },
         "test_run_overrides": {
-          "description": "List of test run overrides added with this review. [req(\"review.test_case_state\", \"review.coverage\")]",
-          "default": [],
           "type": "array",
           "items": {
             "$ref": "#/definitions/OverrideTestRun"
@@ -259,27 +349,50 @@
         }
       }
     },
-    "Revision": {
+    "ShortProductReport": {
       "type": "object",
       "required": [
-        "authors",
-        "comment",
-        "nr"
+        "product",
+        "requirements",
+        "reviews",
+        "test_runs"
       ],
       "properties": {
-        "authors": {
+        "product": {
+          "$ref": "#/definitions/ReportProduct"
+        },
+        "requirements": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/RequirementOverview"
           }
         },
-        "comment": {
+        "reviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReviewOverview"
+          }
+        },
+        "test_runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunOverview"
+          }
+        }
+      }
+    },
+    "TestCaseOverview": {
+      "type": "object",
+      "required": [
+        "name",
+        "state"
+      ],
+      "properties": {
+        "name": {
           "type": "string"
         },
-        "nr": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
+        "state": {
+          "$ref": "#/definitions/TestCaseState"
         }
       }
     },
@@ -315,6 +428,71 @@
           ]
         }
       ]
+    },
+    "TestRunOverview": {
+      "type": "object",
+      "required": [
+        "name",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "children": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "parents": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
+        },
+        "state": {
+          "$ref": "#/definitions/TestCaseState"
+        },
+        "test_cases": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TestCaseOverview"
+          }
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "TestRunReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestCaseState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
     },
     "VerifiedRequirement": {
       "description": "Represents a verification entry affecting one or more requirements. [req(\"review.verify_req\")]",

@@ -5,13 +5,16 @@ fn main() {
         &std::path::PathBuf::from("RequirementSchema.json"),
     );
 
-    let trace_schema = schemars::schema_for!(mantra_schema::traces::TraceSchema);
-    write_schema(&trace_schema, &std::path::PathBuf::from("TraceSchema.json"));
-
-    let coverage_schema = schemars::schema_for!(mantra_schema::testcov::TestCovSchema);
+    let annotation_schema = schemars::schema_for!(mantra_schema::annotations::AnnotationSchema);
     write_schema(
-        &coverage_schema,
-        &std::path::PathBuf::from("CoverageSchema.json"),
+        &annotation_schema,
+        &std::path::PathBuf::from("AnnotationSchema.json"),
+    );
+
+    let test_run_schema = schemars::schema_for!(mantra_schema::test_runs::TestRunSchema);
+    write_schema(
+        &test_run_schema,
+        &std::path::PathBuf::from("TestRunSchema.json"),
     );
 
     let review_schema = schemars::schema_for!(mantra_schema::reviews::ReviewSchema);
@@ -20,10 +23,10 @@ fn main() {
         &std::path::PathBuf::from("ReviewSchema.json"),
     );
 
-    let report_schema = schemars::schema_for!(mantra::cmd::report::ReportContext);
+    let short_report_schema = schemars::schema_for!(mantra_schema::report::short::ShortReport);
     write_schema(
-        &report_schema,
-        &std::path::PathBuf::from("ReportContext.json"),
+        &short_report_schema,
+        &std::path::PathBuf::from("ShortReportSchema.json"),
     );
 }
 
