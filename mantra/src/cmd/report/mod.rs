@@ -42,7 +42,7 @@ pub async fn report<'db>(db: &'db MantraDb, cfg: ReportConfig) -> Result<(), any
 
     let mut reports = Vec::new();
     for product_id in product_ids {
-        let mut reporter =
+        let reporter =
             ProductReporter::new(&mut transaction, cfg.cfg_filepath.clone(), product_id).await?;
         let report = reporter.short_report().await?;
         reports.push(report);

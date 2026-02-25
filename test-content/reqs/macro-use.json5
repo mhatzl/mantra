@@ -1,0 +1,23 @@
+{
+    requirements: [{
+        id: "calc",
+        title: "Calculator requirements",
+        origin: "JSON schema",
+    },{
+        id: "calc.add",
+        title: "Add requirement",
+        origin: "JSON schema",
+    },{
+        id: "calc.sub",
+        title: "Subtract requirement",
+        origin: "JSON schema",
+    },{
+        id: "calc.mult",
+        title: "Mult requirement",
+        origin: "JSON schema",
+    },{
+        id: "calc.div",
+        title: "Div requirement",
+        origin: "JSON schema",
+    },]
+}

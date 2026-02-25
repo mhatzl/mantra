@@ -3,16 +3,11 @@ name = "mantra-rust-procm"
 description = "Defines procedural macros used by `mantra-rust-macros`."
 version.workspace = true
 edition.workspace = true
-repository.workspace = true 
+repository.workspace = true
 license.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0", default-features = false, features = ["extract"] }
-proc-macro2.workspace = true
-syn = { version = "2.0", features = ["full"] }
-quote = "1.0"
+# quote = "1.0"
 
 [lib]
 proc-macro = true

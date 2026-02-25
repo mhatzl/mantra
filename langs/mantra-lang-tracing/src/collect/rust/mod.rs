@@ -55,7 +55,7 @@ impl AnnotationCollector for RustCodeCollector {
                         && let Some(args_node) = attribute_node.named_child(1)
                         && args_node.kind() == "token_tree"
                     {
-                        let ids = get_req_ids(&args_node, content_bytes, start_line)?;
+                        let ids = get_req_ids(&args_node, content_bytes, start_line, false)?;
                         let traced_line: Line =
                             attribute_node.start_position().row.try_into().unwrap_or(-1)
                                 + start_line; // TODO: handle bad line
@@ -95,7 +95,7 @@ impl AnnotationCollector for RustCodeCollector {
                 && let Some(args_node) = node.named_child(1)
                 && args_node.kind() == "token_tree"
             {
-                let ids = get_req_ids(&args_node, content_bytes, start_line)?;
+                let ids = get_req_ids(&args_node, content_bytes, start_line, true)?;
                 let traced_line: Line =
                     node.start_position().row.try_into().unwrap_or(-1) + start_line;
                 let end = node.end_position().row.try_into().unwrap_or(-1) + start_line;
@@ -153,7 +153,7 @@ fn traces_in_cfg_attr(
     }
 
     if let Some(trace_kind) = get_attrb_macro_trace_kind(&identifier_node, content_bytes) {
-        if let Ok(ids) = get_req_ids(&token_tree, content_bytes, start_line) {
+        if let Ok(ids) = get_req_ids(&token_tree, content_bytes, start_line, false) {
             let mut trace_props = Map::new();
             trace_props.insert(
                 "cfg_attr".to_string(),
@@ -359,7 +359,6 @@ fn get_related_element_def_line(
     }
 
     let mut next_node = cursor.node();
-    println!("kind='{}' node='{:?}'", next_node.kind(), next_node);
 
     while next_node.kind() == "attribute_item"
         || (next_node.kind() == "line_comment"
@@ -385,10 +384,12 @@ fn get_related_element_def_line(
     }
 }
 
+// Note: temporary fn before moving to custom parser
 fn get_req_ids(
     args_node: &Node<'_>,
     content: &[u8],
     start_line: Line,
+    fn_like: bool,
 ) -> Result<Vec<ReqId>, anyhow::Error> {
     let line = args_node.start_position().row + start_line.try_into().unwrap_or(0);
 
@@ -415,8 +416,10 @@ fn get_req_ids(
             } else {
                 expected_kind = "string_literal";
             }
-        } else if child.kind() == ")" {
+        } else if child.kind() == ")" || (child.kind() == "=>" && fn_like) {
+            // Note: ")" is end of a simple macro and "=>" marks start of code block in fn-like macros
             reached_end = true;
+            break;
         } else {
             bail!(
                 "Mantra trace at line '{line}' must only consist of comma separated string literals!"

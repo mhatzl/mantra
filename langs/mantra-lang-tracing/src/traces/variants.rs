@@ -69,6 +69,9 @@ pub enum FnLikeTraceVariant {
     AssertReq,
     AssertEqReq,
     AssertNeReq,
+    DebugAssertReq,
+    DebugAssertEqReq,
+    DebugAssertNeReq,
     ClarifyReq,
     LinkReq,
 }
@@ -82,6 +85,9 @@ impl FnLikeTraceVariant {
             FnLikeTraceVariant::AssertReq => "assert_req",
             FnLikeTraceVariant::AssertEqReq => "assert_eq_req",
             FnLikeTraceVariant::AssertNeReq => "assert_ne_req",
+            FnLikeTraceVariant::DebugAssertReq => "debug_assert_req",
+            FnLikeTraceVariant::DebugAssertEqReq => "debug_assert_eq_req",
+            FnLikeTraceVariant::DebugAssertNeReq => "debug_assert_ne_req",
             FnLikeTraceVariant::ClarifyReq => "clarify_req",
             FnLikeTraceVariant::LinkReq => "link_req",
         }
@@ -103,6 +109,15 @@ impl std::str::FromStr for FnLikeTraceVariant {
             _ if s == FnLikeTraceVariant::AssertNeReq.as_str() => {
                 Ok(FnLikeTraceVariant::AssertNeReq)
             }
+            _ if s == FnLikeTraceVariant::DebugAssertReq.as_str() => {
+                Ok(FnLikeTraceVariant::DebugAssertReq)
+            }
+            _ if s == FnLikeTraceVariant::DebugAssertEqReq.as_str() => {
+                Ok(FnLikeTraceVariant::DebugAssertEqReq)
+            }
+            _ if s == FnLikeTraceVariant::DebugAssertNeReq.as_str() => {
+                Ok(FnLikeTraceVariant::DebugAssertNeReq)
+            }
             _ if s == FnLikeTraceVariant::ClarifyReq.as_str() => Ok(FnLikeTraceVariant::ClarifyReq),
             _ if s == FnLikeTraceVariant::LinkReq.as_str() => Ok(FnLikeTraceVariant::LinkReq),
             _ => Err(anyhow::anyhow!(
@@ -120,7 +135,10 @@ impl From<FnLikeTraceVariant> for TraceKind {
             FnLikeTraceVariant::VerifyReq
             | FnLikeTraceVariant::AssertReq
             | FnLikeTraceVariant::AssertEqReq
-            | FnLikeTraceVariant::AssertNeReq => TraceKind::Verifies,
+            | FnLikeTraceVariant::AssertNeReq
+            | FnLikeTraceVariant::DebugAssertReq
+            | FnLikeTraceVariant::DebugAssertEqReq
+            | FnLikeTraceVariant::DebugAssertNeReq => TraceKind::Verifies,
             FnLikeTraceVariant::ClarifyReq => TraceKind::Clarifies,
             FnLikeTraceVariant::LinkReq => TraceKind::Links,
         }
