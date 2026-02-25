@@ -19,6 +19,11 @@ fn div(a: usize, b: usize) -> usize {
     a / b
 }
 
+#[mantra_rust_macros::req_satisfied("calc.div")]
+fn other_div(a: usize, b: usize) -> usize {
+    a / b
+}
+
 #[test]
 fn basic_add() {
     mantra_rust_macros::assert_eq_req!("calc.add" => add(1, 1), 2, "Simple addition failed");
