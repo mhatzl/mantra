@@ -20,4 +20,4 @@ collect:
     cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" collect
 
 report:
-    cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" report --formats=json --output-path=target/report.json
+    cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" report --formats=json --formats=html --output-path=target/report.json

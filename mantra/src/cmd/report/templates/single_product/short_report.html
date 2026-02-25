@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Short Mantra Report</title>
+    </head>
+    <body>
+        <h1>Requirements Traceability Report for {{ product.name }}</h1>
+        <h2>Requirements Overview</h2>
+        <table>
+            <thead>
+                <th>ID</th>
+                <th>State</th>
+                <th>Title</th>
+            </thead>
+            {% for req in requirements %}
+            <tr>
+                <td>{{ req.id }}</td>
+                <td>{{ req.state }}</td>
+                <td>{{ req.title }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>

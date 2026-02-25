@@ -6,6 +6,7 @@ use mantra_schema::{
     report::{ReportProduct, short::ShortReport},
     time::OffsetDateTime,
 };
+use tera::Context;
 
 use crate::{
     cmd::report::cfg::{ReportConfig, ReportFormat},
@@ -49,20 +50,38 @@ pub async fn report<'db>(db: &'db MantraDb, cfg: ReportConfig) -> Result<(), any
     }
 
     let single_product = reports.len() == 1;
-    let report_schema = if single_product {
-        json5::to_string(&reports.first().expect("Checked that one report exists"))?
-    } else {
-        json5::to_string(&ShortReport {
-            product_reports: reports,
-        })?
-    };
     let formats = HashSet::<ReportFormat>::from_iter(cfg.args.formats.into_iter());
     // TODO: check if formats were set twice
 
     for format in formats {
         let (extension, content) = match format {
-            ReportFormat::Html => todo!(),
-            ReportFormat::Json => ("json5", report_schema.clone()),
+            ReportFormat::Html => {
+                let html_content = if single_product {
+                    let template = include_str!("templates/single_product/short_report.html");
+                    tera::Tera::one_off(
+                        template,
+                        &Context::from_serialize(
+                            &reports.first().expect("Checked that one report exists"),
+                        )?,
+                        true,
+                    )?
+                } else {
+                    todo!()
+                };
+
+                ("html", html_content)
+            }
+            ReportFormat::Json => {
+                let report_schema = if single_product {
+                    json5::to_string(&reports.first().expect("Checked that one report exists"))?
+                } else {
+                    json5::to_string(&ShortReport {
+                        product_reports: reports.clone(),
+                    })?
+                };
+
+                ("json5", report_schema)
+            }
             ReportFormat::Markdown => todo!(),
             ReportFormat::Custom => todo!(),
         };
