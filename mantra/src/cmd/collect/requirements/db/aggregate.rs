@@ -108,13 +108,10 @@ impl<'db> Collection<'db> {
         let req_cycle_exists = sqlx::query!(
             "
             select
-                p.id as product_id,
-                p.name as product_name,
-                p.base as product_base,
+                rd.product_id,
                 rd.id as req_id
-            from RequirementDescendants rd, Products p
+            from RequirementDescendants rd
             where rd.product_id = rd.descendant_product_id and rd.id = rd.descendant_id
-            and rd.product_id = p.id
             "
         )
         .fetch_all(self.connection_mut())
@@ -123,8 +120,8 @@ impl<'db> Collection<'db> {
         if !req_cycle_exists.is_empty() {
             for bad in req_cycle_exists {
                 eprintln!(
-                    "Requirement cycle detected for req '{}' in product id='{}' name='{}' base='{}'",
-                    bad.req_id, bad.product_id, bad.product_name, bad.product_base
+                    "Requirement cycle detected for req '{}' in product id='{}'",
+                    bad.req_id, bad.product_id
                 );
             }
             anyhow::bail!("Requirement cycle detected!");

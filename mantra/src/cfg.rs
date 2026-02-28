@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use anyhow::bail;
 use mantra_schema::{
     Properties,
@@ -27,6 +25,10 @@ pub struct InheritableProductConfig {
     ///
     /// TODO: map to requirement
     pub name: Option<String>,
+    /// Optional baseline inheritable for all products.
+    ///
+    /// TODO: map to requirement
+    pub base: Option<String>,
     /// Optional version inheritable for all products.
     ///
     /// TODO: map to requirement
@@ -59,6 +61,10 @@ impl InheritableProductConfig {
             && !valid_non_inheritable(name)
         {
             bail!("The general name cannot inherit its value");
+        } else if let Some(base) = &self.base
+            && !valid_non_inheritable(base)
+        {
+            bail!("The general baseline cannot inherit its value");
         } else if let Some(version) = &self.version
             && !valid_non_inheritable(version)
         {
@@ -109,15 +115,16 @@ pub struct ProductDataConfig {
     ///
     /// TODO: map to requirement
     pub id: Option<ProductId>,
-    /// Baseline of the product. e.g. git branch or commit hash
-    ///
-    /// TODO: map to requirement
-    pub base: String,
     /// The name of the product.
     /// May be inherited by setting "$inherit".
     ///
     /// TODO: map to requirement
     pub name: Inheritable<String>,
+    /// Optional baseline of the product.
+    /// e.g. git branch or commit hash
+    ///
+    /// TODO: map to requirement
+    pub base: InheritableOption<String>,
     /// Optional version of the product.
     /// May be inherited by setting "$inherit".
     ///
@@ -155,14 +162,18 @@ impl ProductDataConfig {
         self,
         inheritable_cfg: &InheritableProductConfig,
     ) -> Result<Product, anyhow::Error> {
-        valid_product_base(&self.base)?;
         let name = resolve_product_name(self.name, &inheritable_cfg.name)?;
-        let id = resolve_product_id(self.id, &name, &self.base)?;
+        let base = resolve_optional_inheritable(self.base, &inheritable_cfg.base)?;
+        if let Some(base) = &base {
+            valid_product_base(base)?;
+        }
+
+        let id = resolve_product_id(self.id, &name, base.as_deref())?;
 
         Ok(Product {
             id,
-            base: self.base,
             name,
+            base,
             version: resolve_optional_inheritable(self.version, &inheritable_cfg.version)?,
             homepage: resolve_optional_inheritable(self.homepage, &inheritable_cfg.homepage)?,
             repository: resolve_optional_inheritable(self.repository, &inheritable_cfg.repository)?,
@@ -181,15 +192,21 @@ const NAME_BASE_DIVIDER: &str = "@";
 /// The product ID will be `<product name>@<product base>`
 /// in case it is not explicitly given.
 /// Therefore, neither product name nor base must contain `@`.
-fn resolve_product_id(id: Option<String>, name: &str, base: &str) -> Result<String, anyhow::Error> {
+fn resolve_product_id(
+    id: Option<String>,
+    name: &str,
+    base: Option<&str>,
+) -> Result<String, anyhow::Error> {
     if let Some(id) = id {
         if valid_non_inheritable(&id) {
             Ok(id)
         } else {
             bail!("The product ID cannot be inherited!");
         }
-    } else {
+    } else if let Some(base) = base {
         Ok(format!("{name}@{}", base))
+    } else {
+        bail!("Project baseline must be set if no ID is given.")
     }
 }
 
@@ -298,7 +315,7 @@ mod tests {
     fn inheritable_explicit_props_cfg() {
         let explicit_props = serde_json::json!({
             "name": INHERIT_MARKER,
-            "base": "non-inheritable",
+            "base": "<explicit-base>",
             "version": INHERIT_MARKER,
             "license": "<explicit licenese>",
             "properties": {
@@ -310,7 +327,10 @@ mod tests {
 
         assert_eq!(product_cfg.id, None);
         assert_eq!(product_cfg.name, Inheritable::Inherited);
-        assert_eq!(product_cfg.base, "non-inheritable");
+        assert_eq!(
+            product_cfg.base,
+            Some(Inheritable::Value("<explicit-base>".to_string()))
+        );
         assert_eq!(product_cfg.version, Some(Inheritable::Inherited));
         assert_eq!(
             product_cfg.license,
@@ -333,7 +353,7 @@ mod tests {
     fn inherited_props_cfg() {
         let inherited_props = serde_json::json!({
             "name": INHERIT_MARKER,
-            "base": "non-inheritable",
+            "base": "<explicit-base>",
             "version": "<explicit version>",
             "license": INHERIT_MARKER,
             "properties": INHERIT_MARKER
@@ -343,7 +363,10 @@ mod tests {
 
         assert_eq!(product_cfg.id, None);
         assert_eq!(product_cfg.name, Inheritable::Inherited);
-        assert_eq!(product_cfg.base, "non-inheritable");
+        assert_eq!(
+            product_cfg.base,
+            Some(Inheritable::Value("<explicit-base>".to_string()))
+        );
         assert_eq!(
             product_cfg.version,
             Some(Inheritable::Value("<explicit version>".to_string()))
@@ -354,7 +377,7 @@ mod tests {
     }
 
     #[test]
-    fn id_and_base_uninheritable() {
+    fn id_uninheritable() {
         let inherited_props = serde_json::json!({
             "id": INHERIT_MARKER,
             "name": "some-product",
@@ -370,7 +393,7 @@ mod tests {
             product_cfg.name,
             Inheritable::Value("some-product".to_string())
         );
-        assert_eq!(product_cfg.base, INHERIT_MARKER);
+        assert_eq!(product_cfg.base, Some(Inheritable::Inherited));
         assert_eq!(product_cfg.description, None);
         assert_eq!(product_cfg.properties, None);
     }

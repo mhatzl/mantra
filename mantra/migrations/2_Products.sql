@@ -7,13 +7,10 @@ create table Products (
     id text not null primary key,
     -- Name of a product.
     name text not null,
-    -- Baseline of a product.
+    -- Optional baseline of a product.
     -- e.g. git branch or commit hash
-    base text not null,
+    base text,
     -- Optional version of a product.
-    --
-    -- **Note:** Version is optional, because it might not change between commits
-    -- and is therefore not part of the primary key.
     version text,
     -- Optional URL to the product's homepage.
     homepage text,

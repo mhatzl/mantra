@@ -16,14 +16,15 @@ pub struct Product {
     ///
     /// TODO: map to requirement
     pub id: ProductId,
-    /// Baseline of the product. e.g. git branch or commit hash
-    ///
-    /// TODO: map to requirement
-    pub base: String,
     /// The name of the product.
     ///
     /// TODO: map to requirement
     pub name: String,
+    /// Optional baseline of the product.
+    /// e.g. git branch or commit hash
+    ///
+    /// TODO: map to requirement
+    pub base: Option<String>,
     /// Optional version of the product.
     ///
     /// TODO: map to requirement

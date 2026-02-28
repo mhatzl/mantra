@@ -5,6 +5,8 @@
 // };
 // use db::DbError;
 
+use std::collections::HashSet;
+
 use crate::{
     cfg::MantraConfigFile,
     cmd::{
@@ -41,17 +43,28 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
         .await
         .map_err(MantraError::Report)?,
         cmd::Cmd::Collect(args) => {
+            let mut product_map = HashSet::new();
+
             for product_cfg in cfg_file.products {
+                let product = product_cfg
+                    .product
+                    .to_product(&cfg_file.inheritable_product_cfg)
+                    .map_err(MantraError::Cfg)?;
+
+                if !product_map.insert(product.id.clone()) {
+                    log::warn!(
+                        "Product '{}' has more than one product entry that maps to it!",
+                        &product.id
+                    );
+                }
+
                 cmd::collect::collect(
                     &db,
                     CollectConfig {
                         cfg_filepath: cfg.config_filepath.clone(),
                         args: args.clone(),
                         envs: CollectEnvironmentVariables {},
-                        product: product_cfg
-                            .product
-                            .to_product(&cfg_file.inheritable_product_cfg)
-                            .map_err(MantraError::Cfg)?,
+                        product,
                         requirements: product_cfg.requirements,
                         annotations: product_cfg.annotations,
                         test_runs: product_cfg.test_runs,

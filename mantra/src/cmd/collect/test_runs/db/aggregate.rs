@@ -81,15 +81,12 @@ impl<'db> Collection<'db> {
         let test_run_cycle_exists = sqlx::query!(
             "
             select
-                p.id as product_id,
-                p.name as product_name,
-                p.base as product_base,
+                td.product_id,
                 td.test_run_name,
                 td.test_run_date
-            from TestRunDescendants td, Products p
+            from TestRunDescendants td
             where td.test_run_name = td.descendant_test_run_name
             and td.test_run_date = td.descendant_test_run_date
-            and td.product_id = p.id
             "
         )
         .fetch_all(self.connection_mut())
@@ -98,12 +95,8 @@ impl<'db> Collection<'db> {
         if !test_run_cycle_exists.is_empty() {
             for bad in test_run_cycle_exists {
                 eprintln!(
-                    "Test run cycle detected for test run name='{}' date='{}' in product id='{}' name='{}' base='{}'",
-                    bad.test_run_name,
-                    bad.test_run_date,
-                    bad.product_id,
-                    bad.product_name,
-                    bad.product_base
+                    "Test run cycle detected for test run name='{}' date='{}' in product id='{}'",
+                    bad.test_run_name, bad.test_run_date, bad.product_id
                 );
             }
             anyhow::bail!("Test run cycle detected!");
