@@ -161,6 +161,7 @@ impl<'db> Collection<'db> {
                 select rh.child_req_id, rh.parent_req_id
                 from RequirementHierarchies rh, Requirements r
                 where r.id = rh.parent_req_id
+                and r.product_id = rh.parent_product_id
                 and r.last_collect_nr < rh.last_collect_nr
                 and rh.child_product_id = $1
                 and rh.parent_product_id = $1
@@ -168,6 +169,7 @@ impl<'db> Collection<'db> {
                 select rh.child_req_id, rh.parent_req_id
                 from RequirementHierarchies rh, Requirements r, Products p
                 where r.id = rh.parent_req_id
+                and r.product_id = rh.parent_product_id
                 and r.last_collect_nr != rh.last_collect_nr
                 and rh.child_product_id = $1
                 and rh.parent_product_id != rh.child_product_id
