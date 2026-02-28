@@ -17,7 +17,7 @@ testcov:
     grcov . -s . --binary-path ./target/debug/ -t html -t cobertura-pretty --ignore-not-existing -o ./target/nextest/default/coverage/ --ignore='/**/*' --ignore='target/*'
 
 collect:
-    cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" collect
+    cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" collect --product-id="mantra@main" --product-version="latest"
 
 report:
     cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" report --formats=json --formats=html --output-path=target/report.json

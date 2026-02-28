@@ -15,6 +15,8 @@ pub struct ReportArguments {
     pub formats: Vec<ReportFormat>,
     #[clap(long = "output-path")]
     pub output_path: PathBuf,
+    /// List of product IDs that should be part of the report.
+    /// If none are given, all collected products are reported.
     #[clap(long = "product-id")]
     pub product_ids: Option<Vec<ProductId>>,
 }

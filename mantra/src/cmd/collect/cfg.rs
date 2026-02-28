@@ -19,8 +19,17 @@ pub struct CollectConfig {
 pub struct CollectArguments {
     /// `true`: tells mantra to replace previously collected content
     /// even if the stored hash is equal to the new one.
-    #[clap(short)]
+    #[clap(long)]
     pub replace_hashed: bool,
+    /// Mantra will only collect data for this product ID.
+    #[clap(long)]
+    pub product_id: Option<String>,
+    /// Mantra will set the given value as baseline for the product identified by the product ID.
+    #[clap(long, requires = "product_id")]
+    pub product_base: Option<String>,
+    /// Mantra will set the given value as version for the product identified by the product ID.
+    #[clap(long, requires = "product_id")]
+    pub product_version: Option<String>,
 }
 pub struct CollectEnvironmentVariables {}
 
