@@ -21,6 +21,7 @@ create table AnnotatedFileOrigins (
 -- Table to store all traces.
 -- [req("trace.origin", "changes.track")]
 create table Traces (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at in the file.
@@ -35,6 +36,7 @@ create table Traces (
 -- Table to store custom properties of traces.
 -- [req("trace.properties")]
 create table TraceProperties (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
@@ -51,6 +53,7 @@ create table TraceProperties (
 -- **Note:** Actual mapping to the Requirements table is done indirectly via ProductRelatedFiles.
 -- [req("trace.id", "trace.mult_reqs")]
 create table DirectReqTraces (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Requirement ID that is directly set on the trace.
     req_id text not null,
     -- Hash of the file content.
@@ -80,6 +83,7 @@ create table DirectProductReqTraces (
 -- Due to feature flags or language semantics, idents may be declared multiple times, and are therefore not unique.
 -- [req("trace.element")]
 create table Elements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Name of the element.
     --
     -- **Note:** The fully qualified identifier is stored in ElementIdents.
@@ -122,6 +126,7 @@ create table ElementIdents (
 -- Table to store language code blocks that are linked to traces.
 -- [req("trace.code_block")]
 create table TracedCodeBlocks (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the code block is set.
@@ -153,6 +158,7 @@ create table TracedCodeBlocks (
 --
 -- [req("trace.element")]
 create table DirectTracedElements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the element was detected at.
@@ -172,6 +178,7 @@ create table DirectTracedElements (
 --
 -- TODO: add req trace
 create table CoverageBlockExcludes (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- First line that must be excluded from code coverage analysis until the `end_line`.
@@ -188,6 +195,7 @@ create table CoverageBlockExcludes (
 --
 -- TODO: add req trace
 create table CoverageLineExcludes (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- Line that must be excluded from code coverage analysis.

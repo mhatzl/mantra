@@ -1,3 +1,4 @@
+use anyhow::bail;
 use mantra_schema::{
     FmtHash, Properties,
     annotations::{
@@ -29,6 +30,19 @@ impl<'db> Collection<'db> {
         let product_id = self.product_id();
         let data_filepath = filepath.as_str();
 
+        // TODO: do not stop at first collect error
+
+        for file_annotations in annotaiton_schema.files {
+            self.update_per_annotation_file(
+                file_annotations,
+                &base_origin_hash,
+                &annotaiton_schema.trace_properties,
+            )
+            .await?;
+        }
+
+        // Note: Must be added after file annotations, because for the annotation variant from content
+        // the filepath for the schema and file annotation is the same and would prevent content being added.
         sqlx::query!(
             "
             insert into AnnotatedDataSources (
@@ -47,17 +61,6 @@ impl<'db> Collection<'db> {
         )
         .execute(self.connection_mut())
         .await?;
-
-        // TODO: do not stop at first collect error
-
-        for file_annotations in annotaiton_schema.files {
-            self.update_per_annotation_file(
-                file_annotations,
-                &base_origin_hash,
-                &annotaiton_schema.trace_properties,
-            )
-            .await?;
-        }
 
         Ok(())
     }
@@ -117,6 +120,57 @@ impl<'db> Collection<'db> {
         self.insert_file_hash(&file_annotations.filepath, &file_annotations.file_hash)
             .await?;
 
+        // Filepath has been added in same collection already.
+        // Ensure that values are matching to allow file skipping.
+        //
+        // Note: Base trace props currently cannot be checked, because traces may have their own props as well
+        // and they get merged before insertion.
+        if sqlx::query!(
+            "
+            select filepath
+            from AnnotatedDataSources
+            where last_collect_nr = $1 and product_id = $2
+            and filepath = $3
+            ",
+            collect_nr,
+            product_id,
+            filepath
+        )
+        .fetch_optional(self.connection_mut())
+        .await?
+        .is_some()
+        {
+            let opt_prev_base_origin_hash = sqlx::query!(
+                "
+                select base_origin_hash
+                from AnnotatedFileOrigins
+                where last_collect_nr = $1 and product_id = $2
+                and filepath = $3
+                ",
+                collect_nr,
+                product_id,
+                filepath
+            )
+            .fetch_optional(self.connection_mut())
+            .await?
+            .map(|r| FmtHash::with_inner(r.base_origin_hash));
+
+            if &opt_prev_base_origin_hash != base_origin_hash {
+                bail!(
+                    "Duplicate entry in same collection for filepath '{}' with different base origins.",
+                    filepath
+                );
+            }
+
+            log::info!(
+                "Skipping already collected annotations for filepath '{}'",
+                filepath
+            );
+            return Ok(());
+        }
+
+        // TODO: update last-collect-nr only if file hash has been collected before
+
         if let Some(content) = file_annotations.content {
             self.insert_file_content(
                 &file_annotations.filepath,
@@ -125,6 +179,25 @@ impl<'db> Collection<'db> {
             )
             .await?;
         }
+
+        sqlx::query!(
+            "
+            insert into AnnotatedDataSources (
+                last_collect_nr,
+                product_id,
+                filepath
+            )
+            values ($1, $2, $3)
+            on conflict (product_id, filepath)
+            do update set
+                last_collect_nr = excluded.last_collect_nr
+            ",
+            collect_nr,
+            product_id,
+            filepath
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         if let Some(base_origin_hash) = base_origin_hash {
             sqlx::query!(
@@ -192,6 +265,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into Elements (
+                last_collect_nr,
                 name,
                 file_hash,
                 definition_line,
@@ -207,15 +281,18 @@ impl<'db> Collection<'db> {
                 $4,
                 $5,
                 $6,
-                $7
+                $7,
+                $8
             )
             on conflict (file_hash, definition_line)
             do update set
+                last_collect_nr = excluded.last_collect_nr,
                 start_line = excluded.start_line,
                 end_line = excluded.end_line,
                 kind = excluded.kind,
                 content_hash = excluded.content_hash
             ",
+            collect_nr,
             element.name,
             file_hash,
             element.definition_line,
@@ -275,9 +352,57 @@ impl<'db> Collection<'db> {
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
 
+        if sqlx::query!(
+            "
+            select line
+            from Traces
+            where last_collect_nr = $1
+            and file_hash = $2 and line = $3
+            ",
+            collect_nr,
+            file_hash,
+            trace.line
+        )
+        .fetch_optional(self.connection_mut())
+        .await?
+        .is_some()
+        {
+            // If the trace and filepath have already been collected in this run,
+            // it indicates either that two annotation schemas contain the same filepath
+            // and file hash, or two traces are defined at the same line.
+            // Since collection is skipped for annotations already collected from the same filepaths,
+            // this leaves the case of two traces being defined at the same line.
+            // Two traces must not be defined at the same line, because it interferes
+            // with the mapping to statement coverage from test results.
+            // e.g. two traces could be set for different conditions at the same line,
+            // but statement coverage would treat both traces as covered.
+            if sqlx::query!(
+                "
+                select filepath
+                from AnnotatedDataSources
+                where last_collect_nr = $1 and product_id = $2
+                and filepath = $3
+                ",
+                collect_nr,
+                product_id,
+                filepath
+            )
+            .fetch_optional(self.connection_mut())
+            .await?
+            .is_some()
+            {
+                bail!(
+                    "Duplicate entry for trace at line '{}' in file '{}'. Only one trace may be set per line.",
+                    trace.line,
+                    filepath
+                );
+            }
+        }
+
         sqlx::query!(
             "
             insert into Traces (
+                last_collect_nr,
                 file_hash,
                 line,
                 kind
@@ -285,12 +410,15 @@ impl<'db> Collection<'db> {
             values (
                 $1,
                 $2,
-                $3
+                $3,
+                $4
             )
             on conflict (file_hash, line)
             do update set
+                last_collect_nr = excluded.last_collect_nr,
                 kind = excluded.kind
             ",
+            collect_nr,
             file_hash,
             trace.line,
             kind
@@ -306,6 +434,7 @@ impl<'db> Collection<'db> {
                 sqlx::query!(
                     "
                     insert into TraceProperties (
+                        last_collect_nr,
                         file_hash,
                         line,
                         property_key,
@@ -315,12 +444,15 @@ impl<'db> Collection<'db> {
                         $1,
                         $2,
                         $3,
-                        $4
+                        $4,
+                        $5
                     )
                     on conflict (file_hash, line, property_key)
                     do update set
+                        last_collect_nr = excluded.last_collect_nr,
                         property_value = excluded.property_value
                     ",
+                    collect_nr,
                     file_hash,
                     trace.line,
                     prop.0,
@@ -334,7 +466,8 @@ impl<'db> Collection<'db> {
         for req_id in trace.ids {
             sqlx::query!(
                 "
-                insert or ignore into DirectReqTraces (
+                insert into DirectReqTraces (
+                    last_collect_nr,
                     req_id,
                     file_hash,
                     line
@@ -342,9 +475,14 @@ impl<'db> Collection<'db> {
                 values (
                     $1,
                     $2,
-                    $3
+                    $3,
+                    $4
                 )
+                on conflict (req_id, file_hash, line)
+                do update set
+                    last_collect_nr = excluded.last_collect_nr
                 ",
+                collect_nr,
                 req_id,
                 file_hash,
                 trace.line
@@ -407,6 +545,7 @@ impl<'db> Collection<'db> {
                     sqlx::query!(
                         "
                         insert into TracedCodeBlocks (
+                            last_collect_nr,
                             file_hash,
                             traced_line,
                             start_line,
@@ -420,15 +559,18 @@ impl<'db> Collection<'db> {
                             $3,
                             $4,
                             $5,
-                            $6
+                            $6,
+                            $7
                         )
                         on conflict (file_hash, traced_line)
                         do update set
+                            last_collect_nr = excluded.last_collect_nr,
                             start_line = excluded.start_line,
                             end_line = excluded.end_line,
                             kind = excluded.kind,
                             content_hash = excluded.content_hash
                         ",
+                        collect_nr,
                         file_hash,
                         trace.line,
                         code_block.span.start,
@@ -442,7 +584,8 @@ impl<'db> Collection<'db> {
                 TraceRelatedCodeVariant::ElementAtLine(def_line) => {
                     sqlx::query!(
                         "
-                        insert or ignore into DirectTracedElements (
+                        insert into DirectTracedElements (
+                            last_collect_nr,
                             file_hash,
                             traced_line,
                             element_definition_line
@@ -450,9 +593,14 @@ impl<'db> Collection<'db> {
                         values (
                             $1,
                             $2,
-                            $3
+                            $3,
+                            $4
                         )
+                        on conflict (file_hash, traced_line, element_definition_line)
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr
                         ",
+                        collect_nr,
                         file_hash,
                         trace.line,
                         def_line
@@ -471,6 +619,7 @@ impl<'db> Collection<'db> {
         file_hash: &FmtHash,
         coverage_exclude: CoverageExclude,
     ) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
         let comment_hash = FmtHash::from(&coverage_exclude.comment);
         self.insert_general_text(&comment_hash, coverage_exclude.comment, None)
             .await?;
@@ -479,7 +628,8 @@ impl<'db> Collection<'db> {
             CoverageExcludeKind::Block { start, end } => {
                 sqlx::query!(
                     "
-                    insert or ignore into CoverageBlockExcludes (
+                    insert into CoverageBlockExcludes (
+                        last_collect_nr,
                         file_hash,
                         start_line,
                         end_line,
@@ -489,9 +639,16 @@ impl<'db> Collection<'db> {
                         $1,
                         $2,
                         $3,
-                        $4
+                        $4,
+                        $5
                     )
+                    on conflict (file_hash, start_line)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        end_line = excluded.end_line,
+                        comment_hash = excluded.comment_hash
                     ",
+                    collect_nr,
                     file_hash,
                     start,
                     end,
@@ -503,7 +660,8 @@ impl<'db> Collection<'db> {
             CoverageExcludeKind::Line(line) => {
                 sqlx::query!(
                     "
-                    insert or ignore into CoverageLineExcludes (
+                    insert into CoverageLineExcludes (
+                        last_collect_nr,
                         file_hash,
                         line,
                         comment_hash
@@ -511,9 +669,15 @@ impl<'db> Collection<'db> {
                     values (
                         $1,
                         $2,
-                        $3
+                        $3,
+                        $4
                     )
+                    on conflict (file_hash, line)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        comment_hash = excluded.comment_hash
                     ",
+                    collect_nr,
                     file_hash,
                     line,
                     comment_hash

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into TraceProperties (\n                        last_collect_nr,\n                        file_hash,\n                        line,\n                        property_key,\n                        property_value\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5\n                    )\n                    on conflict (file_hash, line, property_key)\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr,\n                        property_value = excluded.property_value\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "206f846690721ef6aa6f96cfaa79d3e0cbe0c660675eed979062d08a7ac3dc37"
+}

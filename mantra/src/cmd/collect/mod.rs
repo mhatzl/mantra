@@ -287,32 +287,55 @@ impl<'db> Collection<'db> {
         let filepath = filepath.as_str();
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        sqlx::query!(
+
+        if sqlx::query!(
             "
-            insert into ProductRelatedFiles (
-                last_collect_nr,
-                product_id,
-                filepath,
-                file_hash
-            )
-            values (
-                $1,
-                $2,
-                $3,
-                $4
-            )
-            on conflict (product_id, filepath)
-            do update set
-                last_collect_nr = excluded.last_collect_nr,
-                file_hash = excluded.file_hash
+            select filepath
+            from ProductRelatedFiles
+            where last_collect_nr = $1 and product_id = $2
+            and filepath = $3 and file_hash != $4
             ",
             collect_nr,
             product_id,
             filepath,
             file_hash
         )
-        .execute(self.connection_mut())
-        .await?;
+        .fetch_optional(self.connection_mut())
+        .await?
+        .is_some()
+        {
+            anyhow::bail!(
+                "Duplicate entry in same collection for filepath '{}' with different file hash.",
+                filepath
+            );
+        } else {
+            sqlx::query!(
+                "
+                insert into ProductRelatedFiles (
+                    last_collect_nr,
+                    product_id,
+                    filepath,
+                    file_hash
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4
+                )
+                on conflict (product_id, filepath)
+                do update set
+                    last_collect_nr = excluded.last_collect_nr,
+                    file_hash = excluded.file_hash
+                ",
+                collect_nr,
+                product_id,
+                filepath,
+                file_hash
+            )
+            .execute(self.connection_mut())
+            .await?;
+        }
 
         Ok(())
     }

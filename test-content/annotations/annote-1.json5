@@ -47,7 +47,7 @@
         }
     },
     {
-        filepath: "mantra/tests/well_known_tests.rs",
+        filepath: "some-crate/src/lib.rs",
         file_hash: "<second file>",
         annotations: {
             traces: [{
