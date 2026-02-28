@@ -131,7 +131,7 @@ impl<'db> Collection<'db> {
             cfg_filepath: cfg.cfg_filepath.clone(),
             abs_cfg_file_parent_path: crate::io::abs_parent_path(&cfg.cfg_filepath)?,
             nr,
-            product_id: cfg.product.id(),
+            product_id: cfg.product.id.clone(),
             collected_at_utc,
             replace_hashed: cfg.args.replace_hashed,
         })

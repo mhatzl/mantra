@@ -24,6 +24,10 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
     let cfg_file: MantraConfigFile = async_deserialize_from_path(&cfg.config_filepath)
         .await
         .map_err(MantraError::Cfg)?;
+    cfg_file
+        .inheritable_product_cfg
+        .check_validity()
+        .map_err(MantraError::Cfg)?;
 
     match cfg.cmd {
         cmd::Cmd::Report(args) => cmd::report::report(
@@ -44,7 +48,10 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
                         cfg_filepath: cfg.config_filepath.clone(),
                         args: args.clone(),
                         envs: CollectEnvironmentVariables {},
-                        product: product_cfg.product,
+                        product: product_cfg
+                            .product
+                            .to_product(&cfg_file.inheritable_product_cfg)
+                            .map_err(MantraError::Cfg)?,
                         requirements: product_cfg.requirements,
                         annotations: product_cfg.annotations,
                         test_runs: product_cfg.test_runs,

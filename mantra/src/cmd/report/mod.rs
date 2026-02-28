@@ -2,8 +2,8 @@ use std::{collections::HashSet, path::PathBuf, str::FromStr};
 
 use anyhow::bail;
 use mantra_schema::{
-    product::ProductId,
-    report::{ReportProduct, short::ShortReport},
+    product::{Product, ProductId},
+    report::short::ShortReport,
     time::OffsetDateTime,
 };
 use tera::Context;
@@ -102,7 +102,7 @@ struct ProductReporter<'t, 'db> {
     cfg_filepath: PathBuf,
     abs_cfg_file_parent_path: PathBuf,
     collect_nr: i64,
-    product: ReportProduct,
+    product: Product,
     reported_at_utc: OffsetDateTime,
 }
 
@@ -166,7 +166,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                     abs_cfg_file_parent_path: crate::io::abs_parent_path(&cfg_filepath)?,
                     cfg_filepath: cfg_filepath,
                     collect_nr: entry.last_collect_nr,
-                    product: ReportProduct {
+                    product: Product {
                         id: entry.id,
                         base: entry.base,
                         name: entry.name,

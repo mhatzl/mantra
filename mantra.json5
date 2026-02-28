@@ -1,6 +1,9 @@
 {
+  name: "mantra",
+  license: "MIT",
   products: [{
-    name: "mantra",
+    name: "$inherit",
+    license: "$inherit",
     base: "main",
     requirements: [{
         path: "test-content/reqs/",
@@ -28,6 +31,7 @@
         }
     },{
         path: "test-content/test-runs/",
+        source: "schema",
     }],
     reviews: [{
         path: "test-content/reviews/",

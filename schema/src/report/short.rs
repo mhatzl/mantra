@@ -2,8 +2,7 @@ use time::OffsetDateTime;
 
 use crate::{
     ConversionError,
-    product::ProductId,
-    report::ReportProduct,
+    product::{Product, ProductId},
     requirements::ReqId,
     reviews::{OverrideTestRun, VerifiedRequirement, review_date_format},
     test_runs::TestCaseState,
@@ -22,7 +21,7 @@ pub struct ShortReport {
 )]
 #[serde(rename_all = "snake_case")]
 pub struct ShortProductReport {
-    pub product: ReportProduct,
+    pub product: Product,
     pub requirements: Vec<RequirementOverview>,
     pub test_runs: Vec<TestRunOverview>,
     pub reviews: Vec<ReviewOverview>,

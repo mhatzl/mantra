@@ -12,7 +12,7 @@ use crate::cmd::collect::Collection;
 impl<'db> Collection<'db> {
     pub(super) async fn update_product(&mut self, product: Product) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
+        let product_id = product.id;
 
         let description_hash = if let Some(description) = &product.description {
             let hash = FmtHash::from(&description);

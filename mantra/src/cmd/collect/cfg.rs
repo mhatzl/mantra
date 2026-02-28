@@ -99,16 +99,17 @@ pub struct CollectTestRunsConfig {
 
 /// Supported source variants to retrieve test runs.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case", untagged)]
+#[serde(rename_all = "snake_case")]
 pub enum TestRunSourceVariant {
+    /// Following the JSON schema.
+    #[default]
+    Schema,
     /// Following well-known formats for test and code coverage results.
+    #[serde(untagged)]
     WellKnown {
         test: WellKnownTest,
         coverage: WellKnownCoverage,
     },
-    /// Following the JSON schema.
-    #[default]
-    Schema,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
