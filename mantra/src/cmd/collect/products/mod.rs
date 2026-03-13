@@ -23,6 +23,7 @@ impl<'db> Collection<'db> {
             None
         };
 
+        // Note: Only one product per collection possible, so duplicate definitions must be detected before.
         sqlx::query!(
             "
             insert into Products (
