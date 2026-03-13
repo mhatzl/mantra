@@ -3,5 +3,5 @@
 # "cargo publish" by default only includes files/folders at package level and ignores everything mentioned in ".gitignore" files.
 # see: https://github.com/launchbadge/sqlx/issues/3644
 [env]
-DATABASE_URL = "sqlite://mantra.db"
-SQLX_OFFLINE = "true"
+DATABASE_URL = "sqlite://mantra.db?mode=rwc"
+SQLX_OFFLINE = "false"
