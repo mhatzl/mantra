@@ -1,3 +1,4 @@
+use anyhow::bail;
 use mantra_schema::{
     FmtHash, Properties,
     path::RelativePath,
@@ -218,6 +219,29 @@ impl<'db> Collection<'db> {
 
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
+
+        if let Some(record) = sqlx::query!(
+            "
+            select id, data_filepath
+            from Requirements
+            where last_collect_nr = $1 and product_id = $2
+            and id = $3
+            ",
+            collect_nr,
+            product_id,
+            req.id
+        )
+        .fetch_optional(self.connection_mut())
+        .await?
+        {
+            bail!(
+                "Duplicate requirement ID '{}' found in the same collection! Duplicate definition in '{}'; Previous definition in '{}'.",
+                req.id,
+                filepath,
+                record.data_filepath
+            );
+        }
+
         let data_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_props": base_props,
