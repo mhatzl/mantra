@@ -224,6 +224,31 @@ impl<'db> Collection<'db> {
 
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
+
+        if let Some(record) = sqlx::query!(
+            "
+            select name, utc_date, data_filepath
+            from Reviews
+            where last_collect_nr = $1 and product_id = $2
+            and name = $3 and utc_date = $4
+            ",
+            collect_nr,
+            product_id,
+            review.name,
+            review.utc_date
+        )
+        .fetch_optional(self.connection_mut())
+        .await?
+        {
+            anyhow::bail!(
+                "Duplicate review with name='{}' date='{}' found in the same collection! Duplicate definition in '{}'; Previous definition in '{}'.",
+                review.name,
+                review.utc_date,
+                filepath,
+                record.data_filepath
+            );
+        }
+
         let data_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_props": base_props,
