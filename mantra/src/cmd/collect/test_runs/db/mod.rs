@@ -269,6 +269,55 @@ impl<'db> Collection<'db> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
+        // Note: Checking for duplicate test run definitions here,
+        // because data filepaths are inserted before the actual test run.
+        // So if a test run already exists, it must be a duplicate.
+        if sqlx::query!(
+            "
+            select name, utc_date from TestRuns
+            where last_collect_nr = $1 and product_id = $2
+            and name = $3 and utc_date = $4
+            ",
+            collect_nr,
+            product_id,
+            test_run_name,
+            test_run_date
+        )
+        .fetch_optional(self.connection_mut())
+        .await?
+        .is_some()
+        {
+            let records = sqlx::query!(
+                "
+                select filepath from TestRunDataFilepaths
+                where last_collect_nr = $1 and product_id = $2
+                and test_run_name = $3 and test_run_date = $4
+                ",
+                collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?;
+
+            let prev_filepaths = records.iter().fold(String::new(), |mut s, item| {
+                if !s.is_empty() {
+                    s.push_str(", ");
+                }
+                s.push_str(&format!("'{}'", item.filepath));
+                s
+            });
+
+            anyhow::bail!(
+                "Duplicate test run definition for name='{}' date='{}' found in the same collection! Duplicate definition in '{}';  Previous related filepaths: {}",
+                test_run_name,
+                test_run_date,
+                filepath,
+                prev_filepaths
+            );
+        }
+
         let filepath = filepath.as_str();
         sqlx::query!(
             "
@@ -308,6 +357,16 @@ impl<'db> Collection<'db> {
 
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
+
+        // Note: Important to insert data filepath **before** inserting the test run, because this internally checks for duplicate test run entries!
+        // If it would be inserted after the test run, then it would not be possible to detect which data filepaths
+        // are part of the previous test run definition, because well-known formats may have multiple data filepaths added
+        // while building up the test run.
+        if let Some(data_filepath) = filepath {
+            self.insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, data_filepath)
+                .await?;
+        }
+
         let data_hash = FmtHash::from(&serde_json::json!({
             "base_origin_hash": base_origin_hash,
             "base_test_run_props": base_test_run_props,
@@ -491,43 +550,6 @@ impl<'db> Collection<'db> {
                     .await?;
                 }
             }
-        }
-
-        if let Some(path) = filepath {
-            let filepath = path.as_str();
-            sqlx::query!(
-                "
-                    insert into TestRunDataFilepaths (
-                        last_collect_nr,
-                        product_id,
-                        test_run_name,
-                        test_run_date,
-                        filepath
-                    )
-                    values (
-                        $1,
-                        $2,
-                        $3,
-                        $4,
-                        $5
-                    )
-                    on conflict (
-                        product_id,
-                        test_run_name,
-                        test_run_date,
-                        filepath
-                    )
-                    do update set
-                        last_collect_nr = excluded.last_collect_nr
-                    ",
-                collect_nr,
-                product_id,
-                test_run.name,
-                test_run.utc_date,
-                filepath,
-            )
-            .execute(self.connection_mut())
-            .await?;
         }
 
         for child_test_run in test_run.test_runs {
