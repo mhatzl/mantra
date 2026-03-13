@@ -15,7 +15,7 @@ pub struct CollectConfig {
     pub lsif: Vec<CollectLsifConfig>,
 }
 
-#[derive(Debug, Clone, clap::Args)]
+#[derive(Debug, Default, Clone, clap::Args)]
 pub struct CollectArguments {
     /// `true`: tells mantra to replace previously collected content
     /// even if the stored hash is equal to the new one.

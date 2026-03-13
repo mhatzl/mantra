@@ -19,6 +19,9 @@ pub mod reviews;
 pub mod test_runs;
 pub mod walker;
 
+#[cfg(test)]
+mod test_setup;
+
 pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
     let mut collection = collect_data(db, cfg).await?;
 
