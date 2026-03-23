@@ -1,0 +1,18 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First Requirement",
+        origin: "Hierarchy cycle test",
+        parents: [{ id: "req-3" }]
+    },{
+        id: "req-2",
+        title: "Second Requirement",
+        origin: "Hierarchy cycle test",
+        parents: [{ id: "req-1" }]
+    },{
+        id: "req-3",
+        title: "Second Requirement",
+        origin: "Hierarchy cycle test",
+        parents: [{ id: "req-2" }]
+    }]
+}

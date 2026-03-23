@@ -3,7 +3,7 @@ use mantra_schema::{FmtHash, product::Product};
 use crate::cmd::collect::Collection;
 
 #[cfg(test)]
-mod test;
+mod tests;
 
 impl<'db> Collection<'db> {
     pub(super) async fn update_product(&mut self, product: Product) -> Result<(), anyhow::Error> {

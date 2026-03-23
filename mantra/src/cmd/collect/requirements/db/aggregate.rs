@@ -89,7 +89,9 @@ impl<'db> Collection<'db> {
                 from RequirementHierarchies rh, TransitiveChildren tc
                 where tc.descendant_product_id = rh.parent_product_id and tc.descendant_id = rh.parent_req_id
                 -- prevents endless recursion in case of requirement cycles
-                and tc.product_id != rh.parent_product_id and tc.id != rh.parent_req_id
+                -- match on parent to have the cycle entry in the descendants,
+                -- which is then detected in a separate query.
+                and (tc.id != rh.parent_req_id or tc.product_id != rh.parent_product_id)
             )
             -- replacing, because 'on conflict' seems to break with select instead of value
             -- and the important info is insert and delete for such aggregated tables anyway

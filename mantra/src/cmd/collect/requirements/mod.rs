@@ -10,6 +10,9 @@ use crate::cmd::collect::{
 pub mod db;
 pub mod markup;
 
+#[cfg(test)]
+mod tests;
+
 impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsConfig {
     fn path(&self) -> &mantra_schema::path::RelativePath {
         &self.path
