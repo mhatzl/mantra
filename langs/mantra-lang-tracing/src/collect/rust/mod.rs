@@ -47,7 +47,7 @@ impl AnnotationCollector for RustCodeCollector {
             let node = cursor.node();
             let node_kind = node.kind();
 
-            if node_kind == "attribute_item"
+            if (node_kind == "attribute_item" || node_kind == "inner_attribute_item")
                 && let Some(attribute_node) = node.named_child(0)
             {
                 if let Some(name_node) = attribute_node.named_child(0) {
