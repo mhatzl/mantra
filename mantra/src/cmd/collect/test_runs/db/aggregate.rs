@@ -53,7 +53,7 @@ impl<'db> Collection<'db> {
                 and tc.descendant_test_run_date = th.parent_date
                 -- prevents endless recursion in case of test run cycles
                 -- but includes self-references to detect a cycle
-                and tc.test_run_name != th.parent_name and tc.test_run_date != th.parent_date
+                and (tc.test_run_name != th.parent_name or tc.test_run_date != th.parent_date)
             )
             -- replacing, because 'on conflict' seems to break with select instead of value
             -- and the important info is insert and delete for such aggregated tables anyway

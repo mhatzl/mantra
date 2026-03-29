@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with recursive TransitiveChildren(\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                descendant_test_run_name,\n                descendant_test_run_date\n            ) as\n            (\n                select\n                    last_collect_nr,\n                    product_id,\n                    parent_name,\n                    parent_date,\n                    child_name,\n                    child_date\n                from TestRunHierarchies\n                union all\n                select\n                    th.last_collect_nr,\n                    tc.product_id,\n                    tc.test_run_name,\n                    tc.test_run_date,\n                    th.child_name,\n                    th.child_date\n                from TestRunHierarchies th, TransitiveChildren tc\n                where tc.product_id = th.product_id and tc.descendant_test_run_name = th.parent_name\n                and tc.descendant_test_run_date = th.parent_date\n                -- prevents endless recursion in case of test run cycles\n                -- but includes self-references to detect a cycle\n                and (tc.test_run_name != th.parent_name or tc.test_run_date != th.parent_date)\n            )\n            -- replacing, because 'on conflict' seems to break with select instead of value\n            -- and the important info is insert and delete for such aggregated tables anyway\n            insert or replace into TestRunDescendants (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                descendant_test_run_name,\n                descendant_test_run_date\n            )\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                descendant_test_run_name,\n                descendant_test_run_date\n            from TransitiveChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "0f9faa11423a5fe9cf5d4707ed41e9e0e02cf4e1c08ba78568ea8283a12e3319"
+}

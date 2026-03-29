@@ -29,6 +29,9 @@ use crate::cmd::collect::{
 mod convert;
 pub mod db;
 
+#[cfg(test)]
+mod tests;
+
 pub(super) async fn collect<'db>(
     collection: &mut Collection<'db>,
     cfgs: Vec<CollectTestRunsConfig>,

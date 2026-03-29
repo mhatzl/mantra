@@ -1,0 +1,7 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First Requirement",
+        origin: "Hierarchy cycle test",
+    }]
+}
