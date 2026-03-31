@@ -1,5 +1,6 @@
-use mantra_schema::report::short::{
-    RequirementOverview, RequirementReference, ReviewOverview, ShortProductReport, TestRunOverview,
+use mantra_schema::report::{
+    RequirementReference,
+    short::{RequirementOverview, ReviewOverview, ShortProductReport, TestRunOverview},
 };
 
 use crate::cmd::report::ProductReporter;

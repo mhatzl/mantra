@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ResolvedTestCaseLineCoverage\n            where last_collect_nr != $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "91c011ca1d679e45436970ac12dbd9037f6d4820eb75b903b3b03803b18cf58d"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                                    insert into TestCaseLineCoverageOverrides (\n                                        last_collect_nr,\n                                        product_id,\n                                        test_run_name,\n                                        test_run_date,\n                                        test_case_name,\n                                        review_name,\n                                        review_date,\n                                        cov_filepath,\n                                        cov_line,\n                                        hits,\n                                        comment_hash\n                                    )\n                                    values (\n                                        $1,\n                                        $2,\n                                        $3,\n                                        $4,\n                                        $5,\n                                        $6,\n                                        $7,\n                                        $8,\n                                        $9,\n                                        $10,\n                                        $11\n                                    )\n                                    on conflict (\n                                        product_id,\n                                        test_run_name,\n                                        test_run_date,\n                                        test_case_name,\n                                        review_name,\n                                        review_date,\n                                        cov_filepath,\n                                        cov_line\n                                    )\n                                    do update set\n                                        last_collect_nr = excluded.last_collect_nr,\n                                        hits = excluded.hits,\n                                        comment_hash = excluded.comment_hash\n                                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "e4098a4a86604a1d5876b7807aa8e4b0d4111516041171245c086d1d33564eca"
+}

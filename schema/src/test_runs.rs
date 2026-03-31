@@ -222,7 +222,7 @@ pub struct CoveredLine {
     /// The line number.
     pub nr: Line,
     /// The number of times this line has been reached during execution of a test run or test case.
-    /// If None, the line is marked to be ignored from statement coverage analysis.
+    /// If None, the line is marked to be ignored from line coverage analysis.
     ///
     /// **Note:** The line might be covered by other test runs or test cases.
     /// To permanently exclude lines, see the AnnotationSchema.

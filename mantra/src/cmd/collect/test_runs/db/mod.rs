@@ -133,7 +133,7 @@ impl<'db> Collection<'db> {
 
             sqlx::query!(
                 "
-                delete from TestRunStatementCoverage
+                delete from TestRunLineCoverage
                 where product_id = $1 and last_collect_nr < $2
                 and test_run_name = $3 and test_run_date = $4
             ",
@@ -231,7 +231,7 @@ impl<'db> Collection<'db> {
 
             sqlx::query!(
                 "
-                delete from TestCaseStatementCoverage
+                delete from TestCaseLineCoverage
                 where product_id = $1 and last_collect_nr < $2
                 and test_run_name = $3 and test_run_date = $4
             ",
@@ -657,14 +657,14 @@ impl<'db> Collection<'db> {
             for line in covered_file.lines {
                 sqlx::query!(
                     "
-                    insert into TestRunStatementCoverage (
+                    insert into TestRunLineCoverage (
                         last_collect_nr,
                         product_id,
                         test_run_name,
                         test_run_date,
-                        stmnt_filepath,
-                        stmnt_file_hash,
-                        stmnt_line,
+                        cov_filepath,
+                        cov_file_hash,
+                        cov_line,
                         hits
                     )
                     values (
@@ -681,8 +681,8 @@ impl<'db> Collection<'db> {
                         product_id,
                         test_run_name,
                         test_run_date,
-                        stmnt_filepath,
-                        stmnt_line
+                        cov_filepath,
+                        cov_line
                     )
                     do update set
                         last_collect_nr = excluded.last_collect_nr,
@@ -992,15 +992,15 @@ impl<'db> Collection<'db> {
                 for line in covered_file.lines {
                     sqlx::query!(
                         "
-                        insert into TestCaseStatementCoverage (
+                        insert into TestCaseLineCoverage (
                             last_collect_nr,
                             product_id,
                             test_run_name,
                             test_run_date,
                             test_case_name,
-                            stmnt_filepath,
-                            stmnt_file_hash,
-                            stmnt_line,
+                            cov_filepath,
+                            cov_file_hash,
+                            cov_line,
                             hits
                         )
                         values (
@@ -1019,8 +1019,8 @@ impl<'db> Collection<'db> {
                             test_run_name,
                             test_run_date,
                             test_case_name,
-                            stmnt_filepath,
-                            stmnt_line
+                            cov_filepath,
+                            cov_line
                         )
                         do update set
                             last_collect_nr = excluded.last_collect_nr,

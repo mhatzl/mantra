@@ -282,71 +282,71 @@ create table UsableTestRuns (
     foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
 );
 
--- Contains statement coverage from test runs with optional review overrides applied.
-create table ResolvedTestRunStatementCoverage (
+-- Contains line coverage from test runs with optional review overrides applied.
+create table ResolvedTestRunLineCoverage (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    stmnt_filepath text not null,
-    stmnt_file_hash text,
-    stmnt_line text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line text not null,
     hits integer,
     primary key (
         product_id,
         test_run_name,
         test_run_date,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     foreign key (
         product_id,
         test_run_name,
         test_run_date,
-        stmnt_filepath,
-        stmnt_line
-    ) references TestRunStatementCoverage (
+        cov_filepath,
+        cov_line
+    ) references TestRunLineCoverage (
         product_id,
         test_run_name,
         test_run_date,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ) on delete cascade
 );
 
--- Contains statement coverage from test cases with optional review overrides applied.
-create table ResolvedTestCaseStatementCoverage (
+-- Contains line coverage from test cases with optional review overrides applied.
+create table ResolvedTestCaseLineCoverage (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
     test_case_name text not null,
-    stmnt_filepath text not null,
-    stmnt_file_hash text,
-    stmnt_line text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line text not null,
     hits integer,
     primary key (
         product_id,
         test_run_name,
         test_run_date,
         test_case_name,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     foreign key (
         product_id,
         test_run_name,
         test_run_date,
         test_case_name,
-        stmnt_filepath,
-        stmnt_line
-    ) references TestCaseStatementCoverage (
+        cov_filepath,
+        cov_line
+    ) references TestCaseLineCoverage (
         product_id,
         test_run_name,
         test_run_date,
         test_case_name,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ) on delete cascade
 );
 
@@ -358,11 +358,11 @@ create table TraceCoveragePerTestRuns (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
+    cov_line text not null,
     hits integer not null,
-    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, stmnt_line),
-    foreign key (product_id, test_run_name, test_run_date, filepath, stmnt_line)
-        references TestRunStatementCoverage(product_id, test_run_name, test_run_date, stmnt_filepath, stmnt_line) on delete cascade,
+    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
+    foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
+        references TestRunLineCoverage(product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
@@ -376,11 +376,11 @@ create table TraceCoveragePerTestCases (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
+    cov_line text not null,
     hits integer not null,
-    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, stmnt_line),
-    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, stmnt_line)
-        references TestCaseStatementCoverage(product_id, test_run_name, test_run_date, test_case_name, stmnt_filepath, stmnt_line) on delete cascade,
+    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
+    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+        references TestCaseLineCoverage(product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );

@@ -373,9 +373,9 @@ impl<'db> Collection<'db> {
             // Since collection is skipped for annotations already collected from the same filepaths,
             // this leaves the case of two traces being defined at the same line.
             // Two traces must not be defined at the same line, because it interferes
-            // with the mapping to statement coverage from test results.
-            // e.g. two traces could be set for different conditions at the same line,
-            // but statement coverage would treat both traces as covered.
+            // with the mapping to line coverage from test results.
+            // e.g. two traces could be set for different statements or conditions at the same line,
+            // but line coverage would treat both traces as covered.
             if sqlx::query!(
                 "
                 select filepath

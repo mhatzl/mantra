@@ -150,9 +150,9 @@ create table TestRunLogs (
     ) references TestRuns (product_id, name, utc_date) on delete cascade
 );
 
--- Table to store statement coverage per test run.
+-- Table to store line coverage per test run.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
-create table TestRunStatementCoverage (
+create table TestRunLineCoverage (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
@@ -161,21 +161,21 @@ create table TestRunStatementCoverage (
     -- UTC date and time of the test run.
     test_run_date text not null,
     -- File that was covered.
-    stmnt_filepath text not null,
+    cov_filepath text not null,
     -- Optional hash of the file content when the coverage was captured.
-    stmnt_file_hash text,
+    cov_file_hash text,
     -- Line that was covered.
-    stmnt_line text not null,
+    cov_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
-    -- If null, the line is ignored from statement coverage analysis.
+    -- If null, the line is ignored from line coverage analysis.
     -- Unless it is not null for test cases or child test runs of this test run.
     hits integer,
     primary key (
         product_id,
         test_run_name,
         test_run_date,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     foreign key (
         product_id,
@@ -360,9 +360,9 @@ create table TestCaseStateProperties (
     ) on delete cascade
 );
 
--- Table to store statement coverage per test case.
+-- Table to store line coverage per test case.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
-create table TestCaseStatementCoverage (
+create table TestCaseLineCoverage (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
@@ -373,21 +373,21 @@ create table TestCaseStatementCoverage (
     -- Name of the test case.
     test_case_name text not null,
     -- File that was covered.
-    stmnt_filepath text not null,
+    cov_filepath text not null,
     -- Hash of the file that was covered.
-    stmnt_file_hash text,
+    cov_file_hash text,
     -- Line that was covered.
-    stmnt_line text not null,
+    cov_line text not null,
     -- Number of how often the line was covered/hit during the test case execution.
-    -- If null, the line is ignored from statement coverage analysis for this test case.
+    -- If null, the line is ignored from line coverage analysis for this test case.
     hits integer,
     primary key (
         product_id,
         test_run_name,
         test_run_date,
         test_case_name,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     foreign key (
         product_id,

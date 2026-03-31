@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into TracesCoveredByFailedTests (\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line\n            )\n            select distinct\n                last_collect_nr,\n                product_id,\n                filepath,\n                file_hash,\n                traced_line\n            from TraceMappedLinesCoveredByFailedTests\n            where last_collect_nr = $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "eb1e02d784c6d0ea27cf19a68e22e0d45e16fb0fcc014762e3affe26445de5a7"
+}

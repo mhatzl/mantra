@@ -1,23 +1,21 @@
-use mantra_schema::{
-    annotations::TraceKind, report::short::RequirementState, test_runs::TestCaseState,
-};
+use mantra_schema::{annotations::TraceKind, report::RequirementState, test_runs::TestCaseState};
 
 use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_verification_data(&mut self) -> Result<(), anyhow::Error> {
-        self.update_trace_mapped_stmnts_only_covered_by_passed_test_runs()
+        self.update_trace_mapped_lines_only_covered_by_passed_test_runs()
             .await?;
-        self.update_trace_mapped_stmnts_only_covered_by_passed_test_cases()
+        self.update_trace_mapped_lines_only_covered_by_passed_test_cases()
             .await?;
-        self.update_trace_mapped_stmnts_only_covered_by_passed_tests()
+        self.update_trace_mapped_lines_only_covered_by_passed_tests()
             .await?;
 
-        self.update_trace_mapped_stmnts_covered_by_failed_test_runs()
+        self.update_trace_mapped_lines_covered_by_failed_test_runs()
             .await?;
-        self.update_trace_mapped_stmnts_covered_by_failed_test_cases()
+        self.update_trace_mapped_lines_covered_by_failed_test_cases()
             .await?;
-        self.update_trace_mapped_stmnts_covered_by_failed_tests()
+        self.update_trace_mapped_lines_covered_by_failed_tests()
             .await?;
 
         self.update_traces_only_covered_by_passed_tests().await?;
@@ -35,7 +33,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_trace_mapped_stmnts_only_covered_by_passed_test_runs(
+    async fn update_trace_mapped_lines_only_covered_by_passed_test_runs(
         &mut self,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -43,7 +41,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedStmntsOnlyCoveredByPassedTestRuns (
+            insert or replace into TraceMappedLinesOnlyCoveredByPassedTestRuns (
                 last_collect_nr,
                 product_id,
                 test_run_name,
@@ -51,7 +49,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
+                cov_line
             )
             select
                 tc.last_collect_nr,
@@ -61,7 +59,7 @@ impl<'db> Collection<'db> {
                 tc.filepath,
                 tc.file_hash,
                 tc.traced_line,
-                tc.stmnt_line
+                tc.cov_line
             from TraceCoveragePerTestRuns tc, UsableTestRuns ut
             where tc.last_collect_nr = $1 and ut.last_collect_nr = $1
             and tc.product_id = $2 and ut.product_id = $2
@@ -69,28 +67,28 @@ impl<'db> Collection<'db> {
             and tc.test_run_date = ut.test_run_date
             and tc.hits > 0
             and not exists (
-                select sc.stmnt_filepath, sc.stmnt_file_hash, sc.stmnt_line
-                from FailedTestRuns f, ResolvedTestRunStatementCoverage sc
+                select sc.cov_filepath, sc.cov_file_hash, sc.cov_line
+                from FailedTestRuns f, ResolvedTestRunLineCoverage sc
                 where f.last_collect_nr = $1 and f.product_id = $2
                 and sc.last_collect_nr = $1 and sc.product_id = $2
                 and f.test_run_name = sc.test_run_name
                 and f.test_run_date = sc.test_run_date
-                and sc.stmnt_filepath = tc.filepath
-                and (sc.stmnt_file_hash is null or tc.file_hash is null
-                    or sc.stmnt_file_hash = tc.file_hash)
-                and sc.stmnt_line = tc.stmnt_line
+                and sc.cov_filepath = tc.filepath
+                and (sc.cov_file_hash is null or tc.file_hash is null
+                    or sc.cov_file_hash = tc.file_hash)
+                and sc.cov_line = tc.cov_line
             )
             and not exists (
-                select sc.stmnt_filepath, sc.stmnt_file_hash, sc.stmnt_line
-                from SkippedTestRuns s, ResolvedTestRunStatementCoverage sc
+                select sc.cov_filepath, sc.cov_file_hash, sc.cov_line
+                from SkippedTestRuns s, ResolvedTestRunLineCoverage sc
                 where s.last_collect_nr = $1 and s.product_id = $2
                 and sc.last_collect_nr = $1 and sc.product_id = $2
                 and s.test_run_name = sc.test_run_name
                 and s.test_run_date = sc.test_run_date
-                and sc.stmnt_filepath = tc.filepath
-                and (sc.stmnt_file_hash is null or tc.file_hash is null
-                    or sc.stmnt_file_hash = tc.file_hash)
-                and sc.stmnt_line = tc.stmnt_line
+                and sc.cov_filepath = tc.filepath
+                and (sc.cov_file_hash is null or tc.file_hash is null
+                    or sc.cov_file_hash = tc.file_hash)
+                and sc.cov_line = tc.cov_line
             )
             ",
             collect_nr,
@@ -101,7 +99,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from TraceMappedStmntsOnlyCoveredByPassedTestRuns
+            delete from TraceMappedLinesOnlyCoveredByPassedTestRuns
             where last_collect_nr != $1 and product_id = $2
             ",
             collect_nr,
@@ -113,7 +111,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_trace_mapped_stmnts_only_covered_by_passed_test_cases(
+    async fn update_trace_mapped_lines_only_covered_by_passed_test_cases(
         &mut self,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -121,7 +119,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedStmntsOnlyCoveredByPassedTestCases (
+            insert or replace into TraceMappedLinesOnlyCoveredByPassedTestCases (
                 last_collect_nr,
                 product_id,
                 test_run_name,
@@ -130,7 +128,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
+                cov_line
             )
             select
                 tc.last_collect_nr,
@@ -141,7 +139,7 @@ impl<'db> Collection<'db> {
                 tc.filepath,
                 tc.file_hash,
                 tc.traced_line,
-                tc.stmnt_line
+                tc.cov_line
             from TraceCoveragePerTestCases tc, UsableTestCases uc
             where tc.last_collect_nr = $1 and uc.last_collect_nr = $1
             and tc.product_id = $2 and uc.product_id = $2
@@ -150,30 +148,30 @@ impl<'db> Collection<'db> {
             and tc.test_case_name = uc.test_case_name
             and tc.hits > 0
             and not exists (
-                select sc.stmnt_filepath, sc.stmnt_file_hash, sc.stmnt_line
-                from FailedTestCases f, ResolvedTestCaseStatementCoverage sc
+                select sc.cov_filepath, sc.cov_file_hash, sc.cov_line
+                from FailedTestCases f, ResolvedTestCaseLineCoverage sc
                 where f.last_collect_nr = $1 and f.product_id = $2
                 and sc.last_collect_nr = $1 and sc.product_id = $2
                 and f.test_run_name = sc.test_run_name
                 and f.test_run_date = sc.test_run_date
                 and f.test_case_name = sc.test_case_name
-                and sc.stmnt_filepath = tc.filepath
-                and (sc.stmnt_file_hash is null or tc.file_hash is null
-                    or sc.stmnt_file_hash = tc.file_hash)
-                and sc.stmnt_line = tc.stmnt_line
+                and sc.cov_filepath = tc.filepath
+                and (sc.cov_file_hash is null or tc.file_hash is null
+                    or sc.cov_file_hash = tc.file_hash)
+                and sc.cov_line = tc.cov_line
             )
             and not exists (
-                select sc.stmnt_filepath, sc.stmnt_file_hash, sc.stmnt_line
-                from SkippedTestCases s, ResolvedTestCaseStatementCoverage sc
+                select sc.cov_filepath, sc.cov_file_hash, sc.cov_line
+                from SkippedTestCases s, ResolvedTestCaseLineCoverage sc
                 where s.last_collect_nr = $1 and s.product_id = $2
                 and sc.last_collect_nr = $1 and sc.product_id = $2
                 and s.test_run_name = sc.test_run_name
                 and s.test_run_date = sc.test_run_date
                 and s.test_case_name = sc.test_case_name
-                and sc.stmnt_filepath = tc.filepath
-                and (sc.stmnt_file_hash is null or tc.file_hash is null
-                    or sc.stmnt_file_hash = tc.file_hash)
-                and sc.stmnt_line = tc.stmnt_line
+                and sc.cov_filepath = tc.filepath
+                and (sc.cov_file_hash is null or tc.file_hash is null
+                    or sc.cov_file_hash = tc.file_hash)
+                and sc.cov_line = tc.cov_line
             )
             ",
             collect_nr,
@@ -184,7 +182,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from TraceMappedStmntsOnlyCoveredByPassedTestCases
+            delete from TraceMappedLinesOnlyCoveredByPassedTestCases
             where last_collect_nr != $1 and product_id = $2
             ",
             collect_nr,
@@ -196,7 +194,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_trace_mapped_stmnts_only_covered_by_passed_tests(
+    async fn update_trace_mapped_lines_only_covered_by_passed_tests(
         &mut self,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -204,23 +202,23 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedStmntsOnlyCoveredByPassedTests (
+            insert or replace into TraceMappedLinesOnlyCoveredByPassedTests (
                 last_collect_nr,
                 product_id,
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
+                cov_line
             )
-            -- union, because tables may contain duplicate statement entries
+            -- union, because tables may contain duplicate covered line entries
             select
                 last_collect_nr,
                 product_id,
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
-            from TraceMappedStmntsOnlyCoveredByPassedTestRuns
+                cov_line
+            from TraceMappedLinesOnlyCoveredByPassedTestRuns
             where last_collect_nr = $1 and product_id = $2
             union
             select
@@ -229,8 +227,8 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
-            from TraceMappedStmntsOnlyCoveredByPassedTestCases
+                cov_line
+            from TraceMappedLinesOnlyCoveredByPassedTestCases
             where last_collect_nr = $1 and product_id = $2
             ",
             collect_nr,
@@ -241,7 +239,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from TraceMappedStmntsOnlyCoveredByPassedTests
+            delete from TraceMappedLinesOnlyCoveredByPassedTests
             where last_collect_nr != $1 and product_id = $2
             ",
             collect_nr,
@@ -272,7 +270,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line
-            from TraceMappedStmntsOnlyCoveredByPassedTests pt
+            from TraceMappedLinesOnlyCoveredByPassedTests pt
             where last_collect_nr = $1 and product_id = $2
             and not exists (
                 select
@@ -281,8 +279,8 @@ impl<'db> Collection<'db> {
                     filepath,
                     file_hash,
                     traced_line
-                    stmnt_line
-                from TraceMappedStmntsCoveredByFailedTests ft
+                    cov_line
+                from TraceMappedLinesCoveredByFailedTests ft
                 where ft.last_collect_nr = $1 and ft.product_id = $2
                 and pt.filepath = ft.filepath
                 and pt.file_hash = ft.file_hash
@@ -309,7 +307,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_trace_mapped_stmnts_covered_by_failed_test_runs(
+    async fn update_trace_mapped_lines_covered_by_failed_test_runs(
         &mut self,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -317,7 +315,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedStmntsCoveredByFailedTestRuns (
+            insert or replace into TraceMappedLinesCoveredByFailedTestRuns (
                 last_collect_nr,
                 product_id,
                 test_run_name,
@@ -325,7 +323,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
+                cov_line
             )
             select
                 tc.last_collect_nr,
@@ -335,7 +333,7 @@ impl<'db> Collection<'db> {
                 tc.filepath,
                 tc.file_hash,
                 tc.traced_line,
-                tc.stmnt_line
+                tc.cov_line
             from TraceCoveragePerTestRuns tc, FailedTestRuns ft
             where tc.last_collect_nr = $1 and ft.last_collect_nr = $1
             and tc.product_id = $2 and ft.product_id = $2
@@ -351,7 +349,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from TraceMappedStmntsCoveredByFailedTestRuns
+            delete from TraceMappedLinesCoveredByFailedTestRuns
             where last_collect_nr != $1 and product_id = $2
             ",
             collect_nr,
@@ -363,7 +361,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_trace_mapped_stmnts_covered_by_failed_test_cases(
+    async fn update_trace_mapped_lines_covered_by_failed_test_cases(
         &mut self,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -371,7 +369,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedStmntsCoveredByFailedTestCases (
+            insert or replace into TraceMappedLinesCoveredByFailedTestCases (
                 last_collect_nr,
                 product_id,
                 test_run_name,
@@ -380,7 +378,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
+                cov_line
             )
             select
                 tc.last_collect_nr,
@@ -391,7 +389,7 @@ impl<'db> Collection<'db> {
                 tc.filepath,
                 tc.file_hash,
                 tc.traced_line,
-                tc.stmnt_line
+                tc.cov_line
             from TraceCoveragePerTestCases tc, FailedTestCases fc
             where tc.last_collect_nr = $1 and fc.last_collect_nr = $1
             and tc.product_id = $2 and fc.product_id = $2
@@ -408,7 +406,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from TraceMappedStmntsCoveredByFailedTestCases
+            delete from TraceMappedLinesCoveredByFailedTestCases
             where last_collect_nr != $1 and product_id = $2
             ",
             collect_nr,
@@ -420,7 +418,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_trace_mapped_stmnts_covered_by_failed_tests(
+    async fn update_trace_mapped_lines_covered_by_failed_tests(
         &mut self,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -428,23 +426,23 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedStmntsCoveredByFailedTests (
+            insert or replace into TraceMappedLinesCoveredByFailedTests (
                 last_collect_nr,
                 product_id,
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
+                cov_line
             )
-            -- union, because tables may contain duplicate statement entries
+            -- union, because tables may contain duplicate covered line entries
             select
                 last_collect_nr,
                 product_id,
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
-            from TraceMappedStmntsCoveredByFailedTestRuns
+                cov_line
+            from TraceMappedLinesCoveredByFailedTestRuns
             where last_collect_nr = $1 and product_id = $2
             union
             select
@@ -453,8 +451,8 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line
-            from TraceMappedStmntsCoveredByFailedTestCases
+                cov_line
+            from TraceMappedLinesCoveredByFailedTestCases
             where last_collect_nr = $1 and product_id = $2
             ",
             collect_nr,
@@ -465,7 +463,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from TraceMappedStmntsCoveredByFailedTests
+            delete from TraceMappedLinesCoveredByFailedTests
             where last_collect_nr != $1 and product_id = $2
             ",
             collect_nr,
@@ -496,7 +494,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line
-            from TraceMappedStmntsCoveredByFailedTests
+            from TraceMappedLinesCoveredByFailedTests
             where last_collect_nr = $1 and product_id = $2
             ",
             collect_nr,

@@ -9,7 +9,7 @@ impl<'db> Collection<'db> {
         self.update_obsolete_test_runs().await?;
         self.resolve_test_case_states().await?;
         self.update_usable_test_cases().await?;
-        self.resolve_statement_coverage().await?;
+        self.resolve_line_coverage().await?;
         self.update_failed_test_runs().await?;
         self.update_skipped_test_runs().await?;
         self.update_passed_test_runs().await?;
@@ -291,19 +291,19 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn resolve_statement_coverage(&mut self) -> Result<(), anyhow::Error> {
+    async fn resolve_line_coverage(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into ResolvedTestRunStatementCoverage (
+            insert or replace into ResolvedTestRunLineCoverage (
                 last_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
-                stmnt_filepath,
-                stmnt_line,
+                cov_filepath,
+                cov_line,
                 hits
             )
             select
@@ -311,10 +311,10 @@ impl<'db> Collection<'db> {
                 product_id,
                 test_run_name,
                 test_run_date,
-                stmnt_filepath,
-                stmnt_line,
+                cov_filepath,
+                cov_line,
                 hits
-            from TestRunStatementCoverageOverrides
+            from TestRunLineCoverageOverrides
             where last_collect_nr = $1 and product_id = $2
             union all
             select
@@ -322,26 +322,26 @@ impl<'db> Collection<'db> {
                 t.product_id,
                 t.test_run_name,
                 t.test_run_date,
-                t.stmnt_filepath,
-                t.stmnt_line,
+                t.cov_filepath,
+                t.cov_line,
                 t.hits
-            from TestRunStatementCoverage t
+            from TestRunLineCoverage t
             where not exists (
                 select
                     last_collect_nr,
                     product_id,
                     test_run_name,
                     test_run_date,
-                    stmnt_filepath,
-                    stmnt_line
-                from TestRunStatementCoverageOverrides o
+                    cov_filepath,
+                    cov_line
+                from TestRunLineCoverageOverrides o
                 where t.last_collect_nr = $1 and t.product_id = $2
                 and t.last_collect_nr = o.last_collect_nr
                 and t.product_id = o.product_id
                 and t.test_run_name = o.test_run_name
                 and t.test_run_date = o.test_run_date
-                and t.stmnt_filepath = o.stmnt_filepath
-                and t.stmnt_line = o.stmnt_line
+                and t.cov_filepath = o.cov_filepath
+                and t.cov_line = o.cov_line
             )
             ",
             collect_nr,
@@ -352,7 +352,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from ResolvedTestRunStatementCoverage
+            delete from ResolvedTestRunLineCoverage
             where last_collect_nr != $1
             and product_id = $2
             ",
@@ -364,14 +364,14 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into ResolvedTestCaseStatementCoverage (
+            insert or replace into ResolvedTestCaseLineCoverage (
                 last_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
                 test_case_name,
-                stmnt_filepath,
-                stmnt_line,
+                cov_filepath,
+                cov_line,
                 hits
             )
             select
@@ -380,10 +380,10 @@ impl<'db> Collection<'db> {
                 test_run_name,
                 test_run_date,
                 test_case_name,
-                stmnt_filepath,
-                stmnt_line,
+                cov_filepath,
+                cov_line,
                 hits
-            from TestCaseStatementCoverageOverrides
+            from TestCaseLineCoverageOverrides
             where last_collect_nr = $1 and product_id = $2
             union all
             select
@@ -392,10 +392,10 @@ impl<'db> Collection<'db> {
                 t.test_run_name,
                 t.test_run_date,
                 t.test_case_name,
-                t.stmnt_filepath,
-                t.stmnt_line,
+                t.cov_filepath,
+                t.cov_line,
                 t.hits
-            from TestCaseStatementCoverage t
+            from TestCaseLineCoverage t
             where not exists (
                 select
                     last_collect_nr,
@@ -403,17 +403,17 @@ impl<'db> Collection<'db> {
                     test_run_name,
                     test_run_date,
                     test_case_name,
-                    stmnt_filepath,
-                    stmnt_line
-                from TestCaseStatementCoverageOverrides o
+                    cov_filepath,
+                    cov_line
+                from TestCaseLineCoverageOverrides o
                 where t.last_collect_nr = $1 and t.product_id = $2
                 and t.last_collect_nr = o.last_collect_nr
                 and t.product_id = o.product_id
                 and t.test_run_name = o.test_run_name
                 and t.test_run_date = o.test_run_date
                 and t.test_case_name = o.test_case_name
-                and t.stmnt_filepath = o.stmnt_filepath
-                and t.stmnt_line = o.stmnt_line
+                and t.cov_filepath = o.cov_filepath
+                and t.cov_line = o.cov_line
             )
             ",
             collect_nr,
@@ -424,7 +424,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from ResolvedTestCaseStatementCoverage
+            delete from ResolvedTestCaseLineCoverage
             where last_collect_nr != $1
             and product_id = $2
             ",
@@ -786,7 +786,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line,
+                cov_line,
                 hits
             )
             select
@@ -794,20 +794,20 @@ impl<'db> Collection<'db> {
                 sc.product_id,
                 sc.test_run_name,
                 sc.test_run_date,
-                sc.stmnt_filepath,
+                sc.cov_filepath,
                 ts.file_hash,
                 ts.traced_line,
-                sc.stmnt_line,
+                sc.cov_line,
                 sc.hits
-            from ResolvedTestRunStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
+            from ResolvedTestRunLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
-            and sc.hits not null and sc.stmnt_filepath = pf.filepath
+            and sc.hits not null and sc.cov_filepath = pf.filepath
             and pf.file_hash = ts.file_hash
-            and (sc.stmnt_file_hash is null or sc.stmnt_file_hash = ts.file_hash)
-            and sc.stmnt_line >= ts.start_line
-            and sc.stmnt_line <= ts.end_line
-            and sc.stmnt_line not in (
+            and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)
+            and sc.cov_line >= ts.start_line
+            and sc.cov_line <= ts.end_line
+            and sc.cov_line not in (
                 select line
                 from ExcludedCoverageLines
                 where file_hash = ts.file_hash
@@ -849,7 +849,7 @@ impl<'db> Collection<'db> {
                 filepath,
                 file_hash,
                 traced_line,
-                stmnt_line,
+                cov_line,
                 hits
             )
             select
@@ -858,19 +858,19 @@ impl<'db> Collection<'db> {
                 sc.test_run_name,
                 sc.test_run_date,
                 sc.test_case_name,
-                sc.stmnt_filepath,
+                sc.cov_filepath,
                 ts.file_hash,
                 ts.traced_line,
-                sc.stmnt_line,
+                sc.cov_line,
                 sc.hits
-            from ResolvedTestCaseStatementCoverage sc, ProductRelatedFiles pf, TraceSpans ts
+            from ResolvedTestCaseLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
-            and sc.hits not null and sc.stmnt_filepath = pf.filepath
+            and sc.hits not null and sc.cov_filepath = pf.filepath
             and pf.file_hash = ts.file_hash
-            and (sc.stmnt_file_hash is null or sc.stmnt_file_hash = ts.file_hash)
-            and sc.stmnt_line >= ts.start_line and sc.stmnt_line <= ts.end_line
-            and sc.stmnt_line not in (
+            and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)
+            and sc.cov_line >= ts.start_line and sc.cov_line <= ts.end_line
+            and sc.cov_line not in (
                 select line
                 from ExcludedCoverageLines
                 where file_hash = ts.file_hash

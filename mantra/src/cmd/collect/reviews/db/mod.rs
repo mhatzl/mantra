@@ -153,7 +153,7 @@ impl<'db> Collection<'db> {
 
             sqlx::query!(
                 "
-                delete from TestRunStatementCoverageOverrides
+                delete from TestRunLineCoverageOverrides
                 where product_id = $1 and last_collect_nr < $2
                 and review_name = $3 and review_date = $4
 
@@ -168,7 +168,7 @@ impl<'db> Collection<'db> {
 
             sqlx::query!(
                 "
-                delete from TestCaseStatementCoverageOverrides
+                delete from TestCaseLineCoverageOverrides
                 where product_id = $1 and last_collect_nr < $2
                 and review_name = $3 and review_date = $4
 
@@ -581,13 +581,13 @@ impl<'db> Collection<'db> {
                             .await?;
 
                         for line_nr in line_info.nrs {
-                            let statement_exists = sqlx::query!(
+                            let covered_line_exists = sqlx::query!(
                                 "
-                                select * from TestCaseStatementCoverage
+                                select * from TestCaseLineCoverage
                                 where
                                     product_id = $1 and test_run_name = $2
                                     and test_run_date = $3 and test_case_name = $4
-                                    and stmnt_filepath = $5 and stmnt_line = $6
+                                    and cov_filepath = $5 and cov_line = $6
                                 ",
                                 product_id,
                                 test_run_override.name,
@@ -600,10 +600,10 @@ impl<'db> Collection<'db> {
                             .await?
                             .is_some();
 
-                            if statement_exists {
+                            if covered_line_exists {
                                 sqlx::query!(
                                     "
-                                    insert into TestCaseStatementCoverageOverrides (
+                                    insert into TestCaseLineCoverageOverrides (
                                         last_collect_nr,
                                         product_id,
                                         test_run_name,
@@ -611,8 +611,8 @@ impl<'db> Collection<'db> {
                                         test_case_name,
                                         review_name,
                                         review_date,
-                                        stmnt_filepath,
-                                        stmnt_line,
+                                        cov_filepath,
+                                        cov_line,
                                         hits,
                                         comment_hash
                                     )
@@ -636,8 +636,8 @@ impl<'db> Collection<'db> {
                                         test_case_name,
                                         review_name,
                                         review_date,
-                                        stmnt_filepath,
-                                        stmnt_line
+                                        cov_filepath,
+                                        cov_line
                                     )
                                     do update set
                                         last_collect_nr = excluded.last_collect_nr,
@@ -659,7 +659,7 @@ impl<'db> Collection<'db> {
                                 .execute(self.connection_mut())
                                 .await?;
                             } else {
-                                let entry = IgnoredEntry::from_test_case_statement_coverage(
+                                let entry = IgnoredEntry::from_test_case_line_coverage(
                                     test_run_override.name.clone(),
                                     test_run_override.utc_date.clone(),
                                     test_case_override.name.clone(),
@@ -685,13 +685,13 @@ impl<'db> Collection<'db> {
                         .await?;
 
                     for line_nr in line_info.nrs {
-                        let statement_exists = sqlx::query!(
+                        let covered_line_exists = sqlx::query!(
                             "
-                            select * from TestRunStatementCoverage
+                            select * from TestRunLineCoverage
                             where
                                 product_id = $1 and test_run_name = $2
-                                and test_run_date = $3 and stmnt_filepath = $4
-                                and stmnt_line = $5
+                                and test_run_date = $3 and cov_filepath = $4
+                                and cov_line = $5
                             ",
                             product_id,
                             test_run_override.name,
@@ -703,18 +703,18 @@ impl<'db> Collection<'db> {
                         .await?
                         .is_some();
 
-                        if statement_exists {
+                        if covered_line_exists {
                             sqlx::query!(
                                 "
-                                insert into TestRunStatementCoverageOverrides (
+                                insert into TestRunLineCoverageOverrides (
                                     last_collect_nr,
                                     product_id,
                                     test_run_name,
                                     test_run_date,
                                     review_name,
                                     review_date,
-                                    stmnt_filepath,
-                                    stmnt_line,
+                                    cov_filepath,
+                                    cov_line,
                                     hits,
                                     comment_hash
                                 )
@@ -736,8 +736,8 @@ impl<'db> Collection<'db> {
                                     test_run_date,
                                     review_name,
                                     review_date,
-                                    stmnt_filepath,
-                                    stmnt_line
+                                    cov_filepath,
+                                    cov_line
                                 )
                                 do update set
                                     last_collect_nr = excluded.last_collect_nr,
@@ -758,7 +758,7 @@ impl<'db> Collection<'db> {
                             .execute(self.connection_mut())
                             .await?;
                         } else {
-                            let entry = IgnoredEntry::from_test_run_statement_coverage(
+                            let entry = IgnoredEntry::from_test_run_line_coverage(
                                 test_run_override.name.clone(),
                                 test_run_override.utc_date.clone(),
                                 coverage_override.filepath.clone(),
@@ -901,20 +901,20 @@ enum IgnoredEntry {
         state: TestCaseState,
         comment_hash: FmtHash,
     },
-    TestCaseStatementCoverageOverride {
+    TestCaseLineCoverageOverride {
         test_run_name: String,
         test_run_utc_date: OffsetDateTime,
         test_case_name: String,
-        stmnt_filepath: RelativePathBuf,
-        stmnt_line: Line,
+        cov_filepath: RelativePathBuf,
+        cov_line: Line,
         hits: Option<i64>,
         comment_hash: FmtHash,
     },
-    TestRunStatementCoverageOverride {
+    TestRunLineCoverageOverride {
         test_run_name: String,
         test_run_utc_date: OffsetDateTime,
-        stmnt_filepath: RelativePathBuf,
-        stmnt_line: Line,
+        cov_filepath: RelativePathBuf,
+        cov_line: Line,
         hits: Option<i64>,
         comment_hash: FmtHash,
     },
@@ -944,39 +944,39 @@ impl IgnoredEntry {
         }
     }
 
-    fn from_test_case_statement_coverage(
+    fn from_test_case_line_coverage(
         test_run_name: String,
         test_run_utc_date: OffsetDateTime,
         test_case_name: String,
-        stmnt_filepath: RelativePathBuf,
-        stmnt_line: Line,
+        cov_filepath: RelativePathBuf,
+        cov_line: Line,
         hits: Option<i64>,
         comment_hash: FmtHash,
     ) -> Self {
-        Self::TestCaseStatementCoverageOverride {
+        Self::TestCaseLineCoverageOverride {
             test_run_name,
             test_run_utc_date,
             test_case_name,
-            stmnt_filepath,
-            stmnt_line,
+            cov_filepath,
+            cov_line,
             hits,
             comment_hash,
         }
     }
 
-    fn from_test_run_statement_coverage(
+    fn from_test_run_line_coverage(
         test_run_name: String,
         test_run_utc_date: OffsetDateTime,
-        stmnt_filepath: RelativePathBuf,
-        stmnt_line: Line,
+        cov_filepath: RelativePathBuf,
+        cov_line: Line,
         hits: Option<i64>,
         comment_hash: FmtHash,
     ) -> Self {
-        Self::TestRunStatementCoverageOverride {
+        Self::TestRunLineCoverageOverride {
             test_run_name,
             test_run_utc_date,
-            stmnt_filepath,
-            stmnt_line,
+            cov_filepath,
+            cov_line,
             hits,
             comment_hash,
         }

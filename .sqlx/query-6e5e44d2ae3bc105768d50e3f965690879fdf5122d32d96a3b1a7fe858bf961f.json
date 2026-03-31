@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into TraceCoveragePerTestCases (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line,\n                hits\n            )\n            select\n                sc.last_collect_nr,\n                sc.product_id,\n                sc.test_run_name,\n                sc.test_run_date,\n                sc.test_case_name,\n                sc.cov_filepath,\n                ts.file_hash,\n                ts.traced_line,\n                sc.cov_line,\n                sc.hits\n            from ResolvedTestCaseLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts\n            where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr\n            and sc.product_id = $2 and sc.product_id = pf.product_id\n            and sc.hits not null and sc.cov_filepath = pf.filepath\n            and pf.file_hash = ts.file_hash\n            and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)\n            and sc.cov_line >= ts.start_line and sc.cov_line <= ts.end_line\n            and sc.cov_line not in (\n                select line\n                from ExcludedCoverageLines\n                where file_hash = ts.file_hash\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6e5e44d2ae3bc105768d50e3f965690879fdf5122d32d96a3b1a7fe858bf961f"
+}

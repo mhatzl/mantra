@@ -190,7 +190,7 @@ pub struct OverrideCoveredLineInfo {
     #[serde(alias = "nr")]
     pub nrs: Vec<Line>,
     /// The new number of times the set lines are reached during a test run or test case execution.
-    /// If None, the line is marked to be ignored from statement coverage analysis.
+    /// If None, the line is marked to be ignored from line coverage analysis.
     pub hits: Option<i64>,
     /// Mandatory comment explaining the change to the code coverage information.
     pub comment: String,

@@ -150,12 +150,12 @@ create table TestCaseOverrides (
     constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
 );
 
--- Table to store overrides from reviews for statement coverage entries of test runs.
+-- Table to store overrides from reviews for line coverage entries of test runs.
 --
 -- **Note:** No file hash needed, because the related coverage entry is either in the tracked or untracked table.
 --
 -- [req("review.coverage", "testcov.cov.lines")]
-create table TestRunStatementCoverageOverrides (
+create table TestRunLineCoverageOverrides (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
@@ -168,13 +168,13 @@ create table TestRunStatementCoverageOverrides (
     -- UTC date and time at which the review was held.
     review_date text not null,
     -- File that was covered.
-    stmnt_filepath text not null,
+    cov_filepath text not null,
     -- Line that was covered.
-    stmnt_line text not null,
+    cov_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
-    -- If null, the line is ignored from statement coverage analysis for this test run.
+    -- If null, the line is ignored from line coverage analysis for this test run.
     hits integer,
-    -- Hash of the comment explaining why this statement coverage must be overriden.
+    -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
@@ -182,33 +182,33 @@ create table TestRunStatementCoverageOverrides (
         test_run_date,
         review_name,
         review_date,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
     foreign key (
         product_id,
         test_run_name,
         test_run_date,
-        stmnt_filepath,
-        stmnt_line
-    ) references TestRunStatementCoverage (
+        cov_filepath,
+        cov_line
+    ) references TestRunLineCoverage (
         product_id,
         test_run_name,
         test_run_date,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     -- ensure the test run happened before the review
     constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
 );
 
--- Table to store overrides from reviews for statement coverage entries of test cases.
+-- Table to store overrides from reviews for line coverage entries of test cases.
 --
 -- **Note:** No file hash needed, because the related coverage entry is either in the tracked or untracked table.
 --
 -- [req("review.coverage", "testcov.cov.lines")]
-create table TestCaseStatementCoverageOverrides (
+create table TestCaseLineCoverageOverrides (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
@@ -223,13 +223,13 @@ create table TestCaseStatementCoverageOverrides (
     -- UTC date and time at which the review was held.
     review_date text not null,
     -- File that was covered.
-    stmnt_filepath text not null,
+    cov_filepath text not null,
     -- Line that was covered.
-    stmnt_line text not null,
+    cov_line text not null,
     -- Number of how often the line was covered/hit during test run execution.
-    -- If null, the line is ignored from statement coverage analysis for this test case.
+    -- If null, the line is ignored from line coverage analysis for this test case.
     hits integer,
-    -- Hash of the comment explaining why this statement coverage must be overriden.
+    -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
@@ -238,8 +238,8 @@ create table TestCaseStatementCoverageOverrides (
         test_case_name,
         review_name,
         review_date,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade,
     foreign key (
@@ -247,15 +247,15 @@ create table TestCaseStatementCoverageOverrides (
         test_run_name,
         test_run_date,
         test_case_name,
-        stmnt_filepath,
-        stmnt_line
-    ) references TestCaseStatementCoverage (
+        cov_filepath,
+        cov_line
+    ) references TestCaseLineCoverage (
         product_id,
         test_run_name,
         test_run_date,
         test_case_name,
-        stmnt_filepath,
-        stmnt_line
+        cov_filepath,
+        cov_line
     ),
     -- ensure the test run happened before the review
     constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from TraceMappedLinesCoveredByFailedTests\n            where last_collect_nr != $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "64da8f36f748a82d2e6be0c3902994fa6c668ad5d5590f2cbc781e45305b3c9f"
+}

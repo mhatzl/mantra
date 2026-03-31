@@ -1,5 +1,5 @@
--- Contains statement lines mapped to traces that are only covered by passed test runs
-create table TraceMappedStmntsOnlyCoveredByPassedTestRuns (
+-- Contains covered lines mapped to traces that are only covered by passed test runs
+create table TraceMappedLinesOnlyCoveredByPassedTestRuns (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -7,16 +7,16 @@ create table TraceMappedStmntsOnlyCoveredByPassedTestRuns (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
-    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, stmnt_line),
-    foreign key (product_id, test_run_name, test_run_date, filepath, stmnt_line)
-        references TestRunStatementCoverage(product_id, test_run_name, test_run_date, stmnt_filepath, stmnt_line) on delete cascade,
+    cov_line text not null,
+    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
+    foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
+        references TestRunLineCoverage(product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains statement lines mapped to traces that are only covered by passed test cases
-create table TraceMappedStmntsOnlyCoveredByPassedTestCases (
+-- Contains covered lines mapped to traces that are only covered by passed test cases
+create table TraceMappedLinesOnlyCoveredByPassedTestCases (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -25,29 +25,29 @@ create table TraceMappedStmntsOnlyCoveredByPassedTestCases (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
-    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, stmnt_line),
-    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, stmnt_line)
-        references TestCaseStatementCoverage(product_id, test_run_name, test_run_date, test_case_name, stmnt_filepath, stmnt_line) on delete cascade,
+    cov_line text not null,
+    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
+    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+        references TestCaseLineCoverage(product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Table combining TraceMappedStmntsOnlyCoveredByPassedTestRuns
--- and TraceMappedStmntsOnlyCoveredByPassedTestCases
-create table TraceMappedStmntsOnlyCoveredByPassedTests (
+-- Table combining TraceMappedLinesOnlyCoveredByPassedTestRuns
+-- and TraceMappedLinesOnlyCoveredByPassedTestCases
+create table TraceMappedLinesOnlyCoveredByPassedTests (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
-    primary key (product_id, filepath, file_hash, traced_line, stmnt_line),
+    cov_line text not null,
+    primary key (product_id, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains traces that have no mapped statement that was covered by a failed test.
+-- Contains traces that have no mapped line that was covered by a failed test.
 create table TracesOnlyCoveredByPassedTests (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -59,10 +59,10 @@ create table TracesOnlyCoveredByPassedTests (
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains statement lines mapped to traces that are covered by failed test runs
+-- Contains covered lines mapped to traces that are covered by failed test runs
 -- Note: may also be covered by passed test runs, but at least one failed test run
--- also covered the statements.
-create table TraceMappedStmntsCoveredByFailedTestRuns (
+-- also covered the line.
+create table TraceMappedLinesCoveredByFailedTestRuns (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -70,18 +70,18 @@ create table TraceMappedStmntsCoveredByFailedTestRuns (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
-    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, stmnt_line),
-    foreign key (product_id, test_run_name, test_run_date, filepath, stmnt_line)
-        references TestRunStatementCoverage(product_id, test_run_name, test_run_date, stmnt_filepath, stmnt_line) on delete cascade,
+    cov_line text not null,
+    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
+    foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
+        references TestRunLineCoverage(product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains statement lines mapped to traces that are covered by failed test cases
+-- Contains covered lines mapped to traces that are covered by failed test cases
 -- Note: may also be covered by passed test cases, but at least one failed test case
--- also covered the statements.
-create table TraceMappedStmntsCoveredByFailedTestCases (
+-- also covered the line.
+create table TraceMappedLinesCoveredByFailedTestCases (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
@@ -90,29 +90,29 @@ create table TraceMappedStmntsCoveredByFailedTestCases (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
-    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, stmnt_line),
-    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, stmnt_line)
-        references TestCaseStatementCoverage(product_id, test_run_name, test_run_date, test_case_name, stmnt_filepath, stmnt_line) on delete cascade,
+    cov_line text not null,
+    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
+    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+        references TestCaseLineCoverage(product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Table combining TraceMappedStmntsCoveredByFailedTestRuns
--- and TraceMappedStmntsCoveredByFailedTestCases
-create table TraceMappedStmntsCoveredByFailedTests (
+-- Table combining TraceMappedLinesCoveredByFailedTestRuns
+-- and TraceMappedLinesCoveredByFailedTestCases
+create table TraceMappedLinesCoveredByFailedTests (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    stmnt_line text not null,
-    primary key (product_id, filepath, file_hash, traced_line, stmnt_line),
+    cov_line text not null,
+    primary key (product_id, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains traces that have at least one mapped statement that was covered by a failed test.
+-- Contains traces that have at least one linked line that was covered by a failed test.
 create table TracesCoveredByFailedTests (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -134,8 +134,8 @@ select
     filepath,
     file_hash,
     traced_line
-from TraceMappedStmntsOnlyCoveredByPassedTestRuns
-union -- because tables may contain multiple statements for the same traced line
+from TraceMappedLinesOnlyCoveredByPassedTestRuns
+union all
 select
     last_collect_nr,
     product_id,
@@ -144,7 +144,7 @@ select
     filepath,
     file_hash,
     traced_line
-from TraceMappedStmntsCoveredByFailedTestRuns;
+from TraceMappedLinesCoveredByFailedTestRuns;
 
 -- Contains traces covered by test cases.
 create view TracesCoveredByTestCases as
@@ -157,8 +157,8 @@ select
     filepath,
     file_hash,
     traced_line
-from TraceMappedStmntsOnlyCoveredByPassedTestCases
-union -- because tables may contain multiple statements for the same traced line
+from TraceMappedLinesOnlyCoveredByPassedTestCases
+union all
 select
     last_collect_nr,
     product_id,
@@ -168,7 +168,7 @@ select
     filepath,
     file_hash,
     traced_line
-from TraceMappedStmntsCoveredByFailedTestCases;
+from TraceMappedLinesCoveredByFailedTestCases;
 
 -- Contains traces covered by tests.
 --
@@ -196,9 +196,9 @@ from TracesCoveredByFailedTests;
 -- - verified: all of the following conditions must be met
 --   - requirement has satisfies or verifies traces, or is explicitly verified by at least one test case
 --     - if no *statisfies* trace exists for the requirement,
---       and a direct *verifies* trace mentions the ID and the trace is covered by at least one statement
+--       and a direct *verifies* trace mentions the ID and the trace is covered by at least one line
 --       from coverage metrics of a test run or test case, and all test runs or test cases
---       that cover the statement passed
+--       that cover the line passed
 --     - if a *satisfies* trace exists, in addition to the conditions above,
 --       at least one *satisfies* trace must also be covered by the same test run or test case
 --       that the *verifies* trace is covered by
