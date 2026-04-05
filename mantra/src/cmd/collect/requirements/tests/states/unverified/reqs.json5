@@ -1,0 +1,40 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Verified First Requirement",
+        origin: "Unverified state test",
+    },{
+        id: "req-1.sub-1",
+        title: "Unverified First Sub-Requirement",
+        origin: "Unverified state test",
+    },{
+        id: "req-2",
+        title: "Unverified Second Requirement",
+        origin: "Unverified state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Unverified Second Sub-Requirement",
+        origin: "Unverified state test",
+    },{
+        id: "req-manual",
+        title: "Test Verified + Manually Unreviewed Requirement",
+        origin: "Unverified state test",
+        manual_verification: true,
+    },{
+        id: "req-satisfy",
+        title: "Unverified Satisfy Traced Requirement",
+        origin: "Unverified state test",
+    },{
+        id: "req-verify",
+        title: "Unverified Verify Traced Requirement",
+        origin: "Unverified state test",
+    },{
+        id: "req-satisfy-verify",
+        title: "Unverified Satisfy and Verify Traced Requirement",
+        origin: "Verified state test",
+    },{
+        id: "req-mult-satisfy",
+        title: "Unverified Satisfy Traced Requirement (Not all traces covered)",
+        origin: "Unverified state test",
+    }]
+}

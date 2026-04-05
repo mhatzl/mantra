@@ -1,0 +1,57 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Ignored First Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Ignored)",
+        origin: "Ignored state test",
+    },{
+        id: "req-2",
+        title: "Second Requirement (Not Ignored)",
+        origin: "Ignored state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Ignored Second Sub-Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-3",
+        title: "Ignored Third Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-4",
+        title: "Ignored + Failed Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-5",
+        title: "Ignored + Skipped Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-6",
+        title: "Ignored + Verified Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-7",
+        title: "Ignored + Manually Reviewed Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+        manual_verification: true,
+    },{
+        id: "req-8",
+        title: "Ignored Satisfy Traced Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-9",
+        title: "Ignored Verify Traced Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    }]
+}

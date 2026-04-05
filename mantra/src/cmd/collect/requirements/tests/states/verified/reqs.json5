@@ -1,0 +1,28 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First Requirement (Indirectly Verified)",
+        origin: "Verified state test",
+    },{
+        id: "req-1.sub-1",
+        title: "Verified First Sub-Requirement",
+        origin: "Verified state test",
+    },{
+        id: "req-manual",
+        title: "Manually Reviewed Requirement",
+        origin: "Verified state test",
+        manual_verification: true,
+    },{
+        id: "req-satisfy",
+        title: "Verified Satisfy Traced Requirement",
+        origin: "Verified state test",
+    },{
+        id: "req-verify",
+        title: "Verified Verify Traced Requirement",
+        origin: "Verified state test",
+    },{
+        id: "req-satisfy-verify",
+        title: "Verified Satisfy and Verify Traced Requirement",
+        origin: "Verified state test",
+    }]
+}

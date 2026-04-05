@@ -1,0 +1,28 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Skipped First Requirement",
+        origin: "Skipped state test",
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Not Skiped)",
+        origin: "Skipped state test",
+    },{
+        id: "req-2",
+        title: "Second Requirement (Indirectly Skipped)",
+        origin: "Skipped state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Skipped Second Sub-Requirement",
+        origin: "Skipped state test",
+    },{
+        id: "req-verified",
+        title: "Skipped + Verified Requirement",
+        origin: "Skipped state test",
+    },{
+        id: "req-manual",
+        title: "Skipped + Manually Reviewed Requirement",
+        origin: "Skipped state test",
+        manual_verification: true,
+    }]
+}

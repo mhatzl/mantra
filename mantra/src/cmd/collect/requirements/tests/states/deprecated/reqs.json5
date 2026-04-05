@@ -1,0 +1,57 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Deprecated First Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Deprecated)",
+        origin: "Deprecated state test",
+    },{
+        id: "req-2",
+        title: "Second Requirement (Not Deprecated)",
+        origin: "Deprecated state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Deprecated Second Sub-Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-3",
+        title: "Deprecated Third Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-4",
+        title: "Deprecated + Failed Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-5",
+        title: "Deprecated + Skipped Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-6",
+        title: "Deprecated + Verified Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-7",
+        title: "Deprecated + Manually Reviewed Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+        manual_verification: true,
+    },{
+        id: "req-8",
+        title: "Deprecated Satisfy Traced Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-9",
+        title: "Deprecated Verify Traced Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    }]
+}
