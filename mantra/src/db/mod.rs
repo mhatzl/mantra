@@ -3,6 +3,7 @@ use std::str::FromStr;
 use mantra_schema::path::RelativePathBuf;
 use sqlx::SqlitePool;
 
+#[cfg(test)]
 pub mod test_stub;
 
 pub type MantraConnection = sqlx::sqlite::SqliteConnection;

@@ -2,14 +2,19 @@ use crate::cmd::collect::test_setup::db_from_cfg_file;
 
 #[tokio::test]
 async fn single_product() {
-    let mut db = db_from_cfg_file!("single_product.json5").expect("Failed to create mantra db");
+    let db = db_from_cfg_file!("single_product.json5").expect("Failed to create mantra db");
 
     let records = sqlx::query!(
         "
         select id, name from Products
         "
     )
-    .fetch_all(db.connection_mut())
+    .fetch_all(
+        db.connection()
+            .await
+            .expect("Failed to get a connection")
+            .as_mut(),
+    )
     .await
     .unwrap();
 

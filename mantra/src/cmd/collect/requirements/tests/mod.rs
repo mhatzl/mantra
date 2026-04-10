@@ -13,7 +13,7 @@ async fn detect_hierarchy_cycles(dir: &str) {
 }
 
 mod states {
-    use mantra_schema::report::short::RequirementState;
+    use mantra_schema::report::RequirementState;
 
     use crate::cmd::collect::test_setup::db_from_dir;
 
@@ -21,7 +21,7 @@ mod states {
     async fn deprecated_req() {
         let depr_state = RequirementState::Deprecated.as_nr();
 
-        let mut db = db_from_dir!("states/deprecated").unwrap();
+        let db = db_from_dir!("states/deprecated").unwrap();
 
         let depr_reqs: Vec<String> = sqlx::query!(
             "
@@ -30,7 +30,12 @@ mod states {
             ",
             depr_state
         )
-        .fetch_all(db.connection_mut())
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
         .await
         .unwrap()
         .into_iter()
@@ -87,7 +92,7 @@ mod states {
     async fn ignored_req() {
         let ignore_state = RequirementState::Ignored.as_nr();
 
-        let mut db = db_from_dir!("states/ignored").unwrap();
+        let db = db_from_dir!("states/ignored").unwrap();
 
         let ignored_reqs: Vec<String> = sqlx::query!(
             "
@@ -96,7 +101,12 @@ mod states {
             ",
             ignore_state
         )
-        .fetch_all(db.connection_mut())
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
         .await
         .unwrap()
         .into_iter()
@@ -153,7 +163,7 @@ mod states {
     async fn failed_req() {
         let failed_state = RequirementState::Failed.as_nr();
 
-        let mut db = db_from_dir!("states/failed").unwrap();
+        let db = db_from_dir!("states/failed").unwrap();
 
         let failed_reqs: Vec<String> = sqlx::query!(
             "
@@ -162,7 +172,12 @@ mod states {
             ",
             failed_state
         )
-        .fetch_all(db.connection_mut())
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
         .await
         .unwrap()
         .into_iter()
@@ -203,7 +218,7 @@ mod states {
     async fn skipped_req() {
         let skipped_state = RequirementState::Skipped.as_nr();
 
-        let mut db = db_from_dir!("states/skipped").unwrap();
+        let db = db_from_dir!("states/skipped").unwrap();
 
         let skipped_reqs: Vec<String> = sqlx::query!(
             "
@@ -212,7 +227,12 @@ mod states {
             ",
             skipped_state
         )
-        .fetch_all(db.connection_mut())
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
         .await
         .unwrap()
         .into_iter()
@@ -249,7 +269,7 @@ mod states {
     async fn unverified_req() {
         let unverified_state = RequirementState::Unverified.as_nr();
 
-        let mut db = db_from_dir!("states/unverified").unwrap();
+        let db = db_from_dir!("states/unverified").unwrap();
 
         let unverified_reqs: Vec<String> = sqlx::query!(
             "
@@ -258,7 +278,12 @@ mod states {
             ",
             unverified_state
         )
-        .fetch_all(db.connection_mut())
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
         .await
         .unwrap()
         .into_iter()
@@ -309,7 +334,7 @@ mod states {
     async fn verified_req() {
         let verified_state = RequirementState::Verified.as_nr();
 
-        let mut db = db_from_dir!("states/verified").unwrap();
+        let db = db_from_dir!("states/verified").unwrap();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
@@ -318,7 +343,12 @@ mod states {
             ",
             verified_state
         )
-        .fetch_all(db.connection_mut())
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
         .await
         .unwrap()
         .into_iter()
