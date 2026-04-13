@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        select cov_line, hits, content\n                        from TestRunLineCoverageOverrides, GeneralTexts\n                        where product_id = $1\n                        and test_run_name = $2\n                        and test_run_date = $3\n                        and cov_filepath = $4\n                        and comment_hash = hash\n                        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_line",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "hits",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "content",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "a680aadef6c0ab34567d4a3879411263de09df5f96b5048fed1a326855745ceb"
+}

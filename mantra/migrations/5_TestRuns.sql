@@ -165,7 +165,7 @@ create table TestRunLineCoverage (
     -- Optional hash of the file content when the coverage was captured.
     cov_file_hash text,
     -- Line that was covered.
-    cov_line text not null,
+    cov_line integer not null,
     -- Number of how often the line was covered/hit during test run execution.
     -- If null, the line is ignored from line coverage analysis.
     -- Unless it is not null for test cases or child test runs of this test run.
@@ -377,7 +377,7 @@ create table TestCaseLineCoverage (
     -- Hash of the file that was covered.
     cov_file_hash text,
     -- Line that was covered.
-    cov_line text not null,
+    cov_line integer not null,
     -- Number of how often the line was covered/hit during the test case execution.
     -- If null, the line is ignored from line coverage analysis for this test case.
     hits integer,

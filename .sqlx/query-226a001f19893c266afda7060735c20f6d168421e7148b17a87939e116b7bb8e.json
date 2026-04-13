@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select req_id from ManuallyVerifiedRequirements\n                where product_id = $1\n                and review_name = $2\n                and review_date = $3",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "226a001f19893c266afda7060735c20f6d168421e7148b17a87939e116b7bb8e"
+}

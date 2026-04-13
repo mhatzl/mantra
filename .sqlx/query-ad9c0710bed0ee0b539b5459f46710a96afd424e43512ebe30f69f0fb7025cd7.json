@@ -41,7 +41,7 @@
       {
         "name": "cov_line",
         "ordinal": 7,
-        "type_info": "Text"
+        "type_info": "Integer"
       },
       {
         "name": "hits",

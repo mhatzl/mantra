@@ -4,7 +4,7 @@ use crate::{
     product::Product,
     report::{RequirementReference, RequirementState, TestRunReference},
     requirements::ReqId,
-    reviews::{OverrideTestRun, VerifiedRequirement, review_date_format},
+    reviews::{OverrideTestRun, review_date_format},
     test_runs::TestCaseState,
 };
 
@@ -90,6 +90,6 @@ pub struct ReviewOverview {
     )]
     pub utc_date: OffsetDateTime,
     pub authors: Vec<String>,
-    pub requirements: Vec<VerifiedRequirement>,
-    pub test_run_overrides: Vec<OverrideTestRun>,
+    pub requirements: Option<Vec<ReqId>>,
+    pub test_run_overrides: Option<Vec<OverrideTestRun>>,
 }

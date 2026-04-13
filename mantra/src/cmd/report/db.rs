@@ -6,6 +6,10 @@ use mantra_schema::{
             TestCaseOverview, TestRunOverview,
         },
     },
+    reviews::{
+        OverrideCoveredLineInfo, OverrideFileCoverage, OverrideTestCase, OverrideTestCaseState,
+        OverrideTestRun,
+    },
     time::OffsetDateTime,
 };
 
@@ -264,6 +268,293 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
     }
 
     async fn reviews_overview(&mut self) -> Result<Vec<ReviewOverview>, anyhow::Error> {
-        Ok(vec![])
+        let product_id = self.product_id();
+
+        let reviews = sqlx::query!(
+            "
+            select name, utc_date from Reviews
+            where product_id = $1
+            ",
+            product_id
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        let mut review_overviews = Vec::with_capacity(reviews.len());
+
+        for review in reviews {
+            let authors = sqlx::query!(
+                "
+                select author from ReviewAuthors
+                where product_id = $1
+                and review_name = $2
+                and review_date = $3
+                ",
+                product_id,
+                review.name,
+                review.utc_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?
+            .into_iter()
+            .map(|a| a.author)
+            .collect();
+
+            let requirements: Vec<String> = sqlx::query!(
+                "
+                select req_id from ManuallyVerifiedRequirements
+                where product_id = $1
+                and review_name = $2
+                and review_date = $3",
+                product_id,
+                review.name,
+                review.utc_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?
+            .into_iter()
+            .map(|r| r.req_id)
+            .collect();
+
+            let overriden_test_runs = sqlx::query!(
+                "
+                select test_run_name, test_run_date
+                from TestCaseOverrides
+                where product_id = $1
+                and review_name = $2
+                and review_date = $3
+
+                union
+
+                select test_run_name, test_run_date
+                from TestRunLineCoverageOverrides
+                where product_id = $1
+                and review_name = $2
+                and review_date = $3
+
+                union
+
+                select test_run_name, test_run_date
+                from TestCaseLineCoverageOverrides
+                where product_id = $1
+                and review_name = $2
+                and review_date = $3
+                ",
+                product_id,
+                review.name,
+                review.utc_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?;
+
+            let mut test_run_overrides = Vec::with_capacity(overriden_test_runs.len());
+
+            for test_run in overriden_test_runs {
+                let overriden_test_cases = sqlx::query!(
+                    "
+                    select test_case_name
+                    from TestCaseOverrides
+                    where product_id = $1
+                    and test_run_name = $2
+                    and test_run_date = $3
+
+                    union
+
+                    select test_case_name
+                    from TestCaseLineCoverageOverrides
+                    where product_id = $1
+                    and test_run_name = $2
+                    and test_run_date = $3
+                    ",
+                    product_id,
+                    test_run.test_run_name,
+                    test_run.test_run_date
+                )
+                .fetch_all(self.connection_mut())
+                .await?;
+
+                let mut test_cases = Vec::with_capacity(overriden_test_cases.len());
+
+                for test_case in overriden_test_cases {
+                    let overriden_state = sqlx::query!(
+                        "
+                        select state, content
+                        from TestCaseOverrides, GeneralTexts
+                        where product_id = $1
+                        and test_run_name = $2
+                        and test_run_date = $3
+                        and test_case_name = $4
+                        and comment_hash = hash
+                        ",
+                        product_id,
+                        test_run.test_run_name,
+                        test_run.test_run_date,
+                        test_case.test_case_name
+                    )
+                    .fetch_optional(self.connection_mut())
+                    .await?;
+
+                    let overriden_files = sqlx::query!(
+                        "
+                        select cov_filepath
+                        from TestCaseLineCoverageOverrides
+                        where product_id = $1
+                        and test_run_name = $2
+                        and test_run_date = $3
+                        and test_case_name = $4
+                        ",
+                        product_id,
+                        test_run.test_run_name,
+                        test_run.test_run_date,
+                        test_case.test_case_name
+                    )
+                    .fetch_all(self.connection_mut())
+                    .await?;
+
+                    let mut coverage = Vec::with_capacity(overriden_files.len());
+
+                    for filepath in overriden_files {
+                        let line_overrides = sqlx::query!(
+                            "
+                            select cov_line, hits, content
+                            from TestCaseLineCoverageOverrides, GeneralTexts
+                            where product_id = $1
+                            and test_run_name = $2
+                            and test_run_date = $3
+                            and test_case_name = $4
+                            and cov_filepath = $5
+                            and comment_hash = hash
+                            ",
+                            product_id,
+                            test_run.test_run_name,
+                            test_run.test_run_date,
+                            test_case.test_case_name,
+                            filepath.cov_filepath
+                        )
+                        .fetch_all(self.connection_mut())
+                        .await?;
+
+                        coverage.push(OverrideFileCoverage {
+                            filepath: filepath.cov_filepath.into(),
+                            lines: line_overrides
+                                .into_iter()
+                                .map(|l| OverrideCoveredLineInfo {
+                                    nrs: vec![l.cov_line],
+                                    hits: l.hits,
+                                    comment: l.content,
+                                })
+                                .collect(),
+                        })
+                    }
+
+                    test_cases.push(OverrideTestCase {
+                        name: test_case.test_case_name,
+                        state: overriden_state.map(|s| OverrideTestCaseState {
+                            new: s.state.try_into().expect("Valid state in database"),
+                            comment: s.content,
+                        }),
+                        coverage,
+                    });
+                }
+
+                let mut coverage = Vec::with_capacity(
+                    sqlx::query!(
+                        r#"
+                        select count(*) as "len" from TestRunLineCoverageOverrides
+                        where product_id = $1
+                        and test_run_name = $2
+                        and test_run_date = $3
+                        "#,
+                        product_id,
+                        test_run.test_run_name,
+                        test_run.test_run_date,
+                    )
+                    .fetch_one(self.connection_mut())
+                    .await?
+                    .len
+                    .try_into()?,
+                );
+
+                let overriden_files = sqlx::query!(
+                    "
+                    select cov_filepath
+                    from TestRunLineCoverageOverrides
+                    where product_id = $1
+                    and test_run_name = $2
+                    and test_run_date = $3
+                    ",
+                    product_id,
+                    test_run.test_run_name,
+                    test_run.test_run_date
+                )
+                .fetch_all(self.connection_mut())
+                .await?;
+
+                for filepath in overriden_files {
+                    let line_overrides = sqlx::query!(
+                        "
+                        select cov_line, hits, content
+                        from TestRunLineCoverageOverrides, GeneralTexts
+                        where product_id = $1
+                        and test_run_name = $2
+                        and test_run_date = $3
+                        and cov_filepath = $4
+                        and comment_hash = hash
+                        ",
+                        product_id,
+                        test_run.test_run_name,
+                        test_run.test_run_date,
+                        filepath.cov_filepath
+                    )
+                    .fetch_all(self.connection_mut())
+                    .await?;
+
+                    coverage.push(OverrideFileCoverage {
+                        filepath: filepath.cov_filepath.into(),
+                        lines: line_overrides
+                            .into_iter()
+                            .map(|l| OverrideCoveredLineInfo {
+                                nrs: vec![l.cov_line],
+                                hits: l.hits,
+                                comment: l.content,
+                            })
+                            .collect(),
+                    })
+                }
+
+                test_run_overrides.push(OverrideTestRun {
+                    name: test_run.test_run_name,
+                    utc_date: OffsetDateTime::parse(
+                        &test_run.test_run_date,
+                        &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
+                    )
+                    .expect("Valid test date in database"),
+                    test_cases,
+                    coverage,
+                })
+            }
+
+            review_overviews.push(ReviewOverview {
+                name: review.name,
+                utc_date: OffsetDateTime::parse(
+                    &review.utc_date,
+                    &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
+                )
+                .expect("Valid date in database"),
+                authors,
+                requirements: if requirements.is_empty() {
+                    None
+                } else {
+                    Some(requirements)
+                },
+                test_run_overrides: if test_run_overrides.is_empty() {
+                    None
+                } else {
+                    Some(test_run_overrides)
+                },
+            });
+        }
+
+        Ok(review_overviews)
     }
 }

@@ -170,7 +170,7 @@ create table TestRunLineCoverageOverrides (
     -- File that was covered.
     cov_filepath text not null,
     -- Line that was covered.
-    cov_line text not null,
+    cov_line integer not null,
     -- Number of how often the line was covered/hit during test run execution.
     -- If null, the line is ignored from line coverage analysis for this test run.
     hits integer,
@@ -225,7 +225,7 @@ create table TestCaseLineCoverageOverrides (
     -- File that was covered.
     cov_filepath text not null,
     -- Line that was covered.
-    cov_line text not null,
+    cov_line integer not null,
     -- Number of how often the line was covered/hit during test run execution.
     -- If null, the line is ignored from line coverage analysis for this test case.
     hits integer,
