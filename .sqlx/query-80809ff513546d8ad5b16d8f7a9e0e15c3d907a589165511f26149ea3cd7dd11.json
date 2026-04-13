@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "select child_name, child_date\n                from TestRunHierarchies\n                where product_id = $1\n                and parent_name = $2\n                and parent_date = $3",
+  "describe": {
+    "columns": [
+      {
+        "name": "child_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "child_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "80809ff513546d8ad5b16d8f7a9e0e15c3d907a589165511f26149ea3cd7dd11"
+}

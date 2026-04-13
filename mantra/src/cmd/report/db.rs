@@ -1,17 +1,33 @@
-use mantra_schema::report::{
-    RequirementReference,
-    short::{RequirementOverview, ReviewOverview, ShortProductReport, TestRunOverview},
+use mantra_schema::{
+    report::{
+        RequirementReference, TestRunReference,
+        overview::{
+            ProductOverviewReport, RequirementOverview, RequirementsOverview, ReviewOverview,
+            TestCaseOverview, TestRunOverview,
+        },
+    },
+    time::OffsetDateTime,
 };
 
 use crate::cmd::report::ProductReporter;
 
 impl<'t, 'db> ProductReporter<'t, 'db> {
-    pub async fn short_report(mut self) -> Result<ShortProductReport, anyhow::Error> {
-        let requirements = self.requirements_overview().await?;
+    pub async fn short_report(mut self) -> Result<ProductOverviewReport, anyhow::Error> {
+        let all_requirements = self.requirements_overview().await?;
+        let roots = all_requirements
+            .iter()
+            .filter(|r| r.parents == None)
+            .cloned()
+            .collect();
+        let requirements = RequirementsOverview {
+            roots,
+            all: all_requirements,
+        };
+
         let test_runs = self.test_runs_overview().await?;
         let reviews = self.reviews_overview().await?;
 
-        Ok(ShortProductReport {
+        Ok(ProductOverviewReport {
             product: self.product,
             requirements,
             test_runs,
@@ -126,7 +142,125 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
     }
 
     async fn test_runs_overview(&mut self) -> Result<Vec<TestRunOverview>, anyhow::Error> {
-        Ok(vec![])
+        let product_id = self.product_id();
+
+        let test_run_states = sqlx::query!(
+            r#"
+            select test_run_name, test_run_date, state as "state!:i64"
+            from TestRunStates
+            where product_id = $1
+            "#,
+            product_id
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        let mut test_runs = Vec::with_capacity(test_run_states.len());
+
+        for tr in test_run_states {
+            let test_cases = sqlx::query!(
+                "
+                select test_case_name, state
+                from ResolvedTestCaseStates
+                where product_id = $1
+                and test_run_name = $2
+                and test_run_date = $3
+                ",
+                product_id,
+                tr.test_run_name,
+                tr.test_run_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?;
+
+            let parents = sqlx::query!(
+                "select parent_name, parent_date
+                from TestRunHierarchies
+                where product_id = $1
+                and child_name = $2
+                and child_date = $3",
+                product_id,
+                tr.test_run_name,
+                tr.test_run_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?;
+
+            let children = sqlx::query!(
+                "select child_name, child_date
+                from TestRunHierarchies
+                where product_id = $1
+                and parent_name = $2
+                and parent_date = $3",
+                product_id,
+                tr.test_run_name,
+                tr.test_run_date
+            )
+            .fetch_all(self.connection_mut())
+            .await?;
+
+            test_runs.push(TestRunOverview {
+                name: tr.test_run_name,
+                utc_date: OffsetDateTime::parse(
+                    &tr.test_run_date,
+                    &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
+                )
+                .expect("Valid test date in database"),
+                state: tr.state.try_into().expect("Valid test state in database"),
+                test_cases: if test_cases.is_empty() {
+                    None
+                } else {
+                    Some(
+                        test_cases
+                            .into_iter()
+                            .map(|tc| TestCaseOverview {
+                                name: tc.test_case_name,
+                                state: tc
+                                    .state
+                                    .try_into()
+                                    .expect("Test state in the database must be valid"),
+                            })
+                            .collect(),
+                    )
+                },
+                parents: if parents.is_empty() {
+                    None
+                } else {
+                    Some(
+                        parents
+                            .into_iter()
+                            .map(|p| TestRunReference {
+                                name: p.parent_name,
+                                utc_date: OffsetDateTime::parse(
+                                    &p.parent_date,
+                                    &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
+                                )
+                                .expect("Valid test date in database"),
+                            })
+                            .collect(),
+                    )
+                },
+                children: if children.is_empty() {
+                    None
+                } else {
+                    Some(
+                        children
+                            .into_iter()
+                            .map(|c| TestRunReference {
+                                name: c.child_name,
+                                utc_date: OffsetDateTime::parse(
+                                    &c.child_date,
+                                    &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
+                                )
+                                .expect("Valid test date in database"),
+                            })
+                            .collect(),
+                    )
+                },
+            })
+        }
+
+        Ok(test_runs)
     }
 
     async fn reviews_overview(&mut self) -> Result<Vec<ReviewOverview>, anyhow::Error> {

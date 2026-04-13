@@ -1,6 +1,6 @@
 use crate::{ConversionError, product::ProductId, requirements::ReqId};
 
-pub mod short;
+pub mod overview;
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,

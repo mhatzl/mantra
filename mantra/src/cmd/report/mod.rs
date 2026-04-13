@@ -3,7 +3,7 @@ use std::{collections::HashSet, path::PathBuf, str::FromStr};
 use anyhow::bail;
 use mantra_schema::{
     product::{Product, ProductId},
-    report::short::ShortReport,
+    report::overview::ProductsOverviewReport,
     time::OffsetDateTime,
 };
 use tera::Context;
@@ -75,7 +75,7 @@ pub async fn report<'db>(db: &'db MantraDb, cfg: ReportConfig) -> Result<(), any
                 let report_schema = if single_product {
                     json5::to_string(&reports.first().expect("Checked that one report exists"))?
                 } else {
-                    json5::to_string(&ShortReport {
+                    json5::to_string(&ProductsOverviewReport {
                         product_reports: reports.clone(),
                     })?
                 };

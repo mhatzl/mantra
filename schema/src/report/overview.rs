@@ -12,17 +12,17 @@ use crate::{
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub struct ShortReport {
-    pub product_reports: Vec<ShortProductReport>,
+pub struct ProductsOverviewReport {
+    pub product_reports: Vec<ProductOverviewReport>,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub struct ShortProductReport {
+pub struct ProductOverviewReport {
     pub product: Product,
-    pub requirements: Vec<RequirementOverview>,
+    pub requirements: RequirementsOverview,
     pub test_runs: Vec<TestRunOverview>,
     pub reviews: Vec<ReviewOverview>,
 }
@@ -30,7 +30,14 @@ pub struct ShortProductReport {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+pub struct RequirementsOverview {
+    pub roots: Vec<RequirementOverview>,
+    pub all: Vec<RequirementOverview>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
 pub struct RequirementOverview {
     pub id: ReqId,
     pub title: String,
@@ -61,7 +68,6 @@ pub struct TestRunOverview {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
 pub struct TestCaseOverview {
     pub name: String,
     pub state: TestCaseState,

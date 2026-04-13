@@ -1,7 +1,7 @@
 use time::Duration;
 
-use crate::FmtHash;
 use crate::path::RelativePathBuf;
+use crate::{ConversionError, FmtHash};
 use crate::{Line, Origin, Properties, Revision, requirements::ReqId};
 
 /// Defines the schema to exchange test and coverage related information.
@@ -186,11 +186,35 @@ pub enum TestCaseState {
     /// and is treated as *failed* state.
     /// [req("testcov.test_case.state.unknown")]
     Unknown = 3,
+    /// Test is obsolete.
+    ///
+    /// Obsolete tests must not be considered for coverage analysis.
+    Obsolete = 4,
 }
 
 impl TestCaseState {
     pub fn as_nr(&self) -> i32 {
         *self as i32
+    }
+}
+
+impl TryFrom<i64> for TestCaseState {
+    type Error = ConversionError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        if value == TestCaseState::Failed.as_nr() as i64 {
+            Ok(TestCaseState::Failed)
+        } else if value == TestCaseState::Skipped.as_nr() as i64 {
+            Ok(TestCaseState::Skipped)
+        } else if value == TestCaseState::Passed.as_nr() as i64 {
+            Ok(TestCaseState::Passed)
+        } else if value == TestCaseState::Unknown.as_nr() as i64 {
+            Ok(TestCaseState::Unknown)
+        } else if value == TestCaseState::Obsolete.as_nr() as i64 {
+            Ok(TestCaseState::Obsolete)
+        } else {
+            Err(ConversionError::UnknownState)
+        }
     }
 }
 

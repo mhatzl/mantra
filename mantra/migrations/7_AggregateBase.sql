@@ -179,7 +179,7 @@ create table ResolvedTestCaseStates (
     test_run_date text not null,
     test_case_name text not null,
     -- State of the test case.
-    -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
+    -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed; 4=obsolete
     -- [req("testcov.test_case.state")]
     state integer not null
 );
@@ -280,6 +280,61 @@ create table UsableTestRuns (
     test_run_date text not null,
     primary key (product_id, test_run_name, test_run_date),
     foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+);
+
+create view TestRunStates as
+with BaseTestRunStates (
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    state
+) as (
+    select
+        last_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date,
+        0 as state
+    from FailedTestRuns
+    union all
+    select
+        last_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date,
+        1 as state
+    from UsableTestRuns
+    union all
+    select
+        last_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date,
+        2 as state
+    from SkippedTestRuns
+)
+select
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    state
+from BaseTestRunStates
+union all
+select
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    4 as state
+from ObsoleteTestRuns ot
+where not exists (
+    select * from BaseTestRunStates bt
+    where ot.last_collect_nr = bt.last_collect_nr
+    and ot.product_id = bt.product_id
+    and ot.test_run_name = bt.test_run_name
+    and ot.test_run_date = bt.test_run_date
 );
 
 -- Contains line coverage from test runs with optional review overrides applied.

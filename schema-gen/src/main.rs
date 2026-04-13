@@ -23,10 +23,11 @@ fn main() {
         &std::path::PathBuf::from("ReviewSchema.json"),
     );
 
-    let short_report_schema = schemars::schema_for!(mantra_schema::report::short::ShortReport);
+    let products_overview_report_schema =
+        schemars::schema_for!(mantra_schema::report::overview::ProductsOverviewReport);
     write_schema(
-        &short_report_schema,
-        &std::path::PathBuf::from("ShortReportSchema.json"),
+        &products_overview_report_schema,
+        &std::path::PathBuf::from("ProductsOverviewReportSchema.json"),
     );
 }
 
