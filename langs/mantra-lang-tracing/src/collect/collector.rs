@@ -7,19 +7,3 @@ pub trait AnnotationCollector {
 
     fn collect_relative(content: &str, start_line: Line) -> Result<Annotations, anyhow::Error>;
 }
-
-pub struct PlainTextCollector;
-
-impl AnnotationCollector for PlainTextCollector {
-    fn collect_relative(content: &str, start_line: Line) -> Result<Annotations, anyhow::Error> {
-        let mut traces = Vec::new();
-
-        todo!();
-
-        Ok(Annotations {
-            traces,
-            elements: vec![],
-            coverage_excludes: vec![],
-        })
-    }
-}
