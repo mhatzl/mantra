@@ -81,13 +81,8 @@ pub struct ReviewOverview {
     pub name: String,
     /// The UTC date and time the review was started.
     /// [req("review.id")]
-    #[serde(with = "review_date_format")]
-    #[schemars(
-        with = "String",
-        regex(
-            pattern = r"(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(T| )(?<hour>\d{2}):(?<minute>\d{2})(?<second>:\d{2}(?<subsecond>\.\d{3})?)?utc(?<utc>(-|+)\d{2})"
-        )
-    )]
+    #[serde(with = "time::serde::iso8601")]
+    #[schemars(with = "String")]
     pub utc_date: OffsetDateTime,
     pub authors: Vec<String>,
     pub requirements: Option<Vec<ReqId>>,
