@@ -62,7 +62,7 @@
           "type": "string"
         },
         "hits": {
-          "description": "The new number of times the set lines are reached during a test run or test case execution. If None, the line is marked to be ignored from statement coverage analysis.",
+          "description": "The new number of times the set lines are reached during a test run or test case execution. If None, the line is marked to be ignored from line coverage analysis.",
           "type": [
             "integer",
             "null"
@@ -148,7 +148,7 @@
           "description": "The new state that is set with this override.",
           "allOf": [
             {
-              "$ref": "#/definitions/TestCaseState"
+              "$ref": "#/definitions/TestState"
             }
           ]
         }
@@ -283,7 +283,7 @@
         }
       }
     },
-    "TestCaseState": {
+    "TestState": {
       "description": "Possible states a test case may be in. [req(\"testcov.test_case.state\")]",
       "oneOf": [
         {
@@ -312,6 +312,13 @@
           "type": "string",
           "enum": [
             "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
           ]
         }
       ]

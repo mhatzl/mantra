@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select r.name, r.utc_date, gt.content\n            from Reviews r left join GeneralTexts gt on r.description_hash = gt.hash\n            where r.product_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "content",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1d0e494add066f093e4685d435a734b7cc8248b176d486a2be7a6b0fd99ea21b"
+}

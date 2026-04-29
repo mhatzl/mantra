@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select count(*) as \"nr!:i64\"\n            from ManualRequirements\n            where product_id = $1\n            and id in (\n                select req_id\n                from ManuallyVerifiedRequirements\n                where product_id = $1\n            )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr!:i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "66899a2291141d35c1f1fc92ddaf333a5b350e2abbe3b9fe38c936491182002c"
+}

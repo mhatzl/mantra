@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    dt.req_id, rs.state,\n                    case when dt.req_id in (\n                        select id\n                        from OptionalRequirements\n                        where product_id = $1\n                    ) then true\n                    else false end as \"optional!:bool\"\n                from DirectProductReqTraces dt, RequirementVerificationStates rs\n                where dt.product_id = $1 and rs.product_id = $1\n                and dt.filepath = $2 and dt.file_hash = $3 and dt.line = $4\n                and dt.req_id = rs.id\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "a3ea082175fcf2c73ca03e5ccff5aabeee48b8f33e3c72493750ab0c95aaa22c"
+}

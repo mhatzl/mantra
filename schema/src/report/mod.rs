@@ -1,6 +1,32 @@
-use crate::{ConversionError, product::ProductId, requirements::ReqId};
+use relative_path::RelativePathBuf;
+
+use crate::{
+    ConversionError, FmtHash, Line, annotations::TraceKind, product::ProductId,
+    requirements::ReqId, test_runs::TestState,
+};
 
 pub mod overview;
+
+#[derive(
+    Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct Aggregated {
+    pub cnt: i64,
+    pub percentage: f32,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct TraceReference {
+    #[schemars(with = "String")]
+    pub filepath: RelativePathBuf,
+    pub file_hash: FmtHash,
+    pub line: Line,
+    pub kind: TraceKind,
+}
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
@@ -62,10 +88,32 @@ impl TryFrom<i64> for RequirementState {
 #[serde(rename_all = "snake_case")]
 pub struct TestRunReference {
     pub name: String,
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
+    #[serde(with = "time::serde::iso8601")]
+    #[schemars(with = "String")]
+    pub utc_date: time::OffsetDateTime,
+    pub state: TestState,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct TestCaseReference {
+    pub test_run_name: String,
+    #[serde(with = "time::serde::iso8601")]
+    #[schemars(with = "String")]
+    pub test_run_date: time::OffsetDateTime,
+    pub test_case_name: String,
+    pub state: TestState,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct ReviewReference {
+    pub name: String,
+    #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
 }

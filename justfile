@@ -20,7 +20,7 @@ collect:
     cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" collect --product-id="mantra@main" --product-version="latest"
 
 report:
-    cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" report --formats=json --formats=html --output-path=target/report.json
+    cargo run -p mantra -- --db-url="sqlite://mantra_test.db?mode=rwc" report --formats=json  --output-path=target/report.json
 
 # Call: `just setup-test-db <copied path to cfg file>`
 setup-test-db CFG DB="test_db":

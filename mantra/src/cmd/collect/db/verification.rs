@@ -1,4 +1,4 @@
-use mantra_schema::{annotations::TraceKind, report::RequirementState, test_runs::TestCaseState};
+use mantra_schema::{annotations::TraceKind, report::RequirementState, test_runs::TestState};
 
 use crate::cmd::collect::Collection;
 
@@ -526,8 +526,8 @@ impl<'db> Collection<'db> {
         let req_failed_nr = RequirementState::Failed.as_nr();
         let req_skipped_nr = RequirementState::Skipped.as_nr();
         let req_unverified_nr = RequirementState::Unverified.as_nr();
-        let test_case_passed_nr = TestCaseState::Passed.as_nr();
-        let test_case_skipped_nr = TestCaseState::Skipped.as_nr();
+        let test_case_passed_nr = TestState::Passed.as_nr();
+        let test_case_skipped_nr = TestState::Skipped.as_nr();
 
         sqlx::query!(
             "

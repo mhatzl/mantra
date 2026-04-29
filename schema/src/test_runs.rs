@@ -1,8 +1,17 @@
-use time::Duration;
+use time::{Duration, OffsetDateTime};
 
 use crate::path::RelativePathBuf;
 use crate::{ConversionError, FmtHash};
 use crate::{Line, Origin, Properties, Revision, requirements::ReqId};
+
+/// Tries to convert the given string to an [`OffsetDateTime`]
+/// using the [`Iso8601`](time::format_description::well_known::Iso8601) format.
+pub fn test_date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {
+    OffsetDateTime::parse(
+        date,
+        &time::format_description::well_known::Iso8601::PARSING,
+    )
+}
 
 /// Defines the schema to exchange test and coverage related information.
 /// [req("exchange.testcov.schema")]
@@ -46,10 +55,7 @@ pub struct TestRun {
     ///
     /// **Note:** The date must be given in ISO8601 format.
     /// [req("testcov.test_run.date")]
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
+    #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
     /// Optional description of the test run.
@@ -105,7 +111,7 @@ pub struct TestCase {
     pub description: Option<String>,
     /// State of the test case.
     /// [req("testcov.test_case.state")]
-    pub state: TestCaseState,
+    pub state: TestState,
     /// Optional reason for the test case state.
     /// [req("testcov.test_case.state.reason")]
     pub state_properties: Option<Properties>,
@@ -115,10 +121,7 @@ pub struct TestCase {
     /// Optional UTC date the test case execution started.
     ///
     /// **Note:** The date must be given in ISO8601 format.
-    #[serde(
-        serialize_with = "time::serde::iso8601::option::serialize",
-        deserialize_with = "time::serde::iso8601::option::deserialize"
-    )]
+    #[serde(with = "time::serde::iso8601::option")]
     #[schemars(with = "String")]
     #[serde(default)] // Needed due to: https://github.com/serde-rs/serde/issues/2878
     pub utc_date: Option<time::OffsetDateTime>,
@@ -173,7 +176,7 @@ pub struct TestCaseLocation {
     schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum TestCaseState {
+pub enum TestState {
     /// Test case failed.
     Failed = 0,
     /// Test case passed successfully.
@@ -192,26 +195,26 @@ pub enum TestCaseState {
     Obsolete = 4,
 }
 
-impl TestCaseState {
+impl TestState {
     pub fn as_nr(&self) -> i32 {
         *self as i32
     }
 }
 
-impl TryFrom<i64> for TestCaseState {
+impl TryFrom<i64> for TestState {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        if value == TestCaseState::Failed.as_nr() as i64 {
-            Ok(TestCaseState::Failed)
-        } else if value == TestCaseState::Skipped.as_nr() as i64 {
-            Ok(TestCaseState::Skipped)
-        } else if value == TestCaseState::Passed.as_nr() as i64 {
-            Ok(TestCaseState::Passed)
-        } else if value == TestCaseState::Unknown.as_nr() as i64 {
-            Ok(TestCaseState::Unknown)
-        } else if value == TestCaseState::Obsolete.as_nr() as i64 {
-            Ok(TestCaseState::Obsolete)
+        if value == TestState::Failed.as_nr() as i64 {
+            Ok(TestState::Failed)
+        } else if value == TestState::Skipped.as_nr() as i64 {
+            Ok(TestState::Skipped)
+        } else if value == TestState::Passed.as_nr() as i64 {
+            Ok(TestState::Passed)
+        } else if value == TestState::Unknown.as_nr() as i64 {
+            Ok(TestState::Unknown)
+        } else if value == TestState::Obsolete.as_nr() as i64 {
+            Ok(TestState::Obsolete)
         } else {
             Err(ConversionError::UnknownState)
         }

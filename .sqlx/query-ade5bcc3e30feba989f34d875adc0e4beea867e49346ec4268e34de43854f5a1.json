@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select distinct\n                    tc.test_run_name,\n                    tc.test_run_date,\n                    tc.test_case_name,\n                    ts.state as \"state!:i64\"\n                from\n                    TracesCoveredByTestCases tc,\n                    ResolvedTestCaseStates ts\n                where tc.product_id = $1 and ts.product_id = $1\n                and tc.filepath = $2 and tc.file_hash = $3\n                and tc.traced_line = $4\n                and tc.test_run_name = ts.test_run_name\n                and tc.test_run_date = ts.test_run_date\n                and tc.test_case_name = ts.test_case_name\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_run_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_case_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ade5bcc3e30feba989f34d875adc0e4beea867e49346ec4268e34de43854f5a1"
+}

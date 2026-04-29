@@ -7,7 +7,7 @@ use mantra_schema::requirements::ReqId;
 use mantra_schema::reviews::OneOrMultRequirementIds;
 use mantra_schema::reviews::Review;
 use mantra_schema::reviews::ReviewSchema;
-use mantra_schema::test_runs::TestCaseState;
+use mantra_schema::test_runs::TestState;
 use mantra_schema::time::OffsetDateTime;
 
 use crate::cmd::collect::Collection;
@@ -898,7 +898,7 @@ enum IgnoredEntry {
         test_run_name: String,
         test_run_utc_date: OffsetDateTime,
         test_case_name: String,
-        state: TestCaseState,
+        state: TestState,
         comment_hash: FmtHash,
     },
     TestCaseLineCoverageOverride {
@@ -932,7 +932,7 @@ impl IgnoredEntry {
         test_run_name: String,
         test_run_utc_date: OffsetDateTime,
         test_case_name: String,
-        state: TestCaseState,
+        state: TestState,
         comment_hash: FmtHash,
     ) -> Self {
         Self::TestCaseStateOverride {

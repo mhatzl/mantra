@@ -7,7 +7,7 @@ create table TraceMappedLinesOnlyCoveredByPassedTestRuns (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
@@ -25,7 +25,7 @@ create table TraceMappedLinesOnlyCoveredByPassedTestCases (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
@@ -41,7 +41,7 @@ create table TraceMappedLinesOnlyCoveredByPassedTests (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     primary key (product_id, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
@@ -70,7 +70,7 @@ create table TraceMappedLinesCoveredByFailedTestRuns (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
@@ -90,7 +90,7 @@ create table TraceMappedLinesCoveredByFailedTestCases (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
@@ -106,7 +106,7 @@ create table TraceMappedLinesCoveredByFailedTests (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     primary key (product_id, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
@@ -123,74 +123,6 @@ create table TracesCoveredByFailedTests (
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
-
--- Contains traces covered by test runs.
-create view TracesCoveredByTestRuns as
-select
-    last_collect_nr,
-    product_id,
-    test_run_name,
-    test_run_date,
-    filepath,
-    file_hash,
-    traced_line
-from TraceMappedLinesOnlyCoveredByPassedTestRuns
-union all
-select
-    last_collect_nr,
-    product_id,
-    test_run_name,
-    test_run_date,
-    filepath,
-    file_hash,
-    traced_line
-from TraceMappedLinesCoveredByFailedTestRuns;
-
--- Contains traces covered by test cases.
-create view TracesCoveredByTestCases as
-select
-    last_collect_nr,
-    product_id,
-    test_run_name,
-    test_run_date,
-    test_case_name,
-    filepath,
-    file_hash,
-    traced_line
-from TraceMappedLinesOnlyCoveredByPassedTestCases
-union all
-select
-    last_collect_nr,
-    product_id,
-    test_run_name,
-    test_run_date,
-    test_case_name,
-    filepath,
-    file_hash,
-    traced_line
-from TraceMappedLinesCoveredByFailedTestCases;
-
--- Contains traces covered by tests.
---
--- Note: Since tests with coverage data can either pass or fail,
--- this view shows all covered traces by combining traces from
--- tables TracesOnlyCoveredByPassedTests and TracesCoveredByFailedTests
-create view TracesCoveredByTests as
-select
-    last_collect_nr,
-    product_id,
-    filepath,
-    file_hash,
-    traced_line
-from TracesOnlyCoveredByPassedTests
-union all -- tables are disjoint so no need for deduplication
-select
-    last_collect_nr,
-    product_id,
-    filepath,
-    file_hash,
-    traced_line
-from TracesCoveredByFailedTests;
 
 -- Contains direct verification states of requirements based on the following conditions:
 -- - verified: all of the following conditions must be met

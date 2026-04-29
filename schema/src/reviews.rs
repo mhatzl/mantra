@@ -1,7 +1,7 @@
 use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
-use crate::{Line, Origin, Properties, Revision, test_runs::TestCaseState};
+use crate::{Line, Origin, Properties, Revision, test_runs::TestState};
 
 use super::requirements::ReqId;
 
@@ -19,6 +19,7 @@ time::serde::format_description!(pub review_date_format, OffsetDateTime, REVIEW_
 /// Tries to convert the given string to an [`OffsetDateTime`] using the [`REVIEW_DATE_FORMAT`].
 pub fn date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {
     OffsetDateTime::parse(date, REVIEW_DATE_FORMAT)
+        .or_else(|_| super::test_runs::test_date_from_str(date))
 }
 
 /// Defines the schema to exchange review related information.
@@ -121,10 +122,7 @@ pub struct OverrideTestRun {
     /// Name of the test run.
     pub name: String,
     /// The UTC date the test run execution started.
-    #[serde(
-        serialize_with = "time::serde::iso8601::serialize",
-        deserialize_with = "time::serde::iso8601::deserialize"
-    )]
+    #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
     /// List of test case state overrides.
@@ -161,7 +159,7 @@ pub struct OverrideTestCase {
 )]
 pub struct OverrideTestCaseState {
     /// The new state that is set with this override.
-    pub new: TestCaseState,
+    pub new: TestState,
     /// Mandatory comment explaining why the state is overriden via review.
     pub comment: String,
 }

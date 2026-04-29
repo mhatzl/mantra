@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select co.review_name, co.review_date, co.hits, gt.content\n            from TestRunLineCoverageOverrides co left join GeneralTexts gt on co.comment_hash = gt.hash\n            where co.product_id = $1 and co.test_run_name = $2\n            and co.test_run_date = $3\n            and co.cov_filepath = $5 and co.cov_line = $6\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "review_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "review_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "hits",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "content",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "5a688634fcb70edefc8df74851c676e88d35095ea85f11a80174bf0ec1ed3e43"
+}

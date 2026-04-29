@@ -1,0 +1,2551 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mantra Report — Multi-Product Overview</title>
+        <style>
+            :root {
+                --color-verified: #16a34a;
+                --color-passed: #16a34a;
+                --color-failed: #dc2626;
+                --color-skipped: #ca8a04;
+                --color-unverified: #9333ea;
+                --color-deprecated: #6b7280;
+                --color-ignored: #6b7280;
+                --color-unknown: #f97316;
+                --color-obsolete: #6b7280;
+                --color-border: #d1d5db;
+                --color-header-bg: #f3f4f6;
+                --color-section-bg: #f9fafb;
+                --color-trace-satisfies: #2563eb;
+                --color-trace-verifies: #7c3aed;
+                --color-trace-links: #0891b2;
+                --color-trace-clarifies: #ea580c;
+                --color-product-border: #3b82f6;
+
+                /* Verdict banner colors */
+                --verdict-success-bg: #dcfce7;
+                --verdict-success-border: #16a34a;
+                --verdict-success-text: #166534;
+                --verdict-warning-bg: #fef9c3;
+                --verdict-warning-border: #ca8a04;
+                --verdict-warning-text: #854d0e;
+                --verdict-failure-bg: #fee2e2;
+                --verdict-failure-border: #dc2626;
+                --verdict-failure-text: #991b1b;
+
+                /* Manual verification highlight */
+                --manual-verif-bg: #fef3c7;
+                --manual-verif-border: #d97706;
+                --manual-verif-text: #92400e;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    "Helvetica Neue", Arial, sans-serif;
+                font-size: 14px;
+                line-height: 1.5;
+                color: #1f2937;
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+                margin-bottom: 0.25rem;
+                color: #111827;
+            }
+
+            h2 {
+                font-size: 1.35rem;
+                margin-top: 2.5rem;
+                margin-bottom: 0.75rem;
+                padding-bottom: 0.35rem;
+                border-bottom: 2px solid #e5e7eb;
+                color: #111827;
+            }
+
+            h3 {
+                font-size: 1.1rem;
+                margin-top: 1.25rem;
+                margin-bottom: 0.5rem;
+                color: #374151;
+            }
+
+            h4 {
+                font-size: 0.95rem;
+                margin-top: 0.75rem;
+                margin-bottom: 0.4rem;
+                color: #4b5563;
+            }
+
+            .report-header {
+                border-bottom: 3px solid #111827;
+                padding-bottom: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .report-header .subtitle {
+                color: #6b7280;
+                font-size: 0.875rem;
+            }
+
+            /* ── Verdict Banner ── */
+
+            .verdict-banner {
+                padding: 1rem 1.25rem;
+                border-radius: 8px;
+                margin-bottom: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 1rem;
+                font-weight: 600;
+            }
+
+            .verdict-banner .verdict-icon {
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
+
+            .verdict-banner .verdict-content {
+                flex: 1;
+            }
+
+            .verdict-banner .verdict-title {
+                font-size: 1.1rem;
+                font-weight: 700;
+                margin-bottom: 0.25rem;
+            }
+
+            .verdict-banner .verdict-details {
+                font-size: 0.85rem;
+                font-weight: 400;
+            }
+
+            .verdict-success {
+                background: var(--verdict-success-bg);
+                border: 2px solid var(--verdict-success-border);
+                color: var(--verdict-success-text);
+            }
+
+            .verdict-warning {
+                background: var(--verdict-warning-bg);
+                border: 2px solid var(--verdict-warning-border);
+                color: var(--verdict-warning-text);
+            }
+
+            .verdict-failure {
+                background: var(--verdict-failure-bg);
+                border: 2px solid var(--verdict-failure-border);
+                color: var(--verdict-failure-text);
+            }
+
+            /* ── Category Grouped Summary ── */
+
+            .category-summary {
+                margin-bottom: 1.5rem;
+            }
+
+            .category-summary h3 {
+                margin-top: 0;
+                margin-bottom: 0.5rem;
+                font-size: 1rem;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-weight: 600;
+            }
+
+            .category-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 0.75rem;
+            }
+
+            .category-card {
+                border: 1px solid var(--color-border);
+                border-radius: 8px;
+                padding: 0.75rem 1rem;
+                background: #fff;
+            }
+
+            .category-card .category-title {
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 0.5rem;
+                padding-bottom: 0.35rem;
+                border-bottom: 2px solid #e5e7eb;
+            }
+
+            .category-card .stat-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                padding: 0.15rem 0;
+                font-size: 0.825rem;
+            }
+
+            .category-card .stat-row .stat-label {
+                color: #6b7280;
+            }
+
+            .category-card .stat-row .stat-value {
+                font-weight: 700;
+                font-size: 0.95rem;
+            }
+
+            .category-card .stat-row .stat-value.positive {
+                color: var(--color-verified);
+            }
+
+            .category-card .stat-row .stat-value.negative {
+                color: var(--color-failed);
+            }
+
+            .category-card .stat-row .stat-value.neutral {
+                color: var(--color-skipped);
+            }
+
+            .category-card .stat-row .stat-value.ignored {
+                color: var(--color-ignored);
+            }
+
+            .category-card .stat-row .stat-value.informational {
+                color: var(--color-product-border);
+            }
+
+            .category-card .coverage-bar {
+                margin-top: 0.5rem;
+                padding-top: 0.35rem;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .coverage-bar .bar-label {
+                font-size: 0.7rem;
+                color: #6b7280;
+                margin-bottom: 0.2rem;
+            }
+
+            .coverage-bar .bar-container {
+                height: 8px;
+                background: #e5e7eb;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+
+            .coverage-bar .bar-fill {
+                height: 100%;
+                border-radius: 4px;
+                transition: width 0.3s ease;
+            }
+
+            .coverage-bar .bar-fill.high {
+                background: var(--color-verified);
+            }
+
+            .coverage-bar .bar-fill.medium {
+                background: var(--color-skipped);
+            }
+
+            .coverage-bar .bar-fill.low {
+                background: var(--color-failed);
+            }
+
+            .coverage-bar .bar-text {
+                font-size: 0.7rem;
+                font-weight: 600;
+                margin-top: 0.15rem;
+            }
+
+            /* ── Per-Product Summary ── */
+
+            .product-summary-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .product-summary-card {
+                border: 1px solid var(--color-border);
+                border-radius: 6px;
+                padding: 0.5rem 0.75rem;
+                background: #fff;
+            }
+
+            .product-summary-card .label {
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+            }
+
+            .product-summary-card .value {
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .product-summary-card.ok .value {
+                color: var(--color-verified);
+            }
+
+            .product-summary-card.warn .value {
+                color: var(--color-skipped);
+            }
+
+            .product-summary-card.error .value {
+                color: var(--color-failed);
+            }
+
+            .product-summary-card.ignored .value {
+                color: var(--color-ignored);
+            }
+
+            .product-summary-card.info .value {
+                color: var(--color-product-border);
+            }
+
+            /* ── Summary Grid (legacy) ── */
+
+            .summary-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .summary-card {
+                border: 1px solid var(--color-border);
+                border-radius: 6px;
+                padding: 0.5rem 0.75rem;
+                background: #fff;
+            }
+
+            .summary-card .label {
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+            }
+
+            .summary-card .value {
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .summary-card.ok .value {
+                color: var(--color-verified);
+            }
+
+            .summary-card.warn .value {
+                color: var(--color-skipped);
+            }
+
+            .summary-card.error .value {
+                color: var(--color-failed);
+            }
+
+            .summary-card.ignored .value {
+                color: var(--color-ignored);
+            }
+
+            /* ── Tables ── */
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 1rem;
+                font-size: 0.825rem;
+            }
+
+            thead th {
+                background: var(--color-header-bg);
+                text-align: left;
+                padding: 0.45rem 0.65rem;
+                font-weight: 600;
+                color: #374151;
+                border: 1px solid var(--color-border);
+                white-space: nowrap;
+            }
+
+            tbody td {
+                padding: 0.35rem 0.65rem;
+                border: 1px solid var(--color-border);
+                vertical-align: top;
+            }
+
+            tbody tr:hover {
+                background: #f9fafb;
+            }
+
+            /* ── States & Badges ── */
+
+            .state {
+                display: inline-block;
+                padding: 0.1rem 0.5rem;
+                border-radius: 3px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+                white-space: nowrap;
+            }
+
+            .state-verified {
+                background: #dcfce7;
+                color: var(--color-verified);
+            }
+
+            .state-passed {
+                background: #dcfce7;
+                color: var(--color-passed);
+            }
+
+            .state-failed {
+                background: #fee2e2;
+                color: var(--color-failed);
+            }
+
+            .state-skipped {
+                background: #fef9c3;
+                color: var(--color-skipped);
+            }
+
+            .state-unverified {
+                background: #f3e8ff;
+                color: var(--color-unverified);
+            }
+
+            .state-deprecated {
+                background: #f3f4f6;
+                color: var(--color-deprecated);
+            }
+
+            .state-ignored {
+                background: #f3f4f6;
+                color: var(--color-ignored);
+            }
+
+            .state-unknown {
+                background: #ffedd5;
+                color: var(--color-unknown);
+            }
+
+            .state-obsolete {
+                background: #f3f4f6;
+                color: var(--color-obsolete);
+            }
+
+            .state-manual {
+                background: #fef3c7;
+                color: var(--manual-verif-text);
+            }
+
+            .optional-badge {
+                display: inline-block;
+                padding: 0.05rem 0.4rem;
+                border-radius: 3px;
+                font-size: 0.7rem;
+                font-weight: 500;
+                background: #e0e7ff;
+                color: #4338ca;
+                margin-left: 0.25rem;
+            }
+
+            /* ── References & Traces ── */
+
+            .ref-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .ref-list li {
+                display: inline;
+                font-size: 0.8rem;
+                margin-right: 0.25rem;
+            }
+
+            .ref-list li::after {
+                content: ", ";
+            }
+
+            .ref-list li:last-child::after {
+                content: "";
+            }
+
+            .ref-id {
+                font-family:
+                    "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+                    monospace;
+                font-size: 0.8rem;
+                font-weight: 700;
+            }
+
+            .ref-id a {
+                color: var(--color-product-border);
+                text-decoration: none;
+            }
+
+            .ref-id a:hover {
+                text-decoration: underline;
+            }
+
+            .trace-badge {
+                display: inline-block;
+                padding: 0.05rem 0.35rem;
+                border-radius: 3px;
+                font-size: 0.65rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.02em;
+                margin-left: 0.15rem;
+                vertical-align: middle;
+            }
+
+            .trace-satisfies {
+                background: #dbeafe;
+                color: var(--color-trace-satisfies);
+            }
+
+            .trace-verifies {
+                background: #ede9fe;
+                color: var(--color-trace-verifies);
+            }
+
+            .trace-links {
+                background: #cffafe;
+                color: var(--color-trace-links);
+            }
+
+            .trace-clarifies {
+                background: #ffedd5;
+                color: var(--color-trace-clarifies);
+            }
+
+            /* ── Trace Coverage Icons ── */
+
+            .trace-coverage {
+                display: flex;
+                gap: 0.3rem;
+                align-items: center;
+            }
+
+            .trace-coverage .trace-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 20px;
+                height: 20px;
+                border-radius: 3px;
+                font-size: 0.6rem;
+                font-weight: 700;
+                text-align: center;
+            }
+
+            .trace-icon.test {
+                background: #dcfce7;
+                color: var(--color-passed);
+            }
+
+            .trace-icon.review {
+                background: #dbeafe;
+                color: var(--color-trace-satisfies);
+            }
+
+            .trace-icon.none {
+                background: #f3f4f6;
+                color: var(--color-deprecated);
+            }
+
+            /* ── Test Cases Table ── */
+
+            .test-cases-table {
+                margin-left: 1rem;
+                margin-top: 0.25rem;
+                margin-bottom: 0.5rem;
+                width: auto;
+            }
+
+            .test-cases-table th,
+            .test-cases-table td {
+                padding: 0.2rem 0.5rem;
+            }
+
+            .test-cases-table th:last-child,
+            .test-cases-table td:last-child {
+                width: 6rem;
+            }
+
+            /* ── Review Section ── */
+
+            .review-section {
+                border: 1px solid var(--color-border);
+                border-radius: 6px;
+                padding: 0.75rem 1rem;
+                margin-bottom: 0.75rem;
+                background: #fff;
+            }
+
+            .review-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .review-header .review-name {
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+
+            .review-header .review-date {
+                color: #6b7280;
+                font-size: 0.8rem;
+            }
+
+            .review-authors {
+                font-size: 0.8rem;
+                color: #6b7280;
+                margin-top: 0.15rem;
+            }
+
+            .review-detail {
+                margin-top: 0.5rem;
+            }
+
+            .review-detail h4 {
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 0.25rem;
+            }
+
+            .override-comment {
+                font-style: italic;
+                color: #6b7280;
+                font-size: 0.75rem;
+            }
+
+            /* ── Manual Verification Highlight ── */
+
+            .manual-verif-banner {
+                background: var(--manual-verif-bg);
+                border: 2px solid var(--manual-verif-border);
+                border-radius: 6px;
+                padding: 0.75rem 1rem;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .manual-verif-banner .manual-icon {
+                font-size: 1.25rem;
+                flex-shrink: 0;
+            }
+
+            .manual-verif-banner .manual-text {
+                font-size: 0.85rem;
+                color: var(--manual-verif-text);
+                font-weight: 600;
+            }
+
+            .manual-verif-req {
+                background: #fffbeb;
+                border-left: 3px solid var(--manual-verif-border);
+                padding: 0.5rem 0.75rem;
+                margin-bottom: 0.5rem;
+                border-radius: 0 4px 4px 0;
+            }
+
+            /* ── Evidence Matrix ── */
+
+            .evidence-matrix-table th,
+            .evidence-matrix-table td {
+                font-size: 0.78rem;
+                padding: 0.3rem 0.5rem;
+            }
+
+            .evidence-status {
+                display: inline-block;
+                padding: 0.1rem 0.45rem;
+                border-radius: 3px;
+                font-size: 0.65rem;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+
+            .evidence-pass {
+                background: #dcfce7;
+                color: var(--color-verified);
+            }
+
+            .evidence-fail {
+                background: #fee2e2;
+                color: var(--color-failed);
+            }
+
+            .evidence-warn {
+                background: #fef9c3;
+                color: var(--color-skipped);
+            }
+
+            .evidence-info {
+                background: #dbeafe;
+                color: var(--color-trace-satisfies);
+            }
+
+            /* ── Empty Notice ── */
+
+            .empty-notice {
+                color: #9ca3af;
+                font-style: italic;
+                padding: 0.5rem 0;
+                font-size: 0.85rem;
+            }
+
+            /* ── Multi-product specific styles ── */
+
+            .product-header {
+                border-left: 4px solid var(--color-product-border);
+                padding: 0.75rem 1rem;
+                margin-bottom: 1rem;
+                background: #eff6ff;
+                border-radius: 0 6px 6px 0;
+            }
+
+            .product-header h2 {
+                margin-top: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+                font-size: 1.2rem;
+                color: #1e40af;
+            }
+
+            .product-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem 1.5rem;
+                margin-top: 0.5rem;
+                font-size: 0.825rem;
+                color: #4b5563;
+            }
+
+            .product-meta dt {
+                font-weight: 600;
+                color: #6b7280;
+                display: inline;
+            }
+
+            .product-meta dt::after {
+                content: ": ";
+            }
+
+            .product-meta dd {
+                display: inline;
+                color: #1f2937;
+            }
+
+            /* ── Table of Contents ── */
+
+            .toc {
+                background: var(--color-section-bg);
+                border: 1px solid var(--color-border);
+                border-radius: 6px;
+                padding: 0.75rem 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .toc-title {
+                font-weight: 600;
+                font-size: 0.85rem;
+                color: #374151;
+                margin-bottom: 0.35rem;
+            }
+
+            .toc ol {
+                margin: 0;
+                padding-left: 1.5rem;
+            }
+
+            .toc li {
+                font-size: 0.85rem;
+                line-height: 1.7;
+            }
+
+            .toc a {
+                color: #2563eb;
+                text-decoration: none;
+            }
+
+            .toc a:hover {
+                text-decoration: underline;
+            }
+
+            .toc-group {
+                margin-top: 0.5rem;
+                padding-top: 0.5rem;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .toc-group-title {
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.02em;
+                margin-bottom: 0.25rem;
+            }
+
+            /* ── Collapsible Details ── */
+
+            details {
+                margin-bottom: 0.5rem;
+            }
+
+            details summary {
+                cursor: pointer;
+                padding: 0.4rem 0.65rem;
+                border: 1px solid var(--color-border);
+                border-radius: 4px;
+                background: #fafafa;
+                font-size: 0.825rem;
+                user-select: none;
+            }
+
+            details summary:hover {
+                background: #f3f4f6;
+            }
+
+            details[open] summary {
+                border-bottom: none;
+                border-radius: 4px 4px 0 0;
+                background: #f0f4ff;
+                margin-bottom: 0;
+            }
+
+            details .collapsible-content {
+                padding: 0.5rem 0;
+            }
+
+            /* ── Coverage Grid ── */
+
+            .coverage-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 0.4rem;
+                margin-top: 0.5rem;
+            }
+
+            .coverage-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.3rem 0.5rem;
+                background: var(--color-section-bg);
+                border-radius: 3px;
+                font-size: 0.75rem;
+            }
+
+            .coverage-item .label {
+                color: #6b7280;
+            }
+
+            .coverage-item .value {
+                font-weight: 600;
+            }
+
+            .coverage-item .value.covered {
+                color: var(--color-verified);
+            }
+
+            .coverage-item .value.excluded {
+                color: var(--color-deprecated);
+            }
+
+            .coverage-item .value.overridden {
+                color: var(--color-skipped);
+            }
+
+            /* ── Element Tree ── */
+
+            .element-tree {
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+                    monospace;
+                font-size: 0.75rem;
+                padding: 0.5rem;
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+
+            .element-tree .kind {
+                color: #6b7280;
+                font-weight: 600;
+            }
+
+            .trace-detail-row {
+                padding: 0.25rem 0.5rem;
+                border-bottom: 1px solid #f3f4f6;
+                font-size: 0.8rem;
+            }
+
+            .trace-detail-row:last-child {
+                border-bottom: none;
+            }
+
+            .trace-detail-row .trace-kind {
+                display: inline-block;
+                min-width: 70px;
+            }
+
+            .trace-detail-row .trace-line {
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+                    monospace;
+                color: #6b7280;
+                font-size: 0.75rem;
+            }
+
+            /* ── Deprecated Section ── */
+
+            .deprecated-section {
+                margin-top: 1.5rem;
+                padding-top: 1rem;
+                border-top: 2px dashed #d1d5db;
+            }
+
+            .deprecated-section h4 {
+                color: var(--color-deprecated);
+            }
+
+            /* ── Footer ── */
+
+            footer {
+                margin-top: 2rem;
+                padding-top: 0.75rem;
+                border-top: 1px solid #e5e7eb;
+                color: #9ca3af;
+                font-size: 0.75rem;
+                text-align: center;
+            }
+
+            /* ── Print Styles ── */
+
+            @media print {
+                body {
+                    max-width: 100%;
+                    padding: 0;
+                    font-size: 10pt;
+                }
+
+                .verdict-banner {
+                    break-inside: avoid;
+                }
+
+                .category-summary {
+                    break-inside: avoid;
+                }
+
+                .category-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+
+                h2 {
+                    page-break-after: avoid;
+                }
+
+                table {
+                    page-break-inside: auto;
+                }
+
+                tr {
+                    page-break-inside: avoid;
+                }
+
+                .review-section {
+                    page-break-inside: avoid;
+                }
+
+                details {
+                    page-break-inside: avoid;
+                }
+
+                details[open] summary {
+                    background: #f0f4ff;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header class="report-header">
+            <h1>Multi-Product Requirements Traceability Report</h1>
+            <p class="subtitle">
+                Overview of {{ product_reports | length }} product{{ product_reports | length | pluralize }}
+            </p>
+        </header>
+
+        {# ── Overall Compliance Verdict Banner ── ──}
+        {% if product_reports | length > 0 %}
+            {% set_global verdict_overall_req_total = product_reports[0].requirements.summary.total | default(value=0) %}
+        {% else %}
+            {% set_global verdict_overall_req_total = 0 %}
+        {% endif %}
+
+        {% set_global verdict_overall_req_verified = 0 %}
+        {% set_global verdict_overall_req_failed = 0 %}
+        {% set_global verdict_overall_req_unverified = 0 %}
+        {% set_global verdict_overall_req_skipped = 0 %}
+        {% set_global verdict_overall_req_deprecated = 0 %}
+        {% set_global verdict_overall_req_ignored = 0 %}
+        {% set_global verdict_overall_req_manual = 0 %}
+        {% set_global verdict_overall_tr_total = 0 %}
+        {% set_global verdict_overall_tr_passed = 0 %}
+        {% set_global verdict_overall_tr_failed = 0 %}
+        {% set_global verdict_overall_tr_skipped = 0 %}
+        {% set_global verdict_overall_review_valid = 0 %}
+
+        {% for product_report in product_reports %}
+            {% set req_sum = product_report.requirements.summary %}
+            {% set_global verdict_overall_req_total = verdict_overall_req_total + (req_sum.total | default(value=0)) %}
+            {% set_global verdict_overall_req_verified = verdict_overall_req_verified + (((req_sum.verified | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_req_failed = verdict_overall_req_failed + (((req_sum.failed | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_req_unverified = verdict_overall_req_unverified + (((req_sum.unverified | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_req_skipped = verdict_overall_req_skipped + (((req_sum.skipped | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_req_deprecated = verdict_overall_req_deprecated + (((req_sum.deprecated | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_req_ignored = verdict_overall_req_ignored + (((req_sum.ignored | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_req_manual = verdict_overall_req_manual + (((req_sum.manual_verification | default(value=0)).cnt) | default(value=0)) %}
+
+            {% set tr_sum = product_report.test_runs.test_cases_summary %}
+            {% set_global verdict_overall_tr_total = verdict_overall_tr_total + (tr_sum.total | default(value=0)) %}
+            {% set_global verdict_overall_tr_passed = verdict_overall_tr_passed + (((tr_sum.passed | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_tr_failed = verdict_overall_tr_failed + (((tr_sum.failed | default(value=0)).cnt) | default(value=0)) %}
+            {% set_global verdict_overall_tr_skipped = verdict_overall_tr_skipped + (((tr_sum.skipped | default(value=0)).cnt) | default(value=0)) %}
+
+            {% set review_sum = product_report.reviews.summary %}
+            {% set_global verdict_overall_review_valid = verdict_overall_review_valid + (((review_sum.valid | default(value=0)).cnt) | default(value=0)) %}
+        {% endfor %}
+
+        {# Determine overall verdict #}
+        {% set_global verdict_level = 'success' %}
+        {% set_global verdict_title = 'All requirements verified, all tests passed' %}
+        {% set_global verdict_details = 'Safety objectives are met. All active requirements have verification coverage.' %}
+
+        {% if verdict_overall_req_failed > 0 or verdict_overall_tr_failed > 0 %}
+            {% set_global verdict_level = 'failure' %}
+            {% set_global verdict_title = 'Safety objectives not met' %}
+            {% set_global verdict_details = verdict_overall_req_failed + ' requirement(s) failed verification, ' + verdict_overall_tr_failed + ' test(s) failed' %}
+        {% elif verdict_overall_req_unverified > 0 or verdict_overall_tr_skipped > 0 %}
+            {% set_global verdict_level = 'warning' %}
+            {% set_global verdict_title = 'Verification incomplete' %}
+            {% set_global verdict_details = verdict_overall_req_unverified + ' requirement(s) unverified, ' + verdict_overall_tr_skipped + ' test(s) skipped' %}
+        {% elif verdict_overall_req_total == 0 and verdict_overall_tr_total == 0 %}
+            {% set_global verdict_level = 'warning' %}
+            {% set_global verdict_title = 'No data collected' %}
+            {% set_global verdict_details = 'No requirements or test runs were collected for this assessment.' %}
+        {% endif %}
+
+        <div class="verdict-banner verdict-{{ verdict_level }}">
+            <span class="verdict-icon">
+                {% if verdict_level == 'success' %}✅{% elif verdict_level == 'warning' %}⚠️{% else %}❌{% endif %}
+            </span>
+            <div class="verdict-content">
+                <div class="verdict-title">{{ verdict_title }}</div>
+                <div class="verdict-details">{{ verdict_details }}</div>
+            </div>
+        </div>
+
+        {# ── Table of Contents ── ──}
+        <nav class="toc">
+            <div class="toc-title">Contents</div>
+            <ol>
+                {% for product_report in product_reports %}
+                <li>
+                    <a href="#product-{{ loop.index }}">{{ product_report.product.name }}{% if product_report.product.version %}@{{ product_report.product.version }}{% endif %}</a>
+                    {% if product_report.product.repository %}
+                    <a href="{{ product_report.product.repository }}" target="_blank" style="font-size: 0.75rem; color: #9ca3af;">↗</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+
+            <div class="toc-group">
+                <div class="toc-group-title">Sections</div>
+                <ol>
+                    <li><a href="#summary-overview">Summary Overview</a></li>
+                    {% for product_report in product_reports %}
+                    <li><a href="#evidence-{{ loop.index }}">Evidence Matrix</a></li>
+                    <li><a href="#reqs-{{ loop.index }}">Requirements</a></li>
+                    <li><a href="#tests-{{ loop.index }}">Test Runs</a></li>
+                    <li><a href="#manual-{{ loop.index }}">Manual Verification</a></li>
+                    <li><a href="#reviews-{{ loop.index }}">Reviews</a></li>
+                    <li><a href="#traces-{{ loop.index }}">Trace Completeness</a></li>
+                    <li><a href="#annotations-{{ loop.index }}">Annotations</a></li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </nav>
+
+        {# ── Summary Overview (Grouped by Category) ── ──}
+        <section id="summary-overview">
+            <h2>Summary Overview</h2>
+
+            {# ── Requirements Category ── ──}
+            <div class="category-summary">
+                <h3>Requirements</h3>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Total Requirements</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value informational">{{ verdict_overall_req_total }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value">
+                                {{ verdict_overall_req_total - verdict_overall_req_deprecated - verdict_overall_req_ignored }}
+                            </span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Deprecated</span>
+                            <span class="stat-value neutral">{{ verdict_overall_req_deprecated }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Ignored</span>
+                            <span class="stat-value ignored">{{ verdict_overall_req_ignored }}</span>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-title">Verification State</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Verified</span>
+                            <span class="stat-value positive">{{ verdict_overall_req_verified }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Failed</span>
+                            <span class="stat-value negative">{{ verdict_overall_req_failed }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Unverified</span>
+                            <span class="stat-value">{{ verdict_overall_req_unverified }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Skipped</span>
+                            <span class="stat-value neutral">{{ verdict_overall_req_skipped }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Manual</span>
+                            <span class="stat-value" style="color: var(--manual-verif-text);">{{ verdict_overall_req_manual }}</span>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-title">Coverage</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Coverage</span>
+                            <span class="stat-value">
+                                {% if verdict_overall_req_total > 0 %}
+                                    {{ ((verdict_overall_req_verified / verdict_overall_req_total) * 100) | round(2) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if verdict_overall_req_total > 0 %}
+                            {% set coverage_pct = (verdict_overall_req_verified / verdict_overall_req_total) * 100 %}
+                            <div class="coverage-bar">
+                                <div class="bar-container">
+                                    <div class="bar-fill {% if coverage_pct >= 90 %}high{% elif coverage_pct >= 50 %}medium{% else %}low{% endif %}" style="width: {{ coverage_pct }}%;"></div>
+                                </div>
+                                <div class="bar-text" style="color: {% if coverage_pct >= 90 %}var(--color-verified){% elif coverage_pct >= 50 %}var(--color-skipped){% else %}var(--color-failed){% endif %};">
+                                    {% if coverage_pct >= 100 %}100.00%{% elif coverage_pct <= 0 %}0.00%{% else %}{{ coverage_pct | round(2) }}%{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Tests Category ── ──}
+            <div class="category-summary">
+                <h3>Tests</h3>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Total Test Runs</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value informational">{{ verdict_overall_tr_total }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Passed</span>
+                            <span class="stat-value positive">{{ verdict_overall_tr_passed }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Failed</span>
+                            <span class="stat-value negative">{{ verdict_overall_tr_failed }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Skipped</span>
+                            <span class="stat-value neutral">{{ verdict_overall_tr_skipped }}</span>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-title">Test Coverage</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Coverage</span>
+                            <span class="stat-value">
+                                {% if verdict_overall_tr_total > 0 %}
+                                    {{ ((verdict_overall_tr_passed / verdict_overall_tr_total) * 100) | round(2) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if verdict_overall_tr_total > 0 %}
+                            {% set test_coverage_pct = (verdict_overall_tr_passed / verdict_overall_tr_total) * 100 %}
+                            <div class="coverage-bar">
+                                <div class="bar-container">
+                                    <div class="bar-fill {% if test_coverage_pct >= 90 %}high{% elif test_coverage_pct >= 50 %}medium{% else %}low{% endif %}" style="width: {{ test_coverage_pct }}%;"></div>
+                                </div>
+                                <div class="bar-text" style="color: {% if test_coverage_pct >= 90 %}var(--color-verified){% elif test_coverage_pct >= 50 %}var(--color-skipped){% else %}var(--color-failed){% endif %};">
+                                    {% if test_coverage_pct >= 100 %}100.00%{% elif test_coverage_pct <= 0 %}0.00%{% else %}{{ test_coverage_pct | round(2) }}%{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Reviews Category ── ──}
+            <div class="category-summary">
+                <h3>Reviews</h3>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Review Status</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Valid</span>
+                            <span class="stat-value positive">{{ verdict_overall_review_valid }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {# ── Per-Product Sections ── ──}
+        {% for product_report in product_reports %}
+        <section id="product-{{ loop.index }}">
+            <div class="product-header">
+                <h2>{{ product_report.product.name }}{% if product_report.product.version %}@{{ product_report.product.version }}{% endif %}</h2>
+                <div class="product-meta">
+                    <dl>
+                        <div>
+                            <dt>Product ID</dt>
+                            <dd>{{ product_report.product.id }}</dd>
+                        </div>
+                        {% if product_report.product.base %}
+                        <div>
+                            <dt>Baseline</dt>
+                            <dd>{{ product_report.product.base }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if product_report.product.license %}
+                        <div>
+                            <dt>License</dt>
+                            <dd>{{ product_report.product.license }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if product_report.product.homepage %}
+                        <div>
+                            <dt>Homepage</dt>
+                            <dd><a href="{{ product_report.product.homepage }}">{{ product_report.product.homepage }}</a></dd>
+                        </div>
+                        {% endif %}
+                        {% if product_report.product.repository %}
+                        <div>
+                            <dt>Repository</dt>
+                            <dd><a href="{{ product_report.product.repository }}">{{ product_report.product.repository }}</a></dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            {# ── Product Summary Cards (Grouped by Category) ── ──}
+            {% set req_sum = product_report.requirements.summary %}
+            {% set tr_sum = product_report.test_runs.test_cases_summary %}
+            {% set review_sum = product_report.reviews.summary %}
+
+            {# Product-level verdict #}
+            {% set prod_failed = ((req_sum.failed | default(value=0)).cnt) | default(value=0) %}
+            {% set prod_unverified = ((req_sum.unverified | default(value=0)).cnt) | default(value=0) %}
+            {% set prod_tr_failed = ((tr_sum.failed | default(value=0)).cnt) | default(value=0) %}
+            {% set prod_req_total = req_sum.total | default(value=0) %}
+            {% set prod_req_verified = ((req_sum.verified | default(value=0)).cnt) | default(value=0) %}
+            {% set prod_level = 'success' %}
+            {% set prod_title = 'All requirements verified, all tests passed' %}
+            {% set prod_details = 'Safety objectives are met.' %}
+
+            {% if prod_failed > 0 or prod_tr_failed > 0 %}
+                {% set prod_level = 'failure' %}
+                {% set prod_title = 'Safety objectives not met' %}
+                {% set prod_details = prod_failed + ' requirement(s) failed, ' + prod_tr_failed + ' test(s) failed' %}
+            {% elif prod_unverified > 0 %}
+                {% set prod_level = 'warning' %}
+                {% set prod_title = 'Verification incomplete' %}
+                {% set prod_details = prod_unverified + ' requirement(s) unverified' %}
+            {% elif prod_req_total == 0 and tr_sum.total | default(value=0) == 0 %}
+                {% set prod_level = 'warning' %}
+                {% set prod_title = 'No data collected' %}
+                {% set prod_details = 'No requirements or test runs collected.' %}
+            {% endif %}
+
+            <div class="verdict-banner verdict-{{ prod_level }}" style="margin-bottom: 1rem;">
+                <span class="verdict-icon">
+                    {% if prod_level == 'success' %}✅{% elif prod_level == 'warning' %}⚠️{% else %}❌{% endif %}
+                </span>
+                <div class="verdict-content">
+                    <div class="verdict-title">{{ prod_title }}</div>
+                    <div class="verdict-details">{{ prod_details }}</div>
+                </div>
+            </div>
+
+            <div class="category-summary">
+                <h3>Requirements</h3>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Total</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value informational">{{ req_sum.total }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value">
+                                {{ req_sum.total - ((req_sum.deprecated | default(value=0)).cnt | default(value=0)) - ((req_sum.ignored | default(value=0)).cnt | default(value=0)) }}
+                            </span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Deprecated</span>
+                            <span class="stat-value neutral">{{ (req_sum.deprecated | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-title">Verification</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Verified</span>
+                            <span class="stat-value positive">{{ (req_sum.verified | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Failed</span>
+                            <span class="stat-value negative">{{ (req_sum.failed | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Unverified</span>
+                            <span class="stat-value">{{ (req_sum.unverified | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Skipped</span>
+                            <span class="stat-value neutral">{{ (req_sum.skipped | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Manual</span>
+                            <span class="stat-value" style="color: var(--manual-verif-text);">{{ (req_sum.manual_verification | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-title">Coverage</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Coverage</span>
+                            <span class="stat-value">
+                                {% set req_verified_pct = (req_sum.verified | default(value=0)).percentage | default(value=0) %}
+                                {{ req_verified_pct | round(2) }}%
+                            </span>
+                        </div>
+                        {% set prod_coverage_pct = (req_sum.verified | default(value=0)).percentage | default(value=0) %}
+                            <div class="coverage-bar">
+                                <div class="bar-container">
+                                    <div class="bar-fill {% if prod_coverage_pct >= 90 %}high{% elif prod_coverage_pct >= 50 %}medium{% else %}low{% endif %}" style="width: {{ prod_coverage_pct }}%;"></div>
+                                </div>
+                                <div class="bar-text" style="color: {% if prod_coverage_pct >= 90 %}var(--color-verified){% elif prod_coverage_pct >= 50 %}var(--color-skipped){% else %}var(--color-failed){% endif %};">
+                                    {% if prod_coverage_pct >= 100 %}100.00%{% elif prod_coverage_pct < 0.01 %}0.00%{% else %}{{ prod_coverage_pct | round(2) }}%{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-summary">
+                <h3>Tests</h3>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Test Runs</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value informational">{{ tr_sum.total }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Passed</span>
+                            <span class="stat-value positive">{{ (tr_sum.passed | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Failed</span>
+                            <span class="stat-value negative">{{ (tr_sum.failed | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Skipped</span>
+                            <span class="stat-value neutral">{{ (tr_sum.skipped | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-title">Test Coverage</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Coverage</span>
+                            <span class="stat-value">
+                                {% set tr_passed_pct = (tr_sum.passed | default(value=0)).percentage | default(value=0) %}
+                                {{ tr_passed_pct | round(2) }}%
+                            </span>
+                        </div>
+                        {% set prod_test_coverage_pct = (tr_sum.passed | default(value=0)).percentage | default(value=0) %}
+                            <div class="coverage-bar">
+                                <div class="bar-container">
+                                    <div class="bar-fill {% if prod_test_coverage_pct >= 90 %}high{% elif prod_test_coverage_pct >= 50 %}medium{% else %}low{% endif %}" style="width: {{ prod_test_coverage_pct }}%;"></div>
+                                </div>
+                                <div class="bar-text" style="color: {% if prod_test_coverage_pct >= 90 %}var(--color-verified){% elif prod_test_coverage_pct >= 50 %}var(--color-skipped){% else %}var(--color-failed){% endif %};">
+                                    {% if prod_test_coverage_pct >= 100 %}100.00%{% elif prod_test_coverage_pct < 0.01 %}0.00%{% else %}{{ prod_test_coverage_pct | round(2) }}%{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-summary">
+                <h3>Reviews</h3>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Review Status</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Valid</span>
+                            <span class="stat-value positive">{{ (review_sum.valid | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        {% if (review_sum.mandatory_requirements_verified | default(value=0)).cnt | default(value=0) > 0 %}
+                        <div class="stat-row">
+                            <span class="stat-label">Mandatory Req. Verified</span>
+                            <span class="stat-value positive">{{ (review_sum.mandatory_requirements_verified | default(value=0)).cnt | default(value=0) }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {# ── Evidence Matrix ── ──}
+        <section id="evidence-{{ loop.index }}">
+            <h3>Evidence Matrix</h3>
+            <p style="font-size: 0.825rem; color: #6b7280; margin-bottom: 0.75rem;">
+                Shows requirement-to-test-to-review traceability for safety assessment.
+                PASS = verified with test or review coverage; FAIL = unverified or failed.
+            </p>
+
+            {% if product_report.requirements.all | length == 0 %}
+            <p class="empty-notice">No requirements to display in the evidence matrix.</p>
+            {% else %}
+            <table class="evidence-matrix-table">
+                <thead>
+                    <tr>
+                        <th>Req ID</th>
+                        <th>Title</th>
+                        <th>State</th>
+                        <th>Manual</th>
+                        <th>Test Coverage</th>
+                        <th>Review Evidence</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in product_report.requirements.all %}
+                    <tr></tr>
+                        <td></td>
+                            <span class="ref-id"><a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a></span>
+                            {% if req.optional %}<span class="optional-badge">opt</span>{% endif %}
+                        </td>
+                        <td>{{ req.title }}</td>
+                        <td>
+                            <span class="state state-{{ req.state }}">{{ req.state }}</span>
+                        </td>
+                        <td>
+                            {% if req.manual_verification %}
+                                <span style="color: var(--manual-verif-text); font-weight: 600;">⚠️</span>
+                            {% else %}
+                                <span style="color: #d1d5db;">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set has_test_cov = false %}
+                            {% if req.covered_by is not none %}
+                                {% if req.covered_by.test_runs is not none and req.covered_by.test_runs | length > 0 %}
+                                    {% set has_test_cov = true %}
+                                {% endif %}
+                                {% if req.covered_by.test_cases is not none and req.covered_by.test_cases | length > 0 %}
+                                    {% set has_test_cov = true %}
+                                {% endif %}
+                            {% endif %}
+                            {% if has_test_cov %}
+                                <span style="color: var(--color-verified);">✓</span>
+                            {% else %}
+                                <span style="color: var(--color-failed);">✗</span>
+                            {% endif %}
+                        </td>
+                        <td></td>
+                            {% set has_review_cov = false %}
+                            {% if req.reviewed_in is not none and req.reviewed_in | length > 0 %}
+                                {% set has_review_cov = true %}
+                            {% endif %}
+                            {% if has_review_cov %}
+                                <span style="color: var(--color-trace-satisfies);">✓</span>
+                            {% else %}
+                                <span style="color: var(--color-failed);">✗</span>
+                            {% endif %}
+                        </td>
+                        <td></td>
+                            {% set status_class = 'evidence-fail' %}
+                            {% set status_text = 'FAIL' %}
+
+                            {% if req.state == 'verified' and (req.covered_by is not none or req.reviewed_in is not none) %}
+                                {% set status_class = 'evidence-pass' %}
+                                {% set status_text = 'PASS' %}
+                            {% elif req.state == 'unverified' %}
+                                {% set status_class = 'evidence-fail' %}
+                                {% set status_text = 'FAIL' %}
+                            {% elif req.state == 'skipped' %}
+                                {% set status_class = 'evidence-warn' %}
+                                {% set status_text = 'SKIP' %}
+                            {% elif req.manual_verification %}
+                                {% if req.reviewed_in is not none and req.reviewed_in | length > 0 %}
+                                    {% set status_class = 'evidence-info' %}
+                                    {% set status_text = 'MANUAL' %}
+                                {% else %}
+                                    {% set status_class = 'evidence-fail' %}
+                                    {% set status_text = 'NO REVIEW' %}
+                                {% endif %}
+                            {% elif req.state == 'deprecated' or req.state == 'ignored' %}
+                                {% set status_class = 'evidence-warn' %}
+                                {% set status_text = 'N/A' %}
+                            {% endif %}
+
+                            <span class="evidence-status {{ status_class }}">{{ status_text }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {# ── Evidence Details (Collapsible) ── }
+            <details style="margin-top: 1rem;">
+                <summary>Show evidence details for each requirement</summary>
+                <div class="collapsible-content">
+                    {% for req in product_report.requirements.all %}
+                    <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem;">
+                            <span class="ref-id" style="font-size: 0.85rem;">
+                                <a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a>
+                            </span>
+                            <span class="state state-{{ req.state }}" style="font-size: 0.65rem;">{{ req.state }}</span>
+                        </div>
+
+                        {# Test Coverage Details ── ──}
+                        {% if req.covered_by is not none %}
+                            {% if req.covered_by.test_runs is not none and req.covered_by.test_runs | length > 0 %}
+                            <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                                <strong></strong>Test Runs:</strong>
+                                <ul style="margin: 0.25rem 0; padding-left: 1rem;">
+                                    {% for tr in req.covered_by.test_runs %}
+                                    <li></li>
+                                        <a href="#tests-{{ loop.parent.loop.index }}">{{ tr.name }}</a>
+                                        <span style="color: #6b7280;"> ({{ tr.utc_date }})</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            {% if req.covered_by.test_cases is not none and req.covered_by.test_cases | length > 0 %}
+                            <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                                <strong></strong>Test Cases:</strong>
+                                <ul style="margin: 0.25rem 0; padding-left: 1rem;">
+                                    {% for tc in req.covered_by.test_cases %}
+                                    <li></li>
+                                        {{ tc.test_case_name }}
+                                        <span style="color: #6b7280;"> ({{ tc.test_run_name }})</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {# Review Coverage Details ── ──}
+                        {% if req.reviewed_in is not none and req.reviewed_in | length > 0 %}
+                        <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                            <strong></strong>Reviews:</strong>
+                            <ul style="margin: 0.25rem 0; padding-left: 1rem;">
+                                {% for rev in req.reviewed_in %}
+                                <li></li>
+                                    <a href="#reviews-{{ loop.parent.loop.index }}">{{ rev.name }}</a>
+                                    <span style="color: #6b7280;"> ({{ rev.utc_date }})</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+        </section>
+
+        {# ── Requirements ── ──}
+        <section id="reqs-{{ loop.index }}">
+            <h3>Requirements</h3>
+
+            {# ── Root Requirements ── ──}
+            {% if product_report.requirements.roots and product_report.requirements.roots | length > 0 %}
+            <h4 style="margin-top: 0.5rem; color: #1e40af;">
+                Root Requirements ({{ product_report.requirements.roots | length }})
+            </h4>
+            <table style="margin-bottom: 1rem;">
+                <thead></thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>State</th>
+                        <th>Children</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in product_report.requirements.roots %}
+                    <tr id="req-{{ product_report.product.id }}-{{ req.id }}">
+                        <td></td>
+                            <span class="ref-id"><a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a></span>
+                            <span class="optional-badge" style="background: #dbeafe; color: #1e40af;">root</span>
+                            {% if req.optional %}<span class="optional-badge">optional</span>{% endif %}
+                        </td>
+                        <td>{{ req.title }}</td>
+                        <td></td>
+                            <span class="state state-{{ req.state }}">{{ req.state }}</span>
+                        </td>
+                        <td></td>
+                            {% if req.children and req.children | length > 0 %}
+                            <ul class="ref-list">
+                                {% for c in req.children %}
+                                <li></li>
+                                    <span class="ref-id"><a href="#req-{{ c.product_id }}-{{ c.id }}">{{ c.id }}</a></span>
+                                    <span class="state state-{{ c.state }}" style="font-size: 0.6rem">{{ c.state }}</span>
+                                    {% if c.optional %}<span class="optional-badge" style="font-size: 0.6rem">opt</span>{% else %}<span style="font-size: 0.6rem; color: #9ca3af;">reqd</span>{% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span style="color: #d1d5db;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {# ── Child Requirements ── ──}
+            {% if product_report.requirements.all | length == 0 %}
+            <p class="empty-notice">No requirements collected.</p>
+            {% else %}
+            {% set child_reqs = [] %}
+            {% for req in product_report.requirements.all %}
+                {% if req.parents is not none and req.parents | length > 0 %}
+                    {% set _ = child_reqs.append(req) %}
+                {% endif %}
+            {% endfor %}
+            <h4 style="margin-top: 1rem; color: #374151;">
+                Child Requirements ({{ child_reqs | length }})
+            </h4>
+            <table style="margin-bottom: 1rem;">
+                <thead></thead>
+                    <tr></tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th></th>State</th>
+                        <th></th>Parents</th>
+                        <th></th>Children</th>
+                        <th></th>Trace Coverage</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                    {% for req in child_reqs %}
+                    <tr id="req-{{ product_report.product.id }}-{{ req.id }}">
+                        <td>
+                            <span class="ref-id"><a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a></span>
+                            {% if req.optional %}<span class="optional-badge">optional</span>{% endif %}
+                        </td>
+                        <td>{{ req.title }}</td>
+                        <td>
+                            <span class="state state-{{ req.state }}">{{ req.state }}</span>
+                        </td>
+                        <td>
+                            {% if req.parents %}
+                            <ul class="ref-list">
+                                {% for p in req.parents %}
+                                <li>
+                                    <span class="ref-id"><a href="#req-{{ p.product_id }}-{{ p.id }}">{{ p.id }}</a></span>
+                                    <span class="state state-{{ p.state }}" style="font-size: 0.6rem">{{ p.state }}</span>
+                                    {% if p.optional %}<span class="optional-badge" style="font-size: 0.6rem">opt</span>{% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span style="color: #d1d5db;">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.children %}
+                            <ul class="ref-list">
+                                {% for c in req.children %}
+                                <li>
+                                    <span class="ref-id"><a href="#req-{{ c.product_id }}-{{ c.id }}">{{ c.id }}</a></span>
+                                    <span class="state state-{{ c.state }}" style="font-size: 0.6rem">{{ c.state }}</span>
+                                    {% if c.optional %}<span class="optional-badge" style="font-size: 0.6rem">opt</span>{% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span style="color: #d1d5db;">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set has_test_cov = false %}
+                            {% if req.covered_by is not none %}
+                                {% if req.covered_by.test_runs is not none and req.covered_by.test_runs | length > 0 %}
+                                    {% set has_test_cov = true %}
+                                {% endif %}
+                                {% if req.covered_by.test_cases is not none and req.covered_by.test_cases | length > 0 %}
+                                    {% set has_test_cov = true %}
+                                {% endif %}
+                            {% endif %}
+                            {% set has_review_cov = false %}
+                            {% if req.reviewed_in is not none and req.reviewed_in | length > 0 %}
+                                {% set has_review_cov = true %}
+                            {% endif %}
+                            <div class="trace-coverage">
+                                {% if has_test_cov %}
+                                    <span class="trace-icon test" title="Has test coverage">T</span>
+                                {% else %}
+                                    <span class="trace-icon none" title="No test coverage">—</span>
+                                {% endif %}
+                                {% if has_review_cov %}
+                                    <span class="trace-icon review" title="Has review coverage">R</span>
+                                {% else %}
+                                    <span class="trace-icon none" title="No review coverage">—</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {# ── Deprecated Requirements (Isolated Section) ── ──}
+            {% set deprecated_reqs = [] %}
+            {% for req in product_report.requirements.all %}
+                {% if req.state == 'deprecated' %}
+                    {% set _ = deprecated_reqs.append(req) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if deprecated_reqs | length > 0 %}
+            <div class="deprecated-section">
+                <h4>Deprecated Requirements ({{ deprecated_reqs | length }})</h4>
+                <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 0.5rem;">
+                    These requirements are deprecated and excluded from active verification.
+                </p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>State</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in deprecated_reqs %}
+                        <tr>
+                            <td>
+                                <span class="ref-id"><a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a></span>
+                                {% if req.optional %}<span class="optional-badge">opt</span>{% endif %}
+                            </td>
+                            <td>{{ req.title }}</td>
+                            <td>
+                                <span class="state state-deprecated">{{ req.state }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {# ── Requirements Details (Collapsible) ── ──}
+            <details>
+                <summary>Show detailed requirement information</summary>
+                <div class="collapsible-content">
+                    {% for req in product_report.requirements.all %}
+                    <div id="req-detail-{{ product_report.product.id }}-{{ req.id }}" style="margin-bottom: 1.5rem; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 6px; background: #fafafa;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+                            <div>
+                                <span class="ref-id" style="font-size: 0.9rem;">
+                                    <a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a>
+                                </span>
+                                {% if req.optional %}<span class="optional-badge">optional</span>{% endif %}
+                            </div>
+                            <span class="state state-{{ req.state }}">{{ req.state }}</span>
+                        </div>
+
+                        <h4 style="margin-top: 0;">{{ req.title }}</h4>
+
+                        {% if req.description %}
+                        <p style="font-size: 0.825rem; color: #4b5563; margin-bottom: 0.5rem;">{{ req.description }}</p>
+                        {% endif %}
+
+                        {% if req.manual_verification %}
+                        <div class="manual-verif-banner" style="margin-bottom: 0.5rem;">
+                            <span class="manual-icon">⚠️</span>
+                            <span class="manual-text">MANUAL VERIFICATION REQUIRED — Review evidence must be provided</span>
+                        </div>
+                        {% endif %}
+
+                        {# Parents ── ──}
+                        {% if req.parents %}
+                        <h4 style="font-size: 0.8rem; margin-top: 0.75rem;">Parent Requirements</h4>
+                        <ul class="ref-list" style="display: block;">
+                            {% for p in req.parents %}
+                            <li>
+                                <span class="ref-id"><a href="#req-{{ p.product_id }}-{{ p.id }}">
+                                    {% if p.product_id %}{{ p.product_id }}::{% endif %}{{ p.id }}
+                                </a></span>
+                                <span class="state state-{{ p.state }}" style="font-size: 0.6rem">{{ p.state }}</span>
+                                {% if p.optional %}<span class="optional-badge" style="font-size: 0.6rem">opt</span>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
+                        {# Children ── ──}
+                        {% if req.children %}
+                        <h4 style="font-size: 0.8rem; margin-top: 0.75rem;">Child Requirements</h4>
+                        <ul class="ref-list" style="display: block;">
+                            {% for c in req.children %}
+                            <li>
+                                <span class="ref-id"><a href="#req-{{ c.product_id }}-{{ c.id }}">
+                                    {% if c.product_id %}{{ c.product_id }}::{% endif %}{{ c.id }}
+                                </a></span>
+                                <span class="state state-{{ c.state }}" style="font-size: 0.6rem">{{ c.state }}</span>
+                                {% if c.optional %}<span class="optional-badge" style="font-size: 0.6rem">opt</span>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
+                        {# Traces ── ──}
+                        {% if req.traces %}
+                        <h4 style="font-size: 0.8rem; margin-top: 0.75rem;">Traces</h4>
+                        <details>
+                            <summary>Show traces ({{ req.traces.all | length }} total)</summary>
+                            <div class="collapsible-content">
+                                {% for trace in req.traces.all %}
+                                <div class="trace-detail-row">
+                                    <span class="trace-badge trace-{{ trace.kind }}">{{ trace.kind }}</span>
+                                    {% if trace.filepath %}
+                                    <span class="ref-id">{{ trace.filepath }}</span>
+                                    <span class="trace-line">:{{ trace.line }}</span>
+                                    {% endif %}
+                                    {% if trace.properties %}
+                                    <span style="font-size: 0.75rem; color: #6b7280; margin-left: 0.5rem;">
+                                        {% for key, value in trace.properties %}
+                                        {{ key }}: {{ value }}
+                                        {% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+        </section>
+
+        {# ── Test Runs ── ──}
+        <section id="tests-{{ loop.index }}">
+            <h3>Test Runs</h3>
+
+            {% if product_report.test_runs.all | length == 0 %}
+            <p class="empty-notice">No test runs collected.</p>
+            {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Date (UTC)</th>
+                        <th>State</th>
+                        <th>Coverage</th>
+                        <th>Test Cases</th>
+                        <th>Related Requirements</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tr in product_report.test_runs.all %}
+                    <tr>
+                        <td><strong>{{ tr.name }}</strong></td>
+                        <td style="white-space: nowrap">{{ tr.utc_date }}</td>
+                        <td>
+                            <span class="state state-{{ tr.state }}">{{ tr.state }}</span>
+                        </td>
+                        <td>
+                            {% if tr.coverage %}
+                            <div class="coverage-grid">
+                                <div class="coverage-item">
+                                    <span class="label">Lines</span>
+                                    <span class="value">
+                                        {% if tr.coverage.lines %}
+                                            {% set covered = tr.coverage.lines.covered | default(value=0) %}
+                                            {% set total = tr.coverage.lines.total | default(value=0) %}
+                                            {% if total > 0 %}{{ covered }}/{{ total }}{% else %}0/0{% endif %}
+                                        {% else %}&mdash;{% endif %}
+                                    </span>
+                                </div>
+                                {% if tr.coverage.covered_traces %}
+                                <div class="coverage-item">
+                                    <span class="label">Traces</span>
+                                    <span class="value">{{ tr.coverage.covered_traces | length }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            &mdash;
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tr.test_cases and tr.test_cases.all | length > 0 %}
+                                {% set tc_total = tr.test_cases.all | length %}
+                                {% set tc_passed = 0 %}
+                                {% set tc_failed = 0 %}
+                                {% set tc_skipped = 0 %}
+                                {% set tc_unknown = 0 %}
+                                {% for tc in tr.test_cases.all %}
+                                    {% if tc.state == 'passed' %}
+                                        {% set tc_passed = tc_passed + 1 %}
+                                    {% elif tc.state == 'failed' %}
+                                        {% set tc_failed = tc_failed + 1 %}
+                                    {% elif tc.state == 'skipped' %}
+                                        {% set tc_skipped = tc_skipped + 1 %}
+                                    {% else %}
+                                        {% set tc_unknown = tc_unknown + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem;">
+                                    <span><span class="state state-passed" style="font-size: 0.65rem;">{{ tc_passed }}</span> passed</span>
+                                    {% if tc_failed > 0 %}
+                                    <span><span class="state state-failed" style="font-size: 0.65rem;">{{ tc_failed }}</span> failed</span>
+                                    {% endif %}
+                                    {% if tc_skipped > 0 %}
+                                    <span><span class="state state-skipped" style="font-size: 0.65rem;">{{ tc_skipped }}</span> skipped</span>
+                                    {% endif %}
+                                    {% if tc_unknown > 0 %}
+                                    <span><span class="state state-unknown" style="font-size: 0.65rem;">{{ tc_unknown }}</span> unknown</span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tr.related_reqs %}
+                            <ul class="ref-list" style="display: block;">
+                                {% for rreq in tr.related_reqs %}
+                                <li>
+                                    <span class="ref-id"><a href="#req-{{ rreq.product_id }}-{{ rreq.id }}">{{ rreq.id }}</a></span>
+                                    {% if rreq.kind.traced is defined %}
+                                    <span class="trace-badge trace-verifies">traced</span>
+                                    {% elif rreq.kind == "direct" %}
+                                    <span class="trace-badge trace-satisfies">direct</span>
+                                    {% else %}
+                                    <span class="trace-badge trace-satisfies">{{ rreq.kind }}</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            &mdash;
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {# ── Test Cases (Expanded Row) ── ──}
+                    {% if tr.test_cases and tr.test_cases.all | length > 0 %}
+                    <tr>
+                        <td colspan="6" style="padding: 0.25rem 0.75rem 0.75rem 0.75rem; background: #fafafa;">
+                            <table class="test-cases-table">
+                                <thead>
+                                    <tr>
+                                        <th>Test Case</th>
+                                        <th>State</th>
+                                        <th>Related Reqs</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tc in tr.test_cases.all %}
+                                    <tr>
+                                        <td>
+                                            <span style="font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.75rem;">{{ tc.name }}</span>
+                                            {% if tc.location %}
+                                            <span style="font-size: 0.7rem; color: #6b7280;">
+                                                {% if tc.location.filepath %}
+                                                ({{ tc.location.filepath }}:{{ tc.location.line }})
+                                                {% endif %}
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="state state-{{ tc.state }}">{{ tc.state }}</span>
+                                        </td>
+                                        <td>
+                                            {% if tc.related_reqs %}
+                                            <ul class="ref-list" style="display: block;">
+                                                {% for rreq in tc.related_reqs %}
+                                                <li>
+                                                    <span class="ref-id"><a href="#req-{{ rreq.product_id }}-{{ rreq.id }}">{{ rreq.id }}</a></span>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% else %}
+                                            &mdash;
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {# ── Test Coverage Details (Collapsible) ── ──}
+            {% if product_report.test_runs.all | length > 0 %}
+            <details>
+                <summary>Show coverage details for all test runs</summary>
+                <div class="collapsible-content">
+                    {% for tr in product_report.test_runs.all %}
+                    <div style="margin-bottom: 1rem; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 4px;">
+                        <h4 style="margin-top: 0;">{{ tr.name }}</h4>
+                        {% if tr.coverage and tr.coverage.covered_files %}
+                        <table style="font-size: 0.75rem;">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Covered Lines</th>
+                                    <th>Excluded Lines</th>
+                                    <th>Overridden Lines</th>
+                                    <th>Total Lines</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cf in tr.coverage.covered_files %}
+                                <tr>
+                                    <td>
+                                        <span class="ref-id" style="font-size: 0.75rem;">{{ cf.filepath }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="value covered">{{ cf.lines.covered | default(value=0) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="value excluded">{{ cf.lines.excluded | default(value=0) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="value overridden">{{ cf.lines.overridden | default(value=0) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="value">{{ cf.lines.total | default(value=0) }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p style="font-size: 0.8rem; color: #9ca3af; font-style: italic;">No coverage data available</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+            {% endif %}
+        </section>
+
+        {# ── Manual Verification Requirements (Prominent Section) ── ──}
+        <section id="manual-{{ loop.index }}">
+            <h3>Manual Verification Requirements</h3>
+
+            {% set manual_reqs = [] %}
+            {% for req in product_report.requirements.all %}
+                {% if req.manual_verification %}
+                    {% set _ = manual_reqs.append(req) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if manual_reqs | length == 0 %}
+            <p class="empty-notice">No requirements require manual verification.</p>
+            {% else %}
+            <div class="manual-verif-banner" style="margin-bottom: 1rem;">
+                <span class="manual-icon">⚠️</span>
+                <span class="manual-text">
+                    {{ manual_reqs | length }} requirement{{ manual_reqs | length | pluralize }} require manual verification. Ensure review evidence is provided for each.
+                </span>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Req ID</th>
+                        <th>Title</th>
+                        <th>State</th>
+                        <th>Review Coverage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in manual_reqs %}
+                    <tr class="manual-verif-req">
+                        <td>
+                            <span class="ref-id"><a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a></span>
+                        </td>
+                        <td>{{ req.title }}</td>
+                        <td>
+                            <span class="state state-{{ req.state }}">{{ req.state }}</span>
+                        </td>
+                        <td>
+                            {% if req.reviewed_in is not none and req.reviewed_in | length > 0 %}
+                                <span style="color: var(--color-verified);">✓</span>
+                                {% for rev in req.reviewed_in %}
+                                <a href="#reviews-{{ loop.parent.loop.index }}">{{ rev.name }}</a>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span style="color: var(--color-failed);">✗</span> No valid review coverage
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </section>
+
+        {# ── Reviews ── ──}
+        <section id="reviews-{{ loop.index }}">
+            <h3>Reviews</h3>
+
+            {% if product_report.reviews.all | length == 0 %}
+            <p class="empty-notice">No reviews collected.</p>
+            {% else %}
+            {% for review in product_report.reviews.all %}
+            <div class="review-section">
+                <div class="review-header">
+                    <span class="review-name">{{ review.name }}</span>
+                    <span class="review-date">{{ review.utc_date }}</span>
+                </div>
+                <div class="review-authors">
+                    Authors: {{ review.authors | join(sep=", ") }}
+                </div>
+
+                {# Verified requirements ── ──}
+                {% if review.requirements %}
+                <div class="review-detail">
+                    <h4>Verified Requirements</h4>
+                    <ul class="ref-list" style="display: block;">
+                        {% for req_ref in review.requirements %}
+                        <li style="display: block; margin-bottom: 0.15rem;">
+                            <span class="ref-id">
+                                <a href="#req-{{ req_ref.product_id }}-{{ req_ref.id }}">
+                                    {% if req_ref.product_id %}{{ req_ref.product_id }}::{% endif %}{{ req_ref.id }}
+                                </a>
+                            </span>
+                            {% if req_ref.optional %}<span class="optional-badge" style="font-size: 0.6rem">opt</span>{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {# Test run overrides ── ──}
+                {% if review.test_run_overrides %}
+                <div class="review-detail">
+                    <h4>Test Run Overrides</h4>
+                    {% for ovr in review.test_run_overrides %}
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong style="font-size: 0.85rem;">{{ ovr.name }}</strong>
+                        <span style="color: #6b7280; font-size: 0.8rem;">({{ ovr.utc_date }})</span>
+
+                        {% if ovr.test_cases | length > 0 %}
+                        <table class="test-cases-table" style="margin-top: 0.25rem;">
+                            <thead>
+                                <tr>
+                                    <th>Test Case</th>
+                                    <th>State Override</th>
+                                    <th>Coverage Overrides</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tc in ovr.test_cases %}
+                                <tr>
+                                    <td>{{ tc.name }}</td>
+                                    <td>
+                                        {% if tc.state %}
+                                        <span class="state state-{{ tc.state.new }}">{{ tc.state.new }}</span>
+                                        <br />
+                                        <span class="override-comment">{{ tc.state.comment }}</span>
+                                        {% else %}
+                                        &mdash;
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if tc.coverage | length > 0 %}
+                                            {% for cov in tc.coverage %}
+                                            <span class="ref-id">{{ cov.filepath }}</span>
+                                            {% if cov.lines | length > 0 %}
+                                            ({{ cov.lines | length }} line override{{ cov.lines | length | pluralize }})
+                                            {% endif %}
+                                            {% if not loop.last %}<br />{% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                        &mdash;
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                        {% if ovr.coverage | length > 0 %}
+                        <div style="margin-top: 0.35rem;">
+                            <strong style="font-size: 0.8rem;">Run-level coverage overrides:</strong>
+                            {% for cov in ovr.coverage %}
+                            <div style="margin-left: 1rem; font-size: 0.8rem;">
+                                <span class="ref-id">{{ cov.filepath }}</span>
+                                {% for line_ovr in cov.lines %}
+                                <br />
+                                &nbsp;&nbsp;Lines {{ line_ovr.nrs | join(sep=", ") }}
+                                &rarr; hits:
+                                {% if line_ovr.hits %}{{ line_ovr.hits }}{% else %}<em>ignored</em>{% endif %}
+                                <span class="override-comment">&mdash; {{ line_ovr.comment }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+        </section>
+
+        {# ── Trace Completeness (Promoted Section) ── ──}
+        <section id="traces-{{ loop.index }}">
+            <h3>Trace Completeness</h3>
+            <p style="font-size: 0.825rem; color: #6b7280; margin-bottom: 0.75rem;">
+                Shows trace coverage per requirement. Requirements without complete traces may need additional documentation.
+            </p>
+
+            {% set reqs_without_complete_traces = [] %}
+            {% set total_traced_reqs = 0 %}
+
+            {% for req in product_report.requirements.all %}
+                {% if req.traces is not none and req.traces.all | length > 0 %}
+                    {% set total_traced_reqs = total_traced_reqs + 1 %}
+                {% elif req.state != 'deprecated' and req.state != 'ignored' and req.state != 'skipped' %}
+                    {% set _ = reqs_without_complete_traces.append(req) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if product_report.requirements.all | length == 0 %}
+            <p class="empty-notice">No requirements to analyze.</p>
+            {% else %}
+            <div class="category-summary" style="margin-bottom: 1rem;">
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-title">Trace Summary</div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Requirements</span>
+                            <span class="stat-value informational">{{ product_report.requirements.all | length }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">With Traces</span>
+                            <span class="stat-value positive">{{ total_traced_reqs }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Without Traces</span>
+                            <span class="stat-value negative">{{ reqs_without_complete_traces | length }}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Trace Rate</span>
+                            <span class="stat-value">
+                                {% if product_report.requirements.all | length > 0 %}
+                                    {{ ((total_traced_reqs / product_report.requirements.all | length) * 100) | round(2) }}%
+                                {% else %}
+                                    0.00%
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if reqs_without_complete_traces | length > 0 %}
+            <div style="background: #fef3c7; border: 1px solid var(--manual-verif-border); border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+                <strong style="color: var(--manual-verif-text);">⚠️ {{ reqs_without_complete_traces | length }} requirement{{ reqs_without_complete_traces | pluralize }} without trace coverage:</strong>
+                <ul style="margin-top: 0.5rem; margin-left: 1rem; font-size: 0.85rem;">
+                    {% for req in reqs_without_complete_traces %}
+                    <li>
+                        <span class="ref-id"><a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a></span>
+                        — {{ req.title }}
+                        <span class="state state-{{ req.state }}" style="font-size: 0.6rem; margin-left: 0.25rem;">{{ req.state }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <details>
+                <summary>Show trace details for all requirements</summary>
+                <div class="collapsible-content">
+                    {% for req in product_report.requirements.all %}
+                    <div style="margin-bottom: 0.75rem; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span class="ref-id" style="font-size: 0.85rem;">
+                                <a href="#req-{{ product_report.product.id }}-{{ req.id }}">{{ req.id }}</a>
+                            </span>
+                            <span class="state state-{{ req.state }}" style="font-size: 0.65rem;">{{ req.state }}</span>
+                        </div>
+                        {% if req.traces is not none and req.traces.all | length > 0 %}
+                        <div style="margin-top: 0.25rem; font-size: 0.8rem;">
+                            {% for trace in req.traces.all %}
+                            <span class="trace-badge trace-{{ trace.kind }}">{{ trace.kind }}</span>
+                            {% if trace.filepath %}
+                            <span class="ref-id" style="font-size: 0.75rem;"> {{ trace.filepath }}:{{ trace.line }}</span>
+                            {% endif %}
+                            <br />
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div style="margin-top: 0.25rem; font-size: 0.8rem; color: #9ca3af; font-style: italic;">No traces</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+        </section>
+
+        {# ── Annotations ── ──}
+        <section id="annotations-{{ loop.index }}">
+            <h3>Annotations</h3>
+
+            {% set annotations = product_report.annotations %}
+            {% set has_annotations = false %}
+            {% if annotations.coverage_excludes and annotations.coverage_excludes.files | length > 0 %}
+                {% set has_annotations = true %}
+            {% endif %}
+            {% if annotations.elements and annotations.elements.files | length > 0 %}
+                {% set has_annotations = true %}
+            {% endif %}
+            {% if annotations.traces and (annotations.traces.files | length > 0 or (annotations.traces.summary.total | default(value=0)) > 0) %}
+                {% set has_annotations = true %}
+            {% endif %}
+
+            {% if not has_annotations %}
+            <p class="empty-notice">No annotations collected.</p>
+            {% else %}
+
+            {# ── Coverage Excludes ── ──}
+            {% if annotations.coverage_excludes and annotations.coverage_excludes.files | length > 0 %}
+            <h4>Coverage Excludes</h4>
+            <details>
+                <summary>Show coverage excludes ({{ annotations.coverage_excludes.files | length }} files)</summary>
+                <div class="collapsible-content">
+                    {% for ce_file in annotations.coverage_excludes.files %}
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong style="font-size: 0.85rem;">{{ ce_file.filepath }}</strong>
+                        {% if ce_file.excludes %}
+                        <table class="test-cases-table" style="margin-top: 0.25rem;">
+                            <thead>
+                                <tr>
+                                    <th>Kind</th>
+                                    <th>Line</th>
+                                    <th>Comment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exclude in ce_file.excludes %}
+                                <tr>
+                                    <td><span class="state" style="font-size: 0.65rem;">{{ exclude.kind }}</span></td>
+                                    {% if exclude.block %}
+                                    <td>{{ exclude.block.start }}&ndash;{{ exclude.block.end }}</td>
+                                    {% elif exclude.line %}
+                                    <td>{{ exclude.line }}</td>
+                                    {% else %}
+                                    <td>&mdash;</td>
+                                    {% endif %}
+                                    <td>{{ exclude.comment | default(value="") }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+
+            {# ── Elements ── ──}
+            {% if annotations.elements and annotations.elements.files | length > 0 %}
+            <h4 style="margin-top: 1rem;">Elements</h4>
+            <details>
+                <summary>Show elements ({{ annotations.elements.files | length }} files)</summary>
+                <div class="collapsible-content">
+                    {% for e_file in annotations.elements.files %}
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong style="font-size: 0.85rem;">{{ e_file.filepath }}</strong>
+                        {% if e_file.elements %}
+                        <div style="margin-top: 0.25rem;">
+                            {% for elem in e_file.elements %}
+                            <div style="padding: 0.15rem 0; border-bottom: 1px solid #f3f4f6; font-size: 0.8rem;">
+                                <span class="kind" style="color: #6b7280;">[{{ elem.kind }}]</span>
+                                <span class="ref-id" style="margin-left: 0.25rem;">{% if elem.name %}{{ elem.name }}{% elif elem.ident %}{{ elem.ident }}{% else %}&mdash;{% endif %}</span>
+                                {% if elem.definition_line %}
+                                <span class="trace-line">:{{ elem.definition_line }}</span>
+                                {% endif %}
+                                {% if elem.covered_by and elem.covered_by | length > 0 %}
+                                <span style="font-size: 0.7rem; color: #16a34a; margin-left: 0.25rem;">(covered)</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+
+            {# ── Traces ── ──}
+            {% if annotations.traces and (annotations.traces.files | length > 0 or (annotations.traces.summary.total | default(value=0)) > 0) %}
+            <h4 style="margin-top: 1rem;">Traces</h4>
+            <details>
+                <summary>Show traces ({{ annotations.traces.summary.total | default(value=0) }} total)</summary>
+                <div class="collapsible-content">
+                    <div style="margin-bottom: 0.5rem; font-size: 0.825rem;">
+                        <span>Satisfies: {{ annotations.traces.summary.satisfies | default(value=0) }}</span>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <span>Verifies: {{ annotations.traces.summary.verifies | default(value=0) }}</span>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <span>Links: {{ annotations.traces.summary.links | default(value=0) }}</span>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <span>Clarifies: {{ annotations.traces.summary.clarifies | default(value=0) }}</span>
+                    </div>
+                    {% for t_file in annotations.traces.files %}
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong style="font-size: 0.85rem;">{{ t_file.filepath }}</strong>
+                        {% if t_file.traces %}
+                        <div style="margin-top: 0.25rem;">
+                            {% for trace in t_file.traces %}
+                            <div class="trace-detail-row">
+                                <span class="trace-badge trace-{{ trace.kind }}">{{ trace.kind }}</span>
+                                <span class="ref-id" style="margin-left: 0.25rem;">
+                                    {% if trace.filepath %}{{ trace.filepath }}{% endif %}
+                                </span>
+                                <span class="trace-line">:{{ trace.line }}</span>
+                                {% if trace.properties %}
+                                <span style="font-size: 0.7rem; color: #6b7280; margin-left: 0.5rem;">
+                                    {% for key, value in trace.properties %}
+                                    {{ key }}={{ value }}
+                                    {% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+            {% endif %}
+        </section>
+
+        {# ── Product Properties (if any) ── ──}
+        {% if product_report.product.properties %}
+        <section>
+            <h3>Product Properties</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in product_report.product.properties %}
+                    <tr>
+                        <td><strong>{{ key }}</strong></td>
+                        <td>{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+
+        {% endfor %}
+
+        <footer>
+            Generated by
+            <a href="https://github.com/mhatzl/mantra" style="color: #6b7280;">mantra</a>
+        </footer>
+    </body>
+</html>

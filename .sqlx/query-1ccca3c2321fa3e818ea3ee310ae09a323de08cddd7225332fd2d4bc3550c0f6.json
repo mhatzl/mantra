@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select count(*) as \"nr!:i64\"\n            from ManualRequirements\n            where product_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr!:i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1ccca3c2321fa3e818ea3ee310ae09a323de08cddd7225332fd2d4bc3550c0f6"
+}

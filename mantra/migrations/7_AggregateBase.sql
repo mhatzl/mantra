@@ -345,7 +345,7 @@ create table ResolvedTestRunLineCoverage (
     test_run_date text not null,
     cov_filepath text not null,
     cov_file_hash text,
-    cov_line text not null,
+    cov_line integer not null,
     hits integer,
     primary key (
         product_id,
@@ -378,7 +378,7 @@ create table ResolvedTestCaseLineCoverage (
     test_case_name text not null,
     cov_filepath text not null,
     cov_file_hash text,
-    cov_line text not null,
+    cov_line integer not null,
     hits integer,
     primary key (
         product_id,
@@ -413,7 +413,7 @@ create table TraceCoveragePerTestRuns (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     hits integer not null,
     primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
@@ -421,6 +421,18 @@ create table TraceCoveragePerTestRuns (
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
+
+-- Contains traces covered by test runs.
+create view TracesCoveredByTestRuns as
+select distinct
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    filepath,
+    file_hash,
+    traced_line
+from TraceCoveragePerTestRuns;
 
 create table TraceCoveragePerTestCases (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
@@ -431,7 +443,7 @@ create table TraceCoveragePerTestCases (
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    cov_line text not null,
+    cov_line integer not null,
     hits integer not null,
     primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
@@ -439,3 +451,48 @@ create table TraceCoveragePerTestCases (
     foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
+
+-- Contains traces covered by test cases.
+create view TracesCoveredByTestCases as
+select distinct
+    last_collect_nr,
+    product_id,
+    test_run_name,
+    test_run_date,
+    test_case_name,
+    filepath,
+    file_hash,
+    traced_line
+from TraceCoveragePerTestCases;
+
+-- Contains traces covered by tests.
+create view TracesCoveredByTests as
+select
+    last_collect_nr,
+    product_id,
+    filepath,
+    file_hash,
+    traced_line
+from TracesCoveredByTestCases
+union
+select
+    last_collect_nr,
+    product_id,
+    filepath,
+    file_hash,
+    traced_line
+from TracesCoveredByTestRuns;
+
+create view CoverableLinesPerFilepath as
+with CoveredLinesPerFilepath (product_id, filepath, line) as (
+	select product_id, cov_filepath, cov_line
+	from ResolvedTestRunLineCoverage
+
+	union
+
+	select product_id, cov_filepath, cov_line
+	from ResolvedTestCaseLineCoverage
+)
+select product_id, filepath, count(line) as coverable_lines
+from CoveredLinesPerFilepath
+group by product_id, filepath;

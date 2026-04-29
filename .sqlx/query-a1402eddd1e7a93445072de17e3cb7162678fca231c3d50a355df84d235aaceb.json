@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select filepath, file_hash, line\n                from TestCaseLocations\n                where product_id = $1 and test_run_name = $2\n                and test_run_date = $3 and test_case_name = $4\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_hash",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "line",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "a1402eddd1e7a93445072de17e3cb7162678fca231c3d50a355df84d235aaceb"
+}

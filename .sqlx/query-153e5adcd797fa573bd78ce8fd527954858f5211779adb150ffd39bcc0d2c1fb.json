@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select req_id\n                from TestCaseVerifiedRequirements\n                where product_id = $1\n                and test_run_name = $2 and test_run_date = $3\n                and test_case_name = $4\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "153e5adcd797fa573bd78ce8fd527954858f5211779adb150ffd39bcc0d2c1fb"
+}

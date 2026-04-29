@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select coverable_lines\n                from CoverableLinesPerFilepath\n                where product_id = $1 and filepath = $2\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "coverable_lines",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "988a868e6b73b6e47b7a3f6fa21ea7db8c868a249471f4012cd58e4a229a87b3"
+}
