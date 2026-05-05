@@ -9,4 +9,4 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0" }
+mantra-lang-tracing = { path = "../../mantra-lang-tracing", version = "0.7.8" }
