@@ -120,6 +120,7 @@ mod test {
         )
     }
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn mixed_slash_path_to_forward_slash() {
         let path = "folder1\\folder2/folder3\\file.rs";
