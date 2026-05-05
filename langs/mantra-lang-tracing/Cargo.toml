@@ -22,7 +22,7 @@ serde_json = { workspace = true, optional = true }
 cc = { version = "1.0.90", optional = true }
 
 [dev-dependencies]
-mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0.7.8" }
+mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0.7.0" }
 
 [features]
 default = ["collect"]
