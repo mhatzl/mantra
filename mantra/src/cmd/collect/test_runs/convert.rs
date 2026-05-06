@@ -4,7 +4,7 @@ use chrono::FixedOffset;
 use mantra_schema::{
     Origin, Properties, Revision,
     path::{PathExt, RelativePathBuf},
-    test_runs::{CoveredFile, CoveredLine, LogOutput, TestCase, TestRun, TestState},
+    test_runs::{CoveredFile, CoveredLine, LogOutput, TestCase, TestRun, TestCaseState},
     time::{self, Duration, OffsetDateTime},
 };
 use quick_junit::{Report, TestCaseStatus, TestSuite};
@@ -317,20 +317,20 @@ fn to_offset_datetime(
     )
 }
 
-fn junit_status_to_mantra_state(status: TestCaseStatus) -> TestState {
+fn junit_status_to_mantra_state(status: TestCaseStatus) -> TestCaseState {
     match status {
-        TestCaseStatus::Success { flaky_runs: _ } => TestState::Passed,
+        TestCaseStatus::Success { flaky_runs: _ } => TestCaseState::Passed,
         TestCaseStatus::NonSuccess {
             kind: _,
             message: _,
             ty: _,
             description: _,
             reruns: _,
-        } => TestState::Failed,
+        } => TestCaseState::Failed,
         TestCaseStatus::Skipped {
             message: _,
             ty: _,
             description: _,
-        } => TestState::Skipped,
+        } => TestCaseState::Skipped,
     }
 }

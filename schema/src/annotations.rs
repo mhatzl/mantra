@@ -14,7 +14,7 @@ pub struct AnnotationSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
-    pub version: Option<String>,
+    pub schema_version: Option<String>,
     /// List of files that contain mantra annotations.
     pub files: Vec<FileAnnotations>,
     /// Optional properties related to detected traces in all files in this entry.

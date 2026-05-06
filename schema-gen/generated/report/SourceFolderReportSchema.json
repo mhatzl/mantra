@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SourceFolderReportSchema",
+  "type": "object",
+  "required": [
+    "collected_by",
+    "path"
+  ],
+  "properties": {
+    "collected_by": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProductMetadata"
+      }
+    },
+    "files": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/SourceChildReference"
+      }
+    },
+    "folder": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/SourceChildReference"
+      }
+    },
+    "path": {
+      "type": "string"
+    },
+    "product_coverage": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/SourceFolderProductCoverage"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "CoveredLinesSummary": {
+      "type": "object",
+      "required": [
+        "covered",
+        "excluded",
+        "overridden",
+        "total",
+        "uncovered"
+      ],
+      "properties": {
+        "covered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "excluded": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "overridden": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uncovered": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "SourceChildReference": {
+      "type": "object",
+      "required": [
+        "collected_by",
+        "name"
+      ],
+      "properties": {
+        "collected_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "SourceFolderProductCoverage": {
+      "type": "object",
+      "required": [
+        "product",
+        "summary"
+      ],
+      "properties": {
+        "product": {
+          "$ref": "#/definitions/ProductMetadata"
+        },
+        "summary": {
+          "$ref": "#/definitions/SourceProductCoverageSummary"
+        }
+      }
+    },
+    "SourceProductCoverageSummary": {
+      "type": "object",
+      "required": [
+        "lines",
+        "product_id"
+      ],
+      "properties": {
+        "lines": {
+          "$ref": "#/definitions/CoveredLinesSummary"
+        },
+        "product_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

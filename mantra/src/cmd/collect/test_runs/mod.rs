@@ -254,7 +254,7 @@ async fn collect_well_known<'db>(
     }
 
     let test_run_schema = TestRunSchema {
-        version: None,
+        schema_version: None,
         test_runs: vec![test_run],
         test_run_properties,
         test_case_properties,

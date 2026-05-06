@@ -23,7 +23,7 @@ pub struct TestRunSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
-    pub version: Option<String>,
+    pub schema_version: Option<String>,
     /// List of test runs containing test and coverage information.
     pub test_runs: Vec<TestRun>,
     /// Optional properties related to all test runs in this entry.
@@ -111,7 +111,7 @@ pub struct TestCase {
     pub description: Option<String>,
     /// State of the test case.
     /// [req("testcov.test_case.state")]
-    pub state: TestState,
+    pub state: TestCaseState,
     /// Optional reason for the test case state.
     /// [req("testcov.test_case.state.reason")]
     pub state_properties: Option<Properties>,
@@ -176,7 +176,7 @@ pub struct TestCaseLocation {
     schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum TestState {
+pub enum TestCaseState {
     /// Test case failed.
     Failed = 0,
     /// Test case passed successfully.
@@ -189,32 +189,26 @@ pub enum TestState {
     /// and is treated as *failed* state.
     /// [req("testcov.test_case.state.unknown")]
     Unknown = 3,
-    /// Test is obsolete.
-    ///
-    /// Obsolete tests must not be considered for coverage analysis.
-    Obsolete = 4,
 }
 
-impl TestState {
+impl TestCaseState {
     pub fn as_nr(&self) -> i32 {
         *self as i32
     }
 }
 
-impl TryFrom<i64> for TestState {
+impl TryFrom<i64> for TestCaseState {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        if value == TestState::Failed.as_nr() as i64 {
-            Ok(TestState::Failed)
-        } else if value == TestState::Skipped.as_nr() as i64 {
-            Ok(TestState::Skipped)
-        } else if value == TestState::Passed.as_nr() as i64 {
-            Ok(TestState::Passed)
-        } else if value == TestState::Unknown.as_nr() as i64 {
-            Ok(TestState::Unknown)
-        } else if value == TestState::Obsolete.as_nr() as i64 {
-            Ok(TestState::Obsolete)
+        if value == TestCaseState::Failed.as_nr() as i64 {
+            Ok(TestCaseState::Failed)
+        } else if value == TestCaseState::Skipped.as_nr() as i64 {
+            Ok(TestCaseState::Skipped)
+        } else if value == TestCaseState::Passed.as_nr() as i64 {
+            Ok(TestCaseState::Passed)
+        } else if value == TestCaseState::Unknown.as_nr() as i64 {
+            Ok(TestCaseState::Unknown)
         } else {
             Err(ConversionError::UnknownState)
         }

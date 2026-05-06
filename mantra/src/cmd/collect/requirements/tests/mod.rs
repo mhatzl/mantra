@@ -13,7 +13,7 @@ async fn detect_hierarchy_cycles(dir: &str) {
 }
 
 mod states {
-    use mantra_schema::report::RequirementState;
+    use mantra_schema::report::requirement::RequirementState;
 
     use crate::cmd::collect::test_setup::db_from_dir;
 

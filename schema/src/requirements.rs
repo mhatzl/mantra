@@ -9,7 +9,7 @@ pub struct RequirementSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
-    pub version: Option<String>,
+    pub schema_version: Option<String>,
     /// List of requirements.
     pub requirements: Vec<Requirement>,
     /// Optional properties related to all requirements in this entry.

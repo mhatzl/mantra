@@ -1,0 +1,355 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReviewReportSchema",
+  "type": "object",
+  "required": [
+    "authors",
+    "name",
+    "product",
+    "requirements",
+    "test_run_overrides",
+    "utc_date"
+  ],
+  "properties": {
+    "authors": {
+      "description": "The authors that were part of the review. [req(\"review.authors\")]",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_origin": true,
+    "base_properties": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "description": {
+      "description": "Optional description of the review. [req(\"review.description\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "description": "The name of the review. [req(\"review.id\")]",
+      "type": "string"
+    },
+    "origin": {
+      "description": "Optional origin of the review. [req(\"review.origin\")]"
+    },
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "properties": {
+      "description": "Optional properties related to this review.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "requirements": {
+      "description": "List of requirements that are verified in this review. [req(\"review.verify_req\")]",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/VerifiedRequirement"
+      }
+    },
+    "revisions": {
+      "description": "Optional revisions for the review.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/Revision"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "test_run_overrides": {
+      "description": "List of test run overrides added with this review. [req(\"review.test_case_state\", \"review.coverage\")]",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/OverrideTestRun"
+      }
+    },
+    "utc_date": {
+      "description": "The UTC date and time the review was started. [req(\"review.id\")]",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "OverrideCoveredLineInfo": {
+      "description": "Code coverage override of one or more lines. [req(\"review.coverage\")]",
+      "type": "object",
+      "required": [
+        "comment",
+        "nrs"
+      ],
+      "properties": {
+        "comment": {
+          "description": "Mandatory comment explaining the change to the code coverage information.",
+          "type": "string"
+        },
+        "hits": {
+          "description": "The new number of times the set lines are reached during a test run or test case execution. If None, the line is marked to be ignored from line coverage analysis.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "nrs": {
+          "description": "The number of lines affected by this override.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    },
+    "OverrideFileCoverage": {
+      "description": "Code coverage overrides per file. [req(\"review.coverage\")]",
+      "type": "object",
+      "required": [
+        "filepath"
+      ],
+      "properties": {
+        "filepath": {
+          "description": "The file whose coverage data is overridden in a review.",
+          "type": "string"
+        },
+        "lines": {
+          "description": "The line information in the file that is overridden.",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OverrideCoveredLineInfo"
+          }
+        }
+      }
+    },
+    "OverrideTestCase": {
+      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\", \"review.coverage\")]",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "coverage": {
+          "description": "Overrides the code coverage related to this test case. [req(\"review.coverage\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OverrideFileCoverage"
+          }
+        },
+        "name": {
+          "description": "Name of the test case whose state and/or related code coverage is overridden in a review.",
+          "type": "string"
+        },
+        "state": {
+          "description": "Overrides the state of the test case. [req(\"review.test_case_state\")]",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/OverrideTestCaseState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "OverrideTestCaseState": {
+      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\")]",
+      "type": "object",
+      "required": [
+        "comment",
+        "new"
+      ],
+      "properties": {
+        "comment": {
+          "description": "Mandatory comment explaining why the state is overriden via review.",
+          "type": "string"
+        },
+        "new": {
+          "description": "The new state that is set with this override.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TestCaseState"
+            }
+          ]
+        }
+      }
+    },
+    "OverrideTestRun": {
+      "description": "Represents review overrides for a specific test run. [req(\"review.test_case_state\", \"review.coverage\")]",
+      "type": "object",
+      "required": [
+        "name",
+        "utc_date"
+      ],
+      "properties": {
+        "coverage": {
+          "description": "List of file coverage overrides. [req(\"review.coverage\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OverrideFileCoverage"
+          }
+        },
+        "name": {
+          "description": "Name of the test run.",
+          "type": "string"
+        },
+        "test_cases": {
+          "description": "List of test case state overrides. [req(\"review.test_case_state\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OverrideTestCase"
+          }
+        },
+        "utc_date": {
+          "description": "The UTC date the test run execution started.",
+          "type": "string"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Revision": {
+      "type": "object",
+      "required": [
+        "authors",
+        "comment",
+        "nr"
+      ],
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": "string"
+        },
+        "nr": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "TestCaseState": {
+      "description": "Possible states a test case may be in. [req(\"testcov.test_case.state\")]",
+      "oneOf": [
+        {
+          "description": "Test case failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test case passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test case was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test case is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "VerifiedRequirement": {
+      "type": "object",
+      "required": [
+        "comment",
+        "id"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

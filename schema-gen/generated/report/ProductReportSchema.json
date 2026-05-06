@@ -1,0 +1,402 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProductReportSchema",
+  "type": "object",
+  "required": [
+    "id",
+    "last_collected_date",
+    "name",
+    "reviews",
+    "root_requirements",
+    "root_test_runs",
+    "summary"
+  ],
+  "properties": {
+    "base": {
+      "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "description": "Optional description of the product.\n\nTODO: map to requirement",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "homepage": {
+      "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "id": {
+      "description": "The product ID.\n\nTODO: map to requirement",
+      "type": "string"
+    },
+    "last_collected_date": {
+      "type": "string"
+    },
+    "license": {
+      "description": "Optional license of the product.\n\nTODO: map to requirement",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "description": "The name of the product.\n\nTODO: map to requirement",
+      "type": "string"
+    },
+    "properties": {
+      "description": "Optional properties of the product.\n\nTODO: map to requirement",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "repository": {
+      "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ReviewReference"
+      }
+    },
+    "root_requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/RequirementReference"
+      }
+    },
+    "root_test_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRunReference"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "summary": {
+      "$ref": "#/definitions/ProductSummary"
+    },
+    "version": {
+      "description": "Optional version of the product.\n\nTODO: map to requirement",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ProductSummary": {
+      "type": "object",
+      "required": [
+        "requirements",
+        "reviews",
+        "test_cases",
+        "test_runs"
+      ],
+      "properties": {
+        "requirements": {
+          "$ref": "#/definitions/RequirementsSummary"
+        },
+        "reviews": {
+          "$ref": "#/definitions/ReviewsSummary"
+        },
+        "test_cases": {
+          "$ref": "#/definitions/TestsSummary"
+        },
+        "test_runs": {
+          "$ref": "#/definitions/TestsSummary"
+        }
+      }
+    },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "ignored"
+      ]
+    },
+    "RequirementsSummary": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "failed",
+        "ignored",
+        "mandatory_verified",
+        "mandatory_verified_manual",
+        "skipped",
+        "total",
+        "total_mandatory",
+        "total_manual",
+        "unverified",
+        "verified"
+      ],
+      "properties": {
+        "deprecated": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "failed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "ignored": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "mandatory_verified": {
+          "description": "Metric for how many non-optional requirements are verified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "mandatory_verified_manual": {
+          "description": "Metric for how many requirements requiring manual verification have been verified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "skipped": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "total_mandatory": {
+          "description": "Metric for how many requirements are non-optional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "total_manual": {
+          "description": "Metric for how many requirements require manual verification.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "unverified": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "verified": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "ReviewReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ReviewState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
+      ]
+    },
+    "ReviewsSummary": {
+      "type": "object",
+      "required": [
+        "mandatory_requirements_verified",
+        "obsolete",
+        "total",
+        "valid"
+      ],
+      "properties": {
+        "mandatory_requirements_verified": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "obsolete": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "valid": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "TestRunReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
+          ]
+        }
+      ]
+    },
+    "TestsSummary": {
+      "type": "object",
+      "required": [
+        "failed",
+        "obsolete",
+        "passed",
+        "skipped",
+        "total",
+        "unknown"
+      ],
+      "properties": {
+        "failed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "obsolete": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "passed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "skipped": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "unknown": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    }
+  }
+}

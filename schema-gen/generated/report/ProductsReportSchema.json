@@ -1,0 +1,249 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProductsReportSchema",
+  "type": "object",
+  "required": [
+    "products",
+    "summary"
+  ],
+  "properties": {
+    "products": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProductMetadata"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "summary": {
+      "$ref": "#/definitions/ProductSummary"
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ProductSummary": {
+      "type": "object",
+      "required": [
+        "requirements",
+        "reviews",
+        "test_cases",
+        "test_runs"
+      ],
+      "properties": {
+        "requirements": {
+          "$ref": "#/definitions/RequirementsSummary"
+        },
+        "reviews": {
+          "$ref": "#/definitions/ReviewsSummary"
+        },
+        "test_cases": {
+          "$ref": "#/definitions/TestsSummary"
+        },
+        "test_runs": {
+          "$ref": "#/definitions/TestsSummary"
+        }
+      }
+    },
+    "RequirementsSummary": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "failed",
+        "ignored",
+        "mandatory_verified",
+        "mandatory_verified_manual",
+        "skipped",
+        "total",
+        "total_mandatory",
+        "total_manual",
+        "unverified",
+        "verified"
+      ],
+      "properties": {
+        "deprecated": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "failed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "ignored": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "mandatory_verified": {
+          "description": "Metric for how many non-optional requirements are verified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "mandatory_verified_manual": {
+          "description": "Metric for how many requirements requiring manual verification have been verified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "skipped": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "total_mandatory": {
+          "description": "Metric for how many requirements are non-optional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "total_manual": {
+          "description": "Metric for how many requirements require manual verification.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "unverified": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "verified": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "ReviewsSummary": {
+      "type": "object",
+      "required": [
+        "mandatory_requirements_verified",
+        "obsolete",
+        "total",
+        "valid"
+      ],
+      "properties": {
+        "mandatory_requirements_verified": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "obsolete": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "valid": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "TestsSummary": {
+      "type": "object",
+      "required": [
+        "failed",
+        "obsolete",
+        "passed",
+        "skipped",
+        "total",
+        "unknown"
+      ],
+      "properties": {
+        "failed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "obsolete": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "passed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "skipped": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "unknown": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    }
+  }
+}

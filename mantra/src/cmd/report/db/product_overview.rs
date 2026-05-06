@@ -24,7 +24,7 @@ use mantra_schema::{
         OverrideCoveredLineInfo, OverrideFileCoverage, OverrideTestCase, OverrideTestCaseState,
         OverrideTestRun,
     },
-    test_runs::{TestCaseLocation, TestState},
+    test_runs::{TestCaseLocation, TestCaseState},
     time::OffsetDateTime,
 };
 
@@ -237,7 +237,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                 name: tr.test_run_name,
                 utc_date: mantra_schema::test_runs::test_date_from_str(&tr.test_run_date)
                     .expect("Valid test date in database"),
-                state: TestState::try_from(tr.state).expect("Valid test state in database"),
+                state: TestCaseState::try_from(tr.state).expect("Valid test state in database"),
             })
             .collect();
 
@@ -271,7 +271,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                 test_run_date: mantra_schema::test_runs::test_date_from_str(&tc.test_run_date)
                     .expect("Valid test date in database"),
                 test_case_name: tc.test_case_name,
-                state: TestState::try_from(tc.state).expect("Valid test state in database"),
+                state: TestCaseState::try_from(tc.state).expect("Valid test state in database"),
             })
             .collect();
 
@@ -528,7 +528,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                 name: tr.test_run_name,
                 utc_date: mantra_schema::test_runs::test_date_from_str(&tr.test_run_date)
                     .expect("Valid test date in database"),
-                state: TestState::try_from(tr.state).expect("Valid test state in database"),
+                state: TestCaseState::try_from(tr.state).expect("Valid test state in database"),
             })
             .collect();
 
@@ -575,7 +575,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                 test_run_date: mantra_schema::test_runs::test_date_from_str(&tc.test_run_date)
                     .expect("Valid test date in database"),
                 test_case_name: tc.test_case_name,
-                state: TestState::try_from(tc.state).expect("Valid test state in database"),
+                state: TestCaseState::try_from(tc.state).expect("Valid test state in database"),
             })
             .collect();
 
@@ -783,7 +783,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                                     &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
                                 )
                                 .expect("Invalid test date in database"),
-                                state: TestState::try_from(p.state).expect("Invalid test state in database"),
+                                state: TestCaseState::try_from(p.state).expect("Invalid test state in database"),
                             })
                             .collect(),
                     )
@@ -801,7 +801,7 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
                                     &mantra_schema::time::format_description::well_known::Iso8601::PARSING,
                                 )
                                 .expect("Valid test date in database"),
-                                state: TestState::try_from(c.state).expect("Invalid test state in database"),
+                                state: TestCaseState::try_from(c.state).expect("Invalid test state in database"),
                             })
                             .collect(),
                     )
@@ -1354,14 +1354,14 @@ impl<'t, 'db> ProductReporter<'t, 'db> {
         let mut test_cases = Vec::with_capacity(entries.len());
 
         for entry in entries {
-            let state = TestState::try_from(entry.state)?;
+            let state = TestCaseState::try_from(entry.state)?;
 
             match state {
-                TestState::Failed => summary.failed.cnt += 1,
-                TestState::Passed => summary.passed.cnt += 1,
-                TestState::Skipped => summary.skipped.cnt += 1,
-                TestState::Unknown => summary.unknown.cnt += 1,
-                TestState::Obsolete => summary.obsolete.cnt += 1,
+                TestCaseState::Failed => summary.failed.cnt += 1,
+                TestCaseState::Passed => summary.passed.cnt += 1,
+                TestCaseState::Skipped => summary.skipped.cnt += 1,
+                TestCaseState::Unknown => summary.unknown.cnt += 1,
+                TestCaseState::Obsolete => summary.obsolete.cnt += 1,
             }
 
             let location = sqlx::query!(

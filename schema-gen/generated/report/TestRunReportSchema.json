@@ -1,0 +1,635 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TestRunReportSchema",
+  "description": "Represents a test run in *mantra*. [req(\"testcov.test_run\")]",
+  "type": "object",
+  "required": [
+    "duration",
+    "name",
+    "nr_of_test_cases",
+    "product",
+    "utc_date"
+  ],
+  "properties": {
+    "base_origin": true,
+    "base_properties": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "coverage": {
+      "description": "Optional list of coverage information per file that was collected during the test run. [req(\"testcov.cov\")]",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TestCoverage"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "description": "Optional description of the test run.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "duration": {
+      "description": "Optional duration about how long the test run took. Will be displayed in seconds with nanosecond precision in decimal form.",
+      "type": "string"
+    },
+    "logs": {
+      "description": "Optional logs that were output during the execution of the test run.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/LogOutput"
+      }
+    },
+    "name": {
+      "description": "The name of the test run. [req(\"testcov.test_run.id\")]",
+      "type": "string"
+    },
+    "nr_of_test_cases": {
+      "description": "Nr of test cases that are part of the test run.\n\n**Note:** Must match with the number of entries in the `test_cases` field, plus the number of entries in the `test_cases` fields of all child test runs. In case this differs, it indicates that not all test cases have finished execution.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "origin": {
+      "description": "Optional origin of the test run. [req(\"testcov.test_run.origin\")]"
+    },
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "properties": {
+      "description": "Optional field to store custom information per test run. [req(\"testcov.test_run.metadata\")]",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "related_reqs": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/TestRelatedRequirement"
+      }
+    },
+    "revisions": {
+      "description": "Optional revisions for the test run.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/Revision"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "test_cases": {
+      "description": "List of test cases that are part of the test run. [req(\"testcov.test_case\")]",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/TestCaseReference"
+      }
+    },
+    "test_runs": {
+      "description": "Optionally nested test runs. [req(\"testcov.test_run.nested\")]",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/TestRunReportSchema"
+      }
+    },
+    "utc_date": {
+      "description": "The UTC date the test run execution started.\n\n**Note:** The date must be given in ISO8601 format. [req(\"testcov.test_run.date\")]",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "CoverageSummary": {
+      "type": "object",
+      "required": [
+        "covered",
+        "excluded",
+        "overridden",
+        "total",
+        "uncovered"
+      ],
+      "properties": {
+        "covered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "excluded": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "overridden": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uncovered": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "LogOutput": {
+      "description": "Log output of tests.",
+      "type": "object",
+      "required": [
+        "content",
+        "source"
+      ],
+      "properties": {
+        "content": {
+          "description": "The log content that was output.",
+          "type": "string"
+        },
+        "source": {
+          "description": "The source the log was output to.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LogSource"
+            }
+          ]
+        }
+      }
+    },
+    "LogSource": {
+      "description": "Source of the log output of tests.",
+      "type": "string",
+      "enum": [
+        "Stdout",
+        "Stderr"
+      ]
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Revision": {
+      "type": "object",
+      "required": [
+        "authors",
+        "comment",
+        "nr"
+      ],
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": "string"
+        },
+        "nr": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "TestCaseReference": {
+      "type": "object",
+      "required": [
+        "product_id",
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "TestCoverage": {
+      "type": "object",
+      "required": [
+        "covered_files",
+        "summary"
+      ],
+      "properties": {
+        "covered_files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCoveredFile"
+          }
+        },
+        "covered_traces": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TraceReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/TestCoverageSummary"
+        }
+      }
+    },
+    "TestCoverageSummary": {
+      "type": "object",
+      "required": [
+        "lines"
+      ],
+      "properties": {
+        "lines": {
+          "$ref": "#/definitions/CoverageSummary"
+        }
+      }
+    },
+    "TestCoveredFile": {
+      "type": "object",
+      "required": [
+        "filepath"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fmt_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TestRelatedRequirement": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "product_id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/TestRelatedRequirementKind"
+        },
+        "product_id": {
+          "type": "string"
+        }
+      }
+    },
+    "TestRelatedRequirementKind": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "direct"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "traced"
+          ],
+          "properties": {
+            "traced": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TraceReference"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TestRunReportSchema": {
+      "description": "Represents a test run in *mantra*. [req(\"testcov.test_run\")]",
+      "type": "object",
+      "required": [
+        "duration",
+        "name",
+        "nr_of_test_cases",
+        "product",
+        "utc_date"
+      ],
+      "properties": {
+        "base_origin": true,
+        "base_properties": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "coverage": {
+          "description": "Optional list of coverage information per file that was collected during the test run. [req(\"testcov.cov\")]",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TestCoverage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "description": "Optional description of the test run.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duration": {
+          "description": "Optional duration about how long the test run took. Will be displayed in seconds with nanosecond precision in decimal form.",
+          "type": "string"
+        },
+        "logs": {
+          "description": "Optional logs that were output during the execution of the test run.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/LogOutput"
+          }
+        },
+        "name": {
+          "description": "The name of the test run. [req(\"testcov.test_run.id\")]",
+          "type": "string"
+        },
+        "nr_of_test_cases": {
+          "description": "Nr of test cases that are part of the test run.\n\n**Note:** Must match with the number of entries in the `test_cases` field, plus the number of entries in the `test_cases` fields of all child test runs. In case this differs, it indicates that not all test cases have finished execution.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "origin": {
+          "description": "Optional origin of the test run. [req(\"testcov.test_run.origin\")]"
+        },
+        "product": {
+          "$ref": "#/definitions/ProductMetadata"
+        },
+        "properties": {
+          "description": "Optional field to store custom information per test run. [req(\"testcov.test_run.metadata\")]",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "related_reqs": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TestRelatedRequirement"
+          }
+        },
+        "revisions": {
+          "description": "Optional revisions for the test run.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Revision"
+          }
+        },
+        "schema_version": {
+          "description": "The schema version. [req(\"exchange.versioned\")]",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "test_cases": {
+          "description": "List of test cases that are part of the test run. [req(\"testcov.test_case\")]",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TestCaseReference"
+          }
+        },
+        "test_runs": {
+          "description": "Optionally nested test runs. [req(\"testcov.test_run.nested\")]",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TestRunReportSchema"
+          }
+        },
+        "utc_date": {
+          "description": "The UTC date the test run execution started.\n\n**Note:** The date must be given in ISO8601 format. [req(\"testcov.test_run.date\")]",
+          "type": "string"
+        }
+      }
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
+          ]
+        }
+      ]
+    },
+    "TraceKind": {
+      "description": "The trace kind. [req(\"trace.kind\")]",
+      "oneOf": [
+        {
+          "description": "Trace links to an artifact that provides clarification for a requirement.",
+          "type": "string",
+          "enum": [
+            "clarifies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that satisfies a requirement.",
+          "type": "string",
+          "enum": [
+            "satisfies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that verifies a requirement.",
+          "type": "string",
+          "enum": [
+            "verifies"
+          ]
+        },
+        {
+          "description": "Trace link that provides no additional information.",
+          "type": "string",
+          "enum": [
+            "links"
+          ]
+        }
+      ]
+    },
+    "TraceReference": {
+      "type": "object",
+      "required": [
+        "file_hash",
+        "filepath",
+        "kind",
+        "line"
+      ],
+      "properties": {
+        "file_hash": {
+          "type": "string"
+        },
+        "filepath": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/TraceKind"
+        },
+        "line": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    }
+  }
+}

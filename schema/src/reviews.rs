@@ -1,7 +1,7 @@
 use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
-use crate::{Line, Origin, Properties, Revision, test_runs::TestState};
+use crate::{Line, Origin, Properties, Revision, test_runs::TestCaseState};
 
 use super::requirements::ReqId;
 
@@ -32,7 +32,7 @@ pub struct ReviewSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
-    pub version: Option<String>,
+    pub schema_version: Option<String>,
     pub reviews: Vec<Review>,
     /// Optional properties related to all reviews in this entry.
     ///
@@ -159,7 +159,7 @@ pub struct OverrideTestCase {
 )]
 pub struct OverrideTestCaseState {
     /// The new state that is set with this override.
-    pub new: TestState,
+    pub new: TestCaseState,
     /// Mandatory comment explaining why the state is overriden via review.
     pub comment: String,
 }

@@ -11,13 +11,13 @@ pub struct ReportConfig {
 
 #[derive(Debug, Clone, clap::Args)]
 pub struct ReportArguments {
-    #[clap(long)]
+    #[arg(long)]
     pub formats: Vec<ReportFormat>,
-    #[clap(long = "output-path")]
-    pub output_path: PathBuf,
+    #[arg(long = "output-dir")]
+    pub output_dir: PathBuf,
     /// List of product IDs that should be part of the report.
     /// If none are given, all collected products are reported.
-    #[clap(long = "product-id")]
+    #[arg(long = "product-id")]
     pub product_ids: Option<Vec<ProductId>>,
 }
 
@@ -26,7 +26,22 @@ pub enum ReportFormat {
     Html,
     Json,
     Markdown,
-    Custom,
+}
+
+impl ReportFormat {
+    pub fn as_extension(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl std::fmt::Display for ReportFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ReportFormat::Html => write!(f, "html"),
+            ReportFormat::Json => write!(f, "json5"),
+            ReportFormat::Markdown => write!(f, "md"),
+        }
+    }
 }
 
 pub struct ReportEnvironmentVariables {}

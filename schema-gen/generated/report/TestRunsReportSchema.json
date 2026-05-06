@@ -1,0 +1,225 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TestRunsReportSchema",
+  "type": "object",
+  "required": [
+    "failed",
+    "obsolete",
+    "passed",
+    "product",
+    "skipped",
+    "summary",
+    "unknown"
+  ],
+  "properties": {
+    "failed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRunReference"
+      }
+    },
+    "obsolete": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRunReference"
+      }
+    },
+    "passed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRunReference"
+      }
+    },
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRunReference"
+      }
+    },
+    "summary": {
+      "$ref": "#/definitions/TestsSummary"
+    },
+    "unknown": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRunReference"
+      }
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TestRunReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
+          ]
+        }
+      ]
+    },
+    "TestsSummary": {
+      "type": "object",
+      "required": [
+        "failed",
+        "obsolete",
+        "passed",
+        "skipped",
+        "total",
+        "unknown"
+      ],
+      "properties": {
+        "failed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "obsolete": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "passed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "skipped": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "unknown": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    }
+  }
+}

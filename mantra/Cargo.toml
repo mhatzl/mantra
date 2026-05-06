@@ -26,7 +26,7 @@ toml = { version = "0.8.13", features = ["parse"] }
 ignore = "0.4.25"
 mime_guess = "2.0.5"
 thiserror = "1.0.59"
-tera = "1.20.1"
+minijinja = "2.19.0"
 encoding_rs_io = "0.1.7"
 covcon = "0.3.0"
 quick-junit = "0.5.2"

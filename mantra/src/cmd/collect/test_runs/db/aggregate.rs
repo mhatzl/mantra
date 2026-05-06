@@ -1,4 +1,4 @@
-use mantra_schema::test_runs::TestState;
+use mantra_schema::test_runs::TestCaseState;
 
 use crate::cmd::collect::Collection;
 
@@ -440,8 +440,8 @@ impl<'db> Collection<'db> {
     async fn update_failed_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let passed_test_nr = TestState::Passed.as_nr();
-        let skipped_test_nr = TestState::Skipped.as_nr();
+        let passed_test_nr = TestCaseState::Passed.as_nr();
+        let skipped_test_nr = TestCaseState::Skipped.as_nr();
 
         sqlx::query!(
             "
@@ -523,7 +523,7 @@ impl<'db> Collection<'db> {
     async fn update_skipped_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let skipped_test_nr = TestState::Skipped.as_nr();
+        let skipped_test_nr = TestCaseState::Skipped.as_nr();
 
         sqlx::query!(
             "
@@ -618,7 +618,7 @@ impl<'db> Collection<'db> {
     async fn update_passed_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
-        let passed_test_nr = TestState::Passed.as_nr();
+        let passed_test_nr = TestCaseState::Passed.as_nr();
 
         sqlx::query!(
             "

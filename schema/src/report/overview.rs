@@ -11,7 +11,7 @@ use crate::{
     },
     requirements::ReqId,
     reviews::OverrideTestRun,
-    test_runs::{TestCaseLocation, TestState},
+    test_runs::{TestCaseLocation, TestCaseState},
 };
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -297,7 +297,7 @@ pub struct TestRunOverview {
     #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
-    pub state: TestState,
+    pub state: TestCaseState,
     pub test_cases: Option<TestCasesOverview>,
     pub parents: Option<Vec<TestRunReference>>,
     pub children: Option<Vec<TestRunReference>>,
@@ -405,7 +405,7 @@ pub struct TestCasesOverview {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestCaseOverview {
     pub name: String,
-    pub state: TestState,
+    pub state: TestCaseState,
     pub location: Option<TestCaseLocation>,
     pub related_reqs: Option<Vec<TestRelatedRequirementOverview>>,
     pub coverage: Option<TestCoverageOverview>,

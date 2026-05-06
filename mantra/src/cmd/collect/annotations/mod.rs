@@ -66,7 +66,7 @@ fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyh
         let annotations =
             mantra_lang_tracing::collect::rust::RustCodeCollector::collect(file.content)?;
         Ok(AnnotationSchema {
-            version: None,
+            schema_version: None,
             files: vec![FileAnnotations {
                 filepath: file.filepath.clone(),
                 file_hash: file.file_hash.clone(),
@@ -83,7 +83,7 @@ fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyh
         );
 
         Ok(AnnotationSchema {
-            version: None,
+            schema_version: None,
             files: vec![FileAnnotations {
                 filepath: file.filepath.clone(),
                 file_hash: file.file_hash.clone(),
