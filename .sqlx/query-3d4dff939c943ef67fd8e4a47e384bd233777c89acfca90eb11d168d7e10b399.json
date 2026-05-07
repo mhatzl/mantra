@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            r.id,\n            r.title,\n            rs.state,\n            gt.content as \"description?\",\n            bo.content as \"base_origin?\",\n            og.content as \"origin?\",\n            case when exists (\n                select o.id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.id = r.id\n            ) then true\n            else false\n            end as \"optional!:bool\",\n            case when exists (\n                select m.id\n                from ManualRequirements m\n                where m.product_id = $1 and m.id = r.id\n            ) then true\n            else false\n            end as \"manual_verification!:bool\",\n            case when exists (\n                select dr.id\n                from DeprecatedRequirements dr\n                where dr.product_id = $1 and dr.id = r.id\n            ) then true\n            else false\n            end as \"deprecated!:bool\",\n            case when exists (\n                select ir.id\n                from IgnoredRequirements ir\n                where ir.product_id = $1 and ir.id = r.id\n            ) then true\n            else false\n            end as \"ignored!:bool\"\n        from Requirements r\n            left join GeneralTexts gt on r.description_hash = gt.hash\n            left join GeneralJson og on r.origin_hash = og.hash\n            left join GeneralJson bo on r.base_origin_hash = bo.hash,\n        RequirementVerificationStates rs\n        where r.product_id = $1 and rs.product_id = $1\n        and r.id = $2 and r.id = rs.id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "description?",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "base_origin?",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "origin?",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 6,
+        "type_info": "Null"
+      },
+      {
+        "name": "manual_verification!:bool",
+        "ordinal": 7,
+        "type_info": "Null"
+      },
+      {
+        "name": "deprecated!:bool",
+        "ordinal": 8,
+        "type_info": "Null"
+      },
+      {
+        "name": "ignored!:bool",
+        "ordinal": 9,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3d4dff939c943ef67fd8e4a47e384bd233777c89acfca90eb11d168d7e10b399"
+}

@@ -59,7 +59,6 @@ pub struct TestRunReportSchema {
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,
-    pub base_properties: Option<Properties>,
     /// Optional duration about how long the test run took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.
     #[schemars(with = "String")]

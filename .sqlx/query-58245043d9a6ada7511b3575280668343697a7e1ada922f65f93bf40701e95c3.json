@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            rs.product_id,\n            rs.id,\n            rs.state,\n            case when exists (\n                select o.id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.id = rs.id\n            ) then true\n            else false\n            end as \"optional!:bool\"\n        from RequirementVerificationStates rs\n        where rs.product_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 3,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "58245043d9a6ada7511b3575280668343697a7e1ada922f65f93bf40701e95c3"
+}

@@ -31,7 +31,6 @@ pub struct ReviewReportSchema {
     pub base_origin: Option<Origin>,
     /// Optional properties related to this review.
     pub properties: Option<Properties>,
-    pub base_properties: Option<Properties>,
     /// Optional revisions for the review.
     pub revisions: Option<Vec<Revision>>,
     /// List of requirements that are verified in this review.

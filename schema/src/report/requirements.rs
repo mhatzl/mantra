@@ -29,13 +29,13 @@ pub struct RequirementsReportSchema {
 pub struct RequirementsSummary {
     pub total: i64,
     /// Metric for how many requirements are non-optional.
-    pub total_mandatory: Aggregated,
-    /// Metric for how many requirements require manual verification.
-    pub total_manual: Aggregated,
+    pub mandatory_total: Aggregated,
     /// Metric for how many non-optional requirements are verified.
     pub mandatory_verified: Aggregated,
+    /// Metric for how many requirements require manual verification.
+    pub manuals_total: Aggregated,
     /// Metric for how many requirements requiring manual verification have been verified.
-    pub mandatory_verified_manual: Aggregated,
+    pub manuals_verified: Aggregated,
     pub verified: Aggregated,
     pub failed: Aggregated,
     pub skipped: Aggregated,
@@ -48,12 +48,13 @@ impl RequirementsSummary {
     pub fn add(&mut self, other: &Self) {
         self.total += other.total;
 
-        self.total_mandatory.cnt += other.total_mandatory.cnt;
-        self.total_manual.cnt += other.total_manual.cnt;
+        self.mandatory_total.cnt += other.mandatory_total.cnt;
+        self.mandatory_verified.cnt += other.mandatory_verified.cnt;
+
+        self.manuals_total.cnt += other.manuals_total.cnt;
+        self.manuals_verified.cnt += other.manuals_verified.cnt;
 
         self.verified.cnt += other.verified.cnt;
-        self.mandatory_verified.cnt += other.mandatory_verified.cnt;
-        self.mandatory_verified_manual.cnt += other.mandatory_verified_manual.cnt;
         self.failed.cnt += other.failed.cnt;
         self.skipped.cnt += other.skipped.cnt;
         self.unverified.cnt += other.unverified.cnt;
@@ -64,18 +65,19 @@ impl RequirementsSummary {
     }
 
     pub fn update_percentages(&mut self) {
+        self.mandatory_total.update_percentage(self.total);
+        self.mandatory_verified
+            .update_percentage(self.mandatory_total.cnt);
+
+        self.manuals_total.update_percentage(self.total);
+        self.manuals_verified
+            .update_percentage(self.manuals_total.cnt);
+
         self.verified.update_percentage(self.total);
         self.failed.update_percentage(self.total);
         self.skipped.update_percentage(self.total);
         self.unverified.update_percentage(self.total);
         self.deprecated.update_percentage(self.total);
         self.ignored.update_percentage(self.total);
-
-        self.total_mandatory.update_percentage(self.total);
-        self.total_manual.update_percentage(self.total);
-        self.mandatory_verified
-            .update_percentage(self.total_mandatory.cnt);
-        self.mandatory_verified_manual
-            .update_percentage(self.total_manual.cnt);
     }
 }

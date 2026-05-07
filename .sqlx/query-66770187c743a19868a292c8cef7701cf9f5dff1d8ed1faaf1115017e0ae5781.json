@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        with Mandatory(id) as (\n            select r.id\n            from Requirements r\n            where r.product_id = $1 and not exists (\n                select o.id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.id = r.id\n            )\n        ),\n        Manual(id) as (\n            select mr.id\n            from ManualRequirements mr\n            where mr.product_id = $1\n        )\n        select\n            sum(mandatory_total) as \"mandatory_total!:i64\",\n            sum(mandatory_verified) as \"mandatory_verified!:i64\",\n            sum(manuals_total) as \"manuals_total!:i64\",\n            sum(manuals_verified) as \"manuals_verified!:i64\"\n        from (\n            select\n                count(id) as mandatory_total,\n                0 as mandatory_verified,\n                0 as manuals_total,\n                0 as manuals_verified\n            from Mandatory\n\n            union all\n\n            select\n                0 as mandatory_total,\n                count(m.id) as mandatory_verified,\n                0 as manuals_total,\n                0 as manuals_verified\n            from Mandatory m\n            where exists (\n                select vr.id\n                from VerifiedRequirements vr\n                where vr.product_id = $1 and vr.id = m.id\n            )\n\n            union all\n\n            select\n                0 as mandatory_total,\n                0 as mandatory_verified,\n                count(mr.id) as manuals_total,\n                0 as manuals_verified\n            from Manual mr\n\n            union all\n\n            select\n                0 as mandatory_total,\n                0 as mandatory_verified,\n                0 as manuals_total,\n                count(mr.id) as manuals_verified\n            from Manual mr\n            where exists (\n                select vr.id\n                from VerifiedRequirements vr\n                where vr.product_id = $1 and vr.id = mr.id\n            )\n        )\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "mandatory_total!:i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "mandatory_verified!:i64",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "manuals_total!:i64",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "manuals_verified!:i64",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "66770187c743a19868a292c8cef7701cf9f5dff1d8ed1faaf1115017e0ae5781"
+}

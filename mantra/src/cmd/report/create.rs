@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use mantra_schema::{
     SCHEMA_VERSION,
@@ -10,6 +13,7 @@ use mantra_schema::{
         reviews::ReviewsSummary,
         tests::TestsSummary,
     },
+    requirements::ReqId,
 };
 
 use crate::{
@@ -17,7 +21,8 @@ use crate::{
         cfg::ReportFormat,
         db::schemas::{
             evidence_matrix::generate_evidence_matrix_schema, nav::generate_navigation_schema,
-            product::generate_product_schemas,
+            product::generate_product_schemas, requirement::generate_requirement_schema,
+            requirements::generate_requirements_schema,
         },
         templates::MantraTemplates,
         writer::ReportWriter,
@@ -176,9 +181,78 @@ async fn create_requirements_structure<'db, 'templates>(
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
 ) -> Result<RequirementsSummary, anyhow::Error> {
-    // TODO
+    let requirements_path = out_dir.join("requirements");
 
-    Ok(RequirementsSummary::default())
+    tokio::fs::create_dir(&requirements_path).await?;
+
+    let requirements_schema = generate_requirements_schema(transaction, &product).await?;
+    let requirements_summary = requirements_schema.summary;
+
+    // Note: The requirements schema splits all requirements into their states.
+    // Not ideal to iterate over all requirements this way,
+    // but better than a new DB query or duplicating requirements in the requirements schema.
+    for req in requirements_schema
+        .failed
+        .iter()
+        .chain(requirements_schema.skipped.iter())
+        .chain(requirements_schema.unverified.iter())
+        .chain(requirements_schema.verified.iter())
+        .chain(requirements_schema.ignored.iter())
+        .chain(requirements_schema.deprecated.iter())
+    {
+        let req_path = prepare_requirement_path(&requirements_path, &req.id).await?;
+
+        let requirement_schema =
+            generate_requirement_schema(transaction, &product, &req.id).await?;
+        writer
+            .write_file(
+                &req_path,
+                requirement_schema,
+                super::templates::TemplateName::Requirement,
+            )
+            .await?;
+    }
+
+    writer
+        .write_file(
+            &requirements_path,
+            requirements_schema,
+            super::templates::TemplateName::Requirements,
+        )
+        .await?;
+
+    Ok(requirements_summary)
+}
+
+async fn prepare_requirement_path(base_path: &Path, id: &ReqId) -> Result<PathBuf, anyhow::Error> {
+    if id.contains('.') {
+        let mut req_path = base_path.to_path_buf();
+        let id_parts: Vec<_> = id.split('.').collect();
+
+        let mut parent_parts = id_parts.clone();
+        parent_parts.truncate(id_parts.len() - 1);
+
+        for part in parent_parts {
+            req_path = req_path.join(urlencoding::encode(&part).to_string());
+
+            if !tokio::fs::try_exists(&req_path).await.unwrap_or(false) {
+                tokio::fs::create_dir(&req_path).await?;
+            }
+        }
+
+        req_path = req_path.join(
+            urlencoding::encode(
+                &id_parts
+                    .last()
+                    .expect("Checked that ID contains '.', so at least one ID part exists"),
+            )
+            .to_string(),
+        );
+
+        Ok(req_path)
+    } else {
+        Ok(base_path.join(urlencoding::encode(id).to_string()))
+    }
 }
 
 async fn create_reviews_structure<'db, 'templates>(

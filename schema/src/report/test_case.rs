@@ -62,7 +62,6 @@ pub struct TestCaseReportSchema {
     /// Optional field to store custom properties per test case.
     /// [req("testcov.test_case.metadata")]
     pub properties: Option<Properties>,
-    pub base_properties: Option<Properties>,
     /// Optional logs that were output during the test case execution.
     // TODO: add req
     pub logs: Option<Vec<LogOutput>>,

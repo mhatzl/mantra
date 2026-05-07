@@ -125,6 +125,7 @@ pub async fn generate_product_schemas<'db>(
         .await?
         .into_iter()
         .map(|r| RequirementReference {
+            url_part: r.id.replace('.', "/"),
             product_id: r.product_id,
             id: r.id,
             state: RequirementState::try_from(r.state)

@@ -23,6 +23,14 @@ impl<'templates> MantraTemplates<'templates> {
             TemplateName::PRODUCTS_HTML,
             include_str!("defaults/products.html"),
         )?;
+        environment.add_template(
+            TemplateName::REQUIREMENT_HTML,
+            include_str!("defaults/requirement.html"),
+        )?;
+        environment.add_template(
+            TemplateName::REQUIREMENTS_HTML,
+            include_str!("defaults/requirements.html"),
+        )?;
 
         Ok(Self { environment })
     }
@@ -91,6 +99,7 @@ impl TemplateName {
     const PRODUCT_HTML: &str = "product::html";
     const PRODUCTS_HTML: &str = "product::html";
     const REQUIREMENT_HTML: &str = "requirement::html";
+    const REQUIREMENTS_HTML: &str = "requirements::html";
 
     fn template_name_for_format(&self, format: &ReportFormat) -> String {
         format!("{}::{}", self, format)

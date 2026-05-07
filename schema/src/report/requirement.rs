@@ -20,7 +20,7 @@ pub struct RequirementReportSchema {
     pub state: RequirementState,
     pub parents: Option<Vec<RequirementReference>>,
     pub children: Option<Vec<RequirementReference>>,
-    pub traces: Option<Vec<RequirementTracesOverview>>,
+    pub traces: Option<RequirementTracesOverview>,
     pub covered_by: Option<RequirementCoverageByTests>,
     pub reviewed_in: Option<Vec<RequirementReviewReference>>,
     pub product: ProductMetadata,
@@ -58,7 +58,6 @@ pub struct RequirementReportSchema {
     /// **Note:** All potential children of such a requirement are also marked as optional.
     /// [req("req.ignore")]
     pub optional: bool,
-    pub base_properties: Option<Properties>,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,
@@ -73,6 +72,7 @@ pub struct RequirementReference {
     pub id: ReqId,
     pub state: RequirementState,
     pub optional: bool,
+    pub url_part: String,
 }
 
 #[derive(
@@ -134,17 +134,19 @@ pub struct RequirementCoverageByTests {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct RequirementCoverageByTestRuns {
+    pub product_id: ProductId,
     pub name: String,
     #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
     pub state: TestState,
-    pub covered_traces: Vec<TraceReference>,
+    pub covered_traces: Option<Vec<TraceReference>>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct RequirementCoverageByTestCases {
+    pub product_id: ProductId,
     pub test_run_name: String,
     #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
@@ -160,6 +162,7 @@ pub struct RequirementCoverageByTestCases {
 )]
 #[serde(rename_all = "snake_case")]
 pub struct RequirementReviewReference {
+    pub product_id: ProductId,
     pub name: String,
     #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]

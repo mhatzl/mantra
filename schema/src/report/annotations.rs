@@ -87,7 +87,6 @@ pub struct ResolvedTrace {
     /// List of custom properties that may be set on a trace.
     /// [req("trace.properties")]
     pub properties: Option<Properties>,
-    pub base_properties: Option<Properties>,
 }
 
 #[derive(
