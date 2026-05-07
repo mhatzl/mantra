@@ -2,7 +2,13 @@ use std::str::FromStr;
 
 use mantra_schema::{
     product::ProductId,
-    report::product::{ProductReportSchema, ProductSummary},
+    report::{
+        product::{ProductReportSchema, ProductSummary},
+        requirement::{RequirementReference, RequirementState},
+        review::ReviewReference,
+        test_run::TestRunReference,
+        tests::TestState,
+    },
 };
 
 use crate::db::MantraTransaction;
@@ -91,6 +97,88 @@ pub async fn generate_product_schemas<'db>(
         let last_collected_date =
             mantra_schema::reviews::date_from_str(&product_record.last_collected_date)?;
 
+        let root_requirements = sqlx::query!(
+            r#"
+            select
+                rs.product_id,
+                rs.id,
+                rs.state,
+                case when exists (
+                    select id
+                    from OptionalRequirements o
+                    where o.product_id = $1 and o.id = rs.id
+                ) then true
+                else false
+                end as "optional!:bool"
+            from RequirementVerificationStates rs
+            where rs.product_id = $1 and not exists (
+                select rh.parent_req_id
+                from RequirementHierarchies rh
+                where rh.child_product_id = rs.product_id
+                and rh.child_req_id = rs.id
+                and rh.parent_product_id = $1 -- child to other product is fine
+            )
+            "#,
+            product_record.id
+        )
+        .fetch_all(transaction.as_mut())
+        .await?
+        .into_iter()
+        .map(|r| RequirementReference {
+            product_id: r.product_id,
+            id: r.id,
+            state: RequirementState::try_from(r.state)
+                .expect("Valid requirement state in database"),
+            optional: r.optional,
+        })
+        .collect();
+
+        let root_test_runs = sqlx::query!(
+            r#"
+            select ts.product_id, ts.test_run_name, ts.test_run_date, ts.state as "state!:i64"
+            from TestRunStates ts
+            where ts.product_id = $1 and not exists (
+                select th.parent_name, th.parent_date
+                from TestRunHierarchies th
+                where th.product_id = $1
+                and th.child_name = ts.test_run_name
+                and th.child_date = ts.test_run_date
+            )
+            "#,
+            product_record.id
+        )
+        .fetch_all(transaction.as_mut())
+        .await?
+        .into_iter()
+        .map(|tr| TestRunReference {
+            product_id: tr.product_id,
+            name: tr.test_run_name,
+            utc_date: mantra_schema::test_runs::test_date_from_str(&tr.test_run_date)
+                .expect("Valid test run date in database"),
+            state: TestState::try_from(tr.state).expect("Valid test run state in database"),
+        })
+        .collect();
+
+        let reviews = sqlx::query!(
+            "
+            select product_id, name, utc_date
+            from Reviews
+            where product_id = $1
+            ",
+            product_record.id
+        )
+        .fetch_all(transaction.as_mut())
+        .await?
+        .into_iter()
+        .map(|r| ReviewReference {
+            product_id: r.product_id,
+            name: r.name,
+            utc_date: mantra_schema::reviews::date_from_str(&r.utc_date)
+                .expect("Valid review date in database"),
+            state: mantra_schema::report::review::ReviewState::Valid, // TODO: replace with accurate state
+        })
+        .collect();
+
         let mut product_properties = serde_json::Map::new();
 
         for product_property in sqlx::query!(
@@ -119,10 +207,11 @@ pub async fn generate_product_schemas<'db>(
         products.push(ProductReportSchema {
             schema_version: Some(mantra_schema::SCHEMA_VERSION.to_owned()),
             last_collected_date,
+            // Note: summary is populated in `create_product_structure`
             summary: ProductSummary::default(),
-            root_requirements: Vec::new(),
-            root_test_runs: Vec::new(),
-            reviews: Vec::new(),
+            root_requirements,
+            root_test_runs,
+            reviews,
             id: product_record.id,
             name: product_record.name,
             base: product_record.base,

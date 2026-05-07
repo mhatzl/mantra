@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select distinct\n            tc.product_id,\n            tc.test_run_name,\n            tc.test_run_date,\n            tc.test_case_name,\n            ts.state as \"state!:i64\"\n        from\n            TracesCoveredByTestCases tc,\n            DirectProductReqTraces dt,\n            ResolvedTestCaseStates ts\n        where tc.product_id = $1 and dt.product_id = $1 and ts.product_id = $1\n        and tc.filepath = dt.filepath and tc.file_hash = dt.file_hash\n        and tc.traced_line = dt.line and dt.req_id = $2\n        and tc.test_run_name = ts.test_run_name\n        and tc.test_run_date = ts.test_run_date\n        and tc.test_case_name = ts.test_case_name\n\n        union\n\n        select distinct\n            tv.product_id,\n            tv.test_run_name,\n            tv.test_run_date,\n            tv.test_case_name,\n            ts.state as \"state!:i64\"\n        from TestCaseVerifiedRequirements tv, ResolvedTestCaseStates ts\n        where tv.product_id = $1 and ts.product_id = $1\n        and tv.req_id = $2\n        and tv.test_run_name = ts.test_run_name\n        and tv.test_run_date = ts.test_run_date\n        and tv.test_case_name = ts.test_case_name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_case_name",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6a923b05f0b78a73f1e3b06f6420ca53ad2ec0bbcf9d090f1a937cbad79f95ba"
+}

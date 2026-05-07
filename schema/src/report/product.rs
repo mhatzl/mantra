@@ -61,8 +61,29 @@ pub struct ProductReportSchema {
     pub properties: Option<Properties>,
 }
 
+impl ProductReportSchema {
+    pub fn metadata(&self) -> ProductMetadata {
+        ProductMetadata {
+            id: self.id.clone(),
+            name: self.name.clone(),
+            base: self.base.clone(),
+            version: self.version.clone(),
+            homepage: self.homepage.clone(),
+            repository: self.repository.clone(),
+            license: self.license.clone(),
+        }
+    }
+}
+
 #[derive(
-    Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
 pub struct ProductSummary {

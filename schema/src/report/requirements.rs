@@ -17,7 +17,14 @@ pub struct RequirementsReportSchema {
 }
 
 #[derive(
-    Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
 )]
 pub struct RequirementsSummary {
     pub total: i64,
