@@ -23,6 +23,12 @@ pub struct TestCaseReference {
     pub state: TestState,
 }
 
+impl TestCaseReference {
+    pub fn url_path_part(&self) -> String {
+        urlencoding::encode(&self.test_case_name).to_string()
+    }
+}
+
 /// Represents a test case in *mantra*.
 /// [req("testcov.test_case")]
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -56,9 +62,9 @@ pub struct TestCaseReportSchema {
     #[serde(default)] // Needed due to: https://github.com/serde-rs/serde/issues/2878
     pub utc_date: Option<time::OffsetDateTime>,
     /// Optional duration about how long the test case took.
-    /// Will be displayed in seconds with nanosecond precision in decimal form.
     #[schemars(with = "String")]
-    pub duration: Option<time::Duration>,
+    #[serde(with = "crate::test_runs::duration_as_saturating_seconds_f64", default)]
+    pub duration_sec: Option<time::Duration>,
     /// Optional field to store custom properties per test case.
     /// [req("testcov.test_case.metadata")]
     pub properties: Option<Properties>,

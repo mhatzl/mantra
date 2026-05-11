@@ -7,6 +7,12 @@ pub struct TestRunsReportSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
     pub product: ProductMetadata,
+    pub test_cases_summary: TestsSummary,
+    pub test_runs: TestRunsOverview,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct TestRunsOverview {
     pub summary: TestsSummary,
     pub passed: Vec<TestRunReference>,
     pub failed: Vec<TestRunReference>,

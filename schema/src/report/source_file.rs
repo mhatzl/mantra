@@ -48,14 +48,14 @@ pub struct SourceFileProductCoverage {
 pub struct SourceLineInfo {
     /// The line number.
     pub nr: Line,
-    pub state: ResolvedCoveredLineState,
+    pub state: ResolvedLineState,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum ResolvedCoveredLineState {
+pub enum ResolvedLineState {
     Covered(Vec<CoveredLineTestReference>),
     /// Line was excluded from coverage analysis.
     /// An optional reference to an exclusion annotation is given,

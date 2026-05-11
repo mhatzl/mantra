@@ -11,8 +11,8 @@ create table TestRuns (
     utc_date text not null,
     -- Optional description hash
     description_hash text references GeneralTexts (hash) on delete restrict,
-    -- Optional duration about how long the test run took.
-    duration Text,
+    -- Optional duration in seconds about how long the test run took.
+    duration_sec real,
     -- The number of expected test cases mapped to the test run.
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
@@ -54,7 +54,7 @@ create table TestRunProperties (
     test_run_name text not null,
     test_run_date text not null,
     property_key text not null,
-    value_hash text references GeneralJson (hash) on delete restrict,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (product_id, test_run_name, test_run_date, property_key),
     foreign key (product_id, test_run_name, test_run_date) references TestRuns (product_id, name, utc_date) on delete cascade
 );
@@ -204,8 +204,8 @@ create table TestCases (
     description_hash text references GeneralTexts (hash) on delete restrict,
     -- Optional utc date and time for the test case.
     utc_date text,
-    -- Optional duration of the test case.
-    duration text,
+    -- Optional duration of the test case in seconds.
+    duration_sec real,
     primary key (
         product_id,
         test_run_name,
@@ -241,7 +241,7 @@ create table TestCaseProperties (
     test_run_date text not null,
     test_case_name text not null,
     property_key text not null,
-    value_hash text references GeneralJson (hash) on delete restrict,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (product_id, test_run_name, test_run_date, test_case_name, property_key),
     foreign key (product_id, test_run_name, test_run_date, test_case_name) references TestCases (product_id, test_run_name, test_run_date, name) on delete cascade
 );
@@ -339,7 +339,7 @@ create table TestCaseStateProperties (
     test_case_name text not null,
     -- The key of the additional property for the state of a test case.
     property_key text not null,
-    value_hash text references GeneralJson (hash) on delete restrict,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (
         product_id,
         test_run_name,

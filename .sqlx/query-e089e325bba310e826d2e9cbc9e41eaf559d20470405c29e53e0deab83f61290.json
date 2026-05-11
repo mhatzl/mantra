@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            gt.content as \"description?\",\n            og.content as \"origin?\",\n            bo.content as \"base_origin?\"\n        from Reviews r\n            left join GeneralTexts gt on r.description_hash = gt.hash\n            left join GeneralJson og on r.origin_hash = og.hash\n            left join GeneralJson bo on r.base_origin_hash = bo.hash\n        where r.product_id = $1 and r.name = $2 and r.utc_date = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "description?",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "origin?",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "base_origin?",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e089e325bba310e826d2e9cbc9e41eaf559d20470405c29e53e0deab83f61290"
+}

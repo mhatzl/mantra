@@ -76,9 +76,9 @@ pub struct TestRun {
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,
     /// Optional duration about how long the test run took.
-    /// Will be displayed in seconds with nanosecond precision in decimal form.
-    #[schemars(with = "String")]
-    pub duration: Option<Duration>,
+    #[schemars(with = "Option<f64>")]
+    #[serde(with = "duration_as_saturating_seconds_f64", default)]
+    pub duration_sec: Option<Duration>,
     /// Optional logs that were output during the execution of the test run.
     ///
     // TODO: add req
@@ -126,9 +126,9 @@ pub struct TestCase {
     #[serde(default)] // Needed due to: https://github.com/serde-rs/serde/issues/2878
     pub utc_date: Option<time::OffsetDateTime>,
     /// Optional duration about how long the test case took.
-    /// Will be displayed in seconds with nanosecond precision in decimal form.
-    #[schemars(with = "String")]
-    pub duration: Option<Duration>,
+    #[schemars(with = "Option<f64>")]
+    #[serde(with = "duration_as_saturating_seconds_f64", default)]
+    pub duration_sec: Option<Duration>,
     /// Optional field to store custom properties per test case.
     /// [req("testcov.test_case.metadata")]
     pub properties: Option<Properties>,
@@ -305,5 +305,75 @@ pub enum LogSource {
 impl LogSource {
     pub fn as_nr(&self) -> i32 {
         *self as i32
+    }
+}
+
+pub mod duration_as_saturating_seconds_f64 {
+    use serde::de::Visitor;
+    use time::Duration;
+
+    pub fn serialize<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match duration {
+            Some(value) => serializer.serialize_f64(value.as_seconds_f64()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_option(OptionDurationVisitor)
+    }
+
+    struct OptionDurationVisitor;
+
+    impl<'de> Visitor<'de> for OptionDurationVisitor {
+        type Value = Option<Duration>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(formatter, "optional duration as f64 seconds.")
+        }
+
+        fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            deserializer.deserialize_f64(DurationVisitor).map(Some)
+        }
+
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(None)
+        }
+
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(None)
+        }
+    }
+
+    struct DurationVisitor;
+
+    impl<'de> Visitor<'de> for DurationVisitor {
+        type Value = Duration;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(formatter, "duration as f64 seconds.")
+        }
+
+        fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(time::Duration::saturating_seconds_f64(v))
+        }
     }
 }

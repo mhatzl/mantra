@@ -80,7 +80,7 @@ pub struct Review {
     /// List of requirements that are verified in this review.
     /// [req("review.verify_req")]
     #[serde(alias = "requirement", default)]
-    pub requirements: Vec<VerifiedRequirement>,
+    pub requirements: Vec<VerifiedRequirementGroup>,
     /// List of test run overrides added with this review.
     /// [req("review.test_case_state", "review.coverage")]
     #[serde(alias = "override", default)]
@@ -92,7 +92,7 @@ pub struct Review {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct VerifiedRequirement {
+pub struct VerifiedRequirementGroup {
     /// One or more requirement IDs to mark the related requirements as manually verified by a review.
     #[serde(alias = "ids")]
     pub id: OneOrMultRequirementIds,

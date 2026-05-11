@@ -2,7 +2,7 @@ use mantra_schema::{
     FmtHash, Properties,
     path::RelativePath,
     test_runs::{TestRun, TestRunSchema},
-    time::{Duration, OffsetDateTime},
+    time::OffsetDateTime,
 };
 
 use crate::{
@@ -386,8 +386,7 @@ impl<'db> Collection<'db> {
         {
             self.insert_general_text(hash, description, None).await?;
         }
-        // TODO: maybe handle serde error
-        let duration = duration_to_text(test_run.duration);
+        let duration = test_run.duration_sec.map(|d| d.as_seconds_f64());
 
         sqlx::query!(
             "
@@ -397,7 +396,7 @@ impl<'db> Collection<'db> {
                 name,
                 utc_date,
                 description_hash,
-                duration,
+                duration_sec,
                 nr_of_test_cases,
                 base_origin_hash,
                 origin_hash,
@@ -419,7 +418,7 @@ impl<'db> Collection<'db> {
             do update set
                 last_collect_nr = excluded.last_collect_nr,
                 description_hash = excluded.description_hash,
-                duration = excluded.duration,
+                duration_sec = excluded.duration_sec,
                 nr_of_test_cases = excluded.nr_of_test_cases,
                 base_origin_hash = excluded.base_origin_hash,
                 origin_hash = excluded.origin_hash,
@@ -704,13 +703,13 @@ impl<'db> Collection<'db> {
 
         for test_case in test_run.test_cases {
             let state = test_case.state.as_nr();
-            let duration = duration_to_text(test_case.duration);
             let description_hash = test_case.description.as_ref().map(FmtHash::from);
             if let Some(hash) = &description_hash
                 && let Some(description) = test_case.description
             {
                 self.insert_general_text(hash, description, None).await?;
             }
+            let duration = test_case.duration_sec.map(|d| d.as_seconds_f64());
 
             sqlx::query!(
                 "
@@ -723,7 +722,7 @@ impl<'db> Collection<'db> {
                     state,
                     description_hash,
                     utc_date,
-                    duration
+                    duration_sec
                 )
                 values (
                     $1,
@@ -747,7 +746,7 @@ impl<'db> Collection<'db> {
                     state = excluded.state,
                     description_hash = excluded.description_hash,
                     utc_date = excluded.utc_date,
-                    duration = excluded.duration
+                    duration_sec = excluded.duration_sec
                 ",
                 collect_nr,
                 product_id,
@@ -1044,9 +1043,4 @@ impl<'db> Collection<'db> {
 
         Ok(())
     }
-}
-
-fn duration_to_text(duration: Option<Duration>) -> Option<String> {
-    // TODO: maybe handle serde error
-    duration.map(|d| serde_json::to_string(&d).ok()).flatten()
 }

@@ -44,9 +44,9 @@
         "type_info": "Text"
       },
       {
-        "name": "duration",
+        "name": "duration_sec",
         "ordinal": 8,
-        "type_info": "Text"
+        "type_info": "Float"
       }
     ],
     "parameters": {

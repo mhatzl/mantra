@@ -438,7 +438,7 @@ impl<'db> Collection<'db> {
                         file_hash,
                         line,
                         property_key,
-                        property_value
+                        value_hash
                     )
                     values (
                         $1,
@@ -450,7 +450,7 @@ impl<'db> Collection<'db> {
                     on conflict (file_hash, line, property_key)
                     do update set
                         last_collect_nr = excluded.last_collect_nr,
-                        property_value = excluded.property_value
+                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     file_hash,

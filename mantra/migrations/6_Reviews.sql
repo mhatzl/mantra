@@ -45,7 +45,7 @@ create table ReviewProperties (
     review_name text not null,
     review_date text not null,
     property_key text not null,
-    value_hash text references GeneralJson (hash) on delete restrict,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (product_id, review_name, review_date, property_key),
     foreign key (product_id, review_name, review_date) references Reviews (product_id, name, utc_date) on delete cascade
 );

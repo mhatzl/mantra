@@ -48,7 +48,7 @@ where
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct Revision {
-    pub nr: u32,
+    pub nr: i64,
     pub authors: Vec<String>,
     pub comment: String,
 }

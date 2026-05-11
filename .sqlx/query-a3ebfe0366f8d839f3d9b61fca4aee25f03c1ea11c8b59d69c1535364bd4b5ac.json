@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select test_run_name, test_run_date\n        from TestCaseOverrides\n        where product_id = $1\n        and review_name = $2\n        and review_date = $3\n\n        union\n\n        select test_run_name, test_run_date\n        from TestRunLineCoverageOverrides\n        where product_id = $1\n        and review_name = $2\n        and review_date = $3\n\n        union\n\n        select test_run_name, test_run_date\n        from TestCaseLineCoverageOverrides\n        where product_id = $1\n        and review_name = $2\n        and review_date = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_run_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a3ebfe0366f8d839f3d9b61fca4aee25f03c1ea11c8b59d69c1535364bd4b5ac"
+}

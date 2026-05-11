@@ -4,7 +4,7 @@ use crate::{
     report::{
         product::ProductMetadata,
         test_case::TestCaseReference,
-        tests::{TestCoverage, TestRelatedRequirement, TestState},
+        tests::{TestCoverage, TestRelatedRequirement, TestState, TestsSummary},
     },
     test_runs::LogOutput,
 };
@@ -20,6 +20,16 @@ pub struct TestRunReference {
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
     pub state: TestState,
+}
+
+impl TestRunReference {
+    pub fn url_path_part(&self) -> String {
+        format!(
+            "{}_{}",
+            super::encode_utc_date(&self.utc_date),
+            urlencoding::encode(&self.name)
+        )
+    }
 }
 
 /// Represents a test run in *mantra*.
@@ -42,6 +52,7 @@ pub struct TestRunReportSchema {
     #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
+    pub state: TestState,
     /// Optional description of the test run.
     pub description: Option<String>,
     /// Optional revisions for the test run.
@@ -55,26 +66,38 @@ pub struct TestRunReportSchema {
     /// **Note:** Must match with the number of entries in the `test_cases` field,
     /// plus the number of entries in the `test_cases` fields of all child test runs.
     /// In case this differs, it indicates that not all test cases have finished execution.
-    pub nr_of_test_cases: u32,
+    pub nr_of_test_cases: i64,
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,
     /// Optional duration about how long the test run took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.
     #[schemars(with = "String")]
-    pub duration: Option<time::Duration>,
+    #[serde(with = "crate::test_runs::duration_as_saturating_seconds_f64", default)]
+    pub duration_sec: Option<time::Duration>,
     /// Optional logs that were output during the execution of the test run.
     ///
     // TODO: add req
     pub logs: Option<Vec<LogOutput>>,
-    /// List of test cases that are part of the test run.
+    /// Overview of test cases that are part of the test run.
     /// [req("testcov.test_case")]
-    pub test_cases: Option<Vec<TestCaseReference>>,
+    pub test_cases: Option<TestCasesOverview>,
+    /// Optional test run children.
+    pub child_test_runs: Option<Vec<TestRunReference>>,
+    /// Optional test run parents.
+    pub parent_test_runs: Option<Vec<TestRunReference>>,
     /// Optional list of coverage information per file that was collected during the test run.
     /// [req("testcov.cov")]
     pub coverage: Option<TestCoverage>,
-    /// Optionally nested test runs.
-    /// [req("testcov.test_run.nested")]
-    pub test_runs: Option<Vec<TestRunReportSchema>>,
     pub related_reqs: Option<Vec<TestRelatedRequirement>>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct TestCasesOverview {
+    pub summary: TestsSummary,
+    pub passed: Vec<TestCaseReference>,
+    pub failed: Vec<TestCaseReference>,
+    pub skipped: Vec<TestCaseReference>,
+    pub unknown: Vec<TestCaseReference>,
+    pub obsolete: Vec<TestCaseReference>,
 }

@@ -11,6 +11,8 @@ use mantra_schema::{
         products::ProductsReportSchema,
         requirements::RequirementsSummary,
         reviews::ReviewsSummary,
+        test_case::TestCaseReference,
+        test_run::{TestCasesOverview, TestRunReference},
         tests::TestsSummary,
     },
     requirements::ReqId,
@@ -22,7 +24,9 @@ use crate::{
         db::schemas::{
             evidence_matrix::generate_evidence_matrix_schema, nav::generate_navigation_schema,
             product::generate_product_schemas, requirement::generate_requirement_schema,
-            requirements::generate_requirements_schema,
+            requirements::generate_requirements_schema, review::generate_review_schema,
+            reviews::generate_reviews_schema, test_case::generate_test_case_schema,
+            test_run::generate_test_run_schema, test_runs::generate_test_runs_schema,
         },
         templates::MantraTemplates,
         writer::ReportWriter,
@@ -153,13 +157,12 @@ async fn create_product_structure<'db, 'templates>(
         create_requirements_structure(transaction, &product_path, writer, &product).await?;
     let reviews_summary =
         create_reviews_structure(transaction, &product_path, writer, &product).await?;
-    let tests_summary =
+    let test_cases_summary =
         create_tests_structure(transaction, &product_path, writer, &product).await?;
 
     let product_summary = ProductSummary {
         requirements: requirements_summary,
-        test_runs: tests_summary.test_runs,
-        test_cases: tests_summary.test_cases,
+        test_cases: test_cases_summary,
         reviews: reviews_summary,
     };
     product.summary = product_summary;
@@ -261,9 +264,39 @@ async fn create_reviews_structure<'db, 'templates>(
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
 ) -> Result<ReviewsSummary, anyhow::Error> {
-    // TODO
+    let reviews_path = out_dir.join("reviews");
 
-    Ok(ReviewsSummary::default())
+    tokio::fs::create_dir(&reviews_path).await?;
+
+    let reviews_schema = generate_reviews_schema(transaction, &product).await?;
+    let reviews_summary = reviews_schema.summary;
+
+    for review in reviews_schema
+        .valid
+        .iter()
+        .chain(reviews_schema.obsolete.iter())
+    {
+        let review_path = reviews_path.join(review.url_path_part());
+
+        let review_schema = generate_review_schema(transaction, &product, review).await?;
+        writer
+            .write_file(
+                &review_path,
+                review_schema,
+                super::templates::TemplateName::Review,
+            )
+            .await?;
+    }
+
+    writer
+        .write_file(
+            &reviews_path,
+            reviews_schema,
+            super::templates::TemplateName::Reviews,
+        )
+        .await?;
+
+    Ok(reviews_summary)
 }
 
 async fn create_tests_structure<'db, 'templates>(
@@ -271,16 +304,125 @@ async fn create_tests_structure<'db, 'templates>(
     out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
-) -> Result<TestSummary, anyhow::Error> {
-    // TODO
+) -> Result<TestsSummary, anyhow::Error> {
+    let test_runs_path = out_dir.join("test-runs");
 
-    Ok(TestSummary {
-        test_runs: TestsSummary::default(),
-        test_cases: TestsSummary::default(),
-    })
+    tokio::fs::create_dir(&test_runs_path).await?;
+
+    let test_runs_schema = generate_test_runs_schema(transaction, &product).await?;
+    let test_runs = &test_runs_schema.test_runs;
+    let test_cases_summary = test_runs_schema.test_cases_summary;
+
+    for test_run in test_runs
+        .failed
+        .iter()
+        .chain(test_runs.skipped.iter())
+        .chain(test_runs.unknown.iter())
+        .chain(test_runs.obsolete.iter())
+        .chain(test_runs.passed.iter())
+    {
+        let test_run_path = test_runs_path.join(test_run.url_path_part());
+
+        let test_run_schema = generate_test_run_schema(transaction, &product, test_run).await?;
+
+        if let Some(test_cases) = &test_run_schema.test_cases {
+            create_test_cases_structure(
+                transaction,
+                &test_run_path,
+                writer,
+                &product,
+                test_run,
+                test_cases,
+            )
+            .await?;
+        }
+
+        writer
+            .write_file(
+                &test_run_path,
+                test_run_schema,
+                super::templates::TemplateName::Review,
+            )
+            .await?;
+    }
+
+    writer
+        .write_file(
+            &test_runs_path,
+            test_runs_schema,
+            super::templates::TemplateName::Reviews,
+        )
+        .await?;
+
+    Ok(test_cases_summary)
 }
 
-struct TestSummary {
-    test_runs: TestsSummary,
-    test_cases: TestsSummary,
+async fn create_test_cases_structure<'db, 'templates>(
+    transaction: &mut MantraTransaction<'db>,
+    out_dir: &std::path::Path,
+    writer: &ReportWriter<'templates>,
+    product: &ProductReportSchema,
+    test_run: &TestRunReference,
+    test_cases: &TestCasesOverview,
+) -> Result<(), anyhow::Error> {
+    tokio::fs::create_dir(&out_dir).await?;
+
+    for test_case in test_cases
+        .failed
+        .iter()
+        .chain(test_cases.skipped.iter())
+        .chain(test_cases.unknown.iter())
+        .chain(test_cases.obsolete.iter())
+        .chain(test_cases.passed.iter())
+    {
+        let test_case_path = prepare_test_case_path(out_dir, &test_case.test_case_name).await?;
+
+        let test_case_schema =
+            generate_test_case_schema(transaction, &product, test_run, test_case).await?;
+
+        writer
+            .write_file(
+                &test_case_path,
+                test_case_schema,
+                super::templates::TemplateName::TestCase,
+            )
+            .await?;
+    }
+
+    Ok(())
+}
+
+async fn prepare_test_case_path(
+    base_path: &Path,
+    test_case_name: &str,
+) -> Result<PathBuf, anyhow::Error> {
+    if test_case_name.contains("::") {
+        let mut test_case_path = base_path.to_path_buf();
+        let test_case_parts: Vec<_> = test_case_name.split("::").collect();
+
+        let mut parent_parts = test_case_parts.clone();
+        parent_parts.truncate(test_case_parts.len() - 1);
+
+        for part in parent_parts {
+            test_case_path = test_case_path.join(urlencoding::encode(&part).to_string());
+
+            if !tokio::fs::try_exists(&test_case_path)
+                .await
+                .unwrap_or(false)
+            {
+                tokio::fs::create_dir(&test_case_path).await?;
+            }
+        }
+
+        test_case_path = test_case_path.join(
+            urlencoding::encode(&test_case_parts.last().expect(
+                "Checked that test case name contains '::', so at least one name part exists",
+            ))
+            .to_string(),
+        );
+
+        Ok(test_case_path)
+    } else {
+        Ok(base_path.join(urlencoding::encode(test_case_name).to_string()))
+    }
 }

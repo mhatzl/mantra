@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select state, content\n                from TestCaseOverrides, GeneralTexts\n                where product_id = $1\n                and test_run_name = $2\n                and test_run_date = $3\n                and test_case_name = $4\n                and comment_hash = hash\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "state",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a8850e07644e932ea1b40a2ffdaf1759705b50c5d1a254f7278a0ed9d8d250ef"
+}

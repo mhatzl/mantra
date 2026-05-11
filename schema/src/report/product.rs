@@ -88,7 +88,6 @@ impl ProductReportSchema {
 #[serde(rename_all = "snake_case")]
 pub struct ProductSummary {
     pub requirements: RequirementsSummary,
-    pub test_runs: TestsSummary,
     pub test_cases: TestsSummary,
     pub reviews: ReviewsSummary,
 }
@@ -96,7 +95,6 @@ pub struct ProductSummary {
 impl ProductSummary {
     pub fn add(&mut self, other: &Self) {
         self.requirements.add(&other.requirements);
-        self.test_runs.add(&other.test_runs);
         self.test_cases.add(&other.test_cases);
         self.reviews.add(&other.reviews);
     }

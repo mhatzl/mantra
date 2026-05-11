@@ -37,3 +37,15 @@ impl Aggregated {
         self.percentage = (self.cnt as f64 / total as f64) * 100.0;
     }
 }
+
+fn encode_utc_date(utc_date: &time::OffsetDateTime) -> String {
+    format!(
+        "{}-{:02}-{:02}_{:02}-{:02}-{:02}",
+        utc_date.year(),
+        utc_date.month() as u8,
+        utc_date.day(),
+        utc_date.hour(),
+        utc_date.minute(),
+        utc_date.second()
+    )
+}

@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select product_id, name, utc_date\n        from Reviews\n        where product_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5e52a4d7308d0b52b3cc76a3c73a576888248a6055bed7aca588b165113c44b8"
+}

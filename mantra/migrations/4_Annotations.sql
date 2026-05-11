@@ -43,7 +43,7 @@ create table TraceProperties (
     line integer not null,
     -- Custom property of the trace. e.g. "critical"
     property_key text not null,
-    property_value text references GeneralJson (hash) on delete restrict,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (file_hash, line, property_key),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
@@ -204,3 +204,28 @@ create table CoverageLineExcludes (
     comment_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (file_hash, line)
 );
+
+create view ExcludedLineRanges as
+select
+    pf.last_collect_nr,
+    pf.product_id,
+    pf.filepath,
+    pf.file_hash,
+    cbe.start_line,
+    cbe.end_line
+from CoverageBlockExcludes cbe, ProductRelatedFiles pf
+where cbe.last_collect_nr = pf.last_collect_nr
+and cbe.file_hash = pf.file_hash
+
+union
+
+select
+    pf.last_collect_nr,
+    pf.product_id,
+    pf.filepath,
+    pf.file_hash,
+    cle.line as start_line,
+    cle.line as end_line
+from CoverageLineExcludes cle, ProductRelatedFiles pf
+where cle.last_collect_nr = pf.last_collect_nr
+and cle.file_hash = pf.file_hash;

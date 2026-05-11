@@ -19,6 +19,7 @@ pub struct ReviewReportSchema {
     #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
+    pub state: ReviewState,
     /// The authors that were part of the review.
     /// [req("review.authors")]
     pub authors: Vec<String>,
@@ -35,10 +36,10 @@ pub struct ReviewReportSchema {
     pub revisions: Option<Vec<Revision>>,
     /// List of requirements that are verified in this review.
     /// [req("review.verify_req")]
-    pub requirements: Vec<VerifiedRequirement>,
+    pub requirements: Option<Vec<VerifiedRequirement>>,
     /// List of test run overrides added with this review.
     /// [req("review.test_case_state", "review.coverage")]
-    pub test_run_overrides: Vec<OverrideTestRun>,
+    pub test_run_overrides: Option<Vec<OverrideTestRun>>,
 }
 
 #[derive(
@@ -61,6 +62,16 @@ pub struct ReviewReference {
     #[schemars(with = "String")]
     pub utc_date: time::OffsetDateTime,
     pub state: ReviewState,
+}
+
+impl ReviewReference {
+    pub fn url_path_part(&self) -> String {
+        format!(
+            "{}_{}",
+            super::encode_utc_date(&self.utc_date),
+            urlencoding::encode(&self.name)
+        )
+    }
 }
 
 #[derive(

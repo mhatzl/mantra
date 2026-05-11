@@ -239,7 +239,7 @@ async fn collect_well_known<'db>(
             origin: None,
             nr_of_test_cases: nr_test_cases,
             properties: None,
-            duration: None,
+            duration_sec: None,
             logs: None,
             test_cases: vec![],
             covered_files,

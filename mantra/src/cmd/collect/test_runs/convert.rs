@@ -4,7 +4,7 @@ use chrono::FixedOffset;
 use mantra_schema::{
     Origin, Properties, Revision,
     path::{PathExt, RelativePathBuf},
-    test_runs::{CoveredFile, CoveredLine, LogOutput, TestCase, TestRun, TestCaseState},
+    test_runs::{CoveredFile, CoveredLine, LogOutput, TestCase, TestCaseState, TestRun},
     time::{self, Duration, OffsetDateTime},
 };
 use quick_junit::{Report, TestCaseStatus, TestSuite};
@@ -39,7 +39,7 @@ pub struct ShallowTestRun {
     pub properties: Option<Properties>,
     /// Optional duration about how long the test run took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.
-    pub duration: Option<Duration>,
+    pub duration_sec: Option<Duration>,
     /// Optional logs that were output during the execution of the test run.
     ///
     // TODO: add req
@@ -75,7 +75,7 @@ impl ShallowTestRun {
             origin: self.origin,
             nr_of_test_cases: self.nr_of_test_cases,
             properties: self.properties,
-            duration: self.duration,
+            duration_sec: self.duration_sec,
             logs: self.logs,
             test_cases: self.test_cases,
             covered_files,
@@ -144,7 +144,7 @@ fn junit_to_shallow_test_run(
         origin: None,
         nr_of_test_cases: junit.tests.try_into()?,
         properties: None,
-        duration: junit.time.and_then(|d| Duration::try_from(d).ok()),
+        duration_sec: junit.time.and_then(|d| Duration::try_from(d).ok()),
         logs: None,
         test_cases: vec![],
         test_runs: inner_test_runs,
@@ -286,7 +286,7 @@ fn get_inner_test_run(
             covered_files: vec![],
             description: None,
             utc_date: test_case.timestamp.and_then(|t| to_offset_datetime(t).ok()),
-            duration: test_case.time.and_then(|d| Duration::try_from(d).ok()),
+            duration_sec: test_case.time.and_then(|d| Duration::try_from(d).ok()),
         });
     }
 
@@ -300,7 +300,7 @@ fn get_inner_test_run(
         origin: None,
         nr_of_test_cases: testsuite.tests.try_into()?,
         properties: None,
-        duration: testsuite.time.and_then(|d| Duration::try_from(d).ok()),
+        duration_sec: testsuite.time.and_then(|d| Duration::try_from(d).ok()),
         logs: None,
         test_cases,
         test_runs: vec![],

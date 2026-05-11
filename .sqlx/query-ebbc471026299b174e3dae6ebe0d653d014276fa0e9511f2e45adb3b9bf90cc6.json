@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select file_hash\n            from ProductRelatedFiles\n            where product_id = $1 and filepath = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "file_hash",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ebbc471026299b174e3dae6ebe0d653d014276fa0e9511f2e45adb3b9bf90cc6"
+}

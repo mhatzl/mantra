@@ -346,6 +346,7 @@ create table ResolvedTestRunLineCoverage (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
+    state integer not null,
     hits integer,
     primary key (
         product_id,
@@ -379,6 +380,7 @@ create table ResolvedTestCaseLineCoverage (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
+    state integer not null,
     hits integer,
     primary key (
         product_id,
@@ -403,6 +405,21 @@ create table ResolvedTestCaseLineCoverage (
         cov_filepath,
         cov_line
     ) on delete cascade
+);
+
+create table ResolvedLineCoverageStates (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line integer not null,
+    state integer not null,
+    primary key (
+        product_id,
+        cov_filepath,
+        cov_line,
+        state
+    )
 );
 
 create table TraceCoveragePerTestRuns (
