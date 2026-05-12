@@ -4,20 +4,12 @@
   "description": "Represents a test case in *mantra*. [req(\"testcov.test_case\")]",
   "type": "object",
   "required": [
-    "duration",
     "name",
     "product",
     "state",
     "test_run"
   ],
   "properties": {
-    "base_properties": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": true
-    },
     "coverage": {
       "description": "Optional list of coverage data per file that was collected during the execution of the test case. [req(\"testcov.cov\")]",
       "anyOf": [
@@ -36,8 +28,9 @@
         "null"
       ]
     },
-    "duration": {
-      "description": "Optional duration about how long the test case took. Will be displayed in seconds with nanosecond precision in decimal form.",
+    "duration_sec": {
+      "description": "Optional duration about how long the test case took.",
+      "default": null,
       "type": "string"
     },
     "location": {
@@ -140,7 +133,8 @@
       "required": [
         "covered",
         "excluded",
-        "overridden",
+        "overridden_covered",
+        "overridden_uncovered",
         "total",
         "uncovered"
       ],
@@ -151,7 +145,10 @@
         "excluded": {
           "$ref": "#/definitions/Aggregated"
         },
-        "overridden": {
+        "overridden_covered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "overridden_uncovered": {
           "$ref": "#/definitions/Aggregated"
         },
         "total": {
@@ -313,17 +310,17 @@
         "filepath"
       ],
       "properties": {
+        "file_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "filepath": {
           "type": "array",
           "items": {
             "type": "string"
           }
-        },
-        "fmt_hash": {
-          "type": [
-            "string",
-            "null"
-          ]
         }
       }
     },

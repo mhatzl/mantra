@@ -231,7 +231,7 @@
           "default": [],
           "type": "array",
           "items": {
-            "$ref": "#/definitions/VerifiedRequirement"
+            "$ref": "#/definitions/VerifiedRequirementGroup"
           }
         },
         "revisions": {
@@ -278,8 +278,7 @@
         },
         "nr": {
           "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
+          "format": "int64"
         }
       }
     },
@@ -316,7 +315,7 @@
         }
       ]
     },
-    "VerifiedRequirement": {
+    "VerifiedRequirementGroup": {
       "description": "Represents a verification entry affecting one or more requirements. [req(\"review.verify_req\")]",
       "type": "object",
       "required": [

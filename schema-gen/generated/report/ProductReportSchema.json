@@ -125,8 +125,7 @@
       "required": [
         "requirements",
         "reviews",
-        "test_cases",
-        "test_runs"
+        "test_cases"
       ],
       "properties": {
         "requirements": {
@@ -136,9 +135,6 @@
           "$ref": "#/definitions/ReviewsSummary"
         },
         "test_cases": {
-          "$ref": "#/definitions/TestsSummary"
-        },
-        "test_runs": {
           "$ref": "#/definitions/TestsSummary"
         }
       }
@@ -183,12 +179,12 @@
         "deprecated",
         "failed",
         "ignored",
+        "mandatory_total",
         "mandatory_verified",
-        "mandatory_verified_manual",
+        "manuals_total",
+        "manuals_verified",
         "skipped",
         "total",
-        "total_mandatory",
-        "total_manual",
         "unverified",
         "verified"
       ],
@@ -202,6 +198,14 @@
         "ignored": {
           "$ref": "#/definitions/Aggregated"
         },
+        "mandatory_total": {
+          "description": "Metric for how many requirements are non-optional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
         "mandatory_verified": {
           "description": "Metric for how many non-optional requirements are verified.",
           "allOf": [
@@ -210,7 +214,15 @@
             }
           ]
         },
-        "mandatory_verified_manual": {
+        "manuals_total": {
+          "description": "Metric for how many requirements require manual verification.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "manuals_verified": {
           "description": "Metric for how many requirements requiring manual verification have been verified.",
           "allOf": [
             {
@@ -224,22 +236,6 @@
         "total": {
           "type": "integer",
           "format": "int64"
-        },
-        "total_mandatory": {
-          "description": "Metric for how many requirements are non-optional.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Aggregated"
-            }
-          ]
-        },
-        "total_manual": {
-          "description": "Metric for how many requirements require manual verification.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Aggregated"
-            }
-          ]
         },
         "unverified": {
           "$ref": "#/definitions/Aggregated"
@@ -282,15 +278,11 @@
     "ReviewsSummary": {
       "type": "object",
       "required": [
-        "mandatory_requirements_verified",
         "obsolete",
         "total",
         "valid"
       ],
       "properties": {
-        "mandatory_requirements_verified": {
-          "$ref": "#/definitions/Aggregated"
-        },
         "obsolete": {
           "$ref": "#/definitions/Aggregated"
         },

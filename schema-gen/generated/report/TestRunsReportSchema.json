@@ -3,33 +3,11 @@
   "title": "TestRunsReportSchema",
   "type": "object",
   "required": [
-    "failed",
-    "obsolete",
-    "passed",
     "product",
-    "skipped",
-    "summary",
-    "unknown"
+    "test_cases_summary",
+    "test_runs"
   ],
   "properties": {
-    "failed": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/TestRunReference"
-      }
-    },
-    "obsolete": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/TestRunReference"
-      }
-    },
-    "passed": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/TestRunReference"
-      }
-    },
     "product": {
       "$ref": "#/definitions/ProductMetadata"
     },
@@ -40,20 +18,11 @@
         "null"
       ]
     },
-    "skipped": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/TestRunReference"
-      }
-    },
-    "summary": {
+    "test_cases_summary": {
       "$ref": "#/definitions/TestsSummary"
     },
-    "unknown": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/TestRunReference"
-      }
+    "test_runs": {
+      "$ref": "#/definitions/TestRunsOverview"
     }
   },
   "definitions": {
@@ -146,6 +115,52 @@
         },
         "utc_date": {
           "type": "string"
+        }
+      }
+    },
+    "TestRunsOverview": {
+      "type": "object",
+      "required": [
+        "failed",
+        "obsolete",
+        "passed",
+        "skipped",
+        "summary",
+        "unknown"
+      ],
+      "properties": {
+        "failed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
+        },
+        "obsolete": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
+        },
+        "passed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/TestsSummary"
+        },
+        "unknown": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRunReference"
+          }
         }
       }
     },

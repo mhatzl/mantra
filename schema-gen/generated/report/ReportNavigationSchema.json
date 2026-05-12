@@ -16,7 +16,7 @@
     "root_sources": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/SourceReference"
+        "$ref": "#/definitions/SourceNavigation"
       }
     },
     "schema_version": {
@@ -107,7 +107,7 @@
         "root_test_runs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TestRunNavigation"
+            "$ref": "#/definitions/TestRunReference"
           }
         }
       }
@@ -176,6 +176,35 @@
         "valid"
       ]
     },
+    "SourceNavigation": {
+      "type": "object",
+      "required": [
+        "source"
+      ],
+      "properties": {
+        "files": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/SourceReference"
+          }
+        },
+        "folder": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/SourceNavigation"
+          }
+        },
+        "source": {
+          "$ref": "#/definitions/SourceReference"
+        }
+      }
+    },
     "SourceReference": {
       "type": "object",
       "required": [
@@ -183,62 +212,6 @@
       ],
       "properties": {
         "path": {
-          "type": "string"
-        }
-      }
-    },
-    "TestCaseReference": {
-      "type": "object",
-      "required": [
-        "product_id",
-        "state",
-        "test_case_name",
-        "test_run_date",
-        "test_run_name"
-      ],
-      "properties": {
-        "product_id": {
-          "type": "string"
-        },
-        "state": {
-          "$ref": "#/definitions/TestState"
-        },
-        "test_case_name": {
-          "type": "string"
-        },
-        "test_run_date": {
-          "type": "string"
-        },
-        "test_run_name": {
-          "type": "string"
-        }
-      }
-    },
-    "TestRunNavigation": {
-      "type": "object",
-      "required": [
-        "name",
-        "test_cases",
-        "test_runs",
-        "utc_date"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "test_cases": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/TestCaseReference"
-          }
-        },
-        "test_runs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/TestRunReference"
-          }
-        },
-        "utc_date": {
           "type": "string"
         }
       }

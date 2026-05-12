@@ -480,66 +480,6 @@
         }
       }
     },
-    "ResolvedCoveredLineState": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "uncovered"
-          ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "covered"
-          ],
-          "properties": {
-            "covered": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/CoveredLineTestReference"
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Line was excluded from coverage analysis. An optional reference to an exclusion annotation is given, if the exclusion was based on a mantra annotation.",
-          "type": "object",
-          "required": [
-            "excluded"
-          ],
-          "properties": {
-            "excluded": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/ExclusionAnnotationReference"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "overriden"
-          ],
-          "properties": {
-            "overriden": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/ReviewOverride"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "ResolvedElement": {
       "type": "object",
       "required": [
@@ -604,6 +544,66 @@
         }
       }
     },
+    "ResolvedLineState": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "uncovered"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "covered"
+          ],
+          "properties": {
+            "covered": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CoveredLineTestReference"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Line was excluded from coverage analysis. An optional reference to an exclusion annotation is given, if the exclusion was based on a mantra annotation.",
+          "type": "object",
+          "required": [
+            "excluded"
+          ],
+          "properties": {
+            "excluded": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ExclusionAnnotationReference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "overriden"
+          ],
+          "properties": {
+            "overriden": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ReviewOverride"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ResolvedTrace": {
       "type": "object",
       "required": [
@@ -613,13 +613,6 @@
         "unknown_ids"
       ],
       "properties": {
-        "base_properties": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "additionalProperties": true
-        },
         "kind": {
           "description": "Trace kind. [req(\"trace.kind`\")]",
           "allOf": [
@@ -764,7 +757,7 @@
           "format": "int64"
         },
         "state": {
-          "$ref": "#/definitions/ResolvedCoveredLineState"
+          "$ref": "#/definitions/ResolvedLineState"
         }
       }
     },

@@ -6,8 +6,7 @@
     "authors",
     "name",
     "product",
-    "requirements",
-    "test_run_overrides",
+    "state",
     "utc_date"
   ],
   "properties": {
@@ -19,13 +18,6 @@
       }
     },
     "base_origin": true,
-    "base_properties": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": true
-    },
     "description": {
       "description": "Optional description of the review. [req(\"review.description\")]",
       "type": [
@@ -53,7 +45,10 @@
     },
     "requirements": {
       "description": "List of requirements that are verified in this review. [req(\"review.verify_req\")]",
-      "type": "array",
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "$ref": "#/definitions/VerifiedRequirement"
       }
@@ -75,9 +70,15 @@
         "null"
       ]
     },
+    "state": {
+      "$ref": "#/definitions/ReviewState"
+    },
     "test_run_overrides": {
       "description": "List of test run overrides added with this review. [req(\"review.test_case_state\", \"review.coverage\")]",
-      "type": "array",
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "$ref": "#/definitions/OverrideTestRun"
       }
@@ -279,6 +280,13 @@
         }
       }
     },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
+      ]
+    },
     "Revision": {
       "type": "object",
       "required": [
@@ -298,8 +306,7 @@
         },
         "nr": {
           "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
+          "format": "int64"
         }
       }
     },

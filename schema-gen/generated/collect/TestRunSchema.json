@@ -141,8 +141,7 @@
         },
         "nr": {
           "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
+          "format": "int64"
         }
       }
     },
@@ -150,7 +149,6 @@
       "description": "Represents a test case in *mantra*. [req(\"testcov.test_case\")]",
       "type": "object",
       "required": [
-        "duration",
         "name",
         "state"
       ],
@@ -170,9 +168,14 @@
             "null"
           ]
         },
-        "duration": {
-          "description": "Optional duration about how long the test case took. Will be displayed in seconds with nanosecond precision in decimal form.",
-          "type": "string"
+        "duration_sec": {
+          "description": "Optional duration about how long the test case took.",
+          "default": null,
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
         },
         "location": {
           "description": "Optional location of the test case. [req(\"testcov.test_case.origin\")]",
@@ -299,7 +302,6 @@
       "description": "Represents a test run in *mantra*. [req(\"testcov.test_run\")]",
       "type": "object",
       "required": [
-        "duration",
         "name",
         "nr_of_test_cases",
         "test_cases",
@@ -321,9 +323,14 @@
             "null"
           ]
         },
-        "duration": {
-          "description": "Optional duration about how long the test run took. Will be displayed in seconds with nanosecond precision in decimal form.",
-          "type": "string"
+        "duration_sec": {
+          "description": "Optional duration about how long the test run took.",
+          "default": null,
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
         },
         "logs": {
           "description": "Optional logs that were output during the execution of the test run.",

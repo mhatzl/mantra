@@ -14,13 +14,6 @@
   ],
   "properties": {
     "base_origin": true,
-    "base_properties": {
-      "type": [
-        "object",
-        "null"
-      ],
-      "additionalProperties": true
-    },
     "children": {
       "type": [
         "array",
@@ -114,13 +107,14 @@
       "type": "string"
     },
     "traces": {
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "$ref": "#/definitions/RequirementTracesOverview"
-      }
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RequirementTracesOverview"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "definitions": {
@@ -197,6 +191,7 @@
       "type": "object",
       "required": [
         "directly_verified",
+        "product_id",
         "state",
         "test_case_name",
         "test_run_date",
@@ -215,6 +210,9 @@
         "directly_verified": {
           "type": "boolean"
         },
+        "product_id": {
+          "type": "string"
+        },
         "state": {
           "$ref": "#/definitions/TestState"
         },
@@ -232,19 +230,25 @@
     "RequirementCoverageByTestRuns": {
       "type": "object",
       "required": [
-        "covered_traces",
         "name",
+        "product_id",
         "state",
         "utc_date"
       ],
       "properties": {
         "covered_traces": {
-          "type": "array",
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "$ref": "#/definitions/TraceReference"
           }
         },
         "name": {
+          "type": "string"
+        },
+        "product_id": {
           "type": "string"
         },
         "state": {
@@ -304,6 +308,7 @@
       "required": [
         "comment",
         "name",
+        "product_id",
         "state",
         "utc_date"
       ],
@@ -312,6 +317,9 @@
           "type": "string"
         },
         "name": {
+          "type": "string"
+        },
+        "product_id": {
           "type": "string"
         },
         "state": {

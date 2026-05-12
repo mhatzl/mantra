@@ -3,36 +3,15 @@
   "title": "RequirementsReportSchema",
   "type": "object",
   "required": [
-    "deprecated",
-    "failed",
-    "ignored",
     "product",
-    "skipped",
-    "summary",
-    "unverified",
-    "verified"
+    "requirements"
   ],
   "properties": {
-    "deprecated": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/RequirementReference"
-      }
-    },
-    "failed": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/RequirementReference"
-      }
-    },
-    "ignored": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/RequirementReference"
-      }
-    },
     "product": {
       "$ref": "#/definitions/ProductMetadata"
+    },
+    "requirements": {
+      "$ref": "#/definitions/RequirementsOverview"
     },
     "schema_version": {
       "description": "The schema version. [req(\"exchange.versioned\")]",
@@ -40,27 +19,6 @@
         "string",
         "null"
       ]
-    },
-    "skipped": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/RequirementReference"
-      }
-    },
-    "summary": {
-      "$ref": "#/definitions/RequirementsSummary"
-    },
-    "unverified": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/RequirementReference"
-      }
-    },
-    "verified": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/RequirementReference"
-      }
     }
   },
   "definitions": {
@@ -167,18 +125,71 @@
         "ignored"
       ]
     },
+    "RequirementsOverview": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "failed",
+        "ignored",
+        "skipped",
+        "summary",
+        "unverified",
+        "verified"
+      ],
+      "properties": {
+        "deprecated": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "ignored": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/RequirementsSummary"
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "verified": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        }
+      }
+    },
     "RequirementsSummary": {
       "type": "object",
       "required": [
         "deprecated",
         "failed",
         "ignored",
+        "mandatory_total",
         "mandatory_verified",
-        "mandatory_verified_manual",
+        "manuals_total",
+        "manuals_verified",
         "skipped",
         "total",
-        "total_mandatory",
-        "total_manual",
         "unverified",
         "verified"
       ],
@@ -192,6 +203,14 @@
         "ignored": {
           "$ref": "#/definitions/Aggregated"
         },
+        "mandatory_total": {
+          "description": "Metric for how many requirements are non-optional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
         "mandatory_verified": {
           "description": "Metric for how many non-optional requirements are verified.",
           "allOf": [
@@ -200,7 +219,15 @@
             }
           ]
         },
-        "mandatory_verified_manual": {
+        "manuals_total": {
+          "description": "Metric for how many requirements require manual verification.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "manuals_verified": {
           "description": "Metric for how many requirements requiring manual verification have been verified.",
           "allOf": [
             {
@@ -214,22 +241,6 @@
         "total": {
           "type": "integer",
           "format": "int64"
-        },
-        "total_mandatory": {
-          "description": "Metric for how many requirements are non-optional.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Aggregated"
-            }
-          ]
-        },
-        "total_manual": {
-          "description": "Metric for how many requirements require manual verification.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Aggregated"
-            }
-          ]
         },
         "unverified": {
           "$ref": "#/definitions/Aggregated"

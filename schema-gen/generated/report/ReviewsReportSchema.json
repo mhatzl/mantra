@@ -4,18 +4,14 @@
   "type": "object",
   "required": [
     "product",
-    "reviews",
-    "summary"
+    "reviews"
   ],
   "properties": {
     "product": {
       "$ref": "#/definitions/ProductMetadata"
     },
     "reviews": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/ReviewReference"
-      }
+      "$ref": "#/definitions/ReviewsOverview"
     },
     "schema_version": {
       "description": "The schema version. [req(\"exchange.versioned\")]",
@@ -23,9 +19,6 @@
         "string",
         "null"
       ]
-    },
-    "summary": {
-      "$ref": "#/definitions/ReviewsSummary"
     }
   },
   "definitions": {
@@ -128,18 +121,39 @@
         "valid"
       ]
     },
+    "ReviewsOverview": {
+      "type": "object",
+      "required": [
+        "obsolete",
+        "summary",
+        "valid"
+      ],
+      "properties": {
+        "obsolete": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReviewReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/ReviewsSummary"
+        },
+        "valid": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReviewReference"
+          }
+        }
+      }
+    },
     "ReviewsSummary": {
       "type": "object",
       "required": [
-        "mandatory_requirements_verified",
         "obsolete",
         "total",
         "valid"
       ],
       "properties": {
-        "mandatory_requirements_verified": {
-          "$ref": "#/definitions/Aggregated"
-        },
         "obsolete": {
           "$ref": "#/definitions/Aggregated"
         },
