@@ -3,7 +3,7 @@ use mantra_schema::{
     report::{
         product::ProductReportSchema,
         review::ReviewReference,
-        reviews::{ReviewsReportSchema, ReviewsSummary},
+        reviews::{ReviewsOverview, ReviewsReportSchema, ReviewsSummary},
     },
 };
 
@@ -35,7 +35,7 @@ pub async fn generate_reviews_schema<'db>(
 
     for record in review_records {
         reviews.push(ReviewReference {
-            product_id: record.product_id,
+            product_id: product.id.clone(),
             name: record.name,
             utc_date: mantra_schema::reviews::date_from_str(&record.utc_date)?,
             state: mantra_schema::report::review::ReviewState::Valid, // TODO: set correct state
@@ -47,8 +47,10 @@ pub async fn generate_reviews_schema<'db>(
     Ok(ReviewsReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
-        summary,
-        valid: reviews,
-        obsolete: Vec::new(), // TODO: split depending on state
+        reviews: ReviewsOverview {
+            summary,
+            valid: reviews,
+            obsolete: Vec::new(), // TODO: split depending on state
+        },
     })
 }

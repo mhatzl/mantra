@@ -2,6 +2,7 @@ use serde::Serializer;
 use sha2::Digest;
 
 pub mod annotations;
+mod encoding;
 pub mod product;
 pub mod report;
 pub mod requirements;
@@ -14,6 +15,12 @@ pub use time;
 /// The version of the schema that is defined in this crate.
 /// [req("exchange.versioned")]
 pub const SCHEMA_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub const PRODUCTS_FOLDER_NAME: &str = "products";
+pub const REQUIREMENTS_FOLDER_NAME: &str = "requirements";
+pub const REVIEWS_FOLDER_NAME: &str = "reviews";
+pub const TEST_RUNS_FOLDER_NAME: &str = "test-runs";
+pub const SOURCES_FOLDER_NAME: &str = "sources";
 
 /// Represents a line in a text file.
 /// Line numbers start at 1 in *mantra*.
@@ -114,4 +121,10 @@ pub enum ConversionError {
     UnknownKind,
     #[error("Number does not match to a known state.")]
     UnknownState,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum IdentError {
+    #[error("Given ID contains invalid characters.")]
+    InvalidCharacter,
 }

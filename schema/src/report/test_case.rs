@@ -1,5 +1,8 @@
+use relative_path::RelativePathBuf;
+
 use crate::{
     Properties,
+    encoding::TargetEncoding,
     product::ProductId,
     report::{
         product::ProductMetadata,
@@ -24,8 +27,38 @@ pub struct TestCaseReference {
 }
 
 impl TestCaseReference {
-    pub fn url_path_part(&self) -> String {
-        urlencoding::encode(&self.test_case_name).to_string()
+    pub fn url_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Url)
+    }
+
+    pub fn os_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Os)
+    }
+
+    fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
+        let test_run = TestRunReference {
+            product_id: self.product_id.clone(),
+            name: self.test_run_name.clone(),
+            utc_date: self.test_run_date,
+            state: TestState::Unknown,
+        };
+
+        let test_case_path = if self.test_case_name.contains("::") {
+            RelativePathBuf::from_iter(
+                self.test_case_name
+                    .split("::")
+                    .map(|name| crate::encoding::encode(&name, target).to_string()),
+            )
+        } else {
+            RelativePathBuf::from(crate::encoding::encode(&self.test_case_name, target).to_string())
+        };
+
+        let test_run_path = match target {
+            TargetEncoding::Os => test_run.os_path(),
+            TargetEncoding::Url => test_run.url_path(),
+        };
+
+        test_run_path.join(test_case_path)
     }
 }
 

@@ -1,9 +1,75 @@
-use crate::Properties;
+use std::ops::Deref;
 
-/// Type alias for a product ID.
+use relative_path::RelativePathBuf;
+
+use crate::{IdentError, Properties, encoding::TargetEncoding};
+
+/// Type for a product ID.
 ///
 /// TODO: map to requirement
-pub type ProductId = String;
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+    sqlx::Type,
+)]
+#[serde(transparent)]
+#[sqlx(transparent)]
+pub struct ProductId(String);
+
+impl ProductId {
+    pub fn new(id: String) -> Result<Self, IdentError> {
+        Ok(Self(id))
+    }
+
+    pub fn url_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Url)
+    }
+
+    pub fn os_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Os)
+    }
+
+    fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
+        RelativePathBuf::from(super::PRODUCTS_FOLDER_NAME)
+            .join(crate::encoding::encode(&self.0, target).to_string())
+    }
+}
+
+impl Deref for ProductId {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::str::FromStr for ProductId {
+    type Err = IdentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ProductId::new(s.to_owned())
+    }
+}
+
+impl TryFrom<String> for ProductId {
+    type Error = IdentError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        ProductId::new(value)
+    }
+}
+
+impl std::fmt::Display for ProductId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// This struct defines the information *mantra* stores about a product.
 ///

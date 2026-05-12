@@ -1,6 +1,9 @@
+use relative_path::RelativePathBuf;
+
 use crate::{
-    ConversionError, Origin, Properties, Revision, product::ProductId,
-    report::product::ProductMetadata, requirements::ReqId, reviews::OverrideTestRun,
+    ConversionError, Origin, Properties, REVIEWS_FOLDER_NAME, Revision, encoding::TargetEncoding,
+    product::ProductId, report::product::ProductMetadata, requirements::ReqId,
+    reviews::OverrideTestRun,
 };
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -65,12 +68,25 @@ pub struct ReviewReference {
 }
 
 impl ReviewReference {
-    pub fn url_path_part(&self) -> String {
-        format!(
+    pub fn url_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Url)
+    }
+
+    pub fn os_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Os)
+    }
+
+    fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
+        let product_path = match target {
+            TargetEncoding::Os => self.product_id.os_path(),
+            TargetEncoding::Url => self.product_id.url_path(),
+        };
+
+        product_path.join(REVIEWS_FOLDER_NAME).join(format!(
             "{}_{}",
             super::encode_utc_date(&self.utc_date),
-            urlencoding::encode(&self.name)
-        )
+            crate::encoding::encode(&self.name, target)
+        ))
     }
 }
 

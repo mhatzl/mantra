@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mantra Report</title>
+    </head>
+    <body>
+        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
+
+        <h1>Products</h1>
+        <ul>
+            {% for product in schema.products %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ product_url_path(product.id) }}.html"
+                    >{{ product.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

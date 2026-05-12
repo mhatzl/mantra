@@ -411,7 +411,7 @@ fn get_req_ids(
                 && let Some(content_node) = child.named_child(0)
                 && let Ok(id) = content_node.utf8_text(content)
             {
-                ids.push(id.to_string());
+                ids.push(ReqId::from_str(id)?);
                 expected_kind = ",";
             } else {
                 expected_kind = "string_literal";

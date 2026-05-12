@@ -193,10 +193,10 @@ const NAME_BASE_DIVIDER: &str = "@";
 /// in case it is not explicitly given.
 /// Therefore, neither product name nor base must contain `@`.
 fn resolve_product_id(
-    id: Option<String>,
+    id: Option<ProductId>,
     name: &str,
     base: Option<&str>,
-) -> Result<String, anyhow::Error> {
+) -> Result<ProductId, anyhow::Error> {
     if let Some(id) = id {
         if valid_non_inheritable(&id) {
             Ok(id)
@@ -204,7 +204,7 @@ fn resolve_product_id(
             bail!("The product ID cannot be inherited!");
         }
     } else if let Some(base) = base {
-        Ok(format!("{name}@{}", base))
+        Ok(ProductId::new(format!("{name}@{}", base))?)
     } else {
         bail!("Project baseline must be set if no ID is given.")
     }
@@ -388,7 +388,7 @@ mod tests {
 
         // Note: Conversion `to_product` must then fail if keyword `$inherit` is used
         // on non-inheritable fields.
-        assert_eq!(product_cfg.id, Some(INHERIT_MARKER.to_string()));
+        assert_eq!(product_cfg.id.as_deref(), Some(&INHERIT_MARKER.to_string()));
         assert_eq!(
             product_cfg.name,
             Inheritable::Value("some-product".to_string())

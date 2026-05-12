@@ -1,5 +1,8 @@
+use relative_path::RelativePathBuf;
+
 use crate::{
-    Origin, Properties, Revision,
+    Origin, Properties, Revision, TEST_RUNS_FOLDER_NAME,
+    encoding::TargetEncoding,
     product::ProductId,
     report::{
         product::ProductMetadata,
@@ -23,12 +26,25 @@ pub struct TestRunReference {
 }
 
 impl TestRunReference {
-    pub fn url_path_part(&self) -> String {
-        format!(
+    pub fn url_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Url)
+    }
+
+    pub fn os_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Os)
+    }
+
+    fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
+        let product_path = match target {
+            TargetEncoding::Os => self.product_id.os_path(),
+            TargetEncoding::Url => self.product_id.url_path(),
+        };
+
+        product_path.join(TEST_RUNS_FOLDER_NAME).join(format!(
             "{}_{}",
             super::encode_utc_date(&self.utc_date),
-            urlencoding::encode(&self.name)
-        )
+            crate::encoding::encode(&self.name, target)
+        ))
     }
 }
 

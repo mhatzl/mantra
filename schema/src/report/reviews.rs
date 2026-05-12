@@ -8,6 +8,11 @@ pub struct ReviewsReportSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
     pub product: ProductMetadata,
+    pub reviews: ReviewsOverview,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct ReviewsOverview {
     pub summary: ReviewsSummary,
     pub valid: Vec<ReviewReference>,
     pub obsolete: Vec<ReviewReference>,

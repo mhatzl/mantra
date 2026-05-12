@@ -1,5 +1,8 @@
+use relative_path::RelativePathBuf;
+
 use crate::{
-    ConversionError, Origin, Properties,
+    ConversionError, Origin, Properties, REQUIREMENTS_FOLDER_NAME,
+    encoding::TargetEncoding,
     product::ProductId,
     report::{
         annotations::{TraceReference, TracesSummary},
@@ -72,7 +75,35 @@ pub struct RequirementReference {
     pub id: ReqId,
     pub state: RequirementState,
     pub optional: bool,
-    pub url_part: String,
+}
+
+impl RequirementReference {
+    pub fn url_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Url)
+    }
+
+    pub fn os_path(&self) -> RelativePathBuf {
+        self.encode_path(TargetEncoding::Os)
+    }
+
+    fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
+        let req_path = if self.id.contains('.') {
+            RelativePathBuf::from_iter(
+                self.id
+                    .split('.')
+                    .map(|id| crate::encoding::encode(&id, target).to_string()),
+            )
+        } else {
+            RelativePathBuf::from(crate::encoding::encode(&self.id, target).to_string())
+        };
+
+        let product_path = match target {
+            TargetEncoding::Os => self.product_id.os_path(),
+            TargetEncoding::Url => self.product_id.url_path(),
+        };
+
+        product_path.join(REQUIREMENTS_FOLDER_NAME).join(req_path)
+    }
 }
 
 #[derive(

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mantra Report</title>
+    </head>
+    <body>
+        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
+
+        <p>Back to <a href="{{ path_to_root }}/index.html">products</a>.</p>
+        <p>
+            Back to
+            <a
+                href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html"
+                >product</a
+            >.
+        </p>
+    </body>
+</html>

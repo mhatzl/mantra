@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mantra Report</title>
+    </head>
+    <body>
+        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
+
+        <p>Back to <a href="{{ path_to_root }}/index.html">products</a>.</p>
+        <p>
+            Back to
+            <a
+                href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html"
+                >product</a
+            >.
+        </p>
+
+        <h1>Deprecated Requirements</h1>
+        <ul>
+            {% for req in schema.requirements.deprecated %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h1>Ignored Requirements</h1>
+        <ul>
+            {% for req in schema.requirements.ignored %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h1>Failed Requirements</h1>
+        <ul>
+            {% for req in schema.requirements.failed %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h1>Skipped Requirements</h1>
+        <ul>
+            {% for req in schema.requirements.skipped %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h1>Unverified Requirements</h1>
+        <ul>
+            {% for req in schema.requirements.unverified %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h1>Verified Requirements</h1>
+        <ul>
+            {% for req in schema.requirements.verified %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

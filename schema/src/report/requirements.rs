@@ -7,6 +7,11 @@ pub struct RequirementsReportSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
     pub product: ProductMetadata,
+    pub requirements: RequirementsOverview,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct RequirementsOverview {
     pub summary: RequirementsSummary,
     pub failed: Vec<RequirementReference>,
     pub skipped: Vec<RequirementReference>,

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mantra Report</title>
+    </head>
+    <body>
+        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
+
+        <p>Back to <a href="{{ path_to_root }}/index.html">products</a>.</p>
+        <h1>Root Requirements</h1>
+        <ul>
+            {% for req in schema.root_requirements %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                    >{{ req.id }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+        <p>
+            See
+            <a
+                href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/requirements.html"
+                >all requirements</a
+            >.
+        </p>
+
+        <h1>Root Test Runs</h1>
+        <ul>
+            {% for test_run in schema.root_test_runs %}
+            <li>
+                <a
+                    href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+                    >{{ test_run.utc_date }} {{ test_run.name }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+        <p>
+            See
+            <a
+                href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/test-runs.html"
+                >all test runs</a
+            >.
+        </p>
+
+        <h1>Reviews</h1>
+        <ul>
+            {% for review in schema.reviews %}
+            <li>
+                <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+                    >{{ review.utc_date }} {{ review.name }}</a
+                >
+            </li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

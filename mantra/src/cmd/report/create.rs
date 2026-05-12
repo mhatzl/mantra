@@ -1,21 +1,17 @@
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-};
+use std::collections::HashSet;
 
 use mantra_schema::{
-    SCHEMA_VERSION,
+    PRODUCTS_FOLDER_NAME, REQUIREMENTS_FOLDER_NAME, REVIEWS_FOLDER_NAME, SCHEMA_VERSION,
+    SOURCES_FOLDER_NAME, TEST_RUNS_FOLDER_NAME,
     product::ProductId,
     report::{
         product::{ProductMetadata, ProductReportSchema, ProductSummary},
         products::ProductsReportSchema,
         requirements::RequirementsSummary,
         reviews::ReviewsSummary,
-        test_case::TestCaseReference,
         test_run::{TestCasesOverview, TestRunReference},
         tests::TestsSummary,
     },
-    requirements::ReqId,
 };
 
 use crate::{
@@ -63,18 +59,18 @@ pub async fn create_report<'db, 'templates>(
     templates: MantraTemplates<'templates>,
     product_ids: Option<&[ProductId]>,
 ) -> Result<(), anyhow::Error> {
-    let products_path = out_dir.join("products");
+    let products_path = out_dir.join(PRODUCTS_FOLDER_NAME);
     tokio::fs::create_dir_all(&products_path).await?;
-    let sources_path = out_dir.join("sources");
+    let sources_path = out_dir.join(SOURCES_FOLDER_NAME);
     tokio::fs::create_dir_all(&sources_path).await?;
 
     let products = generate_product_schemas(transaction, product_ids).await?;
 
     let nav = generate_navigation_schema(transaction, &products).await?;
 
-    let writer = ReportWriter::new(nav, formats, templates);
+    let writer = ReportWriter::new(out_dir.to_path_buf(), nav, formats, templates);
 
-    create_sources_structure(transaction, &sources_path, &writer, &products).await?;
+    create_sources_structure(transaction, &writer, &products).await?;
 
     let mut product_overviews = Vec::with_capacity(products.len());
     let mut products_summary = ProductSummary::default();
@@ -90,13 +86,11 @@ pub async fn create_report<'db, 'templates>(
             license: product.license.clone(),
         });
 
-        let product_summary =
-            create_product_structure(transaction, &products_path, &writer, product).await?;
+        let product_summary = create_product_structure(transaction, &writer, product).await?;
         products_summary.add(&product_summary);
     }
 
     create_products_structure(
-        out_dir,
         &writer,
         ProductsReportSchema {
             schema_version: Some(SCHEMA_VERSION.to_owned()),
@@ -110,11 +104,10 @@ pub async fn create_report<'db, 'templates>(
 }
 
 async fn create_products_structure<'db, 'templates>(
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     schema: ProductsReportSchema,
 ) -> Result<(), anyhow::Error> {
-    let filepath = out_dir.join("index");
+    let filepath = writer.base_path().join("index");
 
     writer
         .write_file(&filepath, schema, super::templates::TemplateName::Products)
@@ -123,9 +116,8 @@ async fn create_products_structure<'db, 'templates>(
 
 async fn create_sources_structure<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
-    product_ids: &[ProductReportSchema],
+    products: &[ProductReportSchema],
 ) -> Result<(), anyhow::Error> {
     // TODO: create sources
 
@@ -134,12 +126,10 @@ async fn create_sources_structure<'db, 'templates>(
 
 async fn create_product_structure<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     mut product: ProductReportSchema,
 ) -> Result<ProductSummary, anyhow::Error> {
-    let encoded_product_id = urlencoding::encode(&product.id);
-    let product_path = out_dir.join(encoded_product_id.to_string());
+    let product_path = product.id.os_path().to_path(writer.base_path());
 
     tokio::fs::create_dir(&product_path).await?;
 
@@ -153,12 +143,9 @@ async fn create_product_structure<'db, 'templates>(
         )
         .await?;
 
-    let requirements_summary =
-        create_requirements_structure(transaction, &product_path, writer, &product).await?;
-    let reviews_summary =
-        create_reviews_structure(transaction, &product_path, writer, &product).await?;
-    let test_cases_summary =
-        create_tests_structure(transaction, &product_path, writer, &product).await?;
+    let requirements_summary = create_requirements_structure(transaction, writer, &product).await?;
+    let reviews_summary = create_reviews_structure(transaction, writer, &product).await?;
+    let test_cases_summary = create_tests_structure(transaction, writer, &product).await?;
 
     let product_summary = ProductSummary {
         requirements: requirements_summary,
@@ -180,30 +167,37 @@ async fn create_product_structure<'db, 'templates>(
 
 async fn create_requirements_structure<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
 ) -> Result<RequirementsSummary, anyhow::Error> {
-    let requirements_path = out_dir.join("requirements");
+    let requirements_path = product
+        .id
+        .os_path()
+        .join(REQUIREMENTS_FOLDER_NAME)
+        .to_path(writer.base_path());
 
     tokio::fs::create_dir(&requirements_path).await?;
 
     let requirements_schema = generate_requirements_schema(transaction, &product).await?;
-    let requirements_summary = requirements_schema.summary;
+    let requirements_summary = requirements_schema.requirements.summary;
 
     // Note: The requirements schema splits all requirements into their states.
     // Not ideal to iterate over all requirements this way,
     // but better than a new DB query or duplicating requirements in the requirements schema.
     for req in requirements_schema
+        .requirements
         .failed
         .iter()
-        .chain(requirements_schema.skipped.iter())
-        .chain(requirements_schema.unverified.iter())
-        .chain(requirements_schema.verified.iter())
-        .chain(requirements_schema.ignored.iter())
-        .chain(requirements_schema.deprecated.iter())
+        .chain(requirements_schema.requirements.skipped.iter())
+        .chain(requirements_schema.requirements.unverified.iter())
+        .chain(requirements_schema.requirements.verified.iter())
+        .chain(requirements_schema.requirements.ignored.iter())
+        .chain(requirements_schema.requirements.deprecated.iter())
     {
-        let req_path = prepare_requirement_path(&requirements_path, &req.id).await?;
+        let req_path = req.os_path().to_path(&writer.base_path());
+        if let Some(parent_path) = req_path.parent() {
+            tokio::fs::create_dir_all(parent_path).await?;
+        }
 
         let requirement_schema =
             generate_requirement_schema(transaction, &product, &req.id).await?;
@@ -227,56 +221,29 @@ async fn create_requirements_structure<'db, 'templates>(
     Ok(requirements_summary)
 }
 
-async fn prepare_requirement_path(base_path: &Path, id: &ReqId) -> Result<PathBuf, anyhow::Error> {
-    if id.contains('.') {
-        let mut req_path = base_path.to_path_buf();
-        let id_parts: Vec<_> = id.split('.').collect();
-
-        let mut parent_parts = id_parts.clone();
-        parent_parts.truncate(id_parts.len() - 1);
-
-        for part in parent_parts {
-            req_path = req_path.join(urlencoding::encode(&part).to_string());
-
-            if !tokio::fs::try_exists(&req_path).await.unwrap_or(false) {
-                tokio::fs::create_dir(&req_path).await?;
-            }
-        }
-
-        req_path = req_path.join(
-            urlencoding::encode(
-                &id_parts
-                    .last()
-                    .expect("Checked that ID contains '.', so at least one ID part exists"),
-            )
-            .to_string(),
-        );
-
-        Ok(req_path)
-    } else {
-        Ok(base_path.join(urlencoding::encode(id).to_string()))
-    }
-}
-
 async fn create_reviews_structure<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
 ) -> Result<ReviewsSummary, anyhow::Error> {
-    let reviews_path = out_dir.join("reviews");
+    let reviews_path = product
+        .id
+        .os_path()
+        .join(REVIEWS_FOLDER_NAME)
+        .to_path(writer.base_path());
 
     tokio::fs::create_dir(&reviews_path).await?;
 
     let reviews_schema = generate_reviews_schema(transaction, &product).await?;
-    let reviews_summary = reviews_schema.summary;
+    let reviews_summary = reviews_schema.reviews.summary;
 
     for review in reviews_schema
+        .reviews
         .valid
         .iter()
-        .chain(reviews_schema.obsolete.iter())
+        .chain(reviews_schema.reviews.obsolete.iter())
     {
-        let review_path = reviews_path.join(review.url_path_part());
+        let review_path = review.os_path().to_path(&writer.base_path());
 
         let review_schema = generate_review_schema(transaction, &product, review).await?;
         writer
@@ -301,11 +268,14 @@ async fn create_reviews_structure<'db, 'templates>(
 
 async fn create_tests_structure<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
 ) -> Result<TestsSummary, anyhow::Error> {
-    let test_runs_path = out_dir.join("test-runs");
+    let test_runs_path = product
+        .id
+        .os_path()
+        .join(TEST_RUNS_FOLDER_NAME)
+        .to_path(writer.base_path());
 
     tokio::fs::create_dir(&test_runs_path).await?;
 
@@ -321,27 +291,20 @@ async fn create_tests_structure<'db, 'templates>(
         .chain(test_runs.obsolete.iter())
         .chain(test_runs.passed.iter())
     {
-        let test_run_path = test_runs_path.join(test_run.url_path_part());
+        let test_run_path = test_run.os_path().to_path(writer.base_path());
 
         let test_run_schema = generate_test_run_schema(transaction, &product, test_run).await?;
 
         if let Some(test_cases) = &test_run_schema.test_cases {
-            create_test_cases_structure(
-                transaction,
-                &test_run_path,
-                writer,
-                &product,
-                test_run,
-                test_cases,
-            )
-            .await?;
+            create_test_cases_structure(transaction, writer, &product, test_run, test_cases)
+                .await?;
         }
 
         writer
             .write_file(
                 &test_run_path,
                 test_run_schema,
-                super::templates::TemplateName::Review,
+                super::templates::TemplateName::TestRun,
             )
             .await?;
     }
@@ -350,7 +313,7 @@ async fn create_tests_structure<'db, 'templates>(
         .write_file(
             &test_runs_path,
             test_runs_schema,
-            super::templates::TemplateName::Reviews,
+            super::templates::TemplateName::TestRuns,
         )
         .await?;
 
@@ -359,14 +322,11 @@ async fn create_tests_structure<'db, 'templates>(
 
 async fn create_test_cases_structure<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
     writer: &ReportWriter<'templates>,
     product: &ProductReportSchema,
     test_run: &TestRunReference,
     test_cases: &TestCasesOverview,
 ) -> Result<(), anyhow::Error> {
-    tokio::fs::create_dir(&out_dir).await?;
-
     for test_case in test_cases
         .failed
         .iter()
@@ -375,7 +335,10 @@ async fn create_test_cases_structure<'db, 'templates>(
         .chain(test_cases.obsolete.iter())
         .chain(test_cases.passed.iter())
     {
-        let test_case_path = prepare_test_case_path(out_dir, &test_case.test_case_name).await?;
+        let test_case_path = test_case.os_path().to_path(writer.base_path());
+        if let Some(parent_path) = test_case_path.parent() {
+            tokio::fs::create_dir_all(parent_path).await?;
+        }
 
         let test_case_schema =
             generate_test_case_schema(transaction, &product, test_run, test_case).await?;
@@ -390,39 +353,4 @@ async fn create_test_cases_structure<'db, 'templates>(
     }
 
     Ok(())
-}
-
-async fn prepare_test_case_path(
-    base_path: &Path,
-    test_case_name: &str,
-) -> Result<PathBuf, anyhow::Error> {
-    if test_case_name.contains("::") {
-        let mut test_case_path = base_path.to_path_buf();
-        let test_case_parts: Vec<_> = test_case_name.split("::").collect();
-
-        let mut parent_parts = test_case_parts.clone();
-        parent_parts.truncate(test_case_parts.len() - 1);
-
-        for part in parent_parts {
-            test_case_path = test_case_path.join(urlencoding::encode(&part).to_string());
-
-            if !tokio::fs::try_exists(&test_case_path)
-                .await
-                .unwrap_or(false)
-            {
-                tokio::fs::create_dir(&test_case_path).await?;
-            }
-        }
-
-        test_case_path = test_case_path.join(
-            urlencoding::encode(&test_case_parts.last().expect(
-                "Checked that test case name contains '::', so at least one name part exists",
-            ))
-            .to_string(),
-        );
-
-        Ok(test_case_path)
-    } else {
-        Ok(base_path.join(urlencoding::encode(test_case_name).to_string()))
-    }
 }

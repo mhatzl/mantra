@@ -1,4 +1,9 @@
-use mantra_schema::annotations::{Trace, TraceKind};
+use std::str::FromStr;
+
+use mantra_schema::{
+    annotations::{Trace, TraceKind},
+    requirements::ReqId,
+};
 
 use crate::collect::plain_text::PlainTextCollector;
 
@@ -8,7 +13,7 @@ macro_rules! mock_trace {
     };
     (offset: $line:literal, kind: $kind:expr, $($id:literal),+) => {
         Trace {
-            ids: vec![$($id.to_string()),+],
+            ids: vec![$(ReqId::from_str($id).unwrap()),+],
             line: $line,
             related_code: None,
             kind: $kind,
@@ -20,7 +25,7 @@ macro_rules! mock_trace {
 #[test]
 fn satisfies_mock_trace() {
     let exp = Trace {
-        ids: vec!["req.id".to_string()],
+        ids: vec![ReqId::from_str("req.id").unwrap()],
         line: 1,
         related_code: None,
         kind: TraceKind::Satisfies,
@@ -35,8 +40,8 @@ fn satisfies_mock_trace() {
 fn verifies_mock_trace_mult_ids() {
     let exp = Trace {
         ids: vec![
-            "req.id".to_string(),
-            "annotations.trace.mult-reqs".to_string(),
+            ReqId::from_str("req.id").unwrap(),
+            ReqId::from_str("annotations.trace.mult-reqs").unwrap(),
         ],
         line: 1,
         related_code: None,
@@ -52,7 +57,7 @@ fn verifies_mock_trace_mult_ids() {
 #[test]
 fn clarifies_mock_trace_with_offset() {
     let exp = Trace {
-        ids: vec!["req.id".to_string()],
+        ids: vec![ReqId::from_str("req.id").unwrap()],
         line: 10,
         related_code: None,
         kind: TraceKind::Clarifies,

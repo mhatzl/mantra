@@ -3,7 +3,7 @@ use mantra_schema::{
     report::{
         product::ProductReportSchema,
         requirement::RequirementReference,
-        requirements::{RequirementsReportSchema, RequirementsSummary},
+        requirements::{RequirementsOverview, RequirementsReportSchema, RequirementsSummary},
     },
 };
 
@@ -124,9 +124,8 @@ pub async fn generate_requirements_schema<'db>(
 
     for req in requirements {
         let reference = RequirementReference {
-            url_part: req.id.replace('.', "/"),
-            product_id: req.product_id,
-            id: req.id,
+            product_id: product.id.clone(),
+            id: req.id.try_into()?,
             state: req.state.try_into()?,
             optional: req.optional,
         };
@@ -163,12 +162,14 @@ pub async fn generate_requirements_schema<'db>(
     Ok(RequirementsReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
-        summary,
-        failed,
-        skipped,
-        unverified,
-        verified,
-        ignored,
-        deprecated,
+        requirements: RequirementsOverview {
+            summary,
+            failed,
+            skipped,
+            unverified,
+            verified,
+            ignored,
+            deprecated,
+        },
     })
 }

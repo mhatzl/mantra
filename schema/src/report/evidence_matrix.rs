@@ -1,4 +1,5 @@
 use crate::{
+    product::ProductId,
     report::{
         product::ProductMetadata,
         requirement::{RequirementReference, RequirementState},
@@ -22,6 +23,7 @@ pub struct EvidenceMatrixSchema {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct RequirementEvidence {
+    pub product_id: ProductId,
     pub id: ReqId,
     pub title: String,
     pub state: RequirementState,

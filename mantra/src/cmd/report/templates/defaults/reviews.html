@@ -17,24 +17,23 @@
             >.
         </p>
 
-        <h1>Children</h1>
+        <h1>Obsolete Reviews</h1>
         <ul>
-            {% for child in schema.children %}
+            {% for review in schema.reviews.obsolete %}
             <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(child) }}.html"
-                    >{{ child.id }}</a
+                <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+                    >{{ review.name }}</a
                 >
             </li>
             {% endfor %}
         </ul>
-        <h1>Parents</h1>
+
+        <h1>Valid Reviews</h1>
         <ul>
-            {% for parent in schema.parents %}
+            {% for review in schema.reviews.valid %}
             <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(parent) }}.html"
-                    >{{ parent.id }}</a
+                <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+                    >{{ review.name }}</a
                 >
             </li>
             {% endfor %}

@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 
-use mantra_schema::{Origin, Properties, path::RelativePathBuf, product::Product};
+use mantra_schema::{
+    Origin, Properties,
+    path::RelativePathBuf,
+    product::{Product, ProductId},
+};
 
 pub struct CollectConfig {
     /// Path to the mantra config file that is used to collect the data.
@@ -23,7 +27,7 @@ pub struct CollectArguments {
     pub replace_hashed: bool,
     /// Mantra will only collect data for this product ID.
     #[arg(long)]
-    pub product_id: Option<String>,
+    pub product_id: Option<ProductId>,
     /// Mantra will set the given value as baseline for the product identified by the product ID.
     #[arg(long, requires = "product_id")]
     pub product_base: Option<String>,

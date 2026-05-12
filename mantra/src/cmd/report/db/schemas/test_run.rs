@@ -15,6 +15,7 @@ use mantra_schema::{
             TestsSummary,
         },
     },
+    requirements::ReqId,
 };
 
 use crate::db::MantraTransaction;
@@ -320,11 +321,11 @@ async fn test_run_related_requirements<'db>(
         return Ok(None);
     }
 
-    let mut traced_reqs: HashMap<String, Vec<TraceReference>> = HashMap::new();
+    let mut traced_reqs: HashMap<ReqId, Vec<TraceReference>> = HashMap::new();
 
     for trace in req_traces {
         traced_reqs
-            .entry(trace.req_id)
+            .entry(trace.req_id.try_into()?)
             .or_default()
             .push(TraceReference {
                 filepath: RelativePathBuf::from(trace.filepath),

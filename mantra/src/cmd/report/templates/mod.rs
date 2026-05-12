@@ -1,5 +1,12 @@
 use anyhow::bail;
-use minijinja::Environment;
+use mantra_schema::{
+    product::ProductId,
+    report::{
+        requirement::RequirementReference, review::ReviewReference, test_case::TestCaseReference,
+        test_run::TestRunReference,
+    },
+};
+use minijinja::{Environment, value::ViaDeserialize};
 
 use crate::cmd::report::cfg::ReportFormat;
 
@@ -12,25 +19,55 @@ impl<'templates> MantraTemplates<'templates> {
         let mut environment = Environment::new();
 
         environment.add_template(
-            TemplateName::EVIDENCE_MATRIX_HTML,
+            TemplateName::EvidenceMatrix.template_name_for_format(&ReportFormat::Html),
             include_str!("defaults/evidence_matrix.html"),
         )?;
         environment.add_template(
-            TemplateName::PRODUCT_HTML,
+            TemplateName::Nav.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/nav.html"),
+        )?;
+        environment.add_template(
+            TemplateName::Product.template_name_for_format(&ReportFormat::Html),
             include_str!("defaults/product.html"),
         )?;
         environment.add_template(
-            TemplateName::PRODUCTS_HTML,
+            TemplateName::Products.template_name_for_format(&ReportFormat::Html),
             include_str!("defaults/products.html"),
         )?;
         environment.add_template(
-            TemplateName::REQUIREMENT_HTML,
+            TemplateName::Requirement.template_name_for_format(&ReportFormat::Html),
             include_str!("defaults/requirement.html"),
         )?;
         environment.add_template(
-            TemplateName::REQUIREMENTS_HTML,
+            TemplateName::Requirements.template_name_for_format(&ReportFormat::Html),
             include_str!("defaults/requirements.html"),
         )?;
+        environment.add_template(
+            TemplateName::Review.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/review.html"),
+        )?;
+        environment.add_template(
+            TemplateName::Reviews.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/reviews.html"),
+        )?;
+        environment.add_template(
+            TemplateName::TestCase.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/test_case.html"),
+        )?;
+        environment.add_template(
+            TemplateName::TestRun.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/test_run.html"),
+        )?;
+        environment.add_template(
+            TemplateName::TestRuns.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/test_runs.html"),
+        )?;
+
+        environment.add_function("product_url_path", product_url_path);
+        environment.add_function("requirement_url_path", requirement_url_path);
+        environment.add_function("review_url_path", review_url_path);
+        environment.add_function("test_run_url_path", test_run_url_path);
+        environment.add_function("test_case_url_path", test_case_url_path);
 
         Ok(Self { environment })
     }
@@ -71,37 +108,59 @@ pub enum TemplateName {
     TestRuns,
 }
 
-impl std::fmt::Display for TemplateName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl TemplateName {
+    const fn template_name_for_format(&self, format: &ReportFormat) -> &'static str {
+        macro_rules! template_format_concat {
+            ($name:literal, $format:ident) => {
+                match $format {
+                    ReportFormat::Html => concat!($name, "::", "html"),
+                    ReportFormat::Markdown => concat!($name, "::", "md"),
+                    ReportFormat::Json => concat!($name, "::", "json5"),
+                }
+            };
+        }
+
         match self {
-            TemplateName::EvidenceMatrix => write!(f, "evidence-matrix"),
-            TemplateName::Nav => write!(f, "nav"),
-            TemplateName::Product => write!(f, "product"),
-            TemplateName::Products => write!(f, "products"),
-            TemplateName::Requirement => write!(f, "requirement"),
-            TemplateName::Requirements => write!(f, "requirements"),
-            TemplateName::Review => write!(f, "review"),
-            TemplateName::Reviews => write!(f, "reviews"),
-            TemplateName::SourceFile => write!(f, "source-file"),
-            TemplateName::SourceFolder => write!(f, "source-folder"),
-            TemplateName::Sources => write!(f, "sources"),
-            TemplateName::TestCase => write!(f, "test-case"),
-            TemplateName::TestRun => write!(f, "test-run"),
-            TemplateName::TestRuns => write!(f, "test-runs"),
+            TemplateName::EvidenceMatrix => template_format_concat!("evidence-matrix", format),
+            TemplateName::Nav => template_format_concat!("nav", format),
+            TemplateName::Product => template_format_concat!("product", format),
+            TemplateName::Products => template_format_concat!("products", format),
+            TemplateName::Requirement => template_format_concat!("requirement", format),
+            TemplateName::Requirements => template_format_concat!("requirements", format),
+            TemplateName::Review => template_format_concat!("review", format),
+            TemplateName::Reviews => template_format_concat!("reviews", format),
+            TemplateName::SourceFile => template_format_concat!("source-file", format),
+            TemplateName::SourceFolder => template_format_concat!("source-folder", format),
+            TemplateName::Sources => template_format_concat!("sources", format),
+            TemplateName::TestCase => template_format_concat!("test-case", format),
+            TemplateName::TestRun => template_format_concat!("test-run", format),
+            TemplateName::TestRuns => template_format_concat!("test-runs", format),
         }
     }
 }
 
-impl TemplateName {
-    const EVIDENCE_MATRIX_HTML: &str = "evidence-matrix::html";
-    const EVIDENCE_MATRIX_MD: &str = "evidence-matrix::md";
-    const NAV_HTML: &str = "nav::html";
-    const PRODUCT_HTML: &str = "product::html";
-    const PRODUCTS_HTML: &str = "product::html";
-    const REQUIREMENT_HTML: &str = "requirement::html";
-    const REQUIREMENTS_HTML: &str = "requirements::html";
+fn product_url_path(product_id: ViaDeserialize<ProductId>) -> Result<String, minijinja::Error> {
+    Ok(product_id.url_path().into_string())
+}
 
-    fn template_name_for_format(&self, format: &ReportFormat) -> String {
-        format!("{}::{}", self, format)
-    }
+fn requirement_url_path(
+    req: ViaDeserialize<RequirementReference>,
+) -> Result<String, minijinja::Error> {
+    Ok(req.url_path().into_string())
+}
+
+fn review_url_path(review: ViaDeserialize<ReviewReference>) -> Result<String, minijinja::Error> {
+    Ok(review.url_path().into_string())
+}
+
+fn test_run_url_path(
+    test_run: ViaDeserialize<TestRunReference>,
+) -> Result<String, minijinja::Error> {
+    Ok(test_run.url_path().into_string())
+}
+
+fn test_case_url_path(
+    test_case: ViaDeserialize<TestCaseReference>,
+) -> Result<String, minijinja::Error> {
+    Ok(test_case.url_path().into_string())
 }

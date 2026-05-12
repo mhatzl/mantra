@@ -1,6 +1,9 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, path::Path};
 
-use mantra_schema::report::nav::ReportNavigationSchema;
+use mantra_schema::{
+    path::{PathExt, RelativePathBuf},
+    report::nav::ReportNavigationSchema,
+};
 
 use crate::cmd::report::{
     cfg::ReportFormat,
@@ -8,6 +11,7 @@ use crate::cmd::report::{
 };
 
 pub struct ReportWriter<'templates> {
+    base_path: std::path::PathBuf,
     nav: ReportNavigationSchema,
     formats: HashSet<ReportFormat>,
     templates: MantraTemplates<'templates>,
@@ -15,11 +19,13 @@ pub struct ReportWriter<'templates> {
 
 impl<'templates> ReportWriter<'templates> {
     pub fn new(
+        base_path: std::path::PathBuf,
         nav: ReportNavigationSchema,
         formats: HashSet<ReportFormat>,
         templates: MantraTemplates<'templates>,
     ) -> Self {
         Self {
+            base_path,
             nav,
             formats,
             templates,
@@ -32,8 +38,17 @@ impl<'templates> ReportWriter<'templates> {
         schema: T,
         template_name: TemplateName,
     ) -> Result<(), anyhow::Error> {
+        let mut rel_path = self.base_path.relative_to(filepath)?;
+        if let Some(parent) = rel_path.parent() {
+            rel_path = parent.to_relative_path_buf();
+        }
+        if rel_path.as_str() == "" {
+            rel_path = RelativePathBuf::from(".");
+        }
+
         let context = serde_json::json!({
             "nav": self.nav,
+            "path_to_root": rel_path,
             "schema": schema
         });
 
@@ -50,5 +65,9 @@ impl<'templates> ReportWriter<'templates> {
         }
 
         Ok(())
+    }
+
+    pub fn base_path(&self) -> &Path {
+        &self.base_path
     }
 }

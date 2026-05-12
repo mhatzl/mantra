@@ -1,6 +1,6 @@
 use crate::report::{
     product::ProductMetadata, requirement::RequirementReference, review::ReviewReference,
-    sources::SourceReference, test_case::TestCaseReference, test_run::TestRunReference,
+    sources::SourceReference, test_run::TestRunReference,
 };
 
 #[derive(
@@ -13,7 +13,7 @@ pub struct ReportNavigationSchema {
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
     pub products: Vec<ProductNavigation>,
-    pub root_sources: Vec<SourceReference>,
+    pub root_sources: Vec<SourceNavigation>,
 }
 
 #[derive(
@@ -23,7 +23,7 @@ pub struct ReportNavigationSchema {
 pub struct ProductNavigation {
     pub product: ProductMetadata,
     pub root_requirements: Vec<RequirementReference>,
-    pub root_test_runs: Vec<TestRunNavigation>,
+    pub root_test_runs: Vec<TestRunReference>,
     pub reviews: Vec<ReviewReference>,
 }
 
@@ -31,11 +31,8 @@ pub struct ProductNavigation {
     Debug, Clone, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub struct TestRunNavigation {
-    pub name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
-    pub test_runs: Vec<TestRunReference>,
-    pub test_cases: Vec<TestCaseReference>,
+pub struct SourceNavigation {
+    pub source: SourceReference,
+    pub folder: Option<Vec<SourceNavigation>>,
+    pub files: Option<Vec<SourceReference>>,
 }

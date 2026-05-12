@@ -156,7 +156,10 @@ pub async fn generate_review_schema<'db>(
     .await?
     .into_iter()
     .map(|r| VerifiedRequirement {
-        id: r.req_id,
+        id: r
+            .req_id
+            .try_into()
+            .expect("Valid requirement ID in database"),
         comment: r.content,
     })
     .collect();

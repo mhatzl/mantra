@@ -67,7 +67,7 @@ pub async fn generate_evidence_matrix_schema<'db>(
 }
 
 struct RequirementDbMetadata {
-    id: ReqId,
+    id: String,
     title: String,
     state: i64,
     optional: bool,
@@ -79,11 +79,13 @@ async fn evidence_per_requirement<'db>(
     product_id: &ProductId,
     req: RequirementDbMetadata,
 ) -> Result<RequirementEvidence, anyhow::Error> {
-    let children = requirement_child_references(transaction, product_id, &req.id).await?;
-    let parents = requirement_parent_references(transaction, product_id, &req.id).await?;
+    let req_id = ReqId::new(req.id)?;
 
-    let covering_test_runs = covering_test_runs(transaction, product_id, &req.id).await?;
-    let covering_test_cases = covering_test_cases(transaction, product_id, &req.id).await?;
+    let children = requirement_child_references(transaction, product_id, &req_id).await?;
+    let parents = requirement_parent_references(transaction, product_id, &req_id).await?;
+
+    let covering_test_runs = covering_test_runs(transaction, product_id, &req_id).await?;
+    let covering_test_cases = covering_test_cases(transaction, product_id, &req_id).await?;
 
     let reviewed_in: Vec<ReviewReference> = sqlx::query!(
         "
@@ -92,13 +94,13 @@ async fn evidence_per_requirement<'db>(
         where product_id = $1 and req_id = $2
         ",
         product_id,
-        req.id
+        req_id
     )
     .fetch_all(transaction.as_mut())
     .await?
     .into_iter()
     .map(|r| ReviewReference {
-        product_id: r.product_id,
+        product_id: product_id.clone(),
         name: r.review_name,
         utc_date: mantra_schema::reviews::date_from_str(&r.review_date)
             .expect("Valid review date in database"),
@@ -131,7 +133,8 @@ async fn evidence_per_requirement<'db>(
     };
 
     Ok(RequirementEvidence {
-        id: req.id,
+        product_id: product_id.clone(),
+        id: req_id,
         title: req.title,
         state: req.state.try_into()?,
         optional: req.optional,

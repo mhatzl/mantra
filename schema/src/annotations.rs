@@ -122,7 +122,11 @@ impl std::fmt::Display for Trace {
         write!(
             f,
             "Traces req({}) at line '{}'.",
-            self.ids.join(","),
+            self.ids
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
             self.line
         )?;
 

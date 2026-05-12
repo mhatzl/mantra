@@ -102,7 +102,7 @@ pub async fn generate_requirement_schema<'db>(
     .await?
     .into_iter()
     .map(|r| RequirementReviewReference {
-        product_id: r.product_id,
+        product_id: product.id.clone(),
         name: r.review_name,
         utc_date: mantra_schema::reviews::date_from_str(&r.review_date)
             .expect("Valid review date in database"),
@@ -137,7 +137,7 @@ pub async fn generate_requirement_schema<'db>(
         covered_by,
         reviewed_in,
         product: product.metadata(),
-        id: req.id,
+        id: req_id.clone(),
         title: req.title,
         description: req.description,
         base_origin: req.base_origin.and_then(|o| serde_json::from_str(&o).ok()),
@@ -182,9 +182,8 @@ pub(super) async fn requirement_child_references<'db>(
     let mut children = Vec::with_capacity(child_records.len());
     for child in child_records {
         children.push(RequirementReference {
-            url_part: child.id.replace('.', "/"),
-            id: child.id,
-            product_id: child.product_id,
+            id: child.id.try_into()?,
+            product_id: child.product_id.try_into()?,
             state: child.state.try_into()?,
             optional: child.optional,
         })
@@ -225,9 +224,8 @@ pub(super) async fn requirement_parent_references<'db>(
     let mut parents = Vec::with_capacity(parent_records.len());
     for parent in parent_records {
         parents.push(RequirementReference {
-            url_part: parent.id.replace('.', "/"),
-            id: parent.id,
-            product_id: parent.product_id,
+            id: parent.id.try_into()?,
+            product_id: parent.product_id.try_into()?,
             state: parent.state.try_into()?,
             optional: parent.optional,
         })
@@ -265,7 +263,7 @@ pub(super) async fn covering_test_runs<'db>(
     .await?
     .into_iter()
     .map(|tr| TestRunReference {
-        product_id: tr.product_id,
+        product_id: product_id.clone(),
         name: tr.test_run_name,
         utc_date: mantra_schema::test_runs::test_date_from_str(&tr.test_run_date)
             .expect("Valid test date in database"),
@@ -322,7 +320,7 @@ pub(super) async fn covering_test_cases<'db>(
     .await?
     .into_iter()
     .map(|tc| TestCaseReference {
-        product_id: tc.product_id,
+        product_id: product_id.clone(),
         test_run_name: tc.test_run_name,
         test_run_date: mantra_schema::test_runs::test_date_from_str(&tc.test_run_date)
             .expect("Valid test date in database"),

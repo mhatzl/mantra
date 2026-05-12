@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anyhow::bail;
 use mantra_schema::{
     FmtHash, Properties,
@@ -58,7 +60,7 @@ impl<'db> Collection<'db> {
             // TODO: log missing dot-parent
             // Only allow parent to be collected in the same (latest) collection.
             if let Some(parent_id) = self
-                .get_dot_parent(&product_id, collect_nr, &record.id)
+                .get_dot_parent(&product_id, collect_nr, &ReqId::from_str(&record.id)?)
                 .await
             {
                 sqlx::query!(
@@ -407,11 +409,11 @@ impl<'db> Collection<'db> {
         let mut req_id = req_id.as_str();
         while let Some((parent, _)) = req_id.rsplit_once('.') {
             let parent_exists = self
-                .req_exists(product_id, collect_nr, &parent.to_string())
+                .req_exists(product_id, collect_nr, &ReqId::from_str(parent).ok()?)
                 .await;
 
             if parent_exists {
-                return Some(parent.to_string());
+                return ReqId::from_str(parent).ok();
             } else {
                 req_id = parent;
             }

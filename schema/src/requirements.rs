@@ -1,4 +1,4 @@
-use crate::{Origin, Properties, product::ProductId};
+use crate::{IdentError, Origin, Properties, product::ProductId};
 
 /// Defines the schema to exchange requirements related information.
 /// [req("exchange.requirements.schema")]
@@ -22,9 +22,58 @@ pub struct RequirementSchema {
     pub origin: Option<Origin>,
 }
 
-/// Type alias for a requirement ID.
+/// Type for a requirement ID.
 /// [req("req.id")]
-pub type ReqId = String;
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+    sqlx::Type,
+)]
+#[serde(transparent)]
+#[sqlx(transparent)]
+pub struct ReqId(String);
+
+impl ReqId {
+    pub fn new(id: String) -> Result<Self, IdentError> {
+        Ok(Self(id))
+    }
+}
+
+impl std::ops::Deref for ReqId {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::str::FromStr for ReqId {
+    type Err = IdentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ReqId::new(s.to_owned())
+    }
+}
+
+impl TryFrom<String> for ReqId {
+    type Error = IdentError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        ReqId::new(value)
+    }
+}
+
+impl std::fmt::Display for ReqId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// This struct defines the information *mantra* stores about a requirement.
 /// [req("req")]
