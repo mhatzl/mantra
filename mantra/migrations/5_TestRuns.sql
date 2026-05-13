@@ -308,8 +308,7 @@ create table TestCaseLocations (
         product_id,
         test_run_name,
         test_run_date,
-        test_case_name,
-        filepath
+        test_case_name
     ),
     foreign key (
         product_id,

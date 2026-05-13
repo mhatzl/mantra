@@ -1,8 +1,11 @@
+use std::str::FromStr;
+
 use mantra_schema::{
     FmtHash, SCHEMA_VERSION,
+    annotations::TraceKind,
     product::ProductId,
     report::{
-        annotations::TraceReference,
+        annotations::{TraceReference, TracesSummary},
         product::ProductReportSchema,
         requirement::{
             RequirementCoverageByTestCases, RequirementCoverageByTestRuns,
@@ -74,6 +77,33 @@ pub async fn generate_requirement_schema<'db>(
     .fetch_one(transaction.as_mut())
     .await?;
 
+    let mut properties = serde_json::Map::new();
+
+    for property in sqlx::query!(
+        r#"
+            select rp.property_key, gj.content
+            from RequirementProperties rp, GeneralJson gj
+            where rp.product_id = $1 and rp.req_id = $2
+            and gj.hash = rp.value_hash
+        "#,
+        product.id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?
+    {
+        properties.insert(
+            property.property_key,
+            serde_json::Value::from_str(&property.content)?,
+        );
+    }
+
+    let properties = if properties.is_empty() {
+        None
+    } else {
+        Some(properties)
+    };
+
     let children = requirement_child_references(transaction, &product.id, req_id).await?;
     let children = if children.is_empty() {
         None
@@ -128,12 +158,14 @@ pub async fn generate_requirement_schema<'db>(
         })
     };
 
+    let traces = requirement_traces(transaction, &product.id, req_id).await?;
+
     Ok(RequirementReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         state: req.state.try_into()?,
         parents,
         children,
-        traces: None, //TODO
+        traces,
         covered_by,
         reviewed_in,
         product: product.metadata(),
@@ -146,7 +178,7 @@ pub async fn generate_requirement_schema<'db>(
         deprecated: req.deprecated,
         ignored: req.ignored,
         optional: req.optional,
-        properties: None, //TODO
+        properties,
     })
 }
 
@@ -460,6 +492,53 @@ async fn requirement_traces<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
-) -> Result<RequirementTracesOverview, anyhow::Error> {
-    todo!()
+) -> Result<Option<RequirementTracesOverview>, anyhow::Error> {
+    let trace_records = sqlx::query!(
+        "
+        select dt.filepath, dt.file_hash, dt.line, t.kind
+        from DirectProductReqTraces dt, Traces t
+        where dt.product_id = $1 and dt.req_id = $2
+        and dt.file_hash = t.file_hash
+        and dt.line = t.line
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if trace_records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut traces = Vec::with_capacity(trace_records.len());
+    let mut traces_summary = TracesSummary {
+        total: trace_records.len() as i64,
+        ..Default::default()
+    };
+
+    for trace in trace_records {
+        let kind = TraceKind::try_from(trace.kind)?;
+
+        match kind {
+            TraceKind::Clarifies => traces_summary.clarifies.cnt += 1,
+            TraceKind::Satisfies => traces_summary.satisfies.cnt += 1,
+            TraceKind::Verifies => traces_summary.verifies.cnt += 1,
+            TraceKind::Links => traces_summary.links.cnt += 1,
+        }
+
+        traces.push(TraceReference {
+            filepath: trace.filepath.into(),
+            file_hash: FmtHash::with_inner(trace.file_hash),
+            line: trace.line,
+            kind,
+        })
+    }
+
+    traces_summary.update_percentages();
+
+    Ok(Some(RequirementTracesOverview {
+        summary: traces_summary,
+        all: traces,
+    }))
 }

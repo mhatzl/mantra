@@ -308,6 +308,20 @@ impl LogSource {
     }
 }
 
+impl TryFrom<i64> for LogSource {
+    type Error = ConversionError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        if value == LogSource::Stdout.as_nr() as i64 {
+            Ok(LogSource::Stdout)
+        } else if value == LogSource::Stderr.as_nr() as i64 {
+            Ok(LogSource::Stderr)
+        } else {
+            Err(ConversionError::UnknownState)
+        }
+    }
+}
+
 pub mod duration_as_saturating_seconds_f64 {
     use serde::de::Visitor;
     use time::Duration;

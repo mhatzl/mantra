@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        select rp.property_key, v.content\n        from TestRunProperties rp left join GeneralJson v on rp.value_hash = v.hash\n        where rp.product_id = $1 and rp.test_run_name = $2\n        and rp.test_run_date = $3\n        ",
+  "query": "\n        select rp.property_key, v.content\n        from TestRunProperties rp, GeneralJson v\n        where rp.product_id = $1 and rp.test_run_name = $2\n        and rp.test_run_date = $3\n        and rp.value_hash = v.hash\n        ",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "fcc6011d452324fa53a11564f14c8121ec6de6452e6185c83ebe0a3dc17d4126"
+  "hash": "d4339e8c5301f7658dd61c1afe94df8a3b64223c23b7e2ff9d76a7fd2f31b94b"
 }

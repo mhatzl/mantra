@@ -16,6 +16,7 @@ use mantra_schema::{
         },
     },
     requirements::ReqId,
+    test_runs::LogOutput,
 };
 
 use crate::db::MantraTransaction;
@@ -108,12 +109,43 @@ pub async fn generate_test_run_schema<'db>(
         Some(revisions)
     };
 
+    let log_records = sqlx::query!(
+        "
+        select tl.log_src, gt.content
+        from TestRunLogs tl, GeneralTexts gt
+        where tl.product_id = $1 and tl.test_run_name = $2
+        and tl.test_run_date = $3
+        and tl.log_hash = gt.hash
+        ",
+        product.id,
+        test_run.name,
+        test_run.utc_date
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    let logs = if log_records.is_empty() {
+        None
+    } else {
+        let mut logs = Vec::with_capacity(log_records.len());
+
+        for log in log_records {
+            logs.push(LogOutput {
+                source: log.log_src.try_into()?,
+                content: log.content,
+            });
+        }
+
+        Some(logs)
+    };
+
     let property_records = sqlx::query!(
         "
         select rp.property_key, v.content
-        from TestRunProperties rp left join GeneralJson v on rp.value_hash = v.hash
+        from TestRunProperties rp, GeneralJson v
         where rp.product_id = $1 and rp.test_run_name = $2
         and rp.test_run_date = $3
+        and rp.value_hash = v.hash
         ",
         product.id,
         test_run.name,
@@ -286,7 +318,7 @@ pub async fn generate_test_run_schema<'db>(
         nr_of_test_cases: metadata.nr_of_test_cases,
         properties,
         duration_sec,
-        logs: None, // TODO
+        logs,
         test_cases,
         child_test_runs,
         parent_test_runs,

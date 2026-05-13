@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select dt.filepath, dt.file_hash, dt.line, t.kind\n        from DirectProductReqTraces dt, Traces t\n        where dt.product_id = $1 and dt.req_id = $2\n        and dt.file_hash = t.file_hash\n        and dt.line = t.line\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_hash",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "line",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "kind",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6267653d36c995c421252c7a4e1678f08db833dfbc31b41d7b46d0c727b45286"
+}

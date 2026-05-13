@@ -921,11 +921,11 @@ impl<'db> Collection<'db> {
                             product_id,
                             test_run_name,
                             test_run_date,
-                            test_case_name,
-                            filepath
+                            test_case_name
                         )
                         do update set
                             last_collect_nr = excluded.last_collect_nr,
+                            filepath = excluded.filepath,
                             file_hash = excluded.file_hash,
                             line = excluded.line
                         ",
