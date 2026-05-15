@@ -1,0 +1,71 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>{{ schema.name }}</h1>
+<h2>Metadata</h2>
+<ul>
+    <li>
+        <strong>State:</strong>
+        <span class="state-{{ schema.state }}">{{ schema.state }}</span>
+    </li>
+    <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
+    <li>
+        <strong>Test Run:</strong>
+        <a
+            href="{{ path_to_root }}/{{ test_run_url_path(schema.test_run) }}.html"
+            >{{ schema.test_run.name }}</a
+        >
+    </li>
+</ul>
+
+<h2>Related Requirements</h2>
+{% if schema.related_reqs %}
+<ul>
+    {% for req in schema.related_reqs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req.req) }}.html"
+            >{{ req.req.id }}</a
+        >
+        {% if req.kind.traced %} Covered by Traces
+        <ul>
+            {% for trace in req.kind.traced %}
+            <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+            {% endfor %}
+        </ul>
+        {% else %} Directly Verified {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %} No related requirements found. {% endif %}
+
+<h2>Coverage</h2>
+{% if schema.coverage %}
+<h3>Summary</h3>
+<h4>Lines</h4>
+<ul>
+    <li><strong>Total:</strong> {{ schema.coverage.summary.lines.total }}</li>
+    <li>
+        <strong>Covered:</strong> {{ schema.coverage.summary.lines.covered.cnt
+        }} ({{ schema.coverage.summary.lines.covered.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Excluded:</strong> {{ schema.coverage.summary.lines.excluded.cnt
+        }} ({{ schema.coverage.summary.lines.excluded.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Overridden Covered:</strong> {{
+        schema.coverage.summary.lines.overridden_covered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_covered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Overridden Uncovered:</strong> {{
+        schema.coverage.summary.lines.overridden_uncovered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_uncovered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Uncovered:</strong> {{
+        schema.coverage.summary.lines.uncovered.cnt }} ({{
+        schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
+    </li>
+</ul>
+{% else %} No coverage data available. {% endif %} {% endblock %}

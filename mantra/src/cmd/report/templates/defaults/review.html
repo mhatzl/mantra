@@ -1,20 +1,29 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Mantra Report</title>
-    </head>
-    <body>
-        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
+{% extends "base-layout.html" %} {% block content %}
+<h1>{{ schema.name }} ({{ schema.utc_date }})</h1>
+<h2>Metadata</h2>
+<ul>
+    <li>
+        <strong>State:</strong>
+        <span class="state-{{ schema.state }}">{{ schema.state }}</span>
+    </li>
+    <li>
+        <strong>Authors:</strong> {% for author in schema.authors %}{{ author
+        }},{% endfor %}
+    </li>
+</ul>
 
-        <p>Back to <a href="{{ path_to_root }}/index.html">products</a>.</p>
-        <p>
-            Back to
-            <a
-                href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html"
-                >product</a
-            >.
-        </p>
-    </body>
-</html>
+<h2>Verified Requirements</h2>
+{% if schema.requirements %}
+<ul>
+    {% for rv in schema.requirements %}
+    <li>
+        <strong>Requirement:</strong>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(rv.req) }}.html"
+            >{{ rv.req.id }}</a
+        >
+
+        <p>{{ rv.comment}}</p>
+    </li>
+    {% endfor %}
+</ul>
+{% else %} None. {% endif %} {% endblock %}

@@ -1,8 +1,10 @@
 use relative_path::RelativePathBuf;
 
 use crate::{
-    ConversionError, Origin, Properties, REVIEWS_FOLDER_NAME, Revision, encoding::TargetEncoding,
-    product::ProductId, report::product::ProductMetadata, requirements::ReqId,
+    ConversionError, Origin, Properties, REVIEWS_FOLDER_NAME, Revision,
+    encoding::TargetEncoding,
+    product::ProductId,
+    report::{product::ProductMetadata, requirement::RequirementReference},
     reviews::OverrideTestRun,
 };
 
@@ -50,7 +52,7 @@ pub struct ReviewReportSchema {
 )]
 #[serde(rename_all = "snake_case")]
 pub struct VerifiedRequirement {
-    pub id: ReqId,
+    pub req: RequirementReference,
     pub comment: String,
 }
 

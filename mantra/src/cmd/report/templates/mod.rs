@@ -19,8 +19,16 @@ impl<'templates> MantraTemplates<'templates> {
         let mut environment = Environment::new();
 
         environment.add_template(
+            TemplateName::BaseLayout.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/base-layout.html"),
+        )?;
+        environment.add_template(
+            TemplateName::BaseStyle.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/base-style.html"),
+        )?;
+        environment.add_template(
             TemplateName::EvidenceMatrix.template_name_for_format(&ReportFormat::Html),
-            include_str!("defaults/evidence_matrix.html"),
+            include_str!("defaults/evidence-matrix.html"),
         )?;
         environment.add_template(
             TemplateName::Nav.template_name_for_format(&ReportFormat::Html),
@@ -52,15 +60,15 @@ impl<'templates> MantraTemplates<'templates> {
         )?;
         environment.add_template(
             TemplateName::TestCase.template_name_for_format(&ReportFormat::Html),
-            include_str!("defaults/test_case.html"),
+            include_str!("defaults/test-case.html"),
         )?;
         environment.add_template(
             TemplateName::TestRun.template_name_for_format(&ReportFormat::Html),
-            include_str!("defaults/test_run.html"),
+            include_str!("defaults/test-run.html"),
         )?;
         environment.add_template(
             TemplateName::TestRuns.template_name_for_format(&ReportFormat::Html),
-            include_str!("defaults/test_runs.html"),
+            include_str!("defaults/test-runs.html"),
         )?;
 
         environment.add_function("product_url_path", product_url_path);
@@ -92,6 +100,8 @@ impl<'templates> MantraTemplates<'templates> {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TemplateName {
+    BaseLayout,
+    BaseStyle,
     EvidenceMatrix,
     Nav,
     Product,
@@ -113,14 +123,16 @@ impl TemplateName {
         macro_rules! template_format_concat {
             ($name:literal, $format:ident) => {
                 match $format {
-                    ReportFormat::Html => concat!($name, "::", "html"),
-                    ReportFormat::Markdown => concat!($name, "::", "md"),
-                    ReportFormat::Json => concat!($name, "::", "json5"),
+                    ReportFormat::Html => concat!($name, ".", "html"),
+                    ReportFormat::Markdown => concat!($name, ".", "md"),
+                    ReportFormat::Json => concat!($name, ".", "json5"),
                 }
             };
         }
 
         match self {
+            TemplateName::BaseLayout => template_format_concat!("base-layout", format),
+            TemplateName::BaseStyle => template_format_concat!("base-style", format),
             TemplateName::EvidenceMatrix => template_format_concat!("evidence-matrix", format),
             TemplateName::Nav => template_format_concat!("nav", format),
             TemplateName::Product => template_format_concat!("product", format),

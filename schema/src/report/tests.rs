@@ -2,12 +2,10 @@ use relative_path::RelativePathBuf;
 
 use crate::{
     ConversionError, FmtHash,
-    product::ProductId,
     report::{
-        Aggregated, annotations::TraceReference, test_case::TestCaseReference,
-        test_run::TestRunReference,
+        Aggregated, annotations::TraceReference, requirement::RequirementReference,
+        test_case::TestCaseReference, test_run::TestRunReference,
     },
-    requirements::ReqId,
 };
 
 #[derive(
@@ -173,8 +171,7 @@ impl CoverageSummary {
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 pub struct TestRelatedRequirement {
-    pub product_id: ProductId,
-    pub id: ReqId,
+    pub req: RequirementReference,
     pub kind: TestRelatedRequirementKind,
 }
 

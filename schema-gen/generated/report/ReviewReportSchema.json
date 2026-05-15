@@ -280,6 +280,40 @@
         }
       }
     },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "ignored"
+      ]
+    },
     "ReviewState": {
       "type": "string",
       "enum": [
@@ -347,14 +381,14 @@
       "type": "object",
       "required": [
         "comment",
-        "id"
+        "req"
       ],
       "properties": {
         "comment": {
           "type": "string"
         },
-        "id": {
-          "type": "string"
+        "req": {
+          "$ref": "#/definitions/RequirementReference"
         }
       }
     }

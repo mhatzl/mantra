@@ -7,6 +7,7 @@ use mantra_schema::{
     report::{
         annotations::TraceReference,
         product::ProductReportSchema,
+        requirement::RequirementReference,
         test_case::{TestCaseReference, TestCaseReportSchema},
         test_run::TestRunReference,
         tests::{
@@ -194,16 +195,37 @@ async fn test_case_related_requirements<'db>(
     test_case: &TestCaseReference,
 ) -> Result<Option<Vec<TestRelatedRequirement>>, anyhow::Error> {
     let req_traces = sqlx::query!(
-        "
-        select distinct dt.req_id, dt.filepath, dt.file_hash, dt.line, t.kind
-        from TraceCoveragePerTestCases tc, DirectProductReqTraces dt, Traces t
+        r#"
+        select distinct
+            dt.req_id,
+            rs.state,
+            case
+                when exists (
+                    select id
+                    from OptionalRequirements o
+                    where o.product_id = $1
+                    and o.id = dt.req_id
+                ) then true
+                else false
+            end as "optional!:bool",
+            dt.filepath,
+            dt.file_hash,
+            dt.line,
+            t.kind
+        from
+            TraceCoveragePerTestCases tc,
+            DirectProductReqTraces dt,
+            Traces t,
+            RequirementVerificationStates rs
         where tc.product_id = $1 and dt.product_id = $1
+        and rs.product_id = $1
         and tc.test_run_name = $2 and tc.test_run_date = $3
         and tc.test_case_name = $4
         and tc.filepath = dt.filepath and tc.file_hash = dt.file_hash
         and tc.traced_line = dt.line and dt.file_hash = t.file_hash
         and dt.line = t.line
-        ",
+        and rs.id = dt.req_id
+        "#,
         product.id,
         test_case.test_run_name,
         test_case.test_run_date,
@@ -212,37 +234,53 @@ async fn test_case_related_requirements<'db>(
     .fetch_all(transaction.as_mut())
     .await?;
 
-    let mut traced_reqs: HashMap<ReqId, Vec<TraceReference>> = HashMap::new();
+    let mut traced_reqs: HashMap<RequirementReference, Vec<TraceReference>> = HashMap::new();
 
-    for trace in req_traces {
+    for req_trace in req_traces {
         traced_reqs
-            .entry(trace.req_id.try_into()?)
+            .entry(RequirementReference {
+                product_id: product.id.clone(),
+                id: req_trace.req_id.try_into()?,
+                state: req_trace.state.try_into()?,
+                optional: req_trace.optional,
+            })
             .or_default()
             .push(TraceReference {
-                filepath: RelativePathBuf::from(trace.filepath),
-                file_hash: FmtHash::with_inner(trace.file_hash),
-                line: trace.line,
-                kind: TraceKind::try_from(trace.kind)?,
+                filepath: RelativePathBuf::from(req_trace.filepath),
+                file_hash: FmtHash::with_inner(req_trace.file_hash),
+                line: req_trace.line,
+                kind: TraceKind::try_from(req_trace.kind)?,
             });
     }
 
     let mut related_reqs: Vec<TestRelatedRequirement> = traced_reqs
         .into_iter()
-        .map(|(req_id, traces)| TestRelatedRequirement {
-            product_id: product.id.clone(),
-            id: req_id,
+        .map(|(req, traces)| TestRelatedRequirement {
+            req: req,
             kind: TestRelatedRequirementKind::Traced(traces),
         })
         .collect();
 
     let directly_verified_reqs = sqlx::query!(
-        "
-        select req_id
-        from TestCaseVerifiedRequirements
-        where product_id = $1
-        and test_run_name = $2 and test_run_date = $3
-        and test_case_name = $4
-        ",
+        r#"
+        select
+            tc.req_id,
+            rs.state,
+            case
+                when exists (
+                    select id
+                    from OptionalRequirements o
+                    where o.product_id = $1
+                    and o.id = tc.req_id
+                ) then true
+                else false
+            end as "optional!:bool"
+        from TestCaseVerifiedRequirements tc, RequirementVerificationStates rs
+        where tc.product_id = $1 and rs.product_id = $1
+        and tc.test_run_name = $2 and tc.test_run_date = $3
+        and tc.test_case_name = $4
+        and tc.req_id = rs.id
+        "#,
         product.id,
         test_case.test_run_name,
         test_case.test_run_date,
@@ -255,8 +293,12 @@ async fn test_case_related_requirements<'db>(
 
     for direct_req in directly_verified_reqs {
         related_reqs.push(TestRelatedRequirement {
-            product_id: product.id.clone(),
-            id: direct_req.req_id.try_into()?,
+            req: RequirementReference {
+                product_id: product.id.clone(),
+                id: direct_req.req_id.try_into()?,
+                state: direct_req.state.try_into()?,
+                optional: direct_req.optional,
+            },
             kind: TestRelatedRequirementKind::Direct,
         })
     }

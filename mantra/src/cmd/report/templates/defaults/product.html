@@ -1,61 +1,191 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Mantra Report</title>
-    </head>
-    <body>
-        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
-
-        <p>Back to <a href="{{ path_to_root }}/index.html">products</a>.</p>
-        <h1>Root Requirements</h1>
+{% extends "base-layout.html" %} {% block content %}
+<h1>Metadata</h1>
+<ul>
+    <li><strong>ID:</strong> {{ schema.id }}</li>
+    <li><strong>Name:</strong> {{ schema.name }}</li>
+    <li>
+        <strong>Base:</strong> {%if schema.base %}{{ schema.base }}{% else %}-{%
+        endif %}
+    </li>
+    <li>
+        <strong>Version:</strong> {%if schema.version %}{{ schema.version }}{%
+        else %}-{% endif %}
+    </li>
+    <li>
+        <strong>Homepage:</strong> {%if schema.homepage %}{{ schema.homepage
+        }}{% else %}-{% endif %}
+    </li>
+    <li>
+        <strong>Repository:</strong> {%if schema.repository %}{{
+        schema.repository }}{% else %}-{% endif %}
+    </li>
+    <li>
+        <strong>License:</strong> {%if schema.license %}{{ schema.license }}{%
+        else %}-{% endif %}
+    </li>
+    <li><strong>Collected at:</strong> {{ schema.last_collected_date }}</li>
+</ul>
+<h1>Summary</h1>
+<ul>
+    <li>
+        <strong>Requirements</strong>
         <ul>
-            {% for req in schema.root_requirements %}
             <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
+                <strong>Total:</strong> {{ schema.summary.requirements.total }}
             </li>
-            {% endfor %}
+            <li>
+                <strong>Deprecated:</strong> {{
+                schema.summary.requirements.deprecated.cnt }} ({{
+                schema.summary.requirements.deprecated.percentage | round(2)
+                }}%)
+            </li>
+            <li>
+                <strong>Ignored:</strong> {{
+                schema.summary.requirements.ignored.cnt }} ({{
+                schema.summary.requirements.ignored.percentage | round(2) }}%)
+            </li>
+            <li>
+                <strong>Verified:</strong> {{
+                schema.summary.requirements.verified.cnt }} ({{
+                schema.summary.requirements.verified.percentage | round(2) }}%)
+            </li>
+            <li>
+                <strong>Failed:</strong> {{
+                schema.summary.requirements.failed.cnt }} ({{
+                schema.summary.requirements.failed.percentage | round(2) }}%)
+            </li>
+            <li>
+                <strong>Skipped:</strong> {{
+                schema.summary.requirements.skipped.cnt }} ({{
+                schema.summary.requirements.skipped.percentage | round(2) }}%)
+            </li>
+            <li>
+                <strong>Unverified:</strong> {{
+                schema.summary.requirements.unverified.cnt }} ({{
+                schema.summary.requirements.unverified.percentage | round(2)
+                }}%)
+            </li>
+            <li>
+                <strong>Mandatory:</strong> {{
+                schema.summary.requirements.mandatory_total.cnt }} ({{
+                schema.summary.requirements.mandatory_total.percentage |
+                round(2) }}%)
+            </li>
+            <li>
+                <strong>Mandatory Verified:</strong> {{
+                schema.summary.requirements.mandatory_verified.cnt }} ({{
+                schema.summary.requirements.mandatory_verified.percentage |
+                round(2) }}%)
+            </li>
+            <li>
+                <strong>Manual:</strong> {{
+                schema.summary.requirements.manuals_total.cnt }} ({{
+                schema.summary.requirements.manuals_total.percentage | round(2)
+                }}%)
+            </li>
+            <li>
+                <strong>Manuals Verified:</strong> {{
+                schema.summary.requirements.manuals_verified.cnt }} ({{
+                schema.summary.requirements.manuals_verified.percentage |
+                round(2) }}%)
+            </li>
         </ul>
-        <p>
-            See
-            <a
-                href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/requirements.html"
-                >all requirements</a
-            >.
-        </p>
-
-        <h1>Root Test Runs</h1>
+    </li>
+    <li>
+        <strong>Test Cases</strong>
         <ul>
-            {% for test_run in schema.root_test_runs %}
             <li>
-                <a
-                    href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
-                    >{{ test_run.utc_date }} {{ test_run.name }}</a
-                >
+                <strong>Total:</strong> {{ schema.summary.test_cases.total }}
             </li>
-            {% endfor %}
+            <li>
+                <strong>Passed:</strong> {{ schema.summary.test_cases.passed.cnt
+                }} ({{ schema.summary.test_cases.passed.percentage | round(2)
+                }}%)
+            </li>
+            <li>
+                <strong>Failed:</strong> {{ schema.summary.test_cases.failed.cnt
+                }} ({{ schema.summary.test_cases.failed.percentage | round(2)
+                }}%)
+            </li>
+            <li>
+                <strong>Skipped:</strong> {{
+                schema.summary.test_cases.skipped.cnt }} ({{
+                schema.summary.test_cases.skipped.percentage | round(2) }}%)
+            </li>
+            <li>
+                <strong>Unknown:</strong> {{
+                schema.summary.test_cases.unknown.cnt }} ({{
+                schema.summary.test_cases.unknown.percentage | round(2) }}%)
+            </li>
+            <li>
+                <strong>Obsolete:</strong> {{
+                schema.summary.test_cases.obsolete.cnt }} ({{
+                schema.summary.test_cases.obsolete.percentage | round(2) }}%)
+            </li>
         </ul>
-        <p>
-            See
-            <a
-                href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/test-runs.html"
-                >all test runs</a
-            >.
-        </p>
-
-        <h1>Reviews</h1>
+    </li>
+    <li>
+        <strong>Reviews</strong>
         <ul>
-            {% for review in schema.reviews %}
+            <li><strong>Total:</strong> {{ schema.summary.reviews.total }}</li>
             <li>
-                <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
-                    >{{ review.utc_date }} {{ review.name }}</a
-                >
+                <strong>Valid:</strong> {{ schema.summary.reviews.valid.cnt }}
+                ({{ schema.summary.reviews.valid.percentage | round(2) }}%)
             </li>
-            {% endfor %}
+            <li>
+                <strong>Obsolete:</strong> {{
+                schema.summary.reviews.obsolete.cnt }} ({{
+                schema.summary.reviews.obsolete.percentage | round(2) }}%)
+            </li>
         </ul>
-    </body>
-</html>
+    </li>
+</ul>
+<h1>Root Requirements</h1>
+<ul>
+    {% for req in schema.root_requirements %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
+<p>
+    See
+    <a
+        href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/requirements.html"
+        >all requirements</a
+    >.
+</p>
+
+<h1>Root Test Runs</h1>
+<ul>
+    {% for test_run in schema.root_test_runs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.utc_date }} {{ test_run.name }}</a
+        >
+    </li>
+    {% endfor %}
+</ul>
+<p>
+    See
+    <a
+        href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/test-runs.html"
+        >all test runs</a
+    >.
+</p>
+
+<h1>Reviews</h1>
+<ul>
+    {% for review in schema.reviews %}
+    <li>
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+            >{{ review.utc_date }} {{ review.name }}</a
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

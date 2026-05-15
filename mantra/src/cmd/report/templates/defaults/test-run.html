@@ -1,0 +1,160 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>{{ schema.name }} ({{ schema.utc_date }})</h1>
+<h2>Metadata</h2>
+<ul>
+    <li>
+        <strong>State:</strong>
+        <span class="state-{{ schema.state }}">{{ schema.state }}</span>
+    </li>
+    <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
+</ul>
+
+<h2>Test Cases</h2>
+{% if schema.test_cases %}
+<h3>Failed</h3>
+<ul>
+    {% for test_case in schema.test_cases.failed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Passed</h3>
+<ul>
+    {% for test_case in schema.test_cases.passed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Skipped</h3>
+<ul>
+    {% for test_case in schema.test_cases.skipped %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Unknown</h3>
+<ul>
+    {% for test_case in schema.test_cases.unknown %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Obsolete</h3>
+<ul>
+    {% for test_case in schema.test_cases.obsolete %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %} - {% endif %}
+<h2>Children Test Runs</h2>
+{% if schema.child_test_runs %}
+<ul>
+    {% for child in schema.child_test_runs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(child) }}.html"
+            >{{ child.utc_date }} {{ child.name }}</a
+        ><span class="state-badge state-{{ child.state }}"
+            >{{ child.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %} - {% endif %}
+<h2>Parent Test Runs</h2>
+{% if schema.parent_test_runs %}
+<ul>
+    {% for parent in schema.parent_test_runs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(parent) }}.html"
+            >{{ parent.utc_date }} {{ parent.name }}</a
+        ><span class="state-badge state-{{ parent.state }}"
+            >{{ parent.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %} - {% endif %}
+
+<h2>Related Requirements</h2>
+{% if schema.related_reqs %}
+<ul>
+    {% for req in schema.related_reqs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req.req) }}.html"
+            >{{ req.req.id }}</a
+        >
+        {% if req.kind.traced %} Covered by Traces
+        <ul>
+            {% for trace in req.kind.traced %}
+            <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+            {% endfor %}
+        </ul>
+        {% else %} Directly Verified {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %} No related requirements found. {% endif %}
+
+<h2>Coverage</h2>
+{% if schema.coverage %}
+<h3>Summary</h3>
+<h4>Lines</h4>
+<ul>
+    <li><strong>Total:</strong> {{ schema.coverage.summary.lines.total }}</li>
+    <li>
+        <strong>Covered:</strong> {{ schema.coverage.summary.lines.covered.cnt
+        }} ({{ schema.coverage.summary.lines.covered.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Excluded:</strong> {{ schema.coverage.summary.lines.excluded.cnt
+        }} ({{ schema.coverage.summary.lines.excluded.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Overridden Covered:</strong> {{
+        schema.coverage.summary.lines.overridden_covered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_covered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Overridden Uncovered:</strong> {{
+        schema.coverage.summary.lines.overridden_uncovered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_uncovered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Uncovered:</strong> {{
+        schema.coverage.summary.lines.uncovered.cnt }} ({{
+        schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
+    </li>
+</ul>
+{% else %} No coverage data available. {% endif %} {% endblock %}

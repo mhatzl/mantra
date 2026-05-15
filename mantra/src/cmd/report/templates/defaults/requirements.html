@@ -1,92 +1,130 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Mantra Report</title>
-    </head>
-    <body>
-        {% from 'nav::html' import nav_item %} {{ nav_item(nav, path_to_root) }}
+{% extends "base-layout.html" %} {% block content %}
+<h1>Summary</h1>
+<ul>
+    <li><strong>Total:</strong> {{ schema.requirements.summary.total }}</li>
+    <li>
+        <strong>Deprecated:</strong> {{
+        schema.requirements.summary.deprecated.cnt }} ({{
+        schema.requirements.summary.deprecated.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Ignored:</strong> {{ schema.requirements.summary.ignored.cnt }}
+        ({{ schema.requirements.summary.ignored.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Verified:</strong> {{ schema.requirements.summary.verified.cnt
+        }} ({{ schema.requirements.summary.verified.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Failed:</strong> {{ schema.requirements.summary.failed.cnt }}
+        ({{ schema.requirements.summary.failed.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Skipped:</strong> {{ schema.requirements.summary.skipped.cnt }}
+        ({{ schema.requirements.summary.skipped.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Unverified:</strong> {{
+        schema.requirements.summary.unverified.cnt }} ({{
+        schema.requirements.summary.unverified.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Mandatory:</strong> {{
+        schema.requirements.summary.mandatory_total.cnt }} ({{
+        schema.requirements.summary.mandatory_total.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Mandatory Verified:</strong> {{
+        schema.requirements.summary.mandatory_verified.cnt }} ({{
+        schema.requirements.summary.mandatory_verified.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Manual:</strong> {{
+        schema.requirements.summary.manuals_total.cnt }} ({{
+        schema.requirements.summary.manuals_total.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Manuals Verified:</strong> {{
+        schema.requirements.summary.manuals_verified.cnt }} ({{
+        schema.requirements.summary.manuals_verified.percentage | round(2) }}%)
+    </li>
+</ul>
+<h1>Deprecated Requirements</h1>
+<ul>
+    {% for req in schema.requirements.deprecated %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
 
-        <p>Back to <a href="{{ path_to_root }}/index.html">products</a>.</p>
-        <p>
-            Back to
-            <a
-                href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html"
-                >product</a
-            >.
-        </p>
+<h1>Ignored Requirements</h1>
+<ul>
+    {% for req in schema.requirements.ignored %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
 
-        <h1>Deprecated Requirements</h1>
-        <ul>
-            {% for req in schema.requirements.deprecated %}
-            <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
-            </li>
-            {% endfor %}
-        </ul>
+<h1>Failed Requirements</h1>
+<ul>
+    {% for req in schema.requirements.failed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
 
-        <h1>Ignored Requirements</h1>
-        <ul>
-            {% for req in schema.requirements.ignored %}
-            <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
-            </li>
-            {% endfor %}
-        </ul>
+<h1>Skipped Requirements</h1>
+<ul>
+    {% for req in schema.requirements.skipped %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
 
-        <h1>Failed Requirements</h1>
-        <ul>
-            {% for req in schema.requirements.failed %}
-            <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
-            </li>
-            {% endfor %}
-        </ul>
+<h1>Unverified Requirements</h1>
+<ul>
+    {% for req in schema.requirements.unverified %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
 
-        <h1>Skipped Requirements</h1>
-        <ul>
-            {% for req in schema.requirements.skipped %}
-            <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
-            </li>
-            {% endfor %}
-        </ul>
-
-        <h1>Unverified Requirements</h1>
-        <ul>
-            {% for req in schema.requirements.unverified %}
-            <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
-            </li>
-            {% endfor %}
-        </ul>
-
-        <h1>Verified Requirements</h1>
-        <ul>
-            {% for req in schema.requirements.verified %}
-            <li>
-                <a
-                    href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
-                    >{{ req.id }}</a
-                >
-            </li>
-            {% endfor %}
-        </ul>
-    </body>
-</html>
+<h1>Verified Requirements</h1>
+<ul>
+    {% for req in schema.requirements.verified %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+            >{{ req.id }}</a
+        ><span class="state-badge state-{{ req.state }}">{{ req.state }}</span
+        >{% if req.optional %}<span class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

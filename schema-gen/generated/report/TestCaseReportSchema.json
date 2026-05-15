@@ -242,6 +242,40 @@
         }
       }
     },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "ignored"
+      ]
+    },
     "TestCaseLocation": {
       "description": "The location of a test case. [req(\"testcov.test_case.origin\")]",
       "type": "object",
@@ -327,19 +361,15 @@
     "TestRelatedRequirement": {
       "type": "object",
       "required": [
-        "id",
         "kind",
-        "product_id"
+        "req"
       ],
       "properties": {
-        "id": {
-          "type": "string"
-        },
         "kind": {
           "$ref": "#/definitions/TestRelatedRequirementKind"
         },
-        "product_id": {
-          "type": "string"
+        "req": {
+          "$ref": "#/definitions/RequirementReference"
         }
       }
     },

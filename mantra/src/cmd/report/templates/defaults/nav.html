@@ -1,15 +1,13 @@
 {% macro nav_item(nav, path_to_root) -%}
 <nav>
-    <p>Products</p>
+    <a href="{{ path_to_root }}/index.html">Products</a>
     <ul>
         {% for p in nav.products %}
         <li>
-            <p>
-                <a
-                    href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}.html"
-                    >{{ p.product.id }}</a
-                >
-            </p>
+            <a
+                href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}.html"
+                >{{ p.product.id }}</a
+            >
             <ul>
                 <li>
                     <a
@@ -18,12 +16,10 @@
                     >
                 </li>
                 <li>
-                    <p>
-                        <a
-                            href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/requirements.html"
-                            >Requirements</a
-                        >
-                    </p>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/requirements.html"
+                        >Requirements</a
+                    >
                     <ul>
                         {% for req in p.root_requirements %}
                         <li>
@@ -36,12 +32,10 @@
                     </ul>
                 </li>
                 <li>
-                    <p>
-                        <a
-                            href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/test-runs.html"
-                            >Test Runs</a
-                        >
-                    </p>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/test-runs.html"
+                        >Test Runs</a
+                    >
                     <ul>
                         {% for test_run in p.root_test_runs %}
                         <li>
@@ -54,12 +48,10 @@
                     </ul>
                 </li>
                 <li>
-                    <p>
-                        <a
-                            href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/reviews.html"
-                            >Reviews</a
-                        >
-                    </p>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/reviews.html"
+                        >Reviews</a
+                    >
                     <ul>
                         {% for review in p.reviews %}
                         <li>

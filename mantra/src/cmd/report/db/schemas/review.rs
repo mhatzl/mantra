@@ -4,6 +4,7 @@ use mantra_schema::{
     Revision, SCHEMA_VERSION,
     report::{
         product::ProductReportSchema,
+        requirement::RequirementReference,
         review::{ReviewReference, ReviewReportSchema, VerifiedRequirement},
     },
     reviews::{
@@ -142,12 +143,28 @@ pub async fn generate_review_schema<'db>(
     };
 
     let requirements: Vec<VerifiedRequirement> = sqlx::query!(
-        "
-        select vr.req_id, gt.content
-        from ManuallyVerifiedRequirements vr left join GeneralTexts gt on vr.comment_hash = gt.hash
-        where vr.product_id = $1
+        r#"
+        select
+            vr.req_id,
+            rs.state,
+            case
+                when exists (
+                    select id
+                    from OptionalRequirements o
+                    where o.product_id = $1
+                    and o.id = vr.req_id
+                ) then true
+                else false
+            end as "optional!:bool",
+            gt.content
+        from
+            ManuallyVerifiedRequirements vr left join GeneralTexts gt on vr.comment_hash = gt.hash,
+            RequirementVerificationStates rs
+        where vr.product_id = $1 and rs.product_id = $1
         and vr.review_name = $2
-        and vr.review_date = $3",
+        and vr.review_date = $3
+        and vr.req_id = rs.id
+        "#,
         product.id,
         review.name,
         review.utc_date
@@ -156,10 +173,18 @@ pub async fn generate_review_schema<'db>(
     .await?
     .into_iter()
     .map(|r| VerifiedRequirement {
-        id: r
-            .req_id
-            .try_into()
-            .expect("Valid requirement ID in database"),
+        req: RequirementReference {
+            product_id: product.id.clone(),
+            id: r
+                .req_id
+                .try_into()
+                .expect("Valid requirement ID in database"),
+            state: r
+                .state
+                .try_into()
+                .expect("Valid requirement state in database"),
+            optional: r.optional,
+        },
         comment: r.content,
     })
     .collect();
