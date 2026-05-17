@@ -1,11 +1,14 @@
 use relative_path::RelativePathBuf;
+use time::OffsetDateTime;
 
 use crate::{
-    ConversionError, Origin, Properties, REVIEWS_FOLDER_NAME, Revision,
+    ConversionError, Line, Origin, Properties, REVIEWS_FOLDER_NAME, Revision,
     encoding::TargetEncoding,
     product::ProductId,
     report::{product::ProductMetadata, requirement::RequirementReference},
+    requirements::ReqId,
     reviews::OverrideTestRun,
+    test_runs::TestCaseState,
 };
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -45,6 +48,7 @@ pub struct ReviewReportSchema {
     /// List of test run overrides added with this review.
     /// [req("review.test_case_state", "review.coverage")]
     pub test_run_overrides: Option<Vec<OverrideTestRun>>,
+    pub ignored_entries: Option<IgnoredEntries>,
 }
 
 #[derive(
@@ -53,6 +57,74 @@ pub struct ReviewReportSchema {
 #[serde(rename_all = "snake_case")]
 pub struct VerifiedRequirement {
     pub req: RequirementReference,
+    pub comment: String,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct IgnoredEntries {
+    pub total: i64,
+    pub requirements: Option<Vec<IgnoredRequirement>>,
+    pub test_case_state_overrides: Option<Vec<IgnoredTestCaseStateOverride>>,
+    pub test_case_line_coverage_overrides: Option<Vec<IgnoredTestCaseLineCoverageOverride>>,
+    pub test_run_line_coverage_overrides: Option<Vec<IgnoredTestRunLineCoverageOverride>>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct IgnoredRequirement {
+    pub id: ReqId,
+    pub comment: String,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct IgnoredTestCaseStateOverride {
+    pub test_run_name: String,
+    #[serde(with = "time::serde::iso8601")]
+    #[schemars(with = "String")]
+    pub test_run_date: OffsetDateTime,
+    pub test_case_name: String,
+    pub state: TestCaseState,
+    pub comment: String,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct IgnoredTestCaseLineCoverageOverride {
+    pub test_run_name: String,
+    #[serde(with = "time::serde::iso8601")]
+    #[schemars(with = "String")]
+    pub test_run_date: OffsetDateTime,
+    pub test_case_name: String,
+    #[schemars(with = "String")]
+    pub cov_filepath: RelativePathBuf,
+    pub cov_line: Line,
+    pub hits: Option<i64>,
+    pub comment: String,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct IgnoredTestRunLineCoverageOverride {
+    pub test_run_name: String,
+    #[serde(with = "time::serde::iso8601")]
+    #[schemars(with = "String")]
+    pub test_run_date: OffsetDateTime,
+    #[schemars(with = "String")]
+    pub cov_filepath: RelativePathBuf,
+    pub cov_line: Line,
+    pub hits: Option<i64>,
     pub comment: String,
 }
 

@@ -16,7 +16,6 @@ use mantra_schema::{
             TestsSummary,
         },
     },
-    requirements::ReqId,
     test_runs::LogOutput,
 };
 

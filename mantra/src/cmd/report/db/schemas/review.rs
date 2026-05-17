@@ -1,11 +1,15 @@
 use std::str::FromStr;
 
 use mantra_schema::{
-    Revision, SCHEMA_VERSION,
+    FmtHash, Revision, SCHEMA_VERSION,
     report::{
         product::ProductReportSchema,
         requirement::RequirementReference,
-        review::{ReviewReference, ReviewReportSchema, VerifiedRequirement},
+        review::{
+            IgnoredEntries, IgnoredRequirement, IgnoredTestCaseLineCoverageOverride,
+            IgnoredTestCaseStateOverride, IgnoredTestRunLineCoverageOverride, ReviewReference,
+            ReviewReportSchema, VerifiedRequirement,
+        },
     },
     reviews::{
         OverrideCoveredLineInfo, OverrideFileCoverage, OverrideTestCase, OverrideTestCaseState,
@@ -13,7 +17,7 @@ use mantra_schema::{
     },
 };
 
-use crate::db::MantraTransaction;
+use crate::{cmd::collect::reviews::db::DbIgnoredEntry, db::MantraTransaction};
 
 pub async fn generate_review_schema<'db>(
     transaction: &mut MantraTransaction<'db>,
@@ -201,6 +205,8 @@ pub async fn generate_review_schema<'db>(
         Some(test_run_overrides)
     };
 
+    let ignored_entries = review_ignored_entries(transaction, review).await?;
+
     Ok(ReviewReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
@@ -215,6 +221,7 @@ pub async fn generate_review_schema<'db>(
         revisions,
         requirements,
         test_run_overrides,
+        ignored_entries,
     })
 }
 
@@ -439,4 +446,137 @@ async fn review_test_run_overrides<'db>(
     }
 
     Ok(test_run_overrides)
+}
+
+async fn review_ignored_entries<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    review: &ReviewReference,
+) -> Result<Option<IgnoredEntries>, anyhow::Error> {
+    let db_entries = sqlx::query!(
+        "
+        select gj.content
+        from IgnoredReviewEntries ie, GeneralJson gj
+        where ie.product_id = $1
+        and ie.review_name = $2
+        and ie.review_date = $3
+        and ie.entry_hash = gj.hash
+        ",
+        review.product_id,
+        review.name,
+        review.utc_date
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if db_entries.is_empty() {
+        return Ok(None);
+    }
+
+    let mut requirements = Vec::new();
+    let mut test_case_state_overrides = Vec::new();
+    let mut test_case_line_coverage_overrides = Vec::new();
+    let mut test_run_line_coverage_overrides = Vec::new();
+
+    for db_entry in db_entries {
+        let entry: DbIgnoredEntry = serde_json::from_str(&db_entry.content)?;
+
+        async fn get_comment<'d>(
+            transaction: &mut MantraTransaction<'d>,
+            comment_hash: FmtHash,
+        ) -> Result<String, anyhow::Error> {
+            let comment = sqlx::query!(
+                "
+                select content
+                from GeneralTexts
+                where hash = $1
+                ",
+                comment_hash
+            )
+            .fetch_one(transaction.as_mut())
+            .await?;
+
+            Ok(comment.content)
+        }
+
+        match entry {
+            DbIgnoredEntry::Requirement { id, comment_hash } => {
+                requirements.push(IgnoredRequirement {
+                    id,
+                    comment: get_comment(transaction, comment_hash).await?,
+                })
+            }
+            DbIgnoredEntry::TestCaseStateOverride {
+                test_run_name,
+                test_run_date: test_run_utc_date,
+                test_case_name,
+                state,
+                comment_hash,
+            } => test_case_state_overrides.push(IgnoredTestCaseStateOverride {
+                test_run_name,
+                test_run_date: test_run_utc_date,
+                test_case_name,
+                state,
+                comment: get_comment(transaction, comment_hash).await?,
+            }),
+            DbIgnoredEntry::TestCaseLineCoverageOverride {
+                test_run_name,
+                test_run_date: test_run_utc_date,
+                test_case_name,
+                cov_filepath,
+                cov_line,
+                hits,
+                comment_hash,
+            } => test_case_line_coverage_overrides.push(IgnoredTestCaseLineCoverageOverride {
+                test_run_name,
+                test_run_date: test_run_utc_date,
+                test_case_name,
+                cov_filepath,
+                cov_line,
+                hits,
+                comment: get_comment(transaction, comment_hash).await?,
+            }),
+            DbIgnoredEntry::TestRunLineCoverageOverride {
+                test_run_name,
+                test_run_date: test_run_utc_date,
+                cov_filepath,
+                cov_line,
+                hits,
+                comment_hash,
+            } => test_run_line_coverage_overrides.push(IgnoredTestRunLineCoverageOverride {
+                test_run_name,
+                test_run_date: test_run_utc_date,
+                cov_filepath,
+                cov_line,
+                hits,
+                comment: get_comment(transaction, comment_hash).await?,
+            }),
+        };
+    }
+
+    Ok(Some(IgnoredEntries {
+        total: (requirements.len()
+            + test_case_state_overrides.len()
+            + test_case_line_coverage_overrides.len()
+            + test_run_line_coverage_overrides.len()) as i64,
+        requirements: if requirements.is_empty() {
+            None
+        } else {
+            Some(requirements)
+        },
+        test_case_state_overrides: if test_case_state_overrides.is_empty() {
+            None
+        } else {
+            Some(test_case_state_overrides)
+        },
+        test_case_line_coverage_overrides: if test_case_line_coverage_overrides.is_empty() {
+            None
+        } else {
+            Some(test_case_line_coverage_overrides)
+        },
+        test_run_line_coverage_overrides: if test_run_line_coverage_overrides.is_empty() {
+            None
+        } else {
+            Some(test_run_line_coverage_overrides)
+        },
+    }))
 }

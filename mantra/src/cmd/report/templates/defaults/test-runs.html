@@ -89,6 +89,19 @@
     {% endfor %}
 </ul>
 
+<h1>Obsolete Test Runs</h1>
+<ul>
+    {% for test_run in schema.test_runs.obsolete %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.name }}</a
+        ><span class="state-badge state-{{ test_run.state }}"
+            >{{ test_run.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
 <h1>Passed Test Runs</h1>
 <ul>
     {% for test_run in schema.test_runs.passed %}

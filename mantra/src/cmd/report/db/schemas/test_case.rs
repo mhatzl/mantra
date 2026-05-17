@@ -15,7 +15,6 @@ use mantra_schema::{
             TestCoveredFile, TestRelatedRequirement, TestRelatedRequirementKind,
         },
     },
-    requirements::ReqId,
     test_runs::{LogOutput, TestCaseLocation},
 };
 

@@ -1,16 +1,29 @@
 {% extends "base-layout.html" %} {% block content %}
-<h1>{{ schema.name }} ({{ schema.utc_date }})</h1>
+<h1>{{ schema.name }}</h1>
 <h2>Metadata</h2>
 <ul>
     <li>
         <strong>State:</strong>
         <span class="state-{{ schema.state }}">{{ schema.state }}</span>
     </li>
+    <li><strong>Date: </strong> {{ schema.utc_date }}</li>
     <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
+    <li><strong>Nr. of Test Cases:</strong> {{ schema.nr_of_test_cases }}</li>
 </ul>
 
+<h2>Description</h2>
+{% if schema.description %} {{ schema.description }} {% else %} No description
+set for this test run. {% endif %}
+
 <h2>Test Cases</h2>
-{% if schema.test_cases %}
+{% if schema.test_cases %} {% set act_nr_test_cases =
+schema.test_cases.summary.total %} {% else %} {% set act_nr_test_cases = 0 %} {%
+endif %} {% if schema.nr_of_test_cases > act_nr_test_cases %}
+<p>
+    {{ schema.nr_of_test_cases - act_nr_test_cases }} test cases in child test
+    runs.
+</p>
+{% endif %} {% if schema.test_cases %}
 <h3>Failed</h3>
 <ul>
     {% for test_case in schema.test_cases.failed %}
@@ -75,7 +88,7 @@
     </li>
     {% endfor %}
 </ul>
-{% else %} - {% endif %}
+{% elif schema.nr_of_test_cases == 0 %} - {% endif %}
 <h2>Children Test Runs</h2>
 {% if schema.child_test_runs %}
 <ul>
@@ -112,8 +125,10 @@
     <li>
         <a href="{{ path_to_root }}/{{ requirement_url_path(req.req) }}.html"
             >{{ req.req.id }}</a
-        >
-        {% if req.kind.traced %} Covered by Traces
+        ><span class="state-badge state-{{ req.req.state }}"
+            >{{ req.req.state }}</span
+        >{% if req.req.optional %}<span class="optional-badge">optional</span>{%
+        endif %} {% if req.kind.traced %} covered by traces
         <ul>
             {% for trace in req.kind.traced %}
             <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
@@ -157,4 +172,47 @@
         schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
     </li>
 </ul>
-{% else %} No coverage data available. {% endif %} {% endblock %}
+
+<h3>Covered Traces</h3>
+{% if schema.coverage.covered_traces %}
+<ul>
+    {% for trace in schema.coverage.covered_traces %}
+    <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+    {% endfor %}
+</ul>
+
+<h3>Covered Files</h3>
+<ul>
+    {% for file in schema.coverage.covered_files %}
+    <li>{{ file.filepath }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No traces covered</p>
+{% endif %} {% else %} No coverage data available. {% endif %}
+
+<h2>Revisions</h2>
+{% if schema.revisions %}
+<table>
+    <thead>
+        <tr>
+            <th>Nr.</th>
+            <th>Authors</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for revision in schema.revisions %}
+        <tr>
+            <td>{{ revision.nr }}</td>
+            <td>
+                {% for author in revision.authors %}{{ author }},{% endfor %}
+            </td>
+            <td>{{ revision.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>-</p>
+{% endif %} {% endblock %}

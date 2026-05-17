@@ -6,7 +6,6 @@
         <strong>State:</strong>
         <span class="state-{{ schema.state }}">{{ schema.state }}</span>
     </li>
-    <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
     <li>
         <strong>Test Run:</strong>
         <a
@@ -14,6 +13,11 @@
             >{{ schema.test_run.name }}</a
         >
     </li>
+    <li>
+        <strong>Date:</strong> {%if schema.utc_date %}{{ schema.utc_date }}{%
+        else %}-{% endif %}
+    </li>
+    <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
 </ul>
 
 <h2>Related Requirements</h2>
@@ -23,8 +27,10 @@
     <li>
         <a href="{{ path_to_root }}/{{ requirement_url_path(req.req) }}.html"
             >{{ req.req.id }}</a
-        >
-        {% if req.kind.traced %} Covered by Traces
+        ><span class="state-badge state-{{ req.req.state }}"
+            >{{ req.req.state }}</span
+        >{% if req.req.optional %}<span class="optional-badge">optional</span>{%
+        endif %} {% if req.kind.traced %} covered by traces
         <ul>
             {% for trace in req.kind.traced %}
             <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
@@ -68,4 +74,21 @@
         schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
     </li>
 </ul>
-{% else %} No coverage data available. {% endif %} {% endblock %}
+
+<h3>Covered Traces</h3>
+{% if schema.coverage.covered_traces %}
+<ul>
+    {% for trace in schema.coverage.covered_traces %}
+    <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+    {% endfor %}
+</ul>
+
+<h3>Covered Files</h3>
+<ul>
+    {% for file in schema.coverage.covered_files %}
+    <li>{{ file.filepath }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No traces covered</p>
+{% endif %} {% else %} No coverage data available. {% endif %} {% endblock %}

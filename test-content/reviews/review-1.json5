@@ -8,8 +8,8 @@
             comment: "Verifying the requirement"
         }],
         test_run_overrides: [{
-            name: "8ade3031-9edd-4735-9ce4-c272bfde180c/mantra::well_known_tests",
-            utc_date: "+002026-04-28T20:31:44.912000000Z",
+            name: "0b149ef4-7230-43e2-8167-81fb5d1ff645/mantra::well_known_tests",
+            utc_date: "+002026-05-11T09:24:00.110000000Z",
             test_cases: [{
                 name: "mantra::well_known_tests/second_test",
                 state: {
