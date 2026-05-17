@@ -537,6 +537,7 @@ impl<'db> Collection<'db> {
                     where last_collect_nr = $1 and product_id = $2
                     group by cov_filepath, cov_file_hash, cov_line
                 )
+                group by cov_filepath, cov_file_hash, cov_line
             ),
             OverriddenLines (cov_filepath, cov_line) as (
                 select cov_filepath, cov_line

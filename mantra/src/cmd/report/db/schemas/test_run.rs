@@ -547,22 +547,7 @@ async fn test_run_related_coverage<'db>(
 
         let lines: Vec<ResolvedLineCoverage> = lines_map.into_values().collect();
 
-        let lines_record = sqlx::query!(
-            r#"
-            select coverable_lines
-            from CoverableLinesPerFilepath
-            where product_id = $1 and filepath = $2
-            "#,
-            product.id,
-            filepath
-        )
-        .fetch_one(transaction.as_mut())
-        .await?;
-
-        let mut lines_summary = CoverageSummary {
-            total: lines_record.coverable_lines,
-            ..Default::default()
-        };
+        let mut lines_summary = CoverageSummary::default();
 
         for line in &lines {
             match line.state {
@@ -574,27 +559,10 @@ async fn test_run_related_coverage<'db>(
                 ResolvedLineCoverageState::OverriddenUncovered => {
                     lines_summary.overridden_uncovered.cnt += 1
                 }
-                ResolvedLineCoverageState::Uncovered => lines_summary.uncovered.cnt += 1,
+                ResolvedLineCoverageState::Uncovered => {
+                    // Note: not relevant, because a test run may not have covered all possible files, so uncovered cnt is the diff from total to all other line states
+                }
             }
-        }
-
-        let uncovered_cnt = lines_summary.total
-            - (lines_summary.covered.cnt
-                + lines_summary.excluded.cnt
-                + lines_summary.overridden_covered.cnt
-                + lines_summary.overridden_uncovered.cnt);
-        if lines_summary.uncovered.cnt < uncovered_cnt {
-            log::warn!(
-                "Missing line coverage data in file '{}' for '{}' lines.",
-                &filepath,
-                uncovered_cnt - lines_summary.uncovered.cnt
-            );
-        } else if lines_summary.uncovered.cnt > uncovered_cnt {
-            log::warn!(
-                "Too many line coverage entries in file '{}' for '{}' lines.",
-                &filepath,
-                lines_summary.uncovered.cnt - uncovered_cnt
-            );
         }
 
         test_summary.lines.add(&lines_summary);
@@ -604,6 +572,12 @@ async fn test_run_related_coverage<'db>(
             file_hash: file_record.map(|f| FmtHash::with_inner(f.file_hash)),
         })
     }
+
+    test_summary.lines.uncovered.cnt = test_summary.lines.total
+        - (test_summary.lines.covered.cnt
+            + test_summary.lines.excluded.cnt
+            + test_summary.lines.overridden_covered.cnt
+            + test_summary.lines.overridden_uncovered.cnt);
 
     test_summary.lines.update_percentages();
 
