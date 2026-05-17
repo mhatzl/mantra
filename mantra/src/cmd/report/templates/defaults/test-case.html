@@ -18,7 +18,16 @@
         else %}-{% endif %}
     </li>
     <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
+    <li>
+        <strong>Location:</strong> {% if schema.location %}{{
+        schema.location.filepath }}#{{ schema.location.line }}{% else
+        %}Unknown{% endif %}
+    </li>
 </ul>
+
+<h2>Description</h2>
+{% if schema.description %} {{ schema.description }} {% else %} No description
+set for this test case. {% endif %}
 
 <h2>Related Requirements</h2>
 {% if schema.related_reqs %}
@@ -91,4 +100,12 @@
 </ul>
 {% else %}
 <p>No traces covered</p>
-{% endif %} {% else %} No coverage data available. {% endif %} {% endblock %}
+{% endif %} {% else %} No coverage data available. {% endif %}
+
+<h2>Log Output</h2>
+{% if schema.logs %} {% for log in schema.logs %}
+<details>
+    <summary><strong>{{ log.source }}</strong></summary>
+    <pre><code>{{ log.content }}</code></pre>
+</details>
+{% endfor %} {% else %} No logs captured. {% endif %} {% endblock %}

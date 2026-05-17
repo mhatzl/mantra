@@ -140,6 +140,11 @@
         </ul>
     </li>
 </ul>
+
+<h1>Description</h1>
+{% if schema.description %} {{ schema.description }} {% else %} No description
+set for this product. {% endif %}
+
 <h1>Root Requirements</h1>
 <ul>
     {% for req in schema.root_requirements %}

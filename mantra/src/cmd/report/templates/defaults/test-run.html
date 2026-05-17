@@ -191,6 +191,14 @@ endif %} {% if schema.nr_of_test_cases > act_nr_test_cases %}
 <p>No traces covered</p>
 {% endif %} {% else %} No coverage data available. {% endif %}
 
+<h2>Log Output</h2>
+{% if schema.logs %} {% for log in schema.logs %}
+<details>
+    <summary><strong>{{ log.source }}</strong></summary>
+    <pre><code>{{ log.content }}</code></pre>
+</details>
+{% endfor %} {% else %} No logs captured. {% endif %}
+
 <h2>Revisions</h2>
 {% if schema.revisions %}
 <table>

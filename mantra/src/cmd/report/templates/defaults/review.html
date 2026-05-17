@@ -61,7 +61,10 @@ tco.name, 'state': 'unknown'} %}
 <p><strong>State:</strong></p>
 {% if tco.state %}
 <ul>
-    <li><strong>New:</strong> {{ tco.state.new }}</li>
+    <li>
+        <strong>New:</strong>
+        <span class="state-{{ tco.state.new }}">{{ tco.state.new }}</span>
+    </li>
     <li><strong>Comment:</strong> {{ tco.state.comment }}</li>
 </ul>
 {% else %}Unchanged{% endif %}
