@@ -1,4 +1,8 @@
-use crate::report::{product::ProductMetadata, test_run::TestRunReference, tests::TestsSummary};
+use crate::report::{
+    product::ProductMetadata,
+    test_run::TestRunReference,
+    tests::{TestCoverage, TestsSummary},
+};
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TestRunsReportSchema {
@@ -9,6 +13,7 @@ pub struct TestRunsReportSchema {
     pub product: ProductMetadata,
     pub test_cases_summary: TestsSummary,
     pub test_runs: TestRunsOverview,
+    pub coverage: TestCoverage,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

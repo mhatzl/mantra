@@ -6,6 +6,7 @@ use crate::{
     product::ProductId,
     report::{
         product::ProductMetadata,
+        review::ReviewReference,
         test_case::TestCaseReference,
         tests::{TestCoverage, TestRelatedRequirement, TestState, TestsSummary},
     },
@@ -106,6 +107,7 @@ pub struct TestRunReportSchema {
     /// [req("testcov.cov")]
     pub coverage: Option<TestCoverage>,
     pub related_reqs: Option<Vec<TestRelatedRequirement>>,
+    pub overridden_by: Option<Vec<ReviewReference>>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

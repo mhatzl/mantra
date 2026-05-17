@@ -8,6 +8,7 @@ use mantra_schema::{
         annotations::TraceReference,
         product::ProductReportSchema,
         requirement::RequirementReference,
+        review::ReviewReference,
         test_case::{TestCaseReference, TestCaseReportSchema},
         test_run::TestRunReference,
         tests::{
@@ -18,7 +19,7 @@ use mantra_schema::{
     test_runs::{LogOutput, TestCaseLocation},
 };
 
-use crate::db::MantraTransaction;
+use crate::{cmd::report::db::schemas::test_runs::ResolvedLineCoverage, db::MantraTransaction};
 
 pub async fn generate_test_case_schema<'db>(
     transaction: &mut MantraTransaction<'db>,
@@ -167,6 +168,49 @@ pub async fn generate_test_case_schema<'db>(
         Some(state_properties)
     };
 
+    let override_records = sqlx::query!(
+        "
+        select tso.review_name, tso.review_date
+        from TestCaseOverrides tso
+        where tso.product_id = $1
+        and tso.test_run_name = $2
+        and tso.test_run_date = $3
+        and tso.test_case_name = $4
+
+        union all
+
+        select tco.review_name, tco.review_date
+        from TestCaseLineCoverageOverrides tco
+        where tco.product_id = $1
+        and tco.test_run_name = $2
+        and tco.test_run_date = $3
+        and tco.test_case_name = $4
+        ",
+        product.id,
+        test_case.test_run_name,
+        test_case.test_run_date,
+        test_case.test_case_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    let overridden_by = if override_records.is_empty() {
+        None
+    } else {
+        let mut overrides = Vec::with_capacity(override_records.len());
+
+        for record in override_records {
+            overrides.push(ReviewReference {
+                product_id: product.id.clone(),
+                name: record.review_name,
+                utc_date: mantra_schema::reviews::date_from_str(&record.review_date)?,
+                state: mantra_schema::report::review::ReviewState::Valid, //TODO set correct state
+            });
+        }
+
+        Some(overrides)
+    };
+
     let coverage = test_case_related_coverage(transaction, product, test_case).await?;
     let related_reqs = test_case_related_requirements(transaction, product, test_case).await?;
 
@@ -185,6 +229,7 @@ pub async fn generate_test_case_schema<'db>(
         logs,
         coverage,
         related_reqs,
+        overridden_by,
     })
 }
 
@@ -490,10 +535,4 @@ async fn test_case_related_coverage<'db>(
             covered_traces,
         })
     })
-}
-
-struct ResolvedLineCoverage {
-    filepath: String,
-    line: Line,
-    state: ResolvedLineCoverageState,
 }

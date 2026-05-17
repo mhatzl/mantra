@@ -6,6 +6,7 @@ use crate::{
     product::ProductId,
     report::{
         product::ProductMetadata,
+        review::ReviewReference,
         test_run::TestRunReference,
         tests::{TestCoverage, TestRelatedRequirement, TestState},
     },
@@ -108,4 +109,5 @@ pub struct TestCaseReportSchema {
     /// [req("testcov.cov")]
     pub coverage: Option<TestCoverage>,
     pub related_reqs: Option<Vec<TestRelatedRequirement>>,
+    pub overridden_by: Option<Vec<ReviewReference>>,
 }

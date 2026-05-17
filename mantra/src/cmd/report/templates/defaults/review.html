@@ -39,23 +39,19 @@
 {% else %} None. {% endif %}
 
 <h2>Test Overrides</h2>
-{% if schema.test_run_overrides %} {% for tro in schema.test_run_overrides %} {%
-set tr = {'product_id': schema.product.id, 'name': tro.name, 'utc_date':
-tro.utc_date, 'state': 'unknown'} %}
+{% if schema.test_run_overrides %} {% for tro in schema.test_run_overrides %}
 <h3>
     Test Run:
-    <a href="{{ path_to_root }}/{{ test_run_url_path(tr) }}.html"
-        >{{ tro.name }}</a
+    <a href="{{ path_to_root }}/{{ test_run_url_path(tro.test_run) }}.html"
+        >{{ tro.test_run.name }}</a
     >
 </h3>
 <h4>Test Case Overrides</h4>
-{% for tco in tro.test_cases %} {% set tc = {'product_id': schema.product.id,
-'test_run_name': tro.name, 'test_run_date': tro.utc_date, 'test_case_name':
-tco.name, 'state': 'unknown'} %}
+{% for tco in tro.test_cases %}
 <h5>
     Test Case:
-    <a href="{{ path_to_root }}/{{ test_case_url_path(tc) }}.html"
-        >{{ tco.name }}</a
+    <a href="{{ path_to_root }}/{{ test_case_url_path(tco.test_case) }}.html"
+        >{{ tco.test_case.test_case_name }}</a
     >
 </h5>
 <p><strong>State:</strong></p>
@@ -65,11 +61,15 @@ tco.name, 'state': 'unknown'} %}
         <strong>New:</strong>
         <span class="state-{{ tco.state.new }}">{{ tco.state.new }}</span>
     </li>
+    <li>
+        <strong>Old:</strong>
+        <span class="state-{{ tco.state.old }}">{{ tco.state.old }}</span>
+    </li>
     <li><strong>Comment:</strong> {{ tco.state.comment }}</li>
 </ul>
 {% else %}Unchanged{% endif %}
 <p><strong>Coverage Overrides:</strong></p>
-{% if tco.coverage | length > 0 %}
+{% if tco.coverage %}
 <ul>
     {% for file in tco.coverage %}
     <li>{{ file.filepath }}</li>
@@ -78,15 +78,21 @@ tco.name, 'state': 'unknown'} %}
             <tr>
                 <td>Line Nr.</td>
                 <td>New Hits</td>
+                <td>Old Hits</td>
                 <td>Comment</td>
             </tr>
         </thead>
         <tbody>
             {% for cl in file.lines %}
             <tr>
-                <td>{% for nr in cl.nrs %}{{ nr }}, {% endfor %}</td>
+                <td>{{ cl.nr }}</td>
                 <td>
-                    {% if cl.hits %}{{ cl.hits }}{% else %}uncovered{% endif %}
+                    {% if cl.new_hits %}{{ cl.new_hits }}{% else %}uncovered{%
+                    endif %}
+                </td>
+                <td>
+                    {% if cl.old_hits %}{{ cl.old_hits }}{% else %}uncovered{%
+                    endif %}
                 </td>
                 <td>{{ cl.comment }}</td>
             </tr>
@@ -98,7 +104,7 @@ tco.name, 'state': 'unknown'} %}
 {% else %} None. {% endif %} {% endfor %}
 
 <h4>Coverage Overrides</h4>
-{% if tro.coverage | length > 0 %}
+{% if tro.coverage %}
 <ul>
     {% for file in tro.coverage %}
     <li>{{ file.filepath }}</li>
@@ -107,15 +113,21 @@ tco.name, 'state': 'unknown'} %}
             <tr>
                 <td>Line Nr.</td>
                 <td>New Hits</td>
+                <td>Old Hits</td>
                 <td>Comment</td>
             </tr>
         </thead>
         <tbody>
             {% for cl in file.lines %}
             <tr>
-                <td>{% for nr in cl.nrs %}{{ nr }}, {% endfor %}</td>
+                <td>{{ cl.nr }}</td>
                 <td>
-                    {% if cl.hits %}{{ cl.hits }}{% else %}uncovered{% endif %}
+                    {% if cl.new_hits %}{{ cl.new_hits }}{% else %}uncovered{%
+                    endif %}
+                </td>
+                <td>
+                    {% if cl.old_hits %}{{ cl.old_hits }}{% else %}uncovered{%
+                    endif %}
                 </td>
                 <td>{{ cl.comment }}</td>
             </tr>

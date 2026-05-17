@@ -5,9 +5,11 @@ use crate::{
     ConversionError, Line, Origin, Properties, REVIEWS_FOLDER_NAME, Revision,
     encoding::TargetEncoding,
     product::ProductId,
-    report::{product::ProductMetadata, requirement::RequirementReference},
+    report::{
+        product::ProductMetadata, requirement::RequirementReference, test_case::TestCaseReference,
+        test_run::TestRunReference,
+    },
     requirements::ReqId,
-    reviews::OverrideTestRun,
     test_runs::TestCaseState,
 };
 
@@ -47,7 +49,7 @@ pub struct ReviewReportSchema {
     pub requirements: Option<Vec<VerifiedRequirement>>,
     /// List of test run overrides added with this review.
     /// [req("review.test_case_state", "review.coverage")]
-    pub test_run_overrides: Option<Vec<OverrideTestRun>>,
+    pub test_run_overrides: Option<Vec<ResolvedOverrideTestRun>>,
     pub ignored_entries: Option<IgnoredEntries>,
 }
 
@@ -197,4 +199,56 @@ impl TryFrom<i64> for ReviewState {
             _ => Err(ConversionError::UnknownState),
         }
     }
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "snake_case")]
+pub struct ResolvedOverrideTestRun {
+    pub test_run: TestRunReference,
+    pub test_cases: Option<Vec<ResolvedOverrideTestCase>>,
+    pub coverage: Option<Vec<ResolvedOverrideFileCoverage>>,
+}
+
+/// Represents a test case state override in a review.
+/// [req("review.test_case_state", "review.coverage")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct ResolvedOverrideTestCase {
+    /// Name of the test case whose state and/or related code coverage is overridden in a review.
+    pub test_case: TestCaseReference,
+    pub state: Option<ResolvedOverrideTestCaseState>,
+    pub coverage: Option<Vec<ResolvedOverrideFileCoverage>>,
+}
+
+/// Represents a test case state override in a review.
+/// [req("review.test_case_state")]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct ResolvedOverrideTestCaseState {
+    pub old: TestCaseState,
+    pub new: TestCaseState,
+    pub comment: String,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct ResolvedOverrideFileCoverage {
+    #[schemars(with = "String")]
+    pub filepath: RelativePathBuf,
+    pub lines: Vec<ResolvedOverrideCoveredLineInfo>,
+}
+
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+pub struct ResolvedOverrideCoveredLineInfo {
+    pub nr: Line,
+    pub old_hits: Option<i64>,
+    pub new_hits: Option<i64>,
+    pub comment: String,
 }

@@ -102,6 +102,23 @@ set for this test case. {% endif %}
 <p>No traces covered</p>
 {% endif %} {% else %} No coverage data available. {% endif %}
 
+<h2>Review Overrides</h2>
+{% if schema.overridden_by %}
+<ul>
+    {% for review in schema.overridden_by %}
+    <li>
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+            >{{ review.name }}</a
+        ><span class="state-badge state-{{ review.state }}"
+            >{{ review.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No results overridden by reviews.</p>
+{% endif %}
+
 <h2>Log Output</h2>
 {% if schema.logs %} {% for log in schema.logs %}
 <details>

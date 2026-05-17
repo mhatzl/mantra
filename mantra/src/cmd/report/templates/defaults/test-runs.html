@@ -50,7 +50,39 @@
     </li>
 </ul>
 
-<h1>Failed Test Runs</h1>
+<h2>Coverage</h2>
+<h3>Lines</h3>
+<ul>
+    <li><strong>Total:</strong> {{ schema.coverage.summary.lines.total }}</li>
+    <li>
+        <strong>Covered:</strong> {{ schema.coverage.summary.lines.covered.cnt
+        }} ({{ schema.coverage.summary.lines.covered.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Excluded:</strong> {{ schema.coverage.summary.lines.excluded.cnt
+        }} ({{ schema.coverage.summary.lines.excluded.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Overridden Covered:</strong> {{
+        schema.coverage.summary.lines.overridden_covered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_covered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Overridden Uncovered:</strong> {{
+        schema.coverage.summary.lines.overridden_uncovered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_uncovered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Uncovered:</strong> {{
+        schema.coverage.summary.lines.uncovered.cnt }} ({{
+        schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h1>Test Runs</h1>
+<h2>Failed Test Runs</h2>
 <ul>
     {% for test_run in schema.test_runs.failed %}
     <li>
@@ -63,7 +95,7 @@
     {% endfor %}
 </ul>
 
-<h1>Skipped Test Runs</h1>
+<h2>Skipped Test Runs</h2>
 <ul>
     {% for test_run in schema.test_runs.skipped %}
     <li>
@@ -76,7 +108,7 @@
     {% endfor %}
 </ul>
 
-<h1>Unknown Test Runs</h1>
+<h2>Unknown Test Runs</h2>
 <ul>
     {% for test_run in schema.test_runs.unknown %}
     <li>
@@ -89,7 +121,7 @@
     {% endfor %}
 </ul>
 
-<h1>Obsolete Test Runs</h1>
+<h2>Obsolete Test Runs</h2>
 <ul>
     {% for test_run in schema.test_runs.obsolete %}
     <li>
@@ -102,7 +134,7 @@
     {% endfor %}
 </ul>
 
-<h1>Passed Test Runs</h1>
+<h2>Passed Test Runs</h2>
 <ul>
     {% for test_run in schema.test_runs.passed %}
     <li>
@@ -114,4 +146,22 @@
     </li>
     {% endfor %}
 </ul>
-{% endblock %}
+
+<h1>Coverage</h1>
+<h2>Covered Traces</h2>
+{% if schema.coverage.covered_traces %}
+<ul>
+    {% for trace in schema.coverage.covered_traces %}
+    <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+    {% endfor %}
+</ul>
+
+<h2>Covered Files</h2>
+<ul>
+    {% for file in schema.coverage.covered_files %}
+    <li>{{ file.filepath }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No traces covered</p>
+{% endif %} {% endblock %}

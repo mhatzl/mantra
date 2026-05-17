@@ -7,14 +7,16 @@ use mantra_schema::{
         requirement::RequirementReference,
         review::{
             IgnoredEntries, IgnoredRequirement, IgnoredTestCaseLineCoverageOverride,
-            IgnoredTestCaseStateOverride, IgnoredTestRunLineCoverageOverride, ReviewReference,
-            ReviewReportSchema, VerifiedRequirement,
+            IgnoredTestCaseStateOverride, IgnoredTestRunLineCoverageOverride,
+            ResolvedOverrideCoveredLineInfo, ResolvedOverrideFileCoverage,
+            ResolvedOverrideTestCase, ResolvedOverrideTestCaseState, ResolvedOverrideTestRun,
+            ReviewReference, ReviewReportSchema, VerifiedRequirement,
         },
+        test_case::TestCaseReference,
+        test_run::TestRunReference,
+        tests::TestState,
     },
-    reviews::{
-        OverrideCoveredLineInfo, OverrideFileCoverage, OverrideTestCase, OverrideTestCaseState,
-        OverrideTestRun,
-    },
+    test_runs::TestCaseState,
 };
 
 use crate::{cmd::collect::reviews::db::DbIgnoredEntry, db::MantraTransaction};
@@ -229,7 +231,7 @@ async fn review_test_run_overrides<'db>(
     transaction: &mut MantraTransaction<'db>,
     product: &ProductReportSchema,
     review: &ReviewReference,
-) -> Result<Vec<OverrideTestRun>, anyhow::Error> {
+) -> Result<Vec<ResolvedOverrideTestRun>, anyhow::Error> {
     let overriden_test_runs = sqlx::query!(
         "
         select test_run_name, test_run_date
@@ -290,6 +292,44 @@ async fn review_test_run_overrides<'db>(
         let mut test_cases = Vec::with_capacity(overriden_test_cases.len());
 
         for test_case in overriden_test_cases {
+            let old_state: TestCaseState = sqlx::query!(
+                "
+                select state
+                from TestCases
+                where product_id = $1
+                and test_run_name = $2
+                and test_run_date = $3
+                and name = $4
+                ",
+                product.id,
+                test_run.test_run_name,
+                test_run.test_run_date,
+                test_case.test_case_name
+            )
+            .fetch_one(transaction.as_mut())
+            .await?
+            .state
+            .try_into()?;
+
+            let resolved_state: TestState = sqlx::query!(
+                "
+                select state
+                from ResolvedTestCaseStates
+                where product_id = $1
+                and test_run_name = $2
+                and test_run_date = $3
+                and test_case_name = $4
+                ",
+                product.id,
+                test_run.test_run_name,
+                test_run.test_run_date,
+                test_case.test_case_name
+            )
+            .fetch_one(transaction.as_mut())
+            .await?
+            .state
+            .try_into()?;
+
             let overriden_state = sqlx::query!(
                 "
                 select state, content
@@ -329,16 +369,24 @@ async fn review_test_run_overrides<'db>(
 
             for filepath in overriden_files {
                 let line_overrides = sqlx::query!(
-                    "
-                    select cov_line, hits, content
-                    from TestCaseLineCoverageOverrides, GeneralTexts
-                    where product_id = $1
-                    and test_run_name = $2
-                    and test_run_date = $3
-                    and test_case_name = $4
-                    and cov_filepath = $5
-                    and comment_hash = hash
-                    ",
+                    r#"
+                    select
+                        co.cov_line,
+                        co.hits as new_hits,
+                        tc.hits as old_hits,
+                        gt.content
+                    from
+                        TestCaseLineCoverageOverrides co,
+                        TestCaseLineCoverage tc,
+                        GeneralTexts gt
+                    where co.product_id = $1 and tc.product_id = $1
+                    and co.test_run_name = $2 and tc.test_run_name = $2
+                    and co.test_run_date = $3 and tc.test_run_date = $3
+                    and co.test_case_name = $4 and tc.test_case_name = $4
+                    and co.cov_filepath = $5 and tc.cov_filepath = $5
+                    and co.cov_line = tc.cov_line
+                    and co.comment_hash = gt.hash
+                    "#,
                     product.id,
                     test_run.test_run_name,
                     test_run.test_run_date,
@@ -348,26 +396,40 @@ async fn review_test_run_overrides<'db>(
                 .fetch_all(transaction.as_mut())
                 .await?;
 
-                coverage.push(OverrideFileCoverage {
+                coverage.push(ResolvedOverrideFileCoverage {
                     filepath: filepath.cov_filepath.into(),
                     lines: line_overrides
                         .into_iter()
-                        .map(|l| OverrideCoveredLineInfo {
-                            nrs: vec![l.cov_line],
-                            hits: l.hits,
+                        .map(|l| ResolvedOverrideCoveredLineInfo {
+                            nr: l.cov_line,
+                            new_hits: l.new_hits,
+                            old_hits: l.old_hits,
                             comment: l.content,
                         })
                         .collect(),
                 })
             }
 
-            test_cases.push(OverrideTestCase {
-                name: test_case.test_case_name,
-                state: overriden_state.map(|s| OverrideTestCaseState {
+            test_cases.push(ResolvedOverrideTestCase {
+                test_case: TestCaseReference {
+                    product_id: product.id.clone(),
+                    test_run_name: test_run.test_run_name.clone(),
+                    test_run_date: mantra_schema::test_runs::test_date_from_str(
+                        &test_run.test_run_date,
+                    )?,
+                    test_case_name: test_case.test_case_name,
+                    state: resolved_state,
+                },
+                state: overriden_state.map(|s| ResolvedOverrideTestCaseState {
                     new: s.state.try_into().expect("Valid state in database"),
+                    old: old_state,
                     comment: s.content,
                 }),
-                coverage,
+                coverage: if coverage.is_empty() {
+                    None
+                } else {
+                    Some(coverage)
+                },
             });
         }
 
@@ -406,15 +468,23 @@ async fn review_test_run_overrides<'db>(
 
         for filepath in overriden_files {
             let line_overrides = sqlx::query!(
-                "
-                select cov_line, hits, content
-                from TestRunLineCoverageOverrides, GeneralTexts
-                where product_id = $1
-                and test_run_name = $2
-                and test_run_date = $3
-                and cov_filepath = $4
-                and comment_hash = hash
-                ",
+                r#"
+                select
+                    co.cov_line,
+                    co.hits as new_hits,
+                    tr.hits as old_hits,
+                    gt.content
+                from
+                    TestRunLineCoverageOverrides co,
+                    TestRunLineCoverage tr,
+                    GeneralTexts gt
+                where co.product_id = $1 and tr.product_id = $1
+                and co.test_run_name = $2 and tr.test_run_name = $2
+                and co.test_run_date = $3 and tr.test_run_date = $3
+                and co.cov_filepath = $4 and tr.cov_filepath = $4
+                and co.cov_line = tr.cov_line
+                and co.comment_hash = gt.hash
+                "#,
                 product.id,
                 test_run.test_run_name,
                 test_run.test_run_date,
@@ -423,25 +493,55 @@ async fn review_test_run_overrides<'db>(
             .fetch_all(transaction.as_mut())
             .await?;
 
-            coverage.push(OverrideFileCoverage {
+            coverage.push(ResolvedOverrideFileCoverage {
                 filepath: filepath.cov_filepath.into(),
                 lines: line_overrides
                     .into_iter()
-                    .map(|l| OverrideCoveredLineInfo {
-                        nrs: vec![l.cov_line],
-                        hits: l.hits,
+                    .map(|l| ResolvedOverrideCoveredLineInfo {
+                        nr: l.cov_line,
+                        new_hits: l.new_hits,
+                        old_hits: l.old_hits,
                         comment: l.content,
                     })
                     .collect(),
             })
         }
 
-        test_run_overrides.push(OverrideTestRun {
-            name: test_run.test_run_name,
-            utc_date: mantra_schema::test_runs::test_date_from_str(&test_run.test_run_date)
-                .expect("Valid test date in database"),
-            test_cases,
-            coverage,
+        let test_run_state: TestState = sqlx::query!(
+            r#"
+            select state as "state!:i64"
+            from TestRunStates
+            where product_id = $1
+            and test_run_name = $2
+            and test_run_date = $3
+            "#,
+            product.id,
+            test_run.test_run_name,
+            test_run.test_run_date
+        )
+        .fetch_one(transaction.as_mut())
+        .await?
+        .state
+        .try_into()?;
+
+        test_run_overrides.push(ResolvedOverrideTestRun {
+            test_run: TestRunReference {
+                product_id: product.id.clone(),
+                name: test_run.test_run_name,
+                utc_date: mantra_schema::test_runs::test_date_from_str(&test_run.test_run_date)
+                    .expect("Valid test date in database"),
+                state: test_run_state,
+            },
+            test_cases: if test_cases.is_empty() {
+                None
+            } else {
+                Some(test_cases)
+            },
+            coverage: if coverage.is_empty() {
+                None
+            } else {
+                Some(coverage)
+            },
         })
     }
 

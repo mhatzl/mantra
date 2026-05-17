@@ -8,6 +8,7 @@ use mantra_schema::{
         annotations::TraceReference,
         product::ProductReportSchema,
         requirement::RequirementReference,
+        review::ReviewReference,
         test_case::TestCaseReference,
         test_run::{TestCasesOverview, TestRunReference, TestRunReportSchema},
         tests::{
@@ -19,7 +20,7 @@ use mantra_schema::{
     test_runs::LogOutput,
 };
 
-use crate::db::MantraTransaction;
+use crate::{cmd::report::db::schemas::test_runs::ResolvedLineCoverage, db::MantraTransaction};
 
 pub async fn generate_test_run_schema<'db>(
     transaction: &mut MantraTransaction<'db>,
@@ -302,6 +303,38 @@ pub async fn generate_test_run_schema<'db>(
         None
     };
 
+    let override_records = sqlx::query!(
+        "
+        select tro.review_name, tro.review_date
+        from TestRunLineCoverageOverrides tro
+        where tro.product_id = $1
+        and tro.test_run_name = $2
+        and tro.test_run_date = $3
+        ",
+        product.id,
+        test_run.name,
+        test_run.utc_date
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    let overridden_by = if override_records.is_empty() {
+        None
+    } else {
+        let mut overrides = Vec::with_capacity(override_records.len());
+
+        for record in override_records {
+            overrides.push(ReviewReference {
+                product_id: product.id.clone(),
+                name: record.review_name,
+                utc_date: mantra_schema::reviews::date_from_str(&record.review_date)?,
+                state: mantra_schema::report::review::ReviewState::Valid, //TODO set correct state
+            });
+        }
+
+        Some(overrides)
+    };
+
     let coverage = test_run_related_coverage(transaction, product, test_run).await?;
     let related_reqs = test_run_related_requirements(transaction, product, test_run).await?;
 
@@ -324,6 +357,7 @@ pub async fn generate_test_run_schema<'db>(
         parent_test_runs,
         coverage,
         related_reqs,
+        overridden_by,
     })
 }
 
@@ -582,10 +616,4 @@ async fn test_run_related_coverage<'db>(
             covered_traces,
         })
     })
-}
-
-struct ResolvedLineCoverage {
-    filepath: String,
-    line: Line,
-    state: ResolvedLineCoverageState,
 }

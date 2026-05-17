@@ -417,8 +417,7 @@ create table ResolvedLineCoverageStates (
     primary key (
         product_id,
         cov_filepath,
-        cov_line,
-        state
+        cov_line
     )
 );
 
