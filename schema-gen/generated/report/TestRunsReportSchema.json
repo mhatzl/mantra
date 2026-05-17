@@ -3,11 +3,15 @@
   "title": "TestRunsReportSchema",
   "type": "object",
   "required": [
+    "coverage",
     "product",
     "test_cases_summary",
     "test_runs"
   ],
   "properties": {
+    "coverage": {
+      "$ref": "#/definitions/TestCoverage"
+    },
     "product": {
       "$ref": "#/definitions/ProductMetadata"
     },
@@ -40,6 +44,38 @@
         "percentage": {
           "type": "number",
           "format": "double"
+        }
+      }
+    },
+    "CoverageSummary": {
+      "type": "object",
+      "required": [
+        "covered",
+        "excluded",
+        "overridden_covered",
+        "overridden_uncovered",
+        "total",
+        "uncovered"
+      ],
+      "properties": {
+        "covered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "excluded": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "overridden_covered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "overridden_uncovered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uncovered": {
+          "$ref": "#/definitions/Aggregated"
         }
       }
     },
@@ -92,6 +128,64 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "TestCoverage": {
+      "type": "object",
+      "required": [
+        "covered_files",
+        "summary"
+      ],
+      "properties": {
+        "covered_files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCoveredFile"
+          }
+        },
+        "covered_traces": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TraceReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/TestCoverageSummary"
+        }
+      }
+    },
+    "TestCoverageSummary": {
+      "type": "object",
+      "required": [
+        "lines"
+      ],
+      "properties": {
+        "lines": {
+          "$ref": "#/definitions/CoverageSummary"
+        }
+      }
+    },
+    "TestCoveredFile": {
+      "type": "object",
+      "required": [
+        "filepath"
+      ],
+      "properties": {
+        "file_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filepath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -233,6 +327,63 @@
         },
         "unknown": {
           "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "TraceKind": {
+      "description": "The trace kind. [req(\"trace.kind\")]",
+      "oneOf": [
+        {
+          "description": "Trace links to an artifact that provides clarification for a requirement.",
+          "type": "string",
+          "enum": [
+            "clarifies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that satisfies a requirement.",
+          "type": "string",
+          "enum": [
+            "satisfies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that verifies a requirement.",
+          "type": "string",
+          "enum": [
+            "verifies"
+          ]
+        },
+        {
+          "description": "Trace link that provides no additional information.",
+          "type": "string",
+          "enum": [
+            "links"
+          ]
+        }
+      ]
+    },
+    "TraceReference": {
+      "type": "object",
+      "required": [
+        "file_hash",
+        "filepath",
+        "kind",
+        "line"
+      ],
+      "properties": {
+        "file_hash": {
+          "type": "string"
+        },
+        "filepath": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/TraceKind"
+        },
+        "line": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     }

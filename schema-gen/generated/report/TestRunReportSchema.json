@@ -67,6 +67,15 @@
     "origin": {
       "description": "Optional origin of the test run. [req(\"testcov.test_run.origin\")]"
     },
+    "overridden_by": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/ReviewReference"
+      }
+    },
     "parent_test_runs": {
       "description": "Optional test run parents.",
       "type": [
@@ -297,6 +306,36 @@
         "unverified",
         "deprecated",
         "ignored"
+      ]
+    },
+    "ReviewReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ReviewState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
       ]
     },
     "Revision": {

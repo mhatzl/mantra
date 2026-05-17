@@ -58,6 +58,15 @@
       "description": "The name of the test case. [req(\"testcov.test_case.id\")]",
       "type": "string"
     },
+    "overridden_by": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/ReviewReference"
+      }
+    },
     "product": {
       "$ref": "#/definitions/ProductMetadata"
     },
@@ -274,6 +283,36 @@
         "unverified",
         "deprecated",
         "ignored"
+      ]
+    },
+    "ReviewReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ReviewState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
       ]
     },
     "TestCaseLocation": {

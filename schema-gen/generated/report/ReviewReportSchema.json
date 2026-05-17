@@ -25,6 +25,16 @@
         "null"
       ]
     },
+    "ignored_entries": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/IgnoredEntries"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "name": {
       "description": "The name of the review. [req(\"review.id\")]",
       "type": "string"
@@ -80,7 +90,7 @@
         "null"
       ],
       "items": {
-        "$ref": "#/definitions/OverrideTestRun"
+        "$ref": "#/definitions/ResolvedOverrideTestRun"
       }
     },
     "utc_date": {
@@ -89,141 +99,166 @@
     }
   },
   "definitions": {
-    "OverrideCoveredLineInfo": {
-      "description": "Code coverage override of one or more lines. [req(\"review.coverage\")]",
+    "IgnoredEntries": {
+      "type": "object",
+      "required": [
+        "total"
+      ],
+      "properties": {
+        "requirements": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredRequirement"
+          }
+        },
+        "test_case_line_coverage_overrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredTestCaseLineCoverageOverride"
+          }
+        },
+        "test_case_state_overrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredTestCaseStateOverride"
+          }
+        },
+        "test_run_line_coverage_overrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredTestRunLineCoverageOverride"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "IgnoredRequirement": {
       "type": "object",
       "required": [
         "comment",
-        "nrs"
+        "id"
       ],
       "properties": {
         "comment": {
-          "description": "Mandatory comment explaining the change to the code coverage information.",
           "type": "string"
         },
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "IgnoredTestCaseLineCoverageOverride": {
+      "type": "object",
+      "required": [
+        "comment",
+        "cov_filepath",
+        "cov_line",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "cov_filepath": {
+          "type": "string"
+        },
+        "cov_line": {
+          "type": "integer",
+          "format": "int64"
+        },
         "hits": {
-          "description": "The new number of times the set lines are reached during a test run or test case execution. If None, the line is marked to be ignored from line coverage analysis.",
           "type": [
             "integer",
             "null"
           ],
           "format": "int64"
         },
-        "nrs": {
-          "description": "The number of lines affected by this override.",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      }
-    },
-    "OverrideFileCoverage": {
-      "description": "Code coverage overrides per file. [req(\"review.coverage\")]",
-      "type": "object",
-      "required": [
-        "filepath"
-      ],
-      "properties": {
-        "filepath": {
-          "description": "The file whose coverage data is overridden in a review.",
+        "test_case_name": {
           "type": "string"
         },
-        "lines": {
-          "description": "The line information in the file that is overridden.",
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/OverrideCoveredLineInfo"
-          }
-        }
-      }
-    },
-    "OverrideTestCase": {
-      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\", \"review.coverage\")]",
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "coverage": {
-          "description": "Overrides the code coverage related to this test case. [req(\"review.coverage\")]",
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/OverrideFileCoverage"
-          }
-        },
-        "name": {
-          "description": "Name of the test case whose state and/or related code coverage is overridden in a review.",
+        "test_run_date": {
           "type": "string"
         },
-        "state": {
-          "description": "Overrides the state of the test case. [req(\"review.test_case_state\")]",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/OverrideTestCaseState"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "test_run_name": {
+          "type": "string"
         }
       }
     },
-    "OverrideTestCaseState": {
-      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\")]",
+    "IgnoredTestCaseStateOverride": {
       "type": "object",
       "required": [
         "comment",
-        "new"
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
       ],
       "properties": {
         "comment": {
-          "description": "Mandatory comment explaining why the state is overriden via review.",
           "type": "string"
         },
-        "new": {
-          "description": "The new state that is set with this override.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/TestCaseState"
-            }
-          ]
+        "state": {
+          "$ref": "#/definitions/TestCaseState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
         }
       }
     },
-    "OverrideTestRun": {
-      "description": "Represents review overrides for a specific test run. [req(\"review.test_case_state\", \"review.coverage\")]",
+    "IgnoredTestRunLineCoverageOverride": {
       "type": "object",
       "required": [
-        "name",
-        "utc_date"
+        "comment",
+        "cov_filepath",
+        "cov_line",
+        "test_run_date",
+        "test_run_name"
       ],
       "properties": {
-        "coverage": {
-          "description": "List of file coverage overrides. [req(\"review.coverage\")]",
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/OverrideFileCoverage"
-          }
-        },
-        "name": {
-          "description": "Name of the test run.",
+        "comment": {
           "type": "string"
         },
-        "test_cases": {
-          "description": "List of test case state overrides. [req(\"review.test_case_state\")]",
-          "default": [],
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/OverrideTestCase"
-          }
+        "cov_filepath": {
+          "type": "string"
         },
-        "utc_date": {
-          "description": "The UTC date the test run execution started.",
+        "cov_line": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
           "type": "string"
         }
       }
@@ -314,6 +349,139 @@
         "ignored"
       ]
     },
+    "ResolvedOverrideCoveredLineInfo": {
+      "type": "object",
+      "required": [
+        "comment",
+        "nr"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "new_hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "nr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "old_hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        }
+      }
+    },
+    "ResolvedOverrideFileCoverage": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "lines"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideCoveredLineInfo"
+          }
+        }
+      }
+    },
+    "ResolvedOverrideTestCase": {
+      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\", \"review.coverage\")]",
+      "type": "object",
+      "required": [
+        "test_case"
+      ],
+      "properties": {
+        "coverage": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideFileCoverage"
+          }
+        },
+        "state": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ResolvedOverrideTestCaseState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "test_case": {
+          "description": "Name of the test case whose state and/or related code coverage is overridden in a review.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TestCaseReference"
+            }
+          ]
+        }
+      }
+    },
+    "ResolvedOverrideTestCaseState": {
+      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\")]",
+      "type": "object",
+      "required": [
+        "comment",
+        "new",
+        "old"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "new": {
+          "$ref": "#/definitions/TestCaseState"
+        },
+        "old": {
+          "$ref": "#/definitions/TestCaseState"
+        }
+      }
+    },
+    "ResolvedOverrideTestRun": {
+      "type": "object",
+      "required": [
+        "test_run"
+      ],
+      "properties": {
+        "coverage": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideFileCoverage"
+          }
+        },
+        "test_cases": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideTestCase"
+          }
+        },
+        "test_run": {
+          "$ref": "#/definitions/TestRunReference"
+        }
+      }
+    },
     "ReviewState": {
       "type": "string",
       "enum": [
@@ -341,6 +509,33 @@
         "nr": {
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "TestCaseReference": {
+      "type": "object",
+      "required": [
+        "product_id",
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
         }
       }
     },
@@ -373,6 +568,69 @@
           "type": "string",
           "enum": [
             "unknown"
+          ]
+        }
+      ]
+    },
+    "TestRunReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
           ]
         }
       ]
