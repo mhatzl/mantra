@@ -82,14 +82,68 @@
         title: "Low level requirement",
         origin: "JSON schema",
     },{
+        id: "hl-2.ml-1.low-lvl-1.verified",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-1.unverified-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        optional: true,
+    },{
         id: "hl-2.ml-1.low-lvl-2",
         title: "Low level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-1.low-lvl-3-opt",
+        id: "hl-2.ml-1.low-lvl-2.verified",
         title: "Low level requirement",
         origin: "JSON schema",
-        optional: true
+    },{
+        id: "hl-2.ml-1.low-lvl-2.failed-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        optional: true,
+    },{
+        id: "hl-2.ml-1.low-lvl-3",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-3.verified",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-3.skipped-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        optional: true,
+    },{
+        id: "hl-2.ml-1.low-lvl-4",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-4.verified",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-4.ignored-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        ignore: true,
+        optional: true,
+    },{
+        id: "hl-2.ml-1.low-lvl-5",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-5.verified",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-2.ml-1.low-lvl-5.deprecated-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        deprecated: true,
+        optional: true,
     },{
         id: "hl-2.ml-2",
         title: "Mid level requirement",
@@ -99,45 +153,65 @@
         title: "Low level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-2.low-lvl-2-opt",
+        id: "hl-2.ml-2.low-lvl-1.verified-opt",
         title: "Low level requirement",
         origin: "JSON schema",
         optional: true
     },{
-        id: "hl-2.ml-2.low-lvl-2-opt.ll-lvl-1",
-        title: "Low-low level requirement",
+        id: "hl-2.ml-2.low-lvl-1.unverified",
+        title: "Low level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-2.low-lvl-2-opt.ll-lvl-2",
-        title: "Low-low level requirement",
+        id: "hl-2.ml-2.low-lvl-2",
+        title: "Low level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-3-manual",
-        title: "Mid level requirement",
-        origin: "JSON schema",
-        manual_verification: true
-    },{
-        id: "hl-2.ml-4-opt",
-        title: "Mid level requirement",
+        id: "hl-2.ml-2.low-lvl-2.verified-opt-1",
+        title: "Low level requirement",
         origin: "JSON schema",
         optional: true
     },{
-        id: "hl-2.ml-5-depr",
+        id: "hl-2.ml-2.low-lvl-2.verified-opt-2",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        optional: true
+    },{
+        id: "hl-2.ml-3",
         title: "Mid level requirement",
         origin: "JSON schema",
-        deprecated: true
     },{
-        id: "hl-2.ml-6-ignored",
-        title: "Mid level requirement",
+        id: "hl-2.ml-3.failed-ignored",
+        title: "Low level requirement",
         origin: "JSON schema",
         ignore: true
     },{
-        id: "hl-2.ml-6-ignored.low-lvl-1",
+        id: "hl-2.ml-3.skipped-ignored",
         title: "Low level requirement",
+        origin: "JSON schema",
+        ignore: true
+    },{
+        id: "hl-2.ml-3.verified-ignored",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        ignore: true
+    },{
+        id: "hl-2.ml-4",
+        title: "Mid level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-6-ignored.low-lvl-2",
+        id: "hl-2.ml-4.failed-deprecated",
         title: "Low level requirement",
         origin: "JSON schema",
+        deprecated: true
+    },{
+        id: "hl-2.ml-4.skipped-deprecated",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        deprecated: true
+    },{
+        id: "hl-2.ml-4.verified-deprecated",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        deprecated: true
     }]
 }
