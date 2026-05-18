@@ -1092,11 +1092,44 @@ impl<'db> Collection<'db> {
                     and rd.id = r.id and rd.descendant_id = s.id
                     and rd.descendant_product_id = s.product_id
                     and s.last_collect_nr = (
-                        select max(last_collect_nr)
+                        select max(p.last_collect_nr)
                         from Products p
                         where p.id = s.product_id
                     )
                     and opt.id is null
+                    and s.state = $3
+                )
+            ), ReqsWithOnlyVerifiedOptionalChildren (id) as (
+                select r.id
+                from UsableNonLeafRequirements r
+                where not exists (
+                    -- non-optional child
+                    select rh.child_req_id
+                    from RequirementHierarchies rh, DirectRequirementVerificationStates s
+                        left join OptionalRequirements opt on
+                            s.last_collect_nr = opt.last_collect_nr
+                            and s.product_id = opt.product_id
+                            and s.id = opt.id
+                    where rh.last_collect_nr = $1 and rh.parent_product_id = $2
+                    and rh.parent_req_id = r.id and rh.child_req_id = s.id
+                    and rh.child_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(p.last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
+                    and opt.id is null
+                ) and exists (
+                    select rd.id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates s
+                    where rd.last_collect_nr = $1 and rd.product_id = $2
+                    and rd.id = r.id and rd.descendant_id = s.id
+                    and rd.descendant_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
                     and s.state = $3
                 )
             )
@@ -1123,6 +1156,11 @@ impl<'db> Collection<'db> {
                     when exists (
                         select f.id
                         from ReqsWithVerifiedNonOptionalDescendants f
+                        where r.id = f.id
+                    ) then $3
+                    when exists (
+                        select f.id
+                        from ReqsWithOnlyVerifiedOptionalChildren f
                         where r.id = f.id
                     ) then $3
                     else $6
