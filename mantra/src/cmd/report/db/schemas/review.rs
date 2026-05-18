@@ -350,7 +350,7 @@ async fn review_test_run_overrides<'db>(
 
             let overriden_files = sqlx::query!(
                 "
-                select cov_filepath
+                select distinct cov_filepath
                 from TestCaseLineCoverageOverrides
                 where product_id = $1
                 and test_run_name = $2
@@ -453,7 +453,7 @@ async fn review_test_run_overrides<'db>(
 
         let overriden_files = sqlx::query!(
             "
-            select cov_filepath
+            select distinct cov_filepath
             from TestRunLineCoverageOverrides
             where product_id = $1
             and test_run_name = $2

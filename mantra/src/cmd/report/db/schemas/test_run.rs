@@ -305,7 +305,7 @@ pub async fn generate_test_run_schema<'db>(
 
     let override_records = sqlx::query!(
         "
-        select tro.review_name, tro.review_date
+        select distinct tro.review_name, tro.review_date
         from TestRunLineCoverageOverrides tro
         where tro.product_id = $1
         and tro.test_run_name = $2

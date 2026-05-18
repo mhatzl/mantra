@@ -177,7 +177,7 @@ pub async fn generate_test_case_schema<'db>(
         and tso.test_run_date = $3
         and tso.test_case_name = $4
 
-        union all
+        union
 
         select tco.review_name, tco.review_date
         from TestCaseLineCoverageOverrides tco
