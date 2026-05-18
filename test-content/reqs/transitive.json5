@@ -1,0 +1,73 @@
+{
+    requirements: [{
+        id: "hl-1",
+        title: "Highest level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-1",
+        title: "Mid level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-1.low-lvl-1",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-1.low-lvl-2",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-1.low-lvl-3-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        optional: true
+    },{
+        id: "hl-1.ml-2",
+        title: "Mid level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-2.low-lvl-1",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-2.low-lvl-2-opt",
+        title: "Low level requirement",
+        origin: "JSON schema",
+        optional: true
+    },{
+        id: "hl-1.ml-2.low-lvl-2-opt.ll-lvl-1",
+        title: "Low-low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-2.low-lvl-2-opt.ll-lvl-2",
+        title: "Low-low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-3-manual",
+        title: "Mid level requirement",
+        origin: "JSON schema",
+        manual_verification: true
+    },{
+        id: "hl-1.ml-4-opt",
+        title: "Mid level requirement",
+        origin: "JSON schema",
+        optional: true
+    },{
+        id: "hl-1.ml-5-depr",
+        title: "Mid level requirement",
+        origin: "JSON schema",
+        deprecated: true
+    },{
+        id: "hl-1.ml-6-ignored",
+        title: "Mid level requirement",
+        origin: "JSON schema",
+        ignore: true
+    },{
+        id: "hl-1.ml-6-ignored.low-lvl-1",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    },{
+        id: "hl-1.ml-6-ignored.low-lvl-2",
+        title: "Low level requirement",
+        origin: "JSON schema",
+    }]
+}

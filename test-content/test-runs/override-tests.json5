@@ -1,0 +1,134 @@
+{
+    test_runs: [{
+        name: "overrideable-test-run",
+        utc_date: "2026-05-17T11:16:58Z",
+        nr_of_test_cases: 6,
+        test_cases: [{
+            name: "passed-covering-lines",
+            state: "passed",
+            covered_files: [{
+                filepath: "passed_overrideable_coverage.rs",
+                lines: [{
+                    nr: 1,
+                    hits: 1,
+                },{
+                    nr: 2,
+                    hits: 2,
+                },{
+                    nr: 3,
+                    hits: 3,
+                },{
+                    nr: 4,
+                    hits: 4,
+                },{
+                    nr: 5,
+                    hits: 5,
+                },{
+                    nr: 10,
+                    hits: 0,
+                },{
+                    nr: 11,
+                    hits: 0,
+                },{
+                    nr: 20,
+                }]
+            }]
+        },{
+            name: "failed-covering-lines",
+            state: "failed",
+            covered_files: [{
+                filepath: "failed_overrideable_coverage.rs",
+                lines: [{
+                    nr: 1,
+                    hits: 1,
+                },{
+                    nr: 2,
+                    hits: 2,
+                },{
+                    nr: 3,
+                    hits: 3,
+                },{
+                    nr: 4,
+                    hits: 4,
+                },{
+                    nr: 5,
+                    hits: 5,
+                },{
+                    nr: 10,
+                    hits: 0,
+                },{
+                    nr: 11,
+                    hits: 0,
+                },{
+                    nr: 20,
+                }]
+            }]
+        },{
+            name: "skipped-test",
+            state: "skipped",
+        },{
+            name: "passed-directly-verifies",
+            state: "passed",
+            verified_reqs: [
+                "hl-1.ml-1.low-lvl-1"
+            ]
+        },{
+            name: "failed-directly-verifies",
+            state: "failed",
+            verified_reqs: [
+                "hl-1.ml-1.low-lvl-3-opt"
+            ]
+        },{
+            name: "skipped-directly-verifies",
+            state: "skipped",
+            verified_reqs: [
+                "hl-1.ml-1.low-lvl-2"
+            ]
+        },{
+            name: "would-be-failed",
+            state: "failed",
+            verified_reqs: [
+                "hl-1.ml-2.low-lvl-1"
+            ]
+        },{
+            name: "would-be-skipped",
+            state: "skipped",
+            verified_reqs: [
+                "hl-1.ml-2.low-lvl-2-opt.ll-lvl-1"
+            ]
+        },{
+            name: "would-be-unknown",
+            state: "unknown",
+            verified_reqs: [
+                "hl-1.ml-2.low-lvl-2-opt.ll-lvl-2"
+            ]
+        }],
+        covered_files: [{
+            filepath: "test_run_overrideable_coverage.rs",
+            lines: [{
+                nr: 1,
+                hits: 1,
+            },{
+                nr: 2,
+                hits: 2,
+            },{
+                nr: 3,
+                hits: 3,
+            },{
+                nr: 4,
+                hits: 4,
+            },{
+                nr: 5,
+                hits: 5,
+            },{
+                nr: 10,
+                hits: 0,
+            },{
+                nr: 11,
+                hits: 0,
+            },{
+                nr: 20,
+            }]
+        }]
+    }]
+}
