@@ -1,0 +1,38 @@
+{
+    reviews: [{
+        name: "Ignored Entries Demo",
+        utc_date: "2026-05-17T17:00utc-01",
+        authors: ["Manuel"],
+        requirements: [{
+            id: "non-existing",
+            comment: "This requirement ID doesn't exist, so it will result in an ignored entry."
+        }],
+        test_run_overrides: [{
+            name: "non-existing-test-run",
+            utc_date: "+002026-05-11T09:24:00.110000000Z",
+            test_cases: [{
+                name: "non-existing-test-case",
+                state: {
+                    new: "passed",
+                    comment: "Test case does not exist, resulting in an ignored entry"
+                },
+                coverage: [{
+                    filepath: "non-existent-file.rs",
+                    lines: [{
+                        nrs: [1],
+                        hits: 0,
+                        comment: "Test case and file don't exist, resulting in an ignored entry.",
+                    }]
+                }]
+            }],
+            coverage: [{
+                filepath: "non-existent-file.rs",
+                lines: [{
+                    nrs: [1],
+                    hits: 0,
+                    comment: "Test run and file don't exist, resulting in an ignored entry.",
+                }]
+            }]
+        }]
+    }]
+}
