@@ -814,24 +814,24 @@ impl<'db> Collection<'db> {
                 id
             ) as (
                 select distinct vr.req_id
-                from TestCaseVerifiedRequirements vr, TestCases tc
+                from TestCaseVerifiedRequirements vr, ResolvedTestCaseStates tc
                 where vr.last_collect_nr = $1 and vr.product_id = $2
                 and tc.last_collect_nr = $1 and tc.product_id = $2
                 and vr.test_run_name = tc.test_run_name
                 and vr.test_run_date = tc.test_run_date
-                and vr.test_case_name = tc.name
+                and vr.test_case_name = tc.test_case_name
                 -- neither passed nor skipped => failed or unknown
                 and tc.state != $9 and tc.state != $10
             ), ReqsExplicitlyVerifiedBySkippedTestCases (
                 id
             ) as (
                 select distinct vr.req_id
-                from TestCaseVerifiedRequirements vr, TestCases tc
+                from TestCaseVerifiedRequirements vr, ResolvedTestCaseStates tc
                 where vr.last_collect_nr = $1 and vr.product_id = $2
                 and tc.last_collect_nr = $1 and tc.product_id = $2
                 and vr.test_run_name = tc.test_run_name
                 and vr.test_run_date = tc.test_run_date
-                and vr.test_case_name = tc.name
+                and vr.test_case_name = tc.test_case_name
                 and tc.state = $10
                 except
                 select id
@@ -841,12 +841,12 @@ impl<'db> Collection<'db> {
             ) as (
                 select distinct
                     vr.req_id
-                from TestCaseVerifiedRequirements vr, TestCases tc
+                from TestCaseVerifiedRequirements vr, ResolvedTestCaseStates tc
                 where vr.last_collect_nr = $1 and vr.product_id = $2
                 and tc.last_collect_nr = $1 and tc.product_id = $2
                 and vr.test_run_name = tc.test_run_name
                 and vr.test_run_date = tc.test_run_date
-                and vr.test_case_name = tc.name
+                and vr.test_case_name = tc.test_case_name
                 and tc.state = $9
                 except
                 select id
