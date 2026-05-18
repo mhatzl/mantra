@@ -3,6 +3,15 @@
         name: "test-verify-state",
         utc_date: "2026-02-19T11:16:58Z",
         nr_of_test_cases: 6,
+        revisions: [{
+            nr: 1,
+            authors: ["Manuel"],
+            comment: "Initial test run"
+        },{
+            nr: 2,
+            authors: ["Manuel"],
+            comment: "Add revision"
+        }],
         test_cases: [{
             name: "passed-covering-traces",
             state: "passed",

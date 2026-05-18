@@ -3,6 +3,15 @@
         name: "First review",
         utc_date: "2026-05-17T17:00utc-01",
         authors: ["Manuel"],
+        revisions: [{
+            nr: 1,
+            authors: ["Manuel"],
+            comment: "Initial review"
+        },{
+            nr: 2,
+            authors: ["Manuel"],
+            comment: "Add revision"
+        }],
         requirements: [{
             id: "req-1",
             comment: "Verifying the requirement"

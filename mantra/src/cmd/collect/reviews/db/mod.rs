@@ -390,11 +390,11 @@ impl<'db> Collection<'db> {
             for revision in revisions {
                 sqlx::query!(
                     "
-                    insert into TestRunRevisions (
+                    insert into ReviewRevisions (
                         last_collect_nr,
                         product_id,
-                        test_run_name,
-                        test_run_date,
+                        review_name,
+                        review_date,
                         revision,
                         comment
                     )
@@ -406,7 +406,7 @@ impl<'db> Collection<'db> {
                         $5,
                         $6
                     )
-                    on conflict (product_id, test_run_name, test_run_date, revision)
+                    on conflict (product_id, review_name, review_date, revision)
                     do update set
                         last_collect_nr = excluded.last_collect_nr,
                         comment = excluded.comment
