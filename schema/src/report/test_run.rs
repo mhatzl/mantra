@@ -41,11 +41,14 @@ impl TestRunReference {
             TargetEncoding::Url => self.product_id.url_path(),
         };
 
-        product_path.join(TEST_RUNS_FOLDER_NAME).join(format!(
+        let limit_name = crate::encoding::limit_str_len(&self.name);
+        let encoded_ref = format!(
             "{}_{}",
             super::encode_utc_date(&self.utc_date),
-            crate::encoding::encode(&self.name, target)
-        ))
+            crate::encoding::encode(&limit_name, target)
+        );
+
+        product_path.join(TEST_RUNS_FOLDER_NAME).join(encoded_ref)
     }
 }
 

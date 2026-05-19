@@ -44,14 +44,19 @@ impl TestCaseReference {
             state: TestState::Unknown,
         };
 
-        let test_case_path = if self.test_case_name.contains("::") {
+        let limit_test_case_name = crate::encoding::limit_str_len(&self.test_case_name);
+
+        // Note: A limited name will be a base16 hash, and therefore not contain '::'
+        let test_case_path = if limit_test_case_name.contains("::") {
             RelativePathBuf::from_iter(
-                self.test_case_name
+                limit_test_case_name
                     .split("::")
                     .map(|name| crate::encoding::encode(&name, target).to_string()),
             )
         } else {
-            RelativePathBuf::from(crate::encoding::encode(&self.test_case_name, target).to_string())
+            RelativePathBuf::from(
+                crate::encoding::encode(&limit_test_case_name, target).to_string(),
+            )
         };
 
         let test_run_path = match target {

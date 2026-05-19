@@ -36,8 +36,10 @@ impl ProductId {
     }
 
     fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
-        RelativePathBuf::from(super::PRODUCTS_FOLDER_NAME)
-            .join(crate::encoding::encode(&self.0, target).to_string())
+        let limit_id = crate::encoding::limit_str_len(&self.0);
+        let encoded_id = crate::encoding::encode(&limit_id, target);
+
+        RelativePathBuf::from(super::PRODUCTS_FOLDER_NAME).join(encoded_id)
     }
 }
 

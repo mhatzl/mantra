@@ -87,14 +87,17 @@ impl RequirementReference {
     }
 
     fn encode_path(&self, target: TargetEncoding) -> RelativePathBuf {
-        let req_path = if self.id.contains('.') {
+        let limit_id = crate::encoding::limit_str_len(&self.id);
+
+        // Note: A limited id will be a base16 hash, and therefore not contain '::'
+        let req_path = if limit_id.contains('.') {
             RelativePathBuf::from_iter(
-                self.id
+                limit_id
                     .split('.')
                     .map(|id| crate::encoding::encode(&id, target).to_string()),
             )
         } else {
-            RelativePathBuf::from(crate::encoding::encode(&self.id, target).to_string())
+            RelativePathBuf::from(crate::encoding::encode(&limit_id, target).to_string())
         };
 
         let product_path = match target {
