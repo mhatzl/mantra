@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select distinct tro.review_name, tro.review_date\n        from TestRunLineCoverageOverrides tro\n        where tro.product_id = $1\n        and tro.test_run_name = $2\n        and tro.test_run_date = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "review_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "review_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "2233ca00585dad155de96a82c6c100302c7919409b44e3621e40fee06ed97338"
+}

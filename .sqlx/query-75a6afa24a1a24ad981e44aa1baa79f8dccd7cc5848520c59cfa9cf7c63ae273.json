@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select cov_filepath, cov_line, state\n        from ResolvedLineCoverageStates\n        where product_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "cov_line",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "75a6afa24a1a24ad981e44aa1baa79f8dccd7cc5848520c59cfa9cf7c63ae273"
+}

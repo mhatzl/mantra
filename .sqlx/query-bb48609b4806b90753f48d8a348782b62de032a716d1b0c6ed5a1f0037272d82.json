@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select content\n                from GeneralTexts\n                where hash = $1\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bb48609b4806b90753f48d8a348782b62de032a716d1b0c6ed5a1f0037272d82"
+}

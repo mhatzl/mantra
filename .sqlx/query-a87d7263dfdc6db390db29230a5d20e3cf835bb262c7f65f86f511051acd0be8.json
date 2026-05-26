@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            vr.req_id,\n            rs.state,\n            case\n                when exists (\n                    select id\n                    from OptionalRequirements o\n                    where o.product_id = $1\n                    and o.id = vr.req_id\n                ) then true\n                else false\n            end as \"optional!:bool\",\n            gt.content\n        from\n            ManuallyVerifiedRequirements vr left join GeneralTexts gt on vr.comment_hash = gt.hash,\n            RequirementVerificationStates rs\n        where vr.product_id = $1 and rs.product_id = $1\n        and vr.review_name = $2\n        and vr.review_date = $3\n        and vr.req_id = rs.id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Null"
+      },
+      {
+        "name": "content",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "a87d7263dfdc6db390db29230a5d20e3cf835bb262c7f65f86f511051acd0be8"
+}
