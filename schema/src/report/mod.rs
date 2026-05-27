@@ -34,7 +34,11 @@ pub struct Aggregated {
 
 impl Aggregated {
     pub fn update_percentage(&mut self, total: i64) {
-        self.percentage = (self.cnt as f64 / total as f64) * 100.0;
+        if total == 0 || self.cnt == 0 {
+            self.percentage = 0.0;
+        } else {
+            self.percentage = (self.cnt as f64 / total as f64) * 100.0;
+        }
     }
 }
 
