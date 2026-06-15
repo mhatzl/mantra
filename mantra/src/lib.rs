@@ -99,6 +99,8 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
         cmd::Cmd::Clear => todo!(),
     }
 
+    db.close().await;
+
     Ok(())
 }
 

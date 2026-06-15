@@ -3,17 +3,18 @@ use std::path::Path;
 use crate::{
     cfg::MantraConfigFile,
     cmd::collect::cfg::{CollectArguments, CollectConfig, CollectEnvironmentVariables},
-    db::test_stub::TestDb,
+    db::MantraDb,
 };
 
-pub(super) async fn collect_test_data(mantra_cfg: &Path) -> Result<TestDb, anyhow::Error> {
-    let db = crate::db::test_stub::TestDb::new().await?;
-
+pub(super) async fn collect_test_data(
+    db: &MantraDb,
+    mantra_cfg: &Path,
+) -> Result<(), anyhow::Error> {
     for cfg in test_collect_cfgs(mantra_cfg).await? {
-        super::collect(db.db(), cfg).await?;
+        super::collect(db, cfg).await?;
     }
 
-    Ok(db)
+    Ok(())
 }
 
 pub(super) async fn test_collect_cfgs(
@@ -44,9 +45,13 @@ pub(super) async fn test_collect_cfgs(
 }
 
 macro_rules! db_from_cfg_file {
-    ($cfg_file:expr) => {{
+    ($db_pool:ident, $cfg_file:expr) => {{
         let cfg_filepath = $crate::cmd::collect::test_setup::testdata_dir!($cfg_file);
-        $crate::cmd::collect::test_setup::collect_test_data(&cfg_filepath).await
+        let db = $crate::db::MantraDb::new_with_pool($db_pool);
+
+        $crate::cmd::collect::test_setup::collect_test_data(&db, &cfg_filepath)
+            .await
+            .and(Ok(db))
     }};
 }
 
@@ -72,13 +77,15 @@ macro_rules! testdata_dir {
 }
 
 macro_rules! db_from_dir {
-    ($dir:expr) => {{ db_from_dir!($dir, "mantra.json5") }};
-    ($dir:expr, $cfg_file:expr) => {{
-        let tmp_dir = $crate::cmd::collect::test_setup::testdata_dir!($dir);
+    ($db_pool:ident, $dir:expr) => {{ db_from_dir!($db_pool, $dir, "mantra.json5") }};
+    ($db_pool:ident, $dir:expr, $cfg_file:expr) => {{
+        let test_dir = $crate::cmd::collect::test_setup::testdata_dir!($dir);
+        let test_cfg_filepath = test_dir.join($cfg_file);
+        let db = $crate::db::MantraDb::new_with_pool($db_pool);
 
-        let cfg_tmp_filepath = tmp_dir.join($cfg_file);
-
-        crate::cmd::collect::test_setup::collect_test_data(&cfg_tmp_filepath).await
+        crate::cmd::collect::test_setup::collect_test_data(&db, &test_cfg_filepath)
+            .await
+            .and(Ok(db))
     }};
 }
 

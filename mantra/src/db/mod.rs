@@ -1,17 +1,17 @@
 use std::str::FromStr;
 
 use mantra_schema::path::RelativePathBuf;
-use sqlx::SqlitePool;
 
 #[cfg(test)]
 pub mod test_stub;
 
+pub type MantraPool = sqlx::SqlitePool;
 pub type MantraConnection = sqlx::sqlite::SqliteConnection;
 pub type MantraTransaction<'db> = sqlx::Transaction<'db, sqlx::sqlite::Sqlite>;
 
 #[derive(Debug)]
 pub struct MantraDb {
-    pool: SqlitePool,
+    pool: MantraPool,
 }
 
 #[derive(Debug, Clone, clap::Args)]
@@ -40,7 +40,7 @@ static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 impl MantraDb {
     pub async fn new(url: Option<&str>) -> Result<Self, DbError> {
         let db_url = url.unwrap_or("sqlite://mantra.db?mode=rwc");
-        let pool = sqlx::sqlite::SqlitePool::connect(db_url)
+        let pool = MantraPool::connect(db_url)
             .await
             .map_err(|err| DbError::Connect(err.into()))?;
 
@@ -62,6 +62,10 @@ impl MantraDb {
             ))),
             Err(err) => Err(DbError::Execute(err.into())),
         }
+    }
+
+    pub(crate) async fn close(self) {
+        self.pool.close().await
     }
 }
 

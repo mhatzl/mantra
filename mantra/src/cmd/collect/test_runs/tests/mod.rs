@@ -1,10 +1,11 @@
-use crate::cmd::collect::test_setup::{self, testdata_dir};
+use crate::{
+    cmd::collect::test_setup::{self, testdata_dir},
+    db::{MantraDb, MantraPool},
+};
 
-#[tokio::test]
-async fn detect_hierarchy_cycles() {
-    let db = crate::db::test_stub::TestDb::new()
-        .await
-        .expect("Creating test db failed");
+#[sqlx::test]
+async fn detect_hierarchy_cycles(pool: MantraPool) {
+    let db = MantraDb::new_with_pool(pool);
     let testdata_dir = testdata_dir!("base_test_data");
     let cfg_path = testdata_dir.join("mantra.json5");
     let collect_cfgs = test_setup::test_collect_cfgs(&cfg_path)
@@ -22,7 +23,7 @@ async fn detect_hierarchy_cycles() {
         .next()
         .expect("Checked that one cfg exists");
 
-    let mut collection = crate::cmd::collect::collect_data(db.db(), cfg)
+    let mut collection = crate::cmd::collect::collect_data(&db, cfg)
         .await
         .expect("Failed to collect data");
     let last_collect_nr = collection.collect_nr();

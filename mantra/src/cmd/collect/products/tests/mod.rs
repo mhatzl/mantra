@@ -1,8 +1,8 @@
-use crate::cmd::collect::test_setup::db_from_cfg_file;
+use crate::{cmd::collect::test_setup::db_from_cfg_file, db::MantraPool};
 
-#[tokio::test]
-async fn single_product() {
-    let db = db_from_cfg_file!("single_product.json5").expect("Failed to create mantra db");
+#[sqlx::test]
+async fn single_product(pool: MantraPool) {
+    let db = db_from_cfg_file!(pool, "single_product.json5").expect("Failed to create mantra db");
 
     let records = sqlx::query!(
         "

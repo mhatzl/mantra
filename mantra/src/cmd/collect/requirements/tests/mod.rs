@@ -1,10 +1,20 @@
-use crate::cmd::collect::test_setup::db_from_dir;
+use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
 
-#[test_case::test_case("hierarchy_cycle")]
-#[test_case::test_case("indirect_hierarchy_cycle")]
-#[tokio::test]
-async fn detect_hierarchy_cycles(dir: &str) {
-    let db_res = db_from_dir!(dir);
+#[sqlx::test]
+async fn detect_hierarchy_cycles(pool: MantraPool) {
+    let dir = "hierarchy_cycle";
+    let db_res = db_from_dir!(pool, dir);
+
+    let Err(db_err) = db_res else {
+        panic!("Failed to detect requirement cycle")
+    };
+    assert_eq!(db_err.to_string(), "Requirement cycle detected!");
+}
+
+#[sqlx::test]
+async fn detect_indirect_hierarchy_cycles(pool: MantraPool) {
+    let dir = "indirect_hierarchy_cycle";
+    let db_res = db_from_dir!(pool, dir);
 
     let Err(db_err) = db_res else {
         panic!("Failed to detect requirement cycle")
@@ -15,13 +25,13 @@ async fn detect_hierarchy_cycles(dir: &str) {
 mod states {
     use mantra_schema::report::requirement::RequirementState;
 
-    use crate::cmd::collect::test_setup::db_from_dir;
+    use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
 
-    #[tokio::test]
-    async fn deprecated_req() {
+    #[sqlx::test]
+    async fn deprecated_req(pool: MantraPool) {
         let depr_state = RequirementState::Deprecated.as_nr();
 
-        let db = db_from_dir!("states/deprecated").unwrap();
+        let db = db_from_dir!(pool, "states/deprecated").unwrap();
 
         let depr_reqs: Vec<String> = sqlx::query!(
             "
@@ -88,11 +98,11 @@ mod states {
         );
     }
 
-    #[tokio::test]
-    async fn ignored_req() {
+    #[sqlx::test]
+    async fn ignored_req(pool: MantraPool) {
         let ignore_state = RequirementState::Ignored.as_nr();
 
-        let db = db_from_dir!("states/ignored").unwrap();
+        let db = db_from_dir!(pool, "states/ignored").unwrap();
 
         let ignored_reqs: Vec<String> = sqlx::query!(
             "
@@ -159,11 +169,11 @@ mod states {
         );
     }
 
-    #[tokio::test]
-    async fn failed_req() {
+    #[sqlx::test]
+    async fn failed_req(pool: MantraPool) {
         let failed_state = RequirementState::Failed.as_nr();
 
-        let db = db_from_dir!("states/failed").unwrap();
+        let db = db_from_dir!(pool, "states/failed").unwrap();
 
         let failed_reqs: Vec<String> = sqlx::query!(
             "
@@ -214,11 +224,11 @@ mod states {
         );
     }
 
-    #[tokio::test]
-    async fn skipped_req() {
+    #[sqlx::test]
+    async fn skipped_req(pool: MantraPool) {
         let skipped_state = RequirementState::Skipped.as_nr();
 
-        let db = db_from_dir!("states/skipped").unwrap();
+        let db = db_from_dir!(pool, "states/skipped").unwrap();
 
         let skipped_reqs: Vec<String> = sqlx::query!(
             "
@@ -265,11 +275,11 @@ mod states {
         );
     }
 
-    #[tokio::test]
-    async fn unverified_req() {
+    #[sqlx::test]
+    async fn unverified_req(pool: MantraPool) {
         let unverified_state = RequirementState::Unverified.as_nr();
 
-        let db = db_from_dir!("states/unverified").unwrap();
+        let db = db_from_dir!(pool, "states/unverified").unwrap();
 
         let unverified_reqs: Vec<String> = sqlx::query!(
             "
@@ -330,11 +340,11 @@ mod states {
         );
     }
 
-    #[tokio::test]
-    async fn verified_req() {
+    #[sqlx::test]
+    async fn verified_req(pool: MantraPool) {
         let verified_state = RequirementState::Verified.as_nr();
 
-        let db = db_from_dir!("states/verified").unwrap();
+        let db = db_from_dir!(pool, "states/verified").unwrap();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
