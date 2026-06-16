@@ -121,6 +121,8 @@ pub enum ConversionError {
     UnknownKind,
     #[error("Number does not match to a known state.")]
     UnknownState,
+    #[error("Given format is unknown")]
+    UnknownFormat,
 }
 
 #[derive(Debug, thiserror::Error)]

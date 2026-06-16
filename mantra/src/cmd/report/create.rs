@@ -1,9 +1,6 @@
-use std::collections::HashSet;
-
 use mantra_schema::{
     PRODUCTS_FOLDER_NAME, REQUIREMENTS_FOLDER_NAME, REVIEWS_FOLDER_NAME, SCHEMA_VERSION,
     SOURCES_FOLDER_NAME, TEST_RUNS_FOLDER_NAME,
-    product::ProductId,
     report::{
         product::{ProductMetadata, ProductReportSchema, ProductSummary},
         products::ProductsReportSchema,
@@ -16,7 +13,7 @@ use mantra_schema::{
 
 use crate::{
     cmd::report::{
-        cfg::ReportFormat,
+        cfg::ReportConfig,
         db::schemas::{
             evidence_matrix::generate_evidence_matrix_schema, nav::generate_navigation_schema,
             product::generate_product_schemas, requirement::generate_requirement_schema,
@@ -54,21 +51,20 @@ use crate::{
 
 pub async fn create_report<'db, 'templates>(
     transaction: &mut MantraTransaction<'db>,
-    out_dir: &std::path::Path,
-    formats: HashSet<ReportFormat>,
+    cfg: ReportConfig,
     templates: MantraTemplates<'templates>,
-    product_ids: Option<&[ProductId]>,
 ) -> Result<(), anyhow::Error> {
+    let out_dir = cfg.out_dir();
     let products_path = out_dir.join(PRODUCTS_FOLDER_NAME);
     tokio::fs::create_dir_all(&products_path).await?;
     let sources_path = out_dir.join(SOURCES_FOLDER_NAME);
     tokio::fs::create_dir_all(&sources_path).await?;
 
-    let products = generate_product_schemas(transaction, product_ids).await?;
+    let products = generate_product_schemas(transaction, cfg.product_ids()).await?;
 
     let nav = generate_navigation_schema(transaction, &products).await?;
 
-    let writer = ReportWriter::new(out_dir.to_path_buf(), nav, formats, templates);
+    let writer = ReportWriter::new(out_dir.to_path_buf(), nav, cfg, templates);
 
     create_sources_structure(transaction, &writer, &products).await?;
 

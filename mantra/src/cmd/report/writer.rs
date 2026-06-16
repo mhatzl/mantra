@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::Path};
+use std::path::Path;
 
 use mantra_schema::{
     path::{PathExt, RelativePathBuf},
@@ -6,14 +6,14 @@ use mantra_schema::{
 };
 
 use crate::cmd::report::{
-    cfg::ReportFormat,
+    cfg::{ReportConfig, ReportFormat},
     templates::{MantraTemplates, TemplateName},
 };
 
 pub struct ReportWriter<'templates> {
     base_path: std::path::PathBuf,
     nav: ReportNavigationSchema,
-    formats: HashSet<ReportFormat>,
+    cfg: ReportConfig,
     templates: MantraTemplates<'templates>,
 }
 
@@ -21,13 +21,13 @@ impl<'templates> ReportWriter<'templates> {
     pub fn new(
         base_path: std::path::PathBuf,
         nav: ReportNavigationSchema,
-        formats: HashSet<ReportFormat>,
+        cfg: ReportConfig,
         templates: MantraTemplates<'templates>,
     ) -> Self {
         Self {
             base_path,
             nav,
-            formats,
+            cfg,
             templates,
         }
     }
@@ -52,7 +52,7 @@ impl<'templates> ReportWriter<'templates> {
             "schema": schema
         });
 
-        for format in &self.formats {
+        for format in self.cfg.formats() {
             let content = if format == &ReportFormat::Json {
                 json5::to_string(&schema)?
             } else {

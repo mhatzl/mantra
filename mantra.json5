@@ -37,5 +37,8 @@
         path: "test-content/reviews/",
         source: "schema",
     }]
-  }]
+  }],
+  reports: {
+    template_dir: "test-content/custom-templates"
+  }
 }

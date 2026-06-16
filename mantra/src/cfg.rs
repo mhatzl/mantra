@@ -1,12 +1,17 @@
+use std::path::PathBuf;
+
 use anyhow::bail;
 use mantra_schema::{
     Properties,
     product::{Product, ProductId},
 };
 
-use crate::cmd::collect::cfg::{
-    CollectAnnotationsConfig, CollectLsifConfig, CollectRequirementsConfig, CollectReviewsConfig,
-    CollectTestRunsConfig,
+use crate::cmd::{
+    collect::cfg::{
+        CollectAnnotationsConfig, CollectLsifConfig, CollectRequirementsConfig,
+        CollectReviewsConfig, CollectTestRunsConfig,
+    },
+    report::cfg::ReportFormat,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -16,6 +21,18 @@ pub struct MantraConfigFile {
     pub products: Vec<ProductConfig>,
     #[serde(flatten)]
     pub inheritable_product_cfg: InheritableProductConfig,
+    /// Report configurations that apply to all products.
+    #[serde(default)]
+    pub reports: ReportTemplatesConfig,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ReportTemplatesConfig {
+    /// Optional path to a directory containing custom templates.
+    pub template_dir: Option<PathBuf>,
+    #[serde(default)]
+    pub formats: Vec<ReportFormat>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

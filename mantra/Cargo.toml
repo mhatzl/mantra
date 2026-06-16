@@ -21,6 +21,7 @@ schemars.workspace = true
 anyhow.workspace = true
 urlencoding.workspace = true
 tokio = { version = "1.37.0", features = ["full"] }
+tokio-stream = "0.1.18"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 sqlx = { workspace = true, features = ["any", "derive", "macros", "migrate", "sqlite", "json", "runtime-tokio", "time"] }
 toml = { version = "0.8.13", features = ["parse"] }

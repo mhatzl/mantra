@@ -7,6 +7,7 @@ use mantra_schema::{
     },
 };
 use minijinja::{Environment, value::ViaDeserialize};
+use tokio_stream::{StreamExt, wrappers::ReadDirStream};
 
 use crate::cmd::report::cfg::ReportFormat;
 
@@ -78,6 +79,24 @@ impl<'templates> MantraTemplates<'templates> {
         environment.add_function("test_case_url_path", test_case_url_path);
 
         Ok(Self { environment })
+    }
+
+    pub async fn custom_templates(&mut self, dir: &std::path::Path) -> Result<(), anyhow::Error> {
+        let read_dir = tokio::fs::read_dir(dir).await?;
+        let mut dir_stream = ReadDirStream::new(read_dir);
+
+        while let Some(res) = dir_stream.next().await {            
+            if let Ok(dir_entry) = res
+                && let Some(extension) = dir_entry.path().extension()
+                && ReportFormat::try_from(extension).is_ok()
+                && let Ok(filename) = dir_entry.file_name().into_string()
+                && let Ok(src) = crate::io::async_read_encoding_independent(dir_entry.path()).await
+            {
+                self.environment.add_template_owned(filename, src)?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn render<T: serde::Serialize>(

@@ -1,10 +1,3 @@
-// use cfg::MantraConfigPath;
-// use cmd::{
-//     coverage_old::CoverageError, report_old::ReportError, requirements_old::RequirementsError,
-//     review_old::ReviewError, trace_old::TraceError,
-// };
-// use db::DbError;
-
 use std::collections::HashSet;
 
 use crate::{
@@ -34,11 +27,13 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
     match cfg.cmd {
         cmd::Cmd::Report(args) => cmd::report::report(
             &db,
-            ReportConfig {
-                cfg_filepath: cfg.config_filepath,
+            ReportConfig::new(
+                cfg.config_filepath,
+                cfg_file,
                 args,
-                envs: ReportEnvironmentVariables {},
-            },
+                ReportEnvironmentVariables {},
+            )
+            .map_err(MantraError::Cfg)?,
         )
         .await
         .map_err(MantraError::Report)?,
