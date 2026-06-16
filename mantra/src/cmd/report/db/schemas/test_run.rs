@@ -57,10 +57,9 @@ pub async fn generate_test_run_schema<'db>(
         Some(o) => Some(serde_json::Value::from_str(&o)?),
         None => None,
     };
-    let duration_sec = match metadata.duration_sec {
-        Some(d) => Some(mantra_schema::time::Duration::saturating_seconds_f64(d)),
-        None => None,
-    };
+    let duration_sec = metadata
+        .duration_sec
+        .map(mantra_schema::time::Duration::saturating_seconds_f64);
 
     let revision_records = sqlx::query!(
         "
@@ -430,7 +429,7 @@ async fn test_run_related_requirements<'db>(
     let related_reqs: Vec<TestRelatedRequirement> = traced_reqs
         .into_iter()
         .map(|(req, traces)| TestRelatedRequirement {
-            req: req,
+            req,
             kind: TestRelatedRequirementKind::Traced(traces),
         })
         .collect();

@@ -22,7 +22,7 @@ pub mod walker;
 #[cfg(test)]
 mod test_setup;
 
-pub async fn collect<'db>(db: &'db MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
+pub async fn collect(db: &MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
     let mut collection = collect_data(db, cfg).await?;
 
     collection.aggregate_requirements_data().await?;

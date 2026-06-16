@@ -53,7 +53,7 @@ pub struct ShallowTestRun {
 }
 
 impl ShallowTestRun {
-    pub fn to_test_run(
+    pub fn into_test_run(
         self,
         covered_files: Vec<CoveredFile>,
         coverage_timestamp: Option<OffsetDateTime>,
@@ -82,7 +82,7 @@ impl ShallowTestRun {
             test_runs: self
                 .test_runs
                 .into_iter()
-                .map(|t| t.to_test_run(vec![], Some(utc_date)))
+                .map(|t| t.into_test_run(vec![], Some(utc_date)))
                 .collect(),
         }
     }
@@ -134,7 +134,7 @@ fn junit_to_shallow_test_run(
 
     let mut inner_test_runs = Vec::with_capacity(junit.test_suites.len());
     for test_suite in junit.test_suites {
-        inner_test_runs.push(get_inner_test_run(test_suite, &name, utc_date.clone())?);
+        inner_test_runs.push(get_inner_test_run(test_suite, &name, utc_date)?);
     }
 
     Ok(ShallowTestRun {
@@ -213,7 +213,7 @@ fn cobertura_to_well_known_coverage(
     let mut covered_files = Vec::new();
     for package in cobertura.packages.package {
         for class in package.classes.class {
-            match get_filepath(&class.filename, &root_path) {
+            match get_filepath(&class.filename, root_path) {
                 Ok(filepath) => {
                     covered_files.push(CoveredFile {
                         filepath,

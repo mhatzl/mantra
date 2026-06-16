@@ -51,7 +51,7 @@ impl TestCaseReference {
             RelativePathBuf::from_iter(
                 limit_test_case_name
                     .split("::")
-                    .map(|name| crate::encoding::encode(&name, target).to_string()),
+                    .map(|name| crate::encoding::encode(name, target).to_string()),
             )
         } else {
             RelativePathBuf::from(

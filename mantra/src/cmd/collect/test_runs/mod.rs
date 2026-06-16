@@ -72,6 +72,7 @@ pub(super) async fn collect<'db>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn collect_well_known<'db>(
     collection: &mut Collection<'db>,
     path: &RelativePath,
@@ -111,49 +112,47 @@ async fn collect_well_known<'db>(
                         let matches_test_format = test_glob_pattern.matches_path(filepath);
                         let matches_coverage_format = coverage_glob_pattern.matches_path(filepath);
 
-                        if matches_test_format || matches_coverage_format {
-                            if let Some(ext) = filepath.extension()
+                        if (matches_test_format || matches_coverage_format) && let Some(ext) = filepath.extension()
                                 && let Some(extension) = ext.to_str()
                                 && let Ok(content) = crate::io::sync_read_encoding_independent(filepath)
-                            {
-                                let rel_filepath = filepath.relative_to(&root_path)
-                                    .expect("Creating relative path succeeds, because root path for walker is absolute.");
-                                let file_hash = FmtHash::new(&content);
+                        {
+                            let rel_filepath = filepath.relative_to(&root_path)
+                                .expect("Creating relative path succeeds, because root path for walker is absolute.");
+                            let file_hash = FmtHash::new(&content);
 
-                                if matches_test_format {
-                                    // TODO: proper logging + error handling
-                                    match test_format.to_shallow_test_run(&root_path, extension, &content) {
-                                        Ok(shallow_test_run) => {
-                                            let data = SentWellKnownData {
-                                                data: CollectedWellKnown::Test(shallow_test_run),
-                                                filepath: rel_filepath,
-                                                file_hash,
-                                                content,
-                                            };
-                                            let _ = sender.send(data);
-                                        }
-                                        Err(err) => eprintln!(
-                                            "Failed reading from well-known test format '{}'. Err: {err}",
-                                            filepath.display()
-                                        ),
+                            if matches_test_format {
+                                // TODO: proper logging + error handling
+                                match test_format.to_shallow_test_run(&root_path, extension, &content) {
+                                    Ok(shallow_test_run) => {
+                                        let data = SentWellKnownData {
+                                            data: CollectedWellKnown::Test(Box::new(shallow_test_run)),
+                                            filepath: rel_filepath,
+                                            file_hash,
+                                            content,
+                                        };
+                                        let _ = sender.send(data);
                                     }
-                                } else {
-                                    // must match coverage format
-                                    match coverage_format.to_well_known_coverage(&root_path, extension, &content) {
-                                        Ok(coverage_data) => {
-                                            let data = SentWellKnownData {
-                                                data: CollectedWellKnown::Coverage(coverage_data),
-                                                filepath: rel_filepath,
-                                                file_hash,
-                                                content,
-                                            };
-                                            let _ = sender.send(data);
-                                        }
-                                        Err(err) => eprintln!(
-                                            "Failed reading from well-known coverage format '{}'. Err: {err}",
-                                            filepath.display()
-                                        ),
+                                    Err(err) => eprintln!(
+                                        "Failed reading from well-known test format '{}'. Err: {err}",
+                                        filepath.display()
+                                    ),
+                                }
+                            } else {
+                                // must match coverage format
+                                match coverage_format.to_well_known_coverage(&root_path, extension, &content) {
+                                    Ok(coverage_data) => {
+                                        let data = SentWellKnownData {
+                                            data: CollectedWellKnown::Coverage(coverage_data),
+                                            filepath: rel_filepath,
+                                            file_hash,
+                                            content,
+                                        };
+                                        let _ = sender.send(data);
                                     }
+                                    Err(err) => eprintln!(
+                                        "Failed reading from well-known coverage format '{}'. Err: {err}",
+                                        filepath.display()
+                                    ),
                                 }
                             }
                         }
@@ -212,7 +211,7 @@ async fn collect_well_known<'db>(
             .expect("Checked above that one test run was collected");
         let test_run = shallow_data
             .1
-            .to_test_run(covered_files, coverage_timestamp);
+            .into_test_run(covered_files, coverage_timestamp);
         collection
             .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &shallow_data.0)
             .await?;
@@ -270,7 +269,7 @@ async fn collect_well_known<'db>(
 }
 
 fn to_sub_test_runs(
-    shallow_test_run_data: Vec<(RelativePathBuf, ShallowTestRun)>,
+    shallow_test_run_data: Vec<(RelativePathBuf, Box<ShallowTestRun>)>,
     coverage_timestamp: Option<OffsetDateTime>,
 ) -> (String, OffsetDateTime, u32, Vec<(RelativePathBuf, TestRun)>) {
     let mut test_run_names = Vec::new();
@@ -289,7 +288,7 @@ fn to_sub_test_runs(
                 earliest_utc_date = s.1.utc_date;
             }
 
-            (s.0, s.1.to_test_run(vec![], coverage_timestamp))
+            (s.0, s.1.into_test_run(vec![], coverage_timestamp))
         })
         .collect();
 
@@ -355,7 +354,7 @@ struct SentWellKnownData {
 enum CollectedWellKnown {
     /// A test run collected from a well-known test output format.
     /// This will not contain coverage information yet, because no well-known test format contains this information.
-    Test(ShallowTestRun),
+    Test(Box<ShallowTestRun>),
     Coverage(WellKnownCoverageData),
 }
 
@@ -416,29 +415,28 @@ async fn collect_schema<'db>(
             Box::new(move |path_res| {
                 if let Ok(path) = path_res {
                     let filepath = path.path();
-                    if filepath.is_file() {
-                        if let Ok(content) = crate::io::sync_read_encoding_independent(filepath)
-                            && let Ok(rel_filepath) = filepath.relative_to(&root_path)
-                        {
-                            let file_hash = FmtHash::new(&content);
-                            let file = CollectableFile::new(&rel_filepath, &file_hash, &content);
+                    if filepath.is_file()
+                        && let Ok(content) = crate::io::sync_read_encoding_independent(filepath)
+                        && let Ok(rel_filepath) = filepath.relative_to(&root_path)
+                    {
+                        let file_hash = FmtHash::new(&content);
+                        let file = CollectableFile::new(&rel_filepath, &file_hash, &content);
 
-                            // TODO: proper logging + error handling
-                            match collect_fn(&file) {
-                                Ok(schema) => {
-                                    let data = SentSchemaData {
-                                        schema,
-                                        filepath: rel_filepath,
-                                        file_hash,
-                                        content,
-                                    };
-                                    let _ = sender.send(data);
-                                }
-                                Err(err) => eprintln!(
-                                    "Failed reading schema from '{}'. Err: {err}",
-                                    filepath.display()
-                                ),
+                        // TODO: proper logging + error handling
+                        match collect_fn(&file) {
+                            Ok(schema) => {
+                                let data = SentSchemaData {
+                                    schema,
+                                    filepath: rel_filepath,
+                                    file_hash,
+                                    content,
+                                };
+                                let _ = sender.send(data);
                             }
+                            Err(err) => eprintln!(
+                                "Failed reading schema from '{}'. Err: {err}",
+                                filepath.display()
+                            ),
                         }
                     }
                 }

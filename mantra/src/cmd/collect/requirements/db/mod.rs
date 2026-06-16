@@ -24,7 +24,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &base_origin_hash
             && let Some(origin) = req_schema.origin
         {
-            self.insert_general_json(&hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone()).await?;
         }
 
         // TODO: do not stop at first collect error

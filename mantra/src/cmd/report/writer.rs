@@ -56,7 +56,7 @@ impl<'templates> ReportWriter<'templates> {
             let content = if format == &ReportFormat::Json {
                 json5::to_string(&schema)?
             } else {
-                self.templates.render(&template_name, &format, &context)?
+                self.templates.render(&template_name, format, &context)?
             };
             let mut path = filepath.to_path_buf();
             path.set_extension(format.as_extension());

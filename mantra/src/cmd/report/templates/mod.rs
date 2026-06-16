@@ -85,7 +85,7 @@ impl<'templates> MantraTemplates<'templates> {
         let read_dir = tokio::fs::read_dir(dir).await?;
         let mut dir_stream = ReadDirStream::new(read_dir);
 
-        while let Some(res) = dir_stream.next().await {            
+        while let Some(res) = dir_stream.next().await {
             if let Ok(dir_entry) = res
                 && let Some(extension) = dir_entry.path().extension()
                 && ReportFormat::try_from(extension).is_ok()
@@ -111,7 +111,7 @@ impl<'templates> MantraTemplates<'templates> {
 
         let template = self
             .environment
-            .get_template(&template_name.template_name_for_format(format))?;
+            .get_template(template_name.template_name_for_format(format))?;
         Ok(template.render(context)?)
     }
 }

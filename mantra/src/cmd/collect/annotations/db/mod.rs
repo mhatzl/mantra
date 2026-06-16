@@ -23,7 +23,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &base_origin_hash
             && let Some(origin) = annotaiton_schema.origin
         {
-            self.insert_general_json(&hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone()).await?;
         }
 
         let collect_nr = self.collect_nr();

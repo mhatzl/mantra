@@ -94,7 +94,7 @@ impl RequirementReference {
             RelativePathBuf::from_iter(
                 limit_id
                     .split('.')
-                    .map(|id| crate::encoding::encode(&id, target).to_string()),
+                    .map(|id| crate::encoding::encode(id, target).to_string()),
             )
         } else {
             RelativePathBuf::from(crate::encoding::encode(&limit_id, target).to_string())

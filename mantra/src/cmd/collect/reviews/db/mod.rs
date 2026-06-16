@@ -25,7 +25,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &base_origin_hash
             && let Some(origin) = review_schema.origin
         {
-            self.insert_general_json(&hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone()).await?;
         }
 
         // TODO: do not stop at first collect error
@@ -260,7 +260,7 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &origin_hash
             && let Some(origin) = review.origin
         {
-            self.insert_general_json(&hash, origin).await?;
+            self.insert_general_json(hash, origin).await?;
         }
         let description_hash = review.description.as_ref().map(FmtHash::from);
         if let Some(hash) = &description_hash
@@ -562,7 +562,7 @@ impl<'db> Collection<'db> {
                     } else {
                         let entry = DbIgnoredEntry::from_test_case_state(
                             test_run_override.name.clone(),
-                            test_run_override.utc_date.clone(),
+                            test_run_override.utc_date,
                             test_case_override.name.clone(),
                             override_state.new,
                             comment_hash,
@@ -661,7 +661,7 @@ impl<'db> Collection<'db> {
                             } else {
                                 let entry = DbIgnoredEntry::from_test_case_line_coverage(
                                     test_run_override.name.clone(),
-                                    test_run_override.utc_date.clone(),
+                                    test_run_override.utc_date,
                                     test_case_override.name.clone(),
                                     coverage_override.filepath.clone(),
                                     line_nr,
@@ -760,7 +760,7 @@ impl<'db> Collection<'db> {
                         } else {
                             let entry = DbIgnoredEntry::from_test_run_line_coverage(
                                 test_run_override.name.clone(),
-                                test_run_override.utc_date.clone(),
+                                test_run_override.utc_date,
                                 coverage_override.filepath.clone(),
                                 line_nr,
                                 line_info.hits,

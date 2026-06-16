@@ -35,7 +35,7 @@ impl ReportConfig {
 
         let args_formats = HashSet::from_iter(args.formats.iter().cloned());
         let cfg_formats_len = cfg_file.reports.formats.len();
-        let cfg_formats = HashSet::from_iter(cfg_file.reports.formats.into_iter());
+        let cfg_formats = HashSet::from_iter(cfg_file.reports.formats);
 
         if args_formats.len() != args.formats.len() {
             log::warn!(

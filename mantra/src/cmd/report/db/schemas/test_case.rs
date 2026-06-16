@@ -58,10 +58,9 @@ pub async fn generate_test_case_schema<'db>(
         .utc_date
         .as_deref()
         .and_then(|d| mantra_schema::test_runs::test_date_from_str(d).ok());
-    let duration_sec = match metadata.duration_sec {
-        Some(d) => Some(mantra_schema::time::Duration::saturating_seconds_f64(d)),
-        None => None,
-    };
+    let duration_sec = metadata
+        .duration_sec
+        .map(mantra_schema::time::Duration::saturating_seconds_f64);
     let location = if let Some(filepath) = metadata.location_filepath
         && let Some(line) = metadata.location_line
     {
@@ -300,7 +299,7 @@ async fn test_case_related_requirements<'db>(
     let mut related_reqs: Vec<TestRelatedRequirement> = traced_reqs
         .into_iter()
         .map(|(req, traces)| TestRelatedRequirement {
-            req: req,
+            req,
             kind: TestRelatedRequirementKind::Traced(traces),
         })
         .collect();

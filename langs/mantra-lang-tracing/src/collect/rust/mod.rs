@@ -138,7 +138,7 @@ fn parse_cfg_attr_for_traces(
 ) -> Option<Vec<Trace>> {
     let token_tree = attrb_node.named_child(1)?;
 
-    traces_in_cfg_attr_token_tree(token_tree, content_bytes, start_line, &vec![])
+    traces_in_cfg_attr_token_tree(token_tree, content_bytes, start_line, &[])
 }
 
 fn traces_in_cfg_attr(
@@ -247,10 +247,7 @@ fn get_element(
     let item = cursor.node();
     let element_start_node = get_element_start_node(cursor);
     let element_content_hash = Some(FmtHash::new(&String::from_utf8(
-        content[element_start_node.start_byte()..=item.end_byte()]
-            .iter()
-            .copied()
-            .collect(),
+        content[element_start_node.start_byte()..=item.end_byte()].to_vec(),
     )?));
 
     let name = if item.kind() == "function_item"
@@ -266,20 +263,14 @@ fn get_element(
         || item.kind() == "trait_item"
     {
         item.child_by_field_name("name")
-            .map(|n| n.utf8_text(content).ok())
-            .flatten()
+            .and_then(|n| n.utf8_text(content).ok())
             .unwrap_or("<unknown>")
             .to_string()
     } else if item.kind() == "use_declaration" {
         item.utf8_text(content)?.to_string()
     } else if item.kind() == "impl_item" || item.kind() == "foreign_mod_item" {
         if let Some(body) = item.child_by_field_name("body") {
-            String::from_utf8(
-                content[item.start_byte()..body.start_byte()]
-                    .iter()
-                    .copied()
-                    .collect(),
-            )?
+            String::from_utf8(content[item.start_byte()..body.start_byte()].to_vec())?
         } else {
             item.utf8_text(content)?.to_string()
         }
@@ -454,7 +445,7 @@ fn get_ident_node<'a>(node: &Node<'a>) -> Option<Node<'a>> {
     } else if node.kind() == "scoped_identifier" {
         node.named_child(1)
     } else {
-        return None;
+        None
     }
 }
 

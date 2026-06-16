@@ -9,7 +9,7 @@ mod db;
 mod templates;
 mod writer;
 
-pub async fn report<'db>(db: &'db MantraDb, cfg: ReportConfig) -> Result<(), anyhow::Error> {
+pub async fn report(db: &MantraDb, cfg: ReportConfig) -> Result<(), anyhow::Error> {
     let mut templates = MantraTemplates::new()?;
 
     if let Some(template_dir) = &cfg.template_dir() {

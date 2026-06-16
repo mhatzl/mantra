@@ -35,6 +35,7 @@ impl<'a> CollectableFile<'a> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub(super) trait SingleFileCollectable<'db, T> {
     fn path(&self) -> &RelativePath;
     fn pattern(&self) -> Option<&str>;
@@ -97,34 +98,30 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                         Box::new(move |path_res| {
                             if let Ok(path) = path_res {
                                 let filepath = path.path();
-                                if filepath.is_file() {
-                                    if let Ok(content) =
+                                if filepath.is_file()
+                                    && let Ok(content) =
                                         crate::io::sync_read_encoding_independent(filepath)
-                                        && let Ok(rel_filepath) = filepath.relative_to(&root_path)
-                                    {
-                                        let file_hash = FmtHash::new(&content);
-                                        let file = CollectableFile::new(
-                                            &rel_filepath,
-                                            &file_hash,
-                                            &content,
-                                        );
+                                    && let Ok(rel_filepath) = filepath.relative_to(&root_path)
+                                {
+                                    let file_hash = FmtHash::new(&content);
+                                    let file =
+                                        CollectableFile::new(&rel_filepath, &file_hash, &content);
 
-                                        // TODO: proper logging + error handling
-                                        match collect_fn(&file) {
-                                            Ok(schema) => {
-                                                let data = SentData {
-                                                    schema,
-                                                    filepath: rel_filepath,
-                                                    file_hash,
-                                                    content,
-                                                };
-                                                let _ = sender.send(data);
-                                            }
-                                            Err(err) => eprintln!(
-                                                "Failed reading schema from '{}'. Err: {err}",
-                                                filepath.display()
-                                            ),
+                                    // TODO: proper logging + error handling
+                                    match collect_fn(&file) {
+                                        Ok(schema) => {
+                                            let data = SentData {
+                                                schema,
+                                                filepath: rel_filepath,
+                                                file_hash,
+                                                content,
+                                            };
+                                            let _ = sender.send(data);
                                         }
+                                        Err(err) => eprintln!(
+                                            "Failed reading schema from '{}'. Err: {err}",
+                                            filepath.display()
+                                        ),
                                     }
                                 }
                             }

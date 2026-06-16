@@ -53,27 +53,26 @@ impl<'db> Collection<'db> {
                         Box::new(move |path_res| {
                             if let Ok(path) = path_res {
                                 let filepath = path.path();
-                                if filepath.is_file() {
-                                    if let Ok(content) =
+                                if filepath.is_file()
+                                    && let Ok(content) =
                                         crate::io::sync_read_encoding_independent(filepath)
-                                        && let Ok(rel_filepath) = filepath.relative_to(&root_path)
-                                    {
-                                        let file_hash = FmtHash::new(&content);
+                                    && let Ok(rel_filepath) = filepath.relative_to(&root_path)
+                                {
+                                    let file_hash = FmtHash::new(&content);
 
-                                        match LsifGraph::create(&content) {
-                                            Ok(lsif_graph) => {
-                                                let data = SentData {
-                                                    lsif_graph,
-                                                    filepath: rel_filepath,
-                                                    file_hash,
-                                                };
-                                                let _ = sender.send(data);
-                                            }
-                                            Err(err) => eprintln!(
-                                                "Failed reading schema from '{}'. Err: {err}",
-                                                filepath.display()
-                                            ),
+                                    match LsifGraph::create(&content) {
+                                        Ok(lsif_graph) => {
+                                            let data = SentData {
+                                                lsif_graph,
+                                                filepath: rel_filepath,
+                                                file_hash,
+                                            };
+                                            let _ = sender.send(data);
                                         }
+                                        Err(err) => eprintln!(
+                                            "Failed reading schema from '{}'. Err: {err}",
+                                            filepath.display()
+                                        ),
                                     }
                                 }
                             }

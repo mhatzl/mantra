@@ -207,41 +207,41 @@ impl LsifGraph {
 
         let mut items = Vec::new();
 
-        if let Some(doc_id) = self.documents.get(&abs_doc) {
-            if let Some(item_refs) = self.doc_def_items.get(doc_id) {
-                for item_ref in item_refs {
-                    let range_element = self.lookup_element(
-                        item_ref
-                            .range_ids
-                            .first()
-                            .expect("At least one item definition must be available."),
-                    );
-                    let (start_line, end_line) = match &range_element {
-                        lsif::Element::Vertex(lsif::Vertex::Range { range, tag: _ }) => {
-                            (range.start.line, range.end.line)
+        if let Some(doc_id) = self.documents.get(&abs_doc)
+            && let Some(item_refs) = self.doc_def_items.get(doc_id)
+        {
+            for item_ref in item_refs {
+                let range_element = self.lookup_element(
+                    item_ref
+                        .range_ids
+                        .first()
+                        .expect("At least one item definition must be available."),
+                );
+                let (start_line, end_line) = match &range_element {
+                    lsif::Element::Vertex(lsif::Vertex::Range { range, tag: _ }) => {
+                        (range.start.line, range.end.line)
+                    }
+                    _ => unreachable!("Entry is a range"),
+                };
+
+                if let Some(result_set_id) = self.reference_in.get(&item_ref.ref_result_id)
+                    && let Some(moniker_id) = self.moniker_out.get(result_set_id)
+                {
+                    let moniker_element = self.lookup_element(moniker_id);
+
+                    let name = match &moniker_element {
+                        lsif::Element::Vertex(lsif::Vertex::Moniker(moniker)) => {
+                            moniker.identifier.clone()
                         }
-                        _ => unreachable!("Entry is a range"),
+                        _ => unreachable!("Entry is a moniker"),
                     };
 
-                    if let Some(result_set_id) = self.reference_in.get(&item_ref.ref_result_id) {
-                        if let Some(moniker_id) = self.moniker_out.get(result_set_id) {
-                            let moniker_element = self.lookup_element(moniker_id);
-
-                            let name = match &moniker_element {
-                                lsif::Element::Vertex(lsif::Vertex::Moniker(moniker)) => {
-                                    moniker.identifier.clone()
-                                }
-                                _ => unreachable!("Entry is a moniker"),
-                            };
-
-                            items.push(Item {
-                                name,
-                                filepath: doc.to_string(),
-                                start_line,
-                                end_line,
-                            });
-                        }
-                    }
+                    items.push(Item {
+                        name,
+                        filepath: doc.to_string(),
+                        start_line,
+                        end_line,
+                    });
                 }
             }
         }
@@ -273,21 +273,20 @@ impl LsifGraph {
                 _ => unreachable!("Entry is a range"),
             };
 
-            if range_start_line == line {
-                if let Some(result_set_id) = self.range_to_result_set.get(range_id) {
-                    if let Some(moniker_id) = self.moniker_out.get(result_set_id) {
-                        let moniker_element = self.lookup_element(moniker_id);
+            if range_start_line == line
+                && let Some(result_set_id) = self.range_to_result_set.get(range_id)
+                && let Some(moniker_id) = self.moniker_out.get(result_set_id)
+            {
+                let moniker_element = self.lookup_element(moniker_id);
 
-                        let name = match moniker_element {
-                            lsif::Element::Vertex(lsif::Vertex::Moniker(moniker)) => {
-                                moniker.identifier.clone()
-                            }
-                            _ => unreachable!("Entry is a moniker"),
-                        };
-
-                        return Some(name);
+                let name = match moniker_element {
+                    lsif::Element::Vertex(lsif::Vertex::Moniker(moniker)) => {
+                        moniker.identifier.clone()
                     }
-                }
+                    _ => unreachable!("Entry is a moniker"),
+                };
+
+                return Some(name);
             }
         }
 

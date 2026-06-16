@@ -174,7 +174,7 @@ async fn create_requirements_structure<'db, 'templates>(
 
     tokio::fs::create_dir(&requirements_path).await?;
 
-    let requirements_schema = generate_requirements_schema(transaction, &product).await?;
+    let requirements_schema = generate_requirements_schema(transaction, product).await?;
     let requirements_summary = requirements_schema.requirements.summary;
 
     // Note: The requirements schema splits all requirements into their states.
@@ -190,13 +190,12 @@ async fn create_requirements_structure<'db, 'templates>(
         .chain(requirements_schema.requirements.ignored.iter())
         .chain(requirements_schema.requirements.deprecated.iter())
     {
-        let req_path = req.os_path().to_path(&writer.base_path());
+        let req_path = req.os_path().to_path(writer.base_path());
         if let Some(parent_path) = req_path.parent() {
             tokio::fs::create_dir_all(parent_path).await?;
         }
 
-        let requirement_schema =
-            generate_requirement_schema(transaction, &product, &req.id).await?;
+        let requirement_schema = generate_requirement_schema(transaction, product, &req.id).await?;
         writer
             .write_file(
                 &req_path,
@@ -230,7 +229,7 @@ async fn create_reviews_structure<'db, 'templates>(
 
     tokio::fs::create_dir(&reviews_path).await?;
 
-    let reviews_schema = generate_reviews_schema(transaction, &product).await?;
+    let reviews_schema = generate_reviews_schema(transaction, product).await?;
     let reviews_summary = reviews_schema.reviews.summary;
 
     for review in reviews_schema
@@ -239,9 +238,9 @@ async fn create_reviews_structure<'db, 'templates>(
         .iter()
         .chain(reviews_schema.reviews.obsolete.iter())
     {
-        let review_path = review.os_path().to_path(&writer.base_path());
+        let review_path = review.os_path().to_path(writer.base_path());
 
-        let review_schema = generate_review_schema(transaction, &product, review).await?;
+        let review_schema = generate_review_schema(transaction, product, review).await?;
         writer
             .write_file(
                 &review_path,
@@ -275,7 +274,7 @@ async fn create_tests_structure<'db, 'templates>(
 
     tokio::fs::create_dir(&test_runs_path).await?;
 
-    let test_runs_schema = generate_test_runs_schema(transaction, &product).await?;
+    let test_runs_schema = generate_test_runs_schema(transaction, product).await?;
     let test_runs = &test_runs_schema.test_runs;
     let test_cases_summary = test_runs_schema.test_cases_summary;
 
@@ -289,11 +288,10 @@ async fn create_tests_structure<'db, 'templates>(
     {
         let test_run_path = test_run.os_path().to_path(writer.base_path());
 
-        let test_run_schema = generate_test_run_schema(transaction, &product, test_run).await?;
+        let test_run_schema = generate_test_run_schema(transaction, product, test_run).await?;
 
         if let Some(test_cases) = &test_run_schema.test_cases {
-            create_test_cases_structure(transaction, writer, &product, test_run, test_cases)
-                .await?;
+            create_test_cases_structure(transaction, writer, product, test_run, test_cases).await?;
         }
 
         writer
@@ -337,7 +335,7 @@ async fn create_test_cases_structure<'db, 'templates>(
         }
 
         let test_case_schema =
-            generate_test_case_schema(transaction, &product, test_run, test_case).await?;
+            generate_test_case_schema(transaction, product, test_run, test_case).await?;
 
         writer
             .write_file(
