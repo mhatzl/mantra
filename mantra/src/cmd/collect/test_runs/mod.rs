@@ -20,6 +20,7 @@ use crate::cmd::collect::{
         WellKnownTest, WellKnownTestFormat,
     },
     collector::CollectableFile,
+    merge_local_and_base_properties,
     test_runs::convert::{
         ShallowTestRun, WellKnownCoverageConversion, WellKnownCoverageData, WellKnownTestConversion,
     },
@@ -393,9 +394,9 @@ struct SentSchemaData {
 async fn collect_schema<'db>(
     collection: &mut Collection<'db>,
     path: &RelativePath,
-    origin: Option<Origin>,
-    test_run_properties: Option<Properties>,
-    test_case_properties: Option<Properties>,
+    base_origin: Option<Origin>,
+    base_test_run_properties: Option<Properties>,
+    base_test_case_properties: Option<Properties>,
     pattern: Option<&str>,
 ) -> Result<(), anyhow::Error> {
     let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
@@ -422,7 +423,7 @@ async fn collect_schema<'db>(
                         let file_hash = FmtHash::new(&content);
                         let file = CollectableFile::new(&rel_filepath, &file_hash, &content);
 
-                        // TODO: proper logging + error handling
+                        // TODO: proper error handling
                         match collect_fn(&file) {
                             Ok(schema) => {
                                 let data = SentSchemaData {
@@ -433,7 +434,7 @@ async fn collect_schema<'db>(
                                 };
                                 let _ = sender.send(data);
                             }
-                            Err(err) => eprintln!(
+                            Err(err) => log::error!(
                                 "Failed reading schema from '{}'. Err: {err}",
                                 filepath.display()
                             ),
@@ -448,13 +449,37 @@ async fn collect_schema<'db>(
         Ok(())
     });
 
-    while let Some(data) = schema_rx.recv().await {
+    while let Some(mut data) = schema_rx.recv().await {
         collection
             .insert_file_hash(&data.filepath, &data.file_hash)
             .await?;
         collection
             .insert_file_content(&data.filepath, &data.file_hash, &data.content)
             .await?;
+
+        if base_origin.is_some() && data.schema.origin.is_none() {
+            data.schema.origin = base_origin.clone();
+        }
+
+        if base_test_run_properties.is_some() && data.schema.test_run_properties.is_none() {
+            data.schema.test_run_properties = base_test_run_properties.clone();
+        } else if base_test_run_properties.is_some() && data.schema.test_run_properties.is_some() {
+            data.schema.test_run_properties = merge_local_and_base_properties(
+                data.schema.test_run_properties,
+                &base_test_run_properties,
+            );
+        }
+
+        if base_test_case_properties.is_some() && data.schema.test_case_properties.is_none() {
+            data.schema.test_case_properties = base_test_case_properties.clone();
+        } else if base_test_case_properties.is_some() && data.schema.test_case_properties.is_some()
+        {
+            data.schema.test_case_properties = merge_local_and_base_properties(
+                data.schema.test_case_properties,
+                &base_test_case_properties,
+            );
+        }
+
         collection
             .update_per_test_run_schema(Some(&data.filepath), data.schema)
             .await?;

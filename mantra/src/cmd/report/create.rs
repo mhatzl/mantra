@@ -99,7 +99,7 @@ pub async fn create_report<'db, 'templates>(
     Ok(())
 }
 
-async fn create_products_structure<'db, 'templates>(
+async fn create_products_structure<'templates>(
     writer: &ReportWriter<'templates>,
     schema: ProductsReportSchema,
 ) -> Result<(), anyhow::Error> {
