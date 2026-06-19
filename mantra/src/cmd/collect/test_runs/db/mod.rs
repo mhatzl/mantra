@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::{
     FmtHash, Properties,
     path::RelativePath,
@@ -340,7 +341,8 @@ impl<'db> Collection<'db> {
             filepath
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to insert data into TestRunDataFilepaths")?;
 
         Ok(())
     }
@@ -436,7 +438,8 @@ impl<'db> Collection<'db> {
             data_hash
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to insert data into TestRuns")?;
 
         if let Some(props) =
             merge_local_and_base_properties(test_run.properties, base_test_run_props)
@@ -476,7 +479,8 @@ impl<'db> Collection<'db> {
                     value_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert data into TestRunProperties")?;
             }
         }
 
@@ -513,7 +517,8 @@ impl<'db> Collection<'db> {
                     revision.comment
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert data into TestRunRevisions")?;
 
                 for author in revision.authors {
                     sqlx::query!(
@@ -546,7 +551,8 @@ impl<'db> Collection<'db> {
                         author
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await
+                    .context("Failed to insert data into TestRunRevisionAuthors")?;
                 }
             }
         }
@@ -588,7 +594,8 @@ impl<'db> Collection<'db> {
                 child_test_run.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to insert data into TestRunHierarchies")?;
 
             // foreign key constraints are deferred for test run hierarchies
             // => safe to add child test run after hierarchy inside the same transaction
@@ -646,7 +653,8 @@ impl<'db> Collection<'db> {
                     log_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert data into TestRunLogs")?;
             }
         }
 
@@ -697,7 +705,8 @@ impl<'db> Collection<'db> {
                     line.hits
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert data into TestRunLineCoverage")?;
             }
         }
 
@@ -759,7 +768,8 @@ impl<'db> Collection<'db> {
                 duration
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to insert data into TestCases")?;
 
             for verified_req in test_case.verified_reqs {
                 sqlx::query!(
@@ -792,7 +802,13 @@ impl<'db> Collection<'db> {
                     verified_req
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to insert req '{}' into TestCaseVerifiedRequirements",
+                        verified_req
+                    )
+                })?;
             }
 
             if let Some(properties) =
@@ -836,7 +852,7 @@ impl<'db> Collection<'db> {
                         value_hash
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await.context("Failed to insert data into TestCaseProperties")?;
                 }
             }
 
@@ -888,7 +904,8 @@ impl<'db> Collection<'db> {
                         log_hash
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await
+                    .context("Failed to insert data into TestCaseLogs")?;
                 }
             }
 
@@ -939,7 +956,8 @@ impl<'db> Collection<'db> {
                     location.line
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert data into TestCaseLocations")?;
             }
 
             if let Some(state_props) = test_case.state_properties {
@@ -981,7 +999,7 @@ impl<'db> Collection<'db> {
                         value_hash
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await.context("Failed to insert data into TestCaseStateProperties")?;
                 }
             }
 
@@ -1036,7 +1054,8 @@ impl<'db> Collection<'db> {
                         line.hits
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await
+                    .context("Failed to insert data into TestCaseLineCoverage")?;
                 }
             }
         }

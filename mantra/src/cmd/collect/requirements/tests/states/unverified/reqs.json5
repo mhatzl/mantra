@@ -1,7 +1,7 @@
 {
     requirements: [{
         id: "req-1",
-        title: "Verified First Requirement",
+        title: "Directly verified First Requirement, but indirectly unverified",
         origin: "Unverified state test",
     },{
         id: "req-1.sub-1",

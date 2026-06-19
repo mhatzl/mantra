@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::{
     FmtHash, Properties, path::RelativePath, product::ProductId, time::OffsetDateTime,
 };
@@ -25,11 +26,23 @@ mod test_setup;
 pub async fn collect(db: &MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Error> {
     let mut collection = collect_data(db, cfg).await?;
 
-    collection.aggregate_requirements_data().await?;
-    collection.aggregate_annotations_data().await?;
-    collection.aggregate_test_run_data().await?;
+    collection
+        .aggregate_requirements_data()
+        .await
+        .context("Failed to aggregate requirements data")?;
+    collection
+        .aggregate_annotations_data()
+        .await
+        .context("Failed to aggregate annotations data")?;
+    collection
+        .aggregate_test_run_data()
+        .await
+        .context("Failed to aggregated test runs data")?;
 
-    collection.aggregate_verification_data().await?;
+    collection
+        .aggregate_verification_data()
+        .await
+        .context("Failed to aggregate verification states")?;
 
     collection.commit().await?;
 
@@ -41,31 +54,66 @@ async fn collect_data<'db>(
     cfg: CollectConfig,
 ) -> Result<Collection<'db>, anyhow::Error> {
     let mut collection = Collection::new(db, &cfg).await?;
-    collection.update_product(cfg.product).await?;
+    collection
+        .update_product(cfg.product)
+        .await
+        .context("Failed to update product data")?;
 
     let req_collector = SingleFileCollector::new(collection);
-    let mut collection = req_collector.collect(cfg.requirements).await?;
+    let mut collection = req_collector
+        .collect(cfg.requirements)
+        .await
+        .context("Failed to collect requirements")?;
     // Note: dot-hierarchy updated explicitely after collecting all requirements,
     // because not all *dot-parts* may have been added as requirements.
     // e.g. top.missing.lead-id => skipping "missing" if not available as requirement
-    collection.update_req_dot_hierarchy().await?;
-    collection.delete_outdated_reqs().await?;
+    collection
+        .update_req_dot_hierarchy()
+        .await
+        .context("Failed to update the requirements hierarchy")?;
+    collection
+        .delete_outdated_reqs()
+        .await
+        .context("Failed to delete outdated requirement data")?;
 
     let annotation_collector = SingleFileCollector::new(collection);
-    let mut collection = annotation_collector.collect(cfg.annotations).await?;
-    collection.resolve_element_identifier(cfg.lsif).await?;
-    collection.delete_outdated_annotations().await?;
+    let mut collection = annotation_collector
+        .collect(cfg.annotations)
+        .await
+        .context("Failed to collect annotations")?;
+    collection
+        .resolve_element_identifier(cfg.lsif)
+        .await
+        .context("Failed to resolve element identifiers")?;
+    collection
+        .delete_outdated_annotations()
+        .await
+        .context("Failed to delete outdated annotation data")?;
 
-    test_runs::collect(&mut collection, cfg.test_runs).await?;
-    collection.delete_outdated_test_runs().await?;
+    test_runs::collect(&mut collection, cfg.test_runs)
+        .await
+        .context("Failed to collect test runs")?;
+    collection
+        .delete_outdated_test_runs()
+        .await
+        .context("Failed to delete outdated test run data")?;
 
     let review_collector = SingleFileCollector::new(collection);
-    let mut collection = review_collector.collect(cfg.reviews).await?;
-    collection.delete_outdated_reviews().await?;
+    let mut collection = review_collector
+        .collect(cfg.reviews)
+        .await
+        .context("Failed to collect reviews")?;
+    collection
+        .delete_outdated_reviews()
+        .await
+        .context("Failed to delete outdated review data")?;
 
     // product cleanup after all other data was collected,
     // because product data may get updated from any source.
-    collection.delete_outdated_product_info().await?;
+    collection
+        .delete_outdated_product_info()
+        .await
+        .context("Failed to delete outdated product data")?;
 
     Ok(collection)
 }

@@ -1,0 +1,38 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Ignored First Requirement",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Ignored)",
+        origin: "Ignored state test",
+    },{
+        id: "req-1.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Ignored)",
+        origin: "Ignored state test",
+    },{
+        id: "req-1.sub-2",
+        title: "Second Sub-Requirement (Indirectly Ignored)",
+        origin: "Ignored state test",
+    },{
+        id: "req-2",
+        title: "Regular Requirement",
+        origin: "Ignored state test",
+        ignore: false,
+    },{
+        id: "req-2.sub-1",
+        title: "First Sub-Requirement (Directly Ignored)",
+        origin: "Ignored state test",
+        ignore: true,
+    },{
+        id: "req-2.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Ignored)",
+        origin: "Ignored state test",
+    },{
+        id: "req-2.sub-2",
+        title: "Second Sub-Requirement",
+        origin: "Ignored state test",
+    }]
+}

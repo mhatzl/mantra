@@ -122,7 +122,7 @@ async fn collect_well_known<'db>(
                             let file_hash = FmtHash::new(&content);
 
                             if matches_test_format {
-                                // TODO: proper logging + error handling
+                                // TODO: proper error handling
                                 match test_format.to_shallow_test_run(&root_path, extension, &content) {
                                     Ok(shallow_test_run) => {
                                         let data = SentWellKnownData {
@@ -133,7 +133,7 @@ async fn collect_well_known<'db>(
                                         };
                                         let _ = sender.send(data);
                                     }
-                                    Err(err) => eprintln!(
+                                    Err(err) => log::error!(
                                         "Failed reading from well-known test format '{}'. Err: {err}",
                                         filepath.display()
                                     ),
@@ -150,7 +150,7 @@ async fn collect_well_known<'db>(
                                         };
                                         let _ = sender.send(data);
                                     }
-                                    Err(err) => eprintln!(
+                                    Err(err) => log::error!(
                                         "Failed reading from well-known coverage format '{}'. Err: {err}",
                                         filepath.display()
                                     ),
@@ -197,7 +197,7 @@ async fn collect_well_known<'db>(
 
     // merge shallow test runs + coverage data to proper test run
     if shallow_test_run_data.is_empty() {
-        eprintln!("No well-known test outputs found.");
+        log::warn!("No well-known test outputs found.");
         return Ok(());
     }
 

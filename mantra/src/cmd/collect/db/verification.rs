@@ -1007,7 +1007,7 @@ impl<'db> Collection<'db> {
                 id,
                 state
             )
-            with UsableNonLeafRequirements (
+            with recursive UsableNonLeafRequirements (
                 last_collect_nr,
                 product_id,
                 id
@@ -1036,47 +1036,81 @@ impl<'db> Collection<'db> {
                     )
                     and s.state = $4
                 )
-            ), ReqsWithUnverifiedNonOptionalDescendants (id) as (
-                select r.id
+            ), ReqsWithUnverifiedNonOptionalChildren (id, product_id) as (
+                select r.id, r.product_id
                 from UsableNonLeafRequirements r
                 where exists (
-                    select rd.id
-                    from RequirementDescendants rd, DirectRequirementVerificationStates s
-                        left join OptionalRequirements opt on
-                            s.last_collect_nr = opt.last_collect_nr
-                            and s.product_id = opt.product_id
-                            and s.id = opt.id
-                    where rd.last_collect_nr = $1 and rd.product_id = $2
-                    and rd.id = r.id and rd.descendant_id = s.id
-                    and rd.descendant_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
+                    select rh.child_req_id
+                    from
+                        RequirementHierarchies rh,
+                        DirectRequirementVerificationStates ds,
+                        LeafRequirements lr
+                    where r.id = rh.parent_req_id
+                    and r.product_id = rh.parent_product_id
+                    and rh.child_req_id = lr.id
+                    and rh.child_product_id = lr.product_id
+                    and lr.id = ds.id and lr.product_id = ds.product_id
+                    and ds.state = $6
+                    and not exists (
+                        select op.id
+                        from OptionalRequirements op
+                        where op.id = rh.child_req_id
+                        and op.product_id = rh.child_product_id
                     )
-                    and opt.id is null
-                    and s.state = $6
                 )
-            ), ReqsWithSkippedNonOptionalDescendants (id) as (
-                select r.id
+
+                union all
+
+                select r.id, r.product_id
+                from
+                    UsableNonLeafRequirements r,
+                    ReqsWithUnverifiedNonOptionalChildren uc,
+                    RequirementHierarchies rh
+                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
+                and uc.id = rh.child_req_id and uc.product_id = rh.child_product_id
+                and not exists (
+                    select op.id
+                    from OptionalRequirements op
+                    where op.id = rh.child_req_id
+                    and op.product_id = rh.child_product_id
+                )
+            ), ReqsWithSkippedNonOptionalChildren (id, product_id) as (
+                select r.id, r.product_id
                 from UsableNonLeafRequirements r
                 where exists (
-                    select rd.id
-                    from RequirementDescendants rd, DirectRequirementVerificationStates s
-                        left join OptionalRequirements opt on
-                            s.last_collect_nr = opt.last_collect_nr
-                            and s.product_id = opt.product_id
-                            and s.id = opt.id
-                    where rd.last_collect_nr = $1 and rd.product_id = $2
-                    and rd.id = r.id and rd.descendant_id = s.id
-                    and rd.descendant_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
+                    select rh.child_req_id
+                    from
+                        RequirementHierarchies rh,
+                        DirectRequirementVerificationStates ds,
+                        LeafRequirements lr
+                    where r.id = rh.parent_req_id
+                    and r.product_id = rh.parent_product_id
+                    and rh.child_req_id = lr.id
+                    and rh.child_product_id = lr.product_id
+                    and lr.id = ds.id and lr.product_id = ds.product_id
+                    and ds.state = $5
+                    and not exists (
+                        select op.id
+                        from OptionalRequirements op
+                        where op.id = rh.child_req_id
+                        and op.product_id = rh.child_product_id
                     )
-                    and opt.id is null
-                    and s.state = $5
+                )
+
+                union all
+
+                select r.id, r.product_id
+                from
+                    UsableNonLeafRequirements r,
+                    ReqsWithSkippedNonOptionalChildren sc,
+                    RequirementHierarchies rh
+                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
+                and sc.id = rh.child_req_id and sc.product_id = rh.child_product_id
+                and not exists (
+                    select op.id
+                    from OptionalRequirements op
+                    where op.id = rh.child_req_id
+                    and op.product_id = rh.child_product_id
                 )
             ), ReqsWithVerifiedNonOptionalDescendants (id) as (
                 select r.id
@@ -1099,38 +1133,66 @@ impl<'db> Collection<'db> {
                     and opt.id is null
                     and s.state = $3
                 )
-            ), ReqsWithOnlyVerifiedOptionalChildren (id) as (
-                select r.id
-                from UsableNonLeafRequirements r
-                where not exists (
-                    -- non-optional child
+            ), ReqsWithOnlyOptionalChildren (id, product_id) as (
+                -- Note: Includes leaf requirements needed for indirect check later
+                select r.id, r.product_id
+                from UsableRequirements r
+                where r.product_id = $2 and not exists (
                     select rh.child_req_id
-                    from RequirementHierarchies rh, DirectRequirementVerificationStates s
-                        left join OptionalRequirements opt on
-                            s.last_collect_nr = opt.last_collect_nr
-                            and s.product_id = opt.product_id
-                            and s.id = opt.id
-                    where rh.last_collect_nr = $1 and rh.parent_product_id = $2
-                    and rh.parent_req_id = r.id and rh.child_req_id = s.id
-                    and rh.child_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(p.last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
+                    from
+                        RequirementHierarchies rh,
+                        UsableRequirements ur
+                    where r.id = rh.parent_req_id
+                    and r.product_id = rh.parent_product_id
+                    and rh.child_req_id = ur.id
+                    and rh.child_product_id = ur.product_id
+                    and not exists (
+                        select op.id
+                        from OptionalRequirements op
+                        where op.id = rh.child_req_id
+                        and op.product_id = rh.child_product_id
                     )
-                    and opt.id is null
-                ) and exists (
-                    select rd.id
-                    from RequirementDescendants rd, DirectRequirementVerificationStates s
-                    where rd.last_collect_nr = $1 and rd.product_id = $2
-                    and rd.id = r.id and rd.descendant_id = s.id
-                    and rd.descendant_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
-                    )
-                    and s.state = $3
+                )
+            ),
+            -- may contain duplicate differing state entries of requirements
+            StatesOfReqWithOnlyOptionalChildren (id, product_id, state) as (
+                select lr.id, lr.product_id, ds.state
+                from
+                    LeafRequirements lr,
+                    DirectRequirementVerificationStates ds
+                where lr.id = ds.id and lr.product_id = ds.product_id
+
+                union all
+
+                select
+                    r.id,
+                    r.product_id,
+                    case
+                        when ds.state = $4 or sor.state = $4 then $4
+                        when ds.state = $3 or (ds.state = $6 and sor.state = $3) then $3
+                        else ds.state
+                    end
+                from
+                    ReqsWithOnlyOptionalChildren r,
+                    DirectRequirementVerificationStates ds,
+                    RequirementHierarchies rh,
+                    StatesOfReqWithOnlyOptionalChildren sor
+                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
+                and r.id = ds.id and r.product_id = ds.product_id
+                and sor.id = rh.child_req_id and sor.product_id = rh.child_product_id
+            ), VerifiedReqsWithOnlyOptionalChildren (id, product_id) as (
+                -- Note: we ignore failed states, because it is handled by ReqsWithFailedDescendants
+                -- This leaves indirectly verified by at least one child,
+                -- or direct requirement state entries.
+                -- This is sufficient for requirements with only optional children
+                select distinct sr.id, sr.product_id
+                from StatesOfReqWithOnlyOptionalChildren sr
+                where exists (
+                    select isr.id
+                    from StatesOfReqWithOnlyOptionalChildren isr
+                    where sr.id = isr.id
+                    and sr.product_id = isr.product_id
+                    and isr.state = $3
                 )
             )
             select
@@ -1144,24 +1206,36 @@ impl<'db> Collection<'db> {
                         where r.id = f.id
                     ) then $4
                     when exists (
-                        select f.id
-                        from ReqsWithUnverifiedNonOptionalDescendants f
-                        where r.id = f.id
+                        select u.id
+                        from ReqsWithUnverifiedNonOptionalChildren u
+                        where r.id = u.id
                     ) then $6
                     when exists (
-                        select f.id
-                        from ReqsWithSkippedNonOptionalDescendants f
-                        where r.id = f.id
+                        select s.id
+                        from ReqsWithSkippedNonOptionalChildren s
+                        where r.id = s.id
                     ) then $5
                     when exists (
-                        select f.id
-                        from ReqsWithVerifiedNonOptionalDescendants f
-                        where r.id = f.id
+                        select v.id
+                        from ReqsWithVerifiedNonOptionalDescendants v
+                        where r.id = v.id
                     ) then $3
                     when exists (
-                        select f.id
-                        from ReqsWithOnlyVerifiedOptionalChildren f
-                        where r.id = f.id
+                        select os.id
+                        from VerifiedReqsWithOnlyOptionalChildren os
+                        where r.id = os.id and r.product_id = os.product_id
+                        -- filter requirements that are only directly verified
+                        -- this requires that leaf requirements are part of VerifiedReqsWithOnlyOptionalChildren
+                        and exists (
+                            select ocs.id
+                            from
+                                VerifiedReqsWithOnlyOptionalChildren ocs,
+                                RequirementHierarchies rh
+                            where r.id = rh.parent_req_id
+                            and r.product_id = rh.parent_product_id
+                            and ocs.id = rh.child_req_id
+                            and ocs.product_id = rh.child_product_id
+                        )
                     ) then $3
                     else $6
                 end
@@ -1232,14 +1306,26 @@ impl<'db> Collection<'db> {
                     when ((ids.state is not null and ids.state = $4) or (ds.state is not null and ds.state = $4))
                     then $4
                     -- skipped
-                    when (ids.state is null or ids.state != $4)
-                    and ds.state is not null and (ds.state = $5
+                    when ds.state is not null and (ds.state = $5
                         or (ds.state = $6 and (ids.state is not null and ids.state = $5))
                     ) then $5
                     -- verified
-                    when (ids.state is null or ids.state != $4)
-                    and ds.state is not null and (ds.state = $3
-                        or (ds.state = $6 and (ids.state is not null and ids.state = $3))
+                    when ds.state is not null
+                    and ((ds.state = $3 and (
+                            ids.state is null
+                            -- only optional children with failed and skipped already handled above
+                            or not exists (
+                                select rh.parent_req_id
+                                from RequirementHierarchies rh
+                                where rh.parent_req_id = r.id and rh.parent_product_id = r.product_id
+                                and not exists (
+                                    select op.id
+                                    from OptionalRequirements op
+                                    where op.id = rh.child_req_id and op.product_id = rh.child_product_id
+                                )
+                            )
+                        ))
+                        or ((ds.state = $3 or ds.state = $6) and (ids.state is not null and ids.state = $3))
                     ) then $3
                     -- unverified
                     else $6

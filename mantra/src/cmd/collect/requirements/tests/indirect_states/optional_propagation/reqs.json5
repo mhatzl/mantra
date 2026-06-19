@@ -1,0 +1,80 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First Requirement (Indirectly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-1.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Directly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-1.sub-2",
+        title: "Second Sub-Requirement (Optional + Unverified)",
+        origin: "Optional requirement test",
+        optional: true,
+    },{
+        id: "req-2",
+        title: "Regular Requirement (Indirectly Failed)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-2.sub-1",
+        title: "First Sub-Requirement (Indirectly Failed)",
+        origin: "Optional requirement test",
+        optional: true,
+    },{
+        id: "req-2.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Optional + Directly Failed)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-2.sub-2",
+        title: "Second Sub-Requirement (Directly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-3",
+        title: "Third Requirement (Indirectly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-3.sub-1",
+        title: "First Sub-Requirement (Directly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-3.sub-2",
+        title: "Second Sub-Requirement (Optional + Unverified)",
+        origin: "Optional requirement test",
+        optional: true,
+    },{
+        id: "req-4",
+        title: "Fourth Requirement (Indirectly Verified)",
+        origin: "Optional requirement test",
+        optional: true
+    },{
+        id: "req-4.sub-1",
+        title: "First Sub-Requirement (Directly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-4.sub-2",
+        title: "Second Sub-Requirement (Unverified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-5",
+        title: "Fifth Requirement (Indirectly Verified)",
+        origin: "Optional requirement test",
+        optional: true
+    },{
+        id: "req-5.sub-1",
+        title: "First Sub-Requirement (Indirectly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-5.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Directly Verified)",
+        origin: "Optional requirement test",
+    },{
+        id: "req-5.sub-2",
+        title: "Second Sub-Requirement (Unverified)",
+        origin: "Optional requirement test",
+    }]
+}
