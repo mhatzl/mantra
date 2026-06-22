@@ -21,11 +21,11 @@
         parents: [{ id: "req-2" }]
     },
     {
-        id: "ignore-req",
-        title: "ignore requirement",
+        id: "excluded-req",
+        title: "exclude requirement",
         origin: "JSON schema",
         parents: [{ id: "req-2" }],
-        ignore: true
+        exclude: true
     },
     {
         id: "depr-req",

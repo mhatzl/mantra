@@ -51,15 +51,15 @@ pub struct RequirementReportSchema {
     /// **Note:** All potential children of such a requirement are also marked as deprecated.
     /// [req("req.deprecated")]
     pub deprecated: bool,
-    /// true: Instructs mantra to ignore the requirement for the product it is mapped to.
+    /// true: Instructs mantra to exclude the requirement for the product it is mapped to.
     ///
-    /// **Note:** All potential children of such a requirement will also be ignored.
-    /// [req("req.ignore")]
-    pub ignored: bool,
+    /// **Note:** All potential children of such a requirement will also be excluded.
+    /// [req("req.exclude")]
+    pub excluded: bool,
     /// true: Instructs mantra to treat the requirement for the product as optional.
     ///
     /// **Note:** All potential children of such a requirement are also marked as optional.
-    /// [req("req.ignore")]
+    /// [req("req.optional")]
     pub optional: bool,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
@@ -127,7 +127,7 @@ pub enum RequirementState {
     Skipped = 2,
     Unverified = 3,
     Deprecated = 4,
-    Ignored = 5,
+    Excluded = 5,
 }
 
 impl RequirementState {
@@ -146,7 +146,7 @@ impl TryFrom<i64> for RequirementState {
             2 => Ok(RequirementState::Skipped),
             3 => Ok(RequirementState::Unverified),
             4 => Ok(RequirementState::Deprecated),
-            5 => Ok(RequirementState::Ignored),
+            5 => Ok(RequirementState::Excluded),
             _ => Err(ConversionError::UnknownState),
         }
     }

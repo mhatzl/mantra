@@ -187,7 +187,7 @@ async fn create_requirements_structure<'db, 'templates>(
         .chain(requirements_schema.requirements.skipped.iter())
         .chain(requirements_schema.requirements.unverified.iter())
         .chain(requirements_schema.requirements.verified.iter())
-        .chain(requirements_schema.requirements.ignored.iter())
+        .chain(requirements_schema.requirements.excluded.iter())
         .chain(requirements_schema.requirements.deprecated.iter())
     {
         let req_path = req.os_path().to_path(writer.base_path());

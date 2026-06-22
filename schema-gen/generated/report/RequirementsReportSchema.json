@@ -122,15 +122,15 @@
         "skipped",
         "unverified",
         "deprecated",
-        "ignored"
+        "excluded"
       ]
     },
     "RequirementsOverview": {
       "type": "object",
       "required": [
         "deprecated",
+        "excluded",
         "failed",
-        "ignored",
         "skipped",
         "summary",
         "unverified",
@@ -143,13 +143,13 @@
             "$ref": "#/definitions/RequirementReference"
           }
         },
-        "failed": {
+        "excluded": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/RequirementReference"
           }
         },
-        "ignored": {
+        "failed": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/RequirementReference"
@@ -182,8 +182,8 @@
       "type": "object",
       "required": [
         "deprecated",
+        "excluded",
         "failed",
-        "ignored",
         "mandatory_total",
         "mandatory_verified",
         "manuals_total",
@@ -197,10 +197,10 @@
         "deprecated": {
           "$ref": "#/definitions/Aggregated"
         },
-        "failed": {
+        "excluded": {
           "$ref": "#/definitions/Aggregated"
         },
-        "ignored": {
+        "failed": {
           "$ref": "#/definitions/Aggregated"
         },
         "mandatory_total": {

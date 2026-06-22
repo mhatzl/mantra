@@ -57,16 +57,16 @@
         origin: "JSON schema",
         deprecated: true
     },{
-        id: "hl-1.ml-6-ignored",
+        id: "hl-1.ml-6-excluded",
         title: "Mid level requirement",
         origin: "JSON schema",
-        ignore: true
+        exclude: true
     },{
-        id: "hl-1.ml-6-ignored.low-lvl-1",
+        id: "hl-1.ml-6-excluded.low-lvl-1",
         title: "Low level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-1.ml-6-ignored.low-lvl-2",
+        id: "hl-1.ml-6-excluded.low-lvl-2",
         title: "Low level requirement",
         origin: "JSON schema",
     },{
@@ -125,10 +125,10 @@
         title: "Low level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-1.low-lvl-4.ignored-opt",
+        id: "hl-2.ml-1.low-lvl-4.excluded-opt",
         title: "Low level requirement",
         origin: "JSON schema",
-        ignore: true,
+        exclude: true,
         optional: true,
     },{
         id: "hl-2.ml-1.low-lvl-5",
@@ -180,20 +180,20 @@
         title: "Mid level requirement",
         origin: "JSON schema",
     },{
-        id: "hl-2.ml-3.failed-ignored",
+        id: "hl-2.ml-3.failed-excluded",
         title: "Low level requirement",
         origin: "JSON schema",
-        ignore: true
+        exclude: true
     },{
-        id: "hl-2.ml-3.skipped-ignored",
+        id: "hl-2.ml-3.skipped-excluded",
         title: "Low level requirement",
         origin: "JSON schema",
-        ignore: true
+        exclude: true
     },{
-        id: "hl-2.ml-3.verified-ignored",
+        id: "hl-2.ml-3.verified-excluded",
         title: "Low level requirement",
         origin: "JSON schema",
-        ignore: true
+        exclude: true
     },{
         id: "hl-2.ml-4",
         title: "Mid level requirement",

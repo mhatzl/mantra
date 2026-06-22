@@ -1273,7 +1273,7 @@ impl<'db> Collection<'db> {
         let req_skipped_nr = RequirementState::Skipped.as_nr();
         let req_unverified_nr = RequirementState::Unverified.as_nr();
         let req_deprecated_nr = RequirementState::Deprecated.as_nr();
-        let req_ignored_nr = RequirementState::Ignored.as_nr();
+        let req_excluded_nr = RequirementState::Excluded.as_nr();
 
         sqlx::query!(
             "
@@ -1297,7 +1297,7 @@ impl<'db> Collection<'db> {
                     ) then $7
                     when exists (
                         select ir.id
-                        from IgnoredRequirements ir
+                        from ExcludedRequirements ir
                         where r.last_collect_nr = ir.last_collect_nr
                         and r.product_id = ir.product_id
                         and r.id = ir.id
@@ -1355,7 +1355,7 @@ impl<'db> Collection<'db> {
             req_skipped_nr,
             req_unverified_nr,
             req_deprecated_nr,
-            req_ignored_nr
+            req_excluded_nr
         )
         .execute(self.connection_mut())
         .await?;

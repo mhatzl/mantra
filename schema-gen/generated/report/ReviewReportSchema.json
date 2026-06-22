@@ -111,7 +111,7 @@
             "null"
           ],
           "items": {
-            "$ref": "#/definitions/IgnoredRequirement"
+            "$ref": "#/definitions/IgnoredManualRequirementVerification"
           }
         },
         "test_case_line_coverage_overrides": {
@@ -147,7 +147,7 @@
         }
       }
     },
-    "IgnoredRequirement": {
+    "IgnoredManualRequirementVerification": {
       "type": "object",
       "required": [
         "comment",
@@ -346,7 +346,7 @@
         "skipped",
         "unverified",
         "deprecated",
-        "ignored"
+        "excluded"
       ]
     },
     "ResolvedOverrideCoveredLineInfo": {

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into UsableRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select last_collect_nr, product_id, id\n            from Requirements\n            where last_collect_nr = $1 and product_id = $2\n            except\n            select last_collect_nr, product_id, id\n            from\n            (\n                select last_collect_nr, product_id, id\n                from DeprecatedRequirements\n                where last_collect_nr = $1 and product_id = $2\n                union all\n                select last_collect_nr, product_id, id\n                from ExcludedRequirements\n                where last_collect_nr = $1 and product_id = $2\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "7e8253e1b0cf07065fa83d072d43b0fd198fedb22799395d172d33a4839ee9f2"
+}

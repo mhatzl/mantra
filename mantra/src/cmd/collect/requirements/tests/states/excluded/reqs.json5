@@ -1,0 +1,57 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Excluded First Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Excluded)",
+        origin: "Excluded state test",
+    },{
+        id: "req-2",
+        title: "Second Requirement (Not Excluded)",
+        origin: "Excluded state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Excluded Second Sub-Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-3",
+        title: "Excluded Third Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-4",
+        title: "Excluded + Failed Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-5",
+        title: "Excluded + Skipped Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-6",
+        title: "Excluded + Verified Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-7",
+        title: "Excluded + Manually Reviewed Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+        manual_verification: true,
+    },{
+        id: "req-8",
+        title: "Excluded Satisfy Traced Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    },{
+        id: "req-9",
+        title: "Excluded Verify Traced Requirement",
+        origin: "Excluded state test",
+        exclude: true,
+    }]
+}

@@ -4,8 +4,8 @@
   "type": "object",
   "required": [
     "deprecated",
+    "excluded",
     "id",
-    "ignored",
     "manual_verification",
     "optional",
     "product",
@@ -44,20 +44,20 @@
         "null"
       ]
     },
+    "excluded": {
+      "description": "true: Instructs mantra to exclude the requirement for the product it is mapped to.\n\n**Note:** All potential children of such a requirement will also be excluded. [req(\"req.exclude\")]",
+      "type": "boolean"
+    },
     "id": {
       "description": "ID of the requirement. [req(\"req.id\")]",
       "type": "string"
-    },
-    "ignored": {
-      "description": "true: Instructs mantra to ignore the requirement for the product it is mapped to.\n\n**Note:** All potential children of such a requirement will also be ignored. [req(\"req.ignore\")]",
-      "type": "boolean"
     },
     "manual_verification": {
       "description": "true: Marks the requirement to require manual verification.\n\n**Note:** All potential children of such a requirement are also marked to require manual verification. [req(\"req.manual\")]",
       "type": "boolean"
     },
     "optional": {
-      "description": "true: Instructs mantra to treat the requirement for the product as optional.\n\n**Note:** All potential children of such a requirement are also marked as optional. [req(\"req.ignore\")]",
+      "description": "true: Instructs mantra to treat the requirement for the product as optional.\n\n**Note:** All potential children of such a requirement are also marked as optional. [req(\"req.optional\")]",
       "type": "boolean"
     },
     "origin": {
@@ -338,7 +338,7 @@
         "skipped",
         "unverified",
         "deprecated",
-        "ignored"
+        "excluded"
       ]
     },
     "RequirementTracesOverview": {

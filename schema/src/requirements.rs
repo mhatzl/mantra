@@ -110,16 +110,16 @@ pub struct Requirement {
     /// [req("req.deprecated")]
     #[serde(default)]
     pub deprecated: bool,
-    /// true: Instructs mantra to ignore the requirement for the product it is mapped to.
+    /// true: Instructs mantra to exclude the requirement for the product it is mapped to.
     ///
-    /// **Note:** All potential children of such a requirement will also be ignored.
-    /// [req("req.ignore")]
+    /// **Note:** All potential children of such a requirement will also be excluded.
+    /// [req("req.exclude")]
     #[serde(default)]
-    pub ignore: bool,
+    pub exclude: bool,
     /// true: Instructs mantra to treat the requirement for the product as optional.
     ///
     /// **Note:** All potential children of such a requirement are also marked as optional.
-    /// [req("req.ignore")]
+    /// [req("req.optional")]
     #[serde(default)]
     pub optional: bool,
     /// List of custom properties of a requirement.

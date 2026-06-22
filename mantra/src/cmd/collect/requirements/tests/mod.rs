@@ -99,17 +99,17 @@ mod indirect_states {
     }
 
     #[sqlx::test]
-    async fn ignored_indirect_req(pool: MantraPool) {
-        let ignored_state = RequirementState::Ignored.as_nr();
+    async fn excluded_indirect_req(pool: MantraPool) {
+        let excluded_state = RequirementState::Excluded.as_nr();
 
-        let db = db_from_dir!(pool, "indirect_states/ignored_propagation").unwrap();
+        let db = db_from_dir!(pool, "indirect_states/excluded_propagation").unwrap();
 
-        let ignored_reqs: Vec<String> = sqlx::query!(
+        let excluded_reqs: Vec<String> = sqlx::query!(
             "
             select id from RequirementVerificationStates
             where state = $1
             ",
-            ignored_state
+            excluded_state
         )
         .fetch_all(
             db.connection()
@@ -124,36 +124,36 @@ mod indirect_states {
         .collect();
 
         assert!(
-            ignored_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have ignored state."
+            excluded_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have ignored state indirectly due to req-1."
+            excluded_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to have excluded state indirectly due to req-1."
         );
         assert!(
-            ignored_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to have ignored state indirectly due to req-1."
+            excluded_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to have excluded state indirectly due to req-1."
         );
         assert!(
-            ignored_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to have ignored state indirectly due to req-1."
+            excluded_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to have excluded state indirectly due to req-1."
         );
         assert!(
-            !ignored_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to **not** have ignored state."
+            !excluded_reqs.contains(&"req-2".to_string()),
+            "Expected req-2 to **not** have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have ignored state."
+            excluded_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to have ignored state indirectly due to req-1.sub-1."
+            excluded_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to have excluded state indirectly due to req-1.sub-1."
         );
         assert!(
-            !ignored_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to **not** have ignored state."
+            !excluded_reqs.contains(&"req-2.sub-2".to_string()),
+            "Expected req-2.sub-2 to **not** have excluded state."
         );
     }
 
@@ -924,17 +924,17 @@ mod states {
     }
 
     #[sqlx::test]
-    async fn ignored_req(pool: MantraPool) {
-        let ignore_state = RequirementState::Ignored.as_nr();
+    async fn excluded_req(pool: MantraPool) {
+        let exclude_state = RequirementState::Excluded.as_nr();
 
-        let db = db_from_dir!(pool, "states/ignored").unwrap();
+        let db = db_from_dir!(pool, "states/excluded").unwrap();
 
-        let ignored_reqs: Vec<String> = sqlx::query!(
+        let excluded_reqs: Vec<String> = sqlx::query!(
             "
             select id from RequirementVerificationStates
             where state = $1
             ",
-            ignore_state
+            exclude_state
         )
         .fetch_all(
             db.connection()
@@ -949,48 +949,48 @@ mod states {
         .collect();
 
         assert!(
-            ignored_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have ignored state."
+            excluded_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have ignored state indirectly due to req-1."
+            excluded_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to have excluded state indirectly due to req-1."
         );
         assert!(
-            !ignored_reqs.contains(&"req-2".to_string()),
-            "Req-2 must not be marked as ignored."
+            !excluded_reqs.contains(&"req-2".to_string()),
+            "Req-2 must not be marked as excluded."
         );
         assert!(
-            ignored_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have ignored state."
+            excluded_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to have ignored state."
+            excluded_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to have ignored state, even if covering test failed."
+            excluded_reqs.contains(&"req-4".to_string()),
+            "Expected req-4 to have excluded state, even if covering test failed."
         );
         assert!(
-            ignored_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to have ignored state, even if covered test was skipped."
+            excluded_reqs.contains(&"req-5".to_string()),
+            "Expected req-5 to have excluded state, even if covered test was skipped."
         );
         assert!(
-            ignored_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to have ignored state, even if covered test passed."
+            excluded_reqs.contains(&"req-6".to_string()),
+            "Expected req-6 to have excluded state, even if covered test passed."
         );
         assert!(
-            ignored_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to have ignored state, even if req was manually verified."
+            excluded_reqs.contains(&"req-7".to_string()),
+            "Expected req-7 to have excluded state, even if req was manually verified."
         );
         assert!(
-            ignored_reqs.contains(&"req-8".to_string()),
-            "Expected req-8 to have ignored state."
+            excluded_reqs.contains(&"req-8".to_string()),
+            "Expected req-8 to have excluded state."
         );
         assert!(
-            ignored_reqs.contains(&"req-9".to_string()),
-            "Expected req-9 to have ignored state."
+            excluded_reqs.contains(&"req-9".to_string()),
+            "Expected req-9 to have excluded state."
         );
     }
 

@@ -117,8 +117,8 @@
       "type": "object",
       "required": [
         "deprecated",
+        "excluded",
         "failed",
-        "ignored",
         "mandatory_total",
         "mandatory_verified",
         "manuals_total",
@@ -132,10 +132,10 @@
         "deprecated": {
           "$ref": "#/definitions/Aggregated"
         },
-        "failed": {
+        "excluded": {
           "$ref": "#/definitions/Aggregated"
         },
-        "ignored": {
+        "failed": {
           "$ref": "#/definitions/Aggregated"
         },
         "mandatory_total": {

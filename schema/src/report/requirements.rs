@@ -17,7 +17,7 @@ pub struct RequirementsOverview {
     pub skipped: Vec<RequirementReference>,
     pub unverified: Vec<RequirementReference>,
     pub verified: Vec<RequirementReference>,
-    pub ignored: Vec<RequirementReference>,
+    pub excluded: Vec<RequirementReference>,
     pub deprecated: Vec<RequirementReference>,
 }
 
@@ -46,7 +46,7 @@ pub struct RequirementsSummary {
     pub skipped: Aggregated,
     pub unverified: Aggregated,
     pub deprecated: Aggregated,
-    pub ignored: Aggregated,
+    pub excluded: Aggregated,
 }
 
 impl RequirementsSummary {
@@ -64,7 +64,7 @@ impl RequirementsSummary {
         self.skipped.cnt += other.skipped.cnt;
         self.unverified.cnt += other.unverified.cnt;
         self.deprecated.cnt += other.deprecated.cnt;
-        self.ignored.cnt += other.ignored.cnt;
+        self.excluded.cnt += other.excluded.cnt;
 
         self.update_percentages();
     }
@@ -83,6 +83,6 @@ impl RequirementsSummary {
         self.skipped.update_percentage(self.total);
         self.unverified.update_percentage(self.total);
         self.deprecated.update_percentage(self.total);
-        self.ignored.update_percentage(self.total);
+        self.excluded.update_percentage(self.total);
     }
 }

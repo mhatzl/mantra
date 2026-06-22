@@ -32,10 +32,10 @@ create table DeprecatedRequirements (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
--- Contains requirements that are marked to `ignore` them.
+-- Contains requirements that are marked to `exclude` them.
 --
 -- **Note:** Children of explicitly marked requirements are also affected.
-create table IgnoredRequirements (
+create table ExcludedRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     id text not null,
@@ -65,7 +65,7 @@ create table ManualRequirements (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
--- Contains requirements that are neither deprecated nor marked as `ignore = true`.
+-- Contains requirements that are neither deprecated nor excluded.
 create table UsableRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,

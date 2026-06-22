@@ -119,7 +119,7 @@ pub async fn generate_requirements_schema<'db>(
     let mut skipped = Vec::new();
     let mut unverified = Vec::new();
     let mut verified = Vec::new();
-    let mut ignored = Vec::new();
+    let mut excluded = Vec::new();
     let mut deprecated = Vec::new();
 
     for req in requirements {
@@ -144,8 +144,8 @@ pub async fn generate_requirements_schema<'db>(
             mantra_schema::report::requirement::RequirementState::Deprecated => {
                 deprecated.push(reference)
             }
-            mantra_schema::report::requirement::RequirementState::Ignored => {
-                ignored.push(reference)
+            mantra_schema::report::requirement::RequirementState::Excluded => {
+                excluded.push(reference)
             }
         }
     }
@@ -155,7 +155,7 @@ pub async fn generate_requirements_schema<'db>(
     summary.skipped.cnt = skipped.len() as i64;
     summary.unverified.cnt = unverified.len() as i64;
     summary.deprecated.cnt = deprecated.len() as i64;
-    summary.ignored.cnt = ignored.len() as i64;
+    summary.excluded.cnt = excluded.len() as i64;
 
     summary.update_percentages();
 
@@ -168,7 +168,7 @@ pub async fn generate_requirements_schema<'db>(
             skipped,
             unverified,
             verified,
-            ignored,
+            excluded,
             deprecated,
         },
     })

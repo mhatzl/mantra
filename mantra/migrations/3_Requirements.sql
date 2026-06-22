@@ -13,10 +13,10 @@ create table Requirements (
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
     deprecated bool not null,
-    -- Flag indicating whether the requirement should be ignored for this product.
-    -- `true`: The requirement must be ignored.
-    -- [req("req.ignored")]
-    ignore bool not null,
+    -- Flag indicating whether the requirement should be excluded for this product.
+    -- `true`: The requirement must be excluded.
+    -- [req("req.exclude")]
+    exclude bool not null,
     -- Flag indicating whether the requirement is optional to be verified.
     -- Verification state of optional requirements does **not** affect the state of parents.
     -- All children of an optional requirement are also optional.

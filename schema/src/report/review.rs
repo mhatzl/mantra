@@ -68,7 +68,7 @@ pub struct VerifiedRequirement {
 #[serde(rename_all = "snake_case")]
 pub struct IgnoredEntries {
     pub total: i64,
-    pub requirements: Option<Vec<IgnoredRequirement>>,
+    pub requirements: Option<Vec<IgnoredManualRequirementVerification>>,
     pub test_case_state_overrides: Option<Vec<IgnoredTestCaseStateOverride>>,
     pub test_case_line_coverage_overrides: Option<Vec<IgnoredTestCaseLineCoverageOverride>>,
     pub test_run_line_coverage_overrides: Option<Vec<IgnoredTestRunLineCoverageOverride>>,
@@ -78,7 +78,7 @@ pub struct IgnoredEntries {
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub struct IgnoredRequirement {
+pub struct IgnoredManualRequirementVerification {
     pub id: ReqId,
     pub comment: String,
 }

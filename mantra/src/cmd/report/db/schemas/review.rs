@@ -6,11 +6,11 @@ use mantra_schema::{
         product::ProductReportSchema,
         requirement::RequirementReference,
         review::{
-            IgnoredEntries, IgnoredRequirement, IgnoredTestCaseLineCoverageOverride,
-            IgnoredTestCaseStateOverride, IgnoredTestRunLineCoverageOverride,
-            ResolvedOverrideCoveredLineInfo, ResolvedOverrideFileCoverage,
-            ResolvedOverrideTestCase, ResolvedOverrideTestCaseState, ResolvedOverrideTestRun,
-            ReviewReference, ReviewReportSchema, VerifiedRequirement,
+            IgnoredEntries, IgnoredManualRequirementVerification,
+            IgnoredTestCaseLineCoverageOverride, IgnoredTestCaseStateOverride,
+            IgnoredTestRunLineCoverageOverride, ResolvedOverrideCoveredLineInfo,
+            ResolvedOverrideFileCoverage, ResolvedOverrideTestCase, ResolvedOverrideTestCaseState,
+            ResolvedOverrideTestRun, ReviewReference, ReviewReportSchema, VerifiedRequirement,
         },
         test_case::TestCaseReference,
         test_run::TestRunReference,
@@ -600,7 +600,7 @@ async fn review_ignored_entries<'db>(
 
         match entry {
             DbIgnoredEntry::Requirement { id, comment_hash } => {
-                requirements.push(IgnoredRequirement {
+                requirements.push(IgnoredManualRequirementVerification {
                     id,
                     comment: get_comment(transaction, comment_hash).await?,
                 })

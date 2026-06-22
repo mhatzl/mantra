@@ -8,8 +8,8 @@
         schema.requirements.summary.deprecated.percentage | round(2) }}%)
     </li>
     <li>
-        <strong>Ignored:</strong> {{ schema.requirements.summary.ignored.cnt }}
-        ({{ schema.requirements.summary.ignored.percentage | round(2) }}%)
+        <strong>Excluded:</strong> {{ schema.requirements.summary.excluded.cnt
+        }} ({{ schema.requirements.summary.excluded.percentage | round(2) }}%)
     </li>
     <li>
         <strong>Verified:</strong> {{ schema.requirements.summary.verified.cnt
@@ -63,9 +63,9 @@
     {% endfor %}
 </ul>
 
-<h1>Ignored Requirements</h1>
+<h1>Excluded Requirements</h1>
 <ul>
-    {% for req in schema.requirements.ignored %}
+    {% for req in schema.requirements.excluded %}
     <li>
         <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
             >{{ req.id }}</a

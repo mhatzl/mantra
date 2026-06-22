@@ -58,11 +58,11 @@ pub async fn generate_requirement_schema<'db>(
             end as "deprecated!:bool",
             case when exists (
                 select ir.id
-                from IgnoredRequirements ir
+                from ExcludedRequirements ir
                 where ir.product_id = $1 and ir.id = r.id
             ) then true
             else false
-            end as "ignored!:bool"
+            end as "excluded!:bool"
         from Requirements r
             left join GeneralTexts gt on r.description_hash = gt.hash
             left join GeneralJson og on r.origin_hash = og.hash
@@ -176,7 +176,7 @@ pub async fn generate_requirement_schema<'db>(
         origin: req.origin.and_then(|o| serde_json::from_str(&o).ok()),
         manual_verification: req.manual_verification,
         deprecated: req.deprecated,
-        ignored: req.ignored,
+        excluded: req.excluded,
         optional: req.optional,
         properties,
     })

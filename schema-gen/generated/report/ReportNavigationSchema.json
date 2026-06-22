@@ -143,7 +143,7 @@
         "skipped",
         "unverified",
         "deprecated",
-        "ignored"
+        "excluded"
       ]
     },
     "ReviewReference": {

@@ -8,7 +8,7 @@ impl<'db> Collection<'db> {
         self.update_requirement_descendants().await?;
         self.update_leaf_requirements().await?;
         self.update_deprecated_requirements().await?;
-        self.update_ignored_requirements().await?;
+        self.update_excluded_requirements().await?;
         self.update_optional_requirements().await?;
         self.update_manual_requirements().await?;
         self.update_usable_requirements().await?;
@@ -238,34 +238,34 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_ignored_requirements(&mut self) -> Result<(), anyhow::Error> {
+    async fn update_excluded_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into IgnoredRequirements (
+            insert or replace into ExcludedRequirements (
                 last_collect_nr,
                 product_id,
                 id
             )
-            with MarkedIgnore(product_id, id) as (
+            with MarkedExclude(product_id, id) as (
                 select product_id, id
                 from Requirements
-                where ignore = true
+                where exclude = true
                 and last_collect_nr = $1
                 and product_id = $2
             ),
-            ParentMarkedIgnore(product_id, id) as (
+            ParentMarkedExclude(product_id, id) as (
                 select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedIgnore md
+                from RequirementDescendants rd, MarkedExclude md
                 where rd.product_id = md.product_id and rd.id = md.id
             )
             select $1 as last_collect_nr, product_id, id
-            from MarkedIgnore
+            from MarkedExclude
             union all
             select $1 as last_collect_nr, product_id, id
-            from ParentMarkedIgnore
+            from ParentMarkedExclude
             ",
             collect_nr,
             product_id
@@ -275,7 +275,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from IgnoredRequirements
+            delete from ExcludedRequirements
             where last_collect_nr != $1
             and product_id = $2
             ",
@@ -411,7 +411,7 @@ impl<'db> Collection<'db> {
                 where last_collect_nr = $1 and product_id = $2
                 union all
                 select last_collect_nr, product_id, id
-                from IgnoredRequirements
+                from ExcludedRequirements
                 where last_collect_nr = $1 and product_id = $2
             )
             ",
