@@ -1,0 +1,85 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First Requirement (Indirectly Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-1.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Directly Verified)",
+        origin: "Manual requirement test",
+        manual_verification: true,
+    },{
+        id: "req-1.sub-2",
+        title: "Second Sub-Requirement (Optional + Unverified)",
+        origin: "Manual requirement test",
+        optional: true,
+        manual_verification: true,
+    },{
+        id: "req-2",
+        title: "Regular Requirement (Indirectly Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-2.sub-1",
+        title: "First Sub-Requirement (Directly Verified)",
+        origin: "Manual requirement test",
+        optional: true,
+        manual_verification: true,
+    },{
+        id: "req-2.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Optional & Manual + Unverified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-2.sub-2",
+        title: "Second Sub-Requirement (Directly Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-3",
+        title: "Third Requirement (Indirectly + Directly Verified)",
+        origin: "Manual requirement test",
+        manual_verification: true,
+    },{
+        id: "req-3.sub-1",
+        title: "First Sub-Requirement (Indirectly Manual + Directly Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-3.sub-2",
+        title: "Second Sub-Requirement (Optional + Unverified)",
+        origin: "Manual requirement test",
+        optional: true,
+    },{
+        id: "req-4",
+        title: "Fourth Requirement (Directly Verified + Indirectly Unverified)",
+        origin: "Manual requirement test",
+        manual_verification: true,
+    },{
+        id: "req-4.sub-1",
+        title: "First Sub-Requirement (Directly Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-4.sub-2",
+        title: "Second Sub-Requirement (Unverified)",
+        origin: "Manual requirement test",
+        manual_verification: true,
+    },{
+        id: "req-5",
+        title: "Fifth Requirement (Directly Unverified + Indirectly Verified)",
+        origin: "Manual requirement test",
+        manual_verification: true,
+    },{
+        id: "req-5.sub-1",
+        title: "First Sub-Requirement (Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-5.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Manual + Verified)",
+        origin: "Manual requirement test",
+    },{
+        id: "req-5.sub-2",
+        title: "Second Sub-Requirement (Verified)",
+        origin: "Manual requirement test",
+    }]
+}

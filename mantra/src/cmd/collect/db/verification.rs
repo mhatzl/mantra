@@ -1325,7 +1325,14 @@ impl<'db> Collection<'db> {
                                 )
                             )
                         ))
-                        or ((ds.state = $3 or ds.state = $6) and (ids.state is not null and ids.state = $3))
+                        or ((ds.state = $3 or (
+                            -- manual requirements must always be directly verified
+                            ds.state = $6 and not exists (
+                                select mr.id
+                                from ManualRequirements mr
+                                where mr.id = r.id and mr.product_id = r.product_id
+                            )))
+                            and (ids.state is not null and ids.state = $3))
                     ) then $3
                     -- unverified
                     else $6

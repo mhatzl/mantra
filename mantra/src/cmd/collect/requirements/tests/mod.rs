@@ -632,6 +632,219 @@ mod indirect_states {
             "Expected req-7.sub-2 to be optional."
         );
     }
+
+    #[sqlx::test]
+    async fn manual_indirect_req(pool: MantraPool) {
+        let unverified_state = RequirementState::Unverified.as_nr();
+        let verified_state = RequirementState::Verified.as_nr();
+
+        let db = db_from_dir!(pool, "indirect_states/manual_propagation").unwrap();
+
+        let unverified_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            unverified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let optional_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from OptionalRequirements
+            "
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let manual_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from ManualRequirements
+            "
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        assert!(
+            verified_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to be verified."
+        );
+        assert!(
+            verified_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to be verified."
+        );
+        assert!(
+            verified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to be verified."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to be optional."
+        );
+        assert!(
+            manual_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-2".to_string()),
+            "Expected req-2 to be verified."
+        );
+        assert!(
+            verified_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to be verified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to be optional."
+        );
+        assert!(
+            manual_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to require manual verification."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
+        );
+        assert!(
+            manual_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-2.sub-2".to_string()),
+            "Expected req-2.sub-2 to be verified."
+        );
+        assert!(
+            verified_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to be verified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-3.sub-1".to_string()),
+            "Expected req-3.sub-1 to be verified."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-3.sub-2".to_string()),
+            "Expected req-3.sub-2 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-3.sub-2".to_string()),
+            "Expected req-3.sub-2 to be optional."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-4".to_string()),
+            "Expected req-4 to be unverified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-4".to_string()),
+            "Expected req-4 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-4.sub-1".to_string()),
+            "Expected req-4.sub-1 to be directly verified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-4.sub-1".to_string()),
+            "Expected req-4.sub-1 to require manual verification."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-4.sub-2".to_string()),
+            "Expected req-4.sub-2 to be unverified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-4.sub-2".to_string()),
+            "Expected req-4.sub-2 to require manual verification."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-5".to_string()),
+            "Expected req-5 to be indirectly unverified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-5".to_string()),
+            "Expected req-5 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-5.sub-1".to_string()),
+            "Expected req-5.sub-1 to be directly verified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-5.sub-1".to_string()),
+            "Expected req-5.sub-1 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+            "Expected req-5.sub-1.sub-sub-1 to be directly verified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+            "Expected req-5.sub-1.sub-sub-1 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-5.sub-2".to_string()),
+            "Expected req-5.sub-2 to be verified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-5.sub-2".to_string()),
+            "Expected req-5.sub-2 to require manual verification."
+        );
+    }
 }
 
 mod states {
