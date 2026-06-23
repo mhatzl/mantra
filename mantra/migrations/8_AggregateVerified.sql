@@ -171,6 +171,56 @@ create table DirectRequirementVerificationStates (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
+create table UsableNonLeafRequirements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
+create table RequirementsWithOnlyOptionalChildren (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
+create table RequirementsWithUnverifiedNonOptionalChildren (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
+create table RequirementsWithSkippedNonOptionalChildren (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
+-- Note: May contain multiple states per requirement
+create table StatesOfRequirementsWithOnlyOptionalChildren (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    state integer not null,
+    primary key (product_id, id, state),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
+create table VerifiedRequirementsWithOnlyOptionalChildren (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
 -- Contains verification states for requirements based on the requirement hierarchy.
 -- This table only contains non-leaf requirements (requirements that have at least one child).
 -- States:

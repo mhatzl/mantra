@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into VerifiedRequirementsWithOnlyOptionalChildren (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with VerifiedReqsWithOnlyOptionalChildren (id, product_id) as (\n                -- Note: we ignore failed states, because it is handled by ReqsWithFailedDescendants\n                -- This leaves indirectly verified by at least one child,\n                -- or direct requirement state entries.\n                -- This is sufficient for requirements with only optional children\n                select distinct sr.id, sr.product_id\n                from StatesOfRequirementsWithOnlyOptionalChildren sr\n                where exists (\n                    select isr.id\n                    from StatesOfRequirementsWithOnlyOptionalChildren isr\n                    where sr.id = isr.id\n                    and sr.product_id = isr.product_id\n                    and isr.state = $2\n                )\n            )\n            select $1, product_id, id\n            from VerifiedReqsWithOnlyOptionalChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "34dced695fd9895dfa97b5eb9509bedde0f891e6911105c3d4fabf031d6baa79"
+}

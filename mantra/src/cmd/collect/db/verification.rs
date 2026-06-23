@@ -1001,42 +1001,45 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into IndirectRequirementVerificationStates (
-                last_collect_nr,
-                product_id,
-                id,
-                state
-            )
-            with recursive UsableNonLeafRequirements (
+            insert or replace into UsableNonLeafRequirements (
                 last_collect_nr,
                 product_id,
                 id
-            ) as (
-                select
-                    ur.last_collect_nr,
-                    ur.product_id,
-                    ur.id
-                from UsableRequirements ur, RequirementDescendants rd
-                where ur.last_collect_nr = $1 and ur.product_id = $2
-                and rd.last_collect_nr = $1 and rd.product_id = $2
-                and ur.id = rd.id
-            ), ReqsWithFailedDescendants (id) as (
-                select r.id
-                from UsableNonLeafRequirements r
-                where exists (
-                    select rd.id
-                    from RequirementDescendants rd, DirectRequirementVerificationStates s
-                    where rd.last_collect_nr = $1 and rd.product_id = $2
-                    and rd.id = r.id and rd.descendant_id = s.id
-                    and rd.descendant_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
-                    )
-                    and s.state = $4
-                )
-            ), ReqsWithUnverifiedNonOptionalChildren (id, product_id) as (
+            )
+            select
+                ur.last_collect_nr,
+                ur.product_id,
+                ur.id
+            from UsableRequirements ur, RequirementDescendants rd
+            where ur.last_collect_nr = $1 and ur.product_id = $2
+            and rd.last_collect_nr = $1 and rd.product_id = $2
+            and ur.id = rd.id
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        // Table data is updated for all products, because requirements may be connected across products
+        sqlx::query!(
+            "
+            delete from UsableNonLeafRequirements
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            insert or replace into RequirementsWithUnverifiedNonOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            with recursive ReqsWithUnverifiedNonOptionalChildren (id, product_id) as (
                 select r.id, r.product_id
                 from UsableNonLeafRequirements r
                 where exists (
@@ -1050,7 +1053,7 @@ impl<'db> Collection<'db> {
                     and rh.child_req_id = lr.id
                     and rh.child_product_id = lr.product_id
                     and lr.id = ds.id and lr.product_id = ds.product_id
-                    and ds.state = $6
+                    and ds.state = $2
                     and not exists (
                         select op.id
                         from OptionalRequirements op
@@ -1074,7 +1077,34 @@ impl<'db> Collection<'db> {
                     where op.id = rh.child_req_id
                     and op.product_id = rh.child_product_id
                 )
-            ), ReqsWithSkippedNonOptionalChildren (id, product_id) as (
+            )
+            select $1, r.product_id, r.id
+            from ReqsWithUnverifiedNonOptionalChildren r
+            ",
+            collect_nr,
+            req_unverified_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from RequirementsWithUnverifiedNonOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            insert or replace into RequirementsWithSkippedNonOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            with recursive ReqsWithSkippedNonOptionalChildren (id, product_id) as (
                 select r.id, r.product_id
                 from UsableNonLeafRequirements r
                 where exists (
@@ -1088,7 +1118,7 @@ impl<'db> Collection<'db> {
                     and rh.child_req_id = lr.id
                     and rh.child_product_id = lr.product_id
                     and lr.id = ds.id and lr.product_id = ds.product_id
-                    and ds.state = $5
+                    and ds.state = $2
                     and not exists (
                         select op.id
                         from OptionalRequirements op
@@ -1112,6 +1142,193 @@ impl<'db> Collection<'db> {
                     where op.id = rh.child_req_id
                     and op.product_id = rh.child_product_id
                 )
+            )
+            select $1, r.product_id, r.id
+            from ReqsWithSkippedNonOptionalChildren r
+            ",
+            collect_nr,
+            req_skipped_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from RequirementsWithSkippedNonOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            insert or replace into RequirementsWithOnlyOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            -- Note: Includes leaf requirements needed for indirect check later
+            select $1, r.product_id, r.id
+            from UsableRequirements r
+            where not exists (
+                select rh.child_req_id
+                from
+                    RequirementHierarchies rh,
+                    UsableRequirements ur
+                where r.id = rh.parent_req_id
+                and r.product_id = rh.parent_product_id
+                and rh.child_req_id = ur.id
+                and rh.child_product_id = ur.product_id
+                and not exists (
+                    select op.id
+                    from OptionalRequirements op
+                    where op.id = rh.child_req_id
+                    and op.product_id = rh.child_product_id
+                )
+            )
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from RequirementsWithOnlyOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        // Note: The table may contain multiple state entries per requirement
+        // This will be considered when updating IndirectRequirementVerificationStates below
+        sqlx::query!(
+            "
+            insert or replace into StatesOfRequirementsWithOnlyOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id,
+                state
+            )
+            -- may contain duplicate differing state entries of requirements
+            with recursive StatesOfReqWithOnlyOptionalChildren (id, product_id, state) as (
+                select lr.id, lr.product_id, ds.state
+                from
+                    LeafRequirements lr,
+                    DirectRequirementVerificationStates ds
+                where lr.id = ds.id and lr.product_id = ds.product_id
+
+                union all
+
+                select
+                    r.id,
+                    r.product_id,
+                    case
+                        when ds.state = $3 or sor.state = $3 then $3
+                        when ds.state = $2 or (ds.state = $4 and sor.state = $2) then $2
+                        else ds.state
+                    end
+                from
+                    RequirementsWithOnlyOptionalChildren r,
+                    DirectRequirementVerificationStates ds,
+                    RequirementHierarchies rh,
+                    StatesOfReqWithOnlyOptionalChildren sor
+                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
+                and r.id = ds.id and r.product_id = ds.product_id
+                and sor.id = rh.child_req_id and sor.product_id = rh.child_product_id
+            )
+            select $1, product_id, id, state
+            from StatesOfReqWithOnlyOptionalChildren
+            ",
+            collect_nr,
+            req_verified_nr,
+            req_failed_nr,
+            req_unverified_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        // Table data is updated for all products, because requirements may be connected across products
+        sqlx::query!(
+            "
+            delete from StatesOfRequirementsWithOnlyOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            insert or replace into VerifiedRequirementsWithOnlyOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            with VerifiedReqsWithOnlyOptionalChildren (id, product_id) as (
+                -- Note: we ignore failed states, because it is handled by ReqsWithFailedDescendants
+                -- This leaves indirectly verified by at least one child,
+                -- or direct requirement state entries.
+                -- This is sufficient for requirements with only optional children
+                select distinct sr.id, sr.product_id
+                from StatesOfRequirementsWithOnlyOptionalChildren sr
+                where exists (
+                    select isr.id
+                    from StatesOfRequirementsWithOnlyOptionalChildren isr
+                    where sr.id = isr.id
+                    and sr.product_id = isr.product_id
+                    and isr.state = $2
+                )
+            )
+            select $1, product_id, id
+            from VerifiedReqsWithOnlyOptionalChildren
+            ",
+            collect_nr,
+            req_verified_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        // Table data is updated for all products, because requirements may be connected across products
+        sqlx::query!(
+            "
+            delete from VerifiedRequirementsWithOnlyOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            insert or replace into IndirectRequirementVerificationStates (
+                last_collect_nr,
+                product_id,
+                id,
+                state
+            )
+            with ReqsWithFailedDescendants (id) as (
+                select r.id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rd.id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates s
+                    where rd.last_collect_nr = $1 and rd.product_id = $2
+                    and rd.id = r.id and rd.descendant_id = s.id
+                    and rd.descendant_product_id = s.product_id
+                    and s.last_collect_nr = (
+                        select max(last_collect_nr)
+                        from Products p
+                        where p.id = s.product_id
+                    )
+                    and s.state = $4
+                )
             ), ReqsWithVerifiedNonOptionalDescendants (id) as (
                 select r.id
                 from UsableNonLeafRequirements r
@@ -1133,67 +1350,6 @@ impl<'db> Collection<'db> {
                     and opt.id is null
                     and s.state = $3
                 )
-            ), ReqsWithOnlyOptionalChildren (id, product_id) as (
-                -- Note: Includes leaf requirements needed for indirect check later
-                select r.id, r.product_id
-                from UsableRequirements r
-                where r.product_id = $2 and not exists (
-                    select rh.child_req_id
-                    from
-                        RequirementHierarchies rh,
-                        UsableRequirements ur
-                    where r.id = rh.parent_req_id
-                    and r.product_id = rh.parent_product_id
-                    and rh.child_req_id = ur.id
-                    and rh.child_product_id = ur.product_id
-                    and not exists (
-                        select op.id
-                        from OptionalRequirements op
-                        where op.id = rh.child_req_id
-                        and op.product_id = rh.child_product_id
-                    )
-                )
-            ),
-            -- may contain duplicate differing state entries of requirements
-            StatesOfReqWithOnlyOptionalChildren (id, product_id, state) as (
-                select lr.id, lr.product_id, ds.state
-                from
-                    LeafRequirements lr,
-                    DirectRequirementVerificationStates ds
-                where lr.id = ds.id and lr.product_id = ds.product_id
-
-                union all
-
-                select
-                    r.id,
-                    r.product_id,
-                    case
-                        when ds.state = $4 or sor.state = $4 then $4
-                        when ds.state = $3 or (ds.state = $6 and sor.state = $3) then $3
-                        else ds.state
-                    end
-                from
-                    ReqsWithOnlyOptionalChildren r,
-                    DirectRequirementVerificationStates ds,
-                    RequirementHierarchies rh,
-                    StatesOfReqWithOnlyOptionalChildren sor
-                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
-                and r.id = ds.id and r.product_id = ds.product_id
-                and sor.id = rh.child_req_id and sor.product_id = rh.child_product_id
-            ), VerifiedReqsWithOnlyOptionalChildren (id, product_id) as (
-                -- Note: we ignore failed states, because it is handled by ReqsWithFailedDescendants
-                -- This leaves indirectly verified by at least one child,
-                -- or direct requirement state entries.
-                -- This is sufficient for requirements with only optional children
-                select distinct sr.id, sr.product_id
-                from StatesOfReqWithOnlyOptionalChildren sr
-                where exists (
-                    select isr.id
-                    from StatesOfReqWithOnlyOptionalChildren isr
-                    where sr.id = isr.id
-                    and sr.product_id = isr.product_id
-                    and isr.state = $3
-                )
             )
             select
                 r.last_collect_nr,
@@ -1207,12 +1363,12 @@ impl<'db> Collection<'db> {
                     ) then $4
                     when exists (
                         select u.id
-                        from ReqsWithUnverifiedNonOptionalChildren u
+                        from RequirementsWithUnverifiedNonOptionalChildren u
                         where r.id = u.id
                     ) then $6
                     when exists (
                         select s.id
-                        from ReqsWithSkippedNonOptionalChildren s
+                        from RequirementsWithSkippedNonOptionalChildren s
                         where r.id = s.id
                     ) then $5
                     when exists (
@@ -1222,14 +1378,14 @@ impl<'db> Collection<'db> {
                     ) then $3
                     when exists (
                         select os.id
-                        from VerifiedReqsWithOnlyOptionalChildren os
+                        from VerifiedRequirementsWithOnlyOptionalChildren os
                         where r.id = os.id and r.product_id = os.product_id
                         -- filter requirements that are only directly verified
-                        -- this requires that leaf requirements are part of VerifiedReqsWithOnlyOptionalChildren
+                        -- this requires that leaf requirements are part of VerifiedRequirementsWithOnlyOptionalChildren
                         and exists (
                             select ocs.id
                             from
-                                VerifiedReqsWithOnlyOptionalChildren ocs,
+                                VerifiedRequirementsWithOnlyOptionalChildren ocs,
                                 RequirementHierarchies rh
                             where r.id = rh.parent_req_id
                             and r.product_id = rh.parent_product_id
@@ -1253,9 +1409,9 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-             delete from IndirectRequirementVerificationStates
-             where last_collect_nr != $1 and product_id = $2
-             ",
+            delete from IndirectRequirementVerificationStates
+            where last_collect_nr != $1 and product_id = $2
+            ",
             collect_nr,
             product_id
         )
