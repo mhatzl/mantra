@@ -38,7 +38,7 @@ pub async fn generate_requirements_schema<'db>(
         r#"
         with Mandatory(id) as (
             select r.id
-            from Requirements r
+            from UsableRequirements r
             where r.product_id = $1 and not exists (
                 select o.id
                 from OptionalRequirements o
