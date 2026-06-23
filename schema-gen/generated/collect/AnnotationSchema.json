@@ -33,6 +33,7 @@
       "additionalProperties": true
     }
   },
+  "additionalProperties": false,
   "definitions": {
     "Annotations": {
       "description": "The annotation information mantra can collect.",
@@ -62,7 +63,8 @@
             "$ref": "#/definitions/Trace"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CodeBlock": {
       "description": "A generic code block that is linked to a trace. [req(\"trace.code_block\")]",
@@ -95,7 +97,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CodeBlockKind": {
       "description": "The code block kind.",
@@ -131,7 +134,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CoverageExcludeKind": {
       "description": "The kind of coverage exclusion that was found in a file.",
@@ -158,7 +162,8 @@
                   "type": "integer",
                   "format": "int64"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -228,7 +233,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ElementKind": {
       "description": "Defines supported element kinds. [req(\"trace.element.kind\")]",
@@ -337,7 +343,8 @@
           "description": "File that contains traces and/or elements. [req(\"trace.origin\")]",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LineSpan": {
       "type": "object",
@@ -354,7 +361,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Trace": {
       "description": "A *mantra* trace. [req(\"trace\")]",
@@ -404,7 +412,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TraceKind": {
       "description": "The trace kind. [req(\"trace.kind\")]",

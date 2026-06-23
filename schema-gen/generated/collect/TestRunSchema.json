@@ -41,6 +41,7 @@
       }
     }
   },
+  "additionalProperties": false,
   "definitions": {
     "CoveredFile": {
       "description": "Represents coverage information per file. [req(\"testcov.cov\")]",
@@ -68,7 +69,8 @@
             "$ref": "#/definitions/CoveredLine"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CoveredLine": {
       "description": "Coverage information of a line in a file. [req(\"testcov.cov.lines\")]",
@@ -90,7 +92,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LogOutput": {
       "description": "Log output of tests.",
@@ -112,7 +115,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LogSource": {
       "description": "Source of the log output of tests.",
@@ -143,7 +147,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TestCase": {
       "description": "Represents a test case in *mantra*. [req(\"testcov.test_case\")]",
@@ -239,7 +244,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TestCaseLocation": {
       "description": "The location of a test case. [req(\"testcov.test_case.origin\")]",
@@ -263,7 +269,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TestCaseState": {
       "description": "Possible states a test case may be in. [req(\"testcov.test_case.state\")]",
@@ -392,7 +399,8 @@
           "description": "The UTC date the test run execution started.\n\n**Note:** The date must be given in ISO8601 format. [req(\"testcov.test_run.date\")]",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }

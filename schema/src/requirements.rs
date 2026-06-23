@@ -5,6 +5,7 @@ use crate::{IdentError, Origin, Properties, product::ProductId};
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct RequirementSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -80,7 +81,7 @@ impl std::fmt::Display for ReqId {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Requirement {
     /// ID of the requirement.
     /// [req("req.id")]
@@ -131,7 +132,7 @@ pub struct Requirement {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct RequirementPk {
     /// ID of the parent requirement.
     /// [req("req.id")]

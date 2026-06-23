@@ -89,7 +89,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CodeBlockKind": {
       "description": "The code block kind.",
@@ -125,7 +126,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "CoverageExcludeKind": {
       "description": "The kind of coverage exclusion that was found in a file.",
@@ -152,7 +154,8 @@
                   "type": "integer",
                   "format": "int64"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -360,7 +363,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ProductMetadata": {
       "type": "object",

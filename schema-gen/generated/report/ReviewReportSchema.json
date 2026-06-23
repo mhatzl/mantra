@@ -510,7 +510,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TestCaseReference": {
       "type": "object",

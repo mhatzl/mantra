@@ -33,6 +33,7 @@
       ]
     }
   },
+  "additionalProperties": false,
   "definitions": {
     "Requirement": {
       "description": "This struct defines the information *mantra* stores about a requirement. [req(\"req\")]",
@@ -99,7 +100,8 @@
           "description": "Title of the requirement. [req(\"req.title\")]",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "RequirementPk": {
       "description": "This struct defines the primary key to identify requirements for a product.",
@@ -119,7 +121,8 @@
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }

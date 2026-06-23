@@ -79,6 +79,7 @@ impl std::fmt::Display for ProductId {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct Product {
     /// The product ID.
     ///

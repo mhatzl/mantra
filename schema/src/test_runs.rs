@@ -18,7 +18,7 @@ pub fn test_date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Par
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct TestRunSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -46,7 +46,7 @@ pub struct TestRunSchema {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct TestRun {
     /// The name of the test run.
     /// [req("testcov.test_run.id")]
@@ -102,7 +102,7 @@ pub struct TestRun {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct TestCase {
     /// The name of the test case.
     /// [req("testcov.test_case.id")]
@@ -149,7 +149,7 @@ pub struct TestCase {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct TestCaseLocation {
     /// The filepath the test case is defined in.
     #[schemars(with = "String")]
@@ -220,7 +220,7 @@ impl TryFrom<i64> for TestCaseState {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct CoveredFile {
     /// File the coverage information is for.
     #[schemars(with = "String")]
@@ -239,6 +239,7 @@ pub struct CoveredFile {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct CoveredLine {
     /// The line number.
     pub nr: Line,
@@ -277,6 +278,7 @@ impl std::cmp::Ord for CoveredLine {
     serde::Deserialize,
     schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct LogOutput {
     /// The source the log was output to.
     pub source: LogSource,

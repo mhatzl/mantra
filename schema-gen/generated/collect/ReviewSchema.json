@@ -32,6 +32,7 @@
       ]
     }
   },
+  "additionalProperties": false,
   "definitions": {
     "OneOrMultRequirementIds": {
       "description": "Variant to allow setting either one or more requirement IDs for manual verification.",
@@ -77,7 +78,8 @@
             "format": "int64"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "OverrideFileCoverage": {
       "description": "Code coverage overrides per file. [req(\"review.coverage\")]",
@@ -98,7 +100,8 @@
             "$ref": "#/definitions/OverrideCoveredLineInfo"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "OverrideTestCase": {
       "description": "Represents a test case state override in a review. [req(\"review.test_case_state\", \"review.coverage\")]",
@@ -130,7 +133,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "OverrideTestCaseState": {
       "description": "Represents a test case state override in a review. [req(\"review.test_case_state\")]",
@@ -152,7 +156,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "OverrideTestRun": {
       "description": "Represents review overrides for a specific test run. [req(\"review.test_case_state\", \"review.coverage\")]",
@@ -186,7 +191,8 @@
           "description": "The UTC date the test run execution started.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Review": {
       "description": "Defines the fields for a review. [req(\"exchange.review\")]",
@@ -257,7 +263,8 @@
           "type": "string",
           "pattern": "(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})(T| )(?<hour>\\d{2}):(?<minute>\\d{2})(?<second>:\\d{2}(?<subsecond>\\.\\d{3})?)?utc(?<utc>(-|+)\\d{2})"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Revision": {
       "type": "object",
@@ -280,7 +287,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TestCaseState": {
       "description": "Possible states a test case may be in. [req(\"testcov.test_case.state\")]",
@@ -335,7 +343,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -27,7 +27,7 @@ pub fn date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct ReviewSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -49,7 +49,7 @@ pub struct ReviewSchema {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Review {
     /// The name of the review.
     /// [req("review.id")]
@@ -92,6 +92,7 @@ pub struct Review {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct VerifiedRequirementGroup {
     /// One or more requirement IDs to mark the related requirements as manually verified by a review.
     #[serde(alias = "ids")]
@@ -117,7 +118,7 @@ pub enum OneOrMultRequirementIds {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct OverrideTestRun {
     /// Name of the test run.
     pub name: String,
@@ -140,6 +141,7 @@ pub struct OverrideTestRun {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct OverrideTestCase {
     /// Name of the test case whose state and/or related code coverage is overridden in a review.
     pub name: String,
@@ -157,6 +159,7 @@ pub struct OverrideTestCase {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct OverrideTestCaseState {
     /// The new state that is set with this override.
     pub new: TestCaseState,
@@ -169,6 +172,7 @@ pub struct OverrideTestCaseState {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct OverrideFileCoverage {
     /// The file whose coverage data is overridden in a review.
     #[schemars(with = "String")]
@@ -183,6 +187,7 @@ pub struct OverrideFileCoverage {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct OverrideCoveredLineInfo {
     /// The number of lines affected by this override.
     #[serde(alias = "nr")]

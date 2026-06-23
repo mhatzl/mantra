@@ -189,7 +189,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LogSource": {
       "description": "Source of the log output of tests.",
@@ -337,7 +338,8 @@
           "type": "integer",
           "format": "int64"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TestCoverage": {
       "type": "object",

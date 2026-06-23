@@ -39,6 +39,7 @@ pub type Properties = serde_json::value::Map<String, serde_json::Value>;
     serde::Deserialize,
     schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct LineSpan {
     pub start: Line,
     pub end: Line,
@@ -54,6 +55,7 @@ where
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct Revision {
     pub nr: i64,
     pub authors: Vec<String>,

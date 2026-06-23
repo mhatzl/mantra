@@ -9,7 +9,7 @@ use super::requirements::ReqId;
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct AnnotationSchema {
     /// The schema version.
     /// [req("exchange.versioned")]
@@ -32,7 +32,7 @@ pub struct AnnotationSchema {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct FileAnnotations {
     /// File that contains traces and/or elements.
     /// [req("trace.origin")]
@@ -50,7 +50,7 @@ pub struct FileAnnotations {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Annotations {
     /// Traces detected in the file.
     #[serde(default)]
@@ -73,6 +73,7 @@ pub struct Annotations {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 pub struct CoverageExclude {
     /// The kind of coverage exclusion.
     pub kind: CoverageExcludeKind,
@@ -84,7 +85,7 @@ pub struct CoverageExclude {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum CoverageExcludeKind {
     /// Excludes a code span from coverage metrics.
     /// Both lines are inclusive!
@@ -98,7 +99,7 @@ pub enum CoverageExcludeKind {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Trace {
     /// The requirement IDs that are referenced by the trace.
     /// [req("trace.id", "trace.mult_reqs")]
@@ -160,7 +161,7 @@ impl std::fmt::Display for Trace {
     serde::Deserialize,
     schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum TraceKind {
     /// Trace links to an artifact that provides clarification for a requirement.
     Clarifies = 0,
@@ -214,7 +215,7 @@ pub enum TraceRelatedCodeVariant {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct CodeBlock {
     /// The kind of the code block.
     pub kind: CodeBlockKind,
@@ -280,7 +281,7 @@ impl TryFrom<i64> for CodeBlockKind {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Element {
     /// The fully qualified identifier of the element.
     /// [req("trace.element.ident")]
