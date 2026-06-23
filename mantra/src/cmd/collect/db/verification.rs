@@ -1322,11 +1322,6 @@ impl<'db> Collection<'db> {
                     where rd.last_collect_nr = $1 and rd.product_id = $2
                     and rd.id = r.id and rd.descendant_id = s.id
                     and rd.descendant_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
-                    )
                     and s.state = $4
                 )
             ), ReqsWithVerifiedNonOptionalDescendants (id) as (
@@ -1342,11 +1337,6 @@ impl<'db> Collection<'db> {
                     where rd.last_collect_nr = $1 and rd.product_id = $2
                     and rd.id = r.id and rd.descendant_id = s.id
                     and rd.descendant_product_id = s.product_id
-                    and s.last_collect_nr = (
-                        select max(p.last_collect_nr)
-                        from Products p
-                        where p.id = s.product_id
-                    )
                     and opt.id is null
                     and s.state = $3
                 )

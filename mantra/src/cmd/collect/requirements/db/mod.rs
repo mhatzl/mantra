@@ -140,8 +140,7 @@ impl<'db> Collection<'db> {
             sqlx::query!(
                 "
                 delete from RequirementHierarchies
-                where ((child_product_id = $1 and child_req_id = $2)
-                or (parent_product_id = $1 and parent_req_id = $2))
+                where child_product_id = $1 and child_req_id = $2
                 and last_collect_nr < $3
             ",
                 product_id,
@@ -173,11 +172,10 @@ impl<'db> Collection<'db> {
                 from RequirementHierarchies rh, Requirements r, Products p
                 where r.id = rh.parent_req_id
                 and r.product_id = rh.parent_product_id
-                and r.last_collect_nr != rh.last_collect_nr
                 and rh.child_product_id = $1
                 and rh.parent_product_id != rh.child_product_id
                 and p.id = rh.parent_product_id
-                and r.last_collect_nr != p.last_collect_nr
+                and r.last_collect_nr < p.last_collect_nr
             ",
             product_id
         )
@@ -186,9 +184,10 @@ impl<'db> Collection<'db> {
 
         if !bad_hierarchies.is_empty() {
             for bad in bad_hierarchies {
-                eprintln!(
+                log::error!(
                     "Bad requirement hierarchy! Child '{}' references deleted parent '{}'",
-                    bad.child_req_id, bad.parent_req_id
+                    bad.child_req_id,
+                    bad.parent_req_id
                 );
             }
             anyhow::bail!("Bad requirement hierarchy detected!");

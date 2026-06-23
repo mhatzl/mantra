@@ -75,17 +75,19 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_requirement_descendants(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
         sqlx::query!(
             "
             with recursive TransitiveChildren(last_collect_nr, product_id, id, descendant_product_id, descendant_id) as
             (
                 select
-                    last_collect_nr,
+                    $1,
                     parent_product_id, parent_req_id,
                     child_product_id, child_req_id
                 from RequirementHierarchies
                 union all
-                select rh.last_collect_nr, tc.product_id, tc.id, rh.child_product_id, rh.child_req_id
+                select $1, tc.product_id, tc.id, rh.child_product_id, rh.child_req_id
                 from RequirementHierarchies rh, TransitiveChildren tc
                 where tc.descendant_product_id = rh.parent_product_id and tc.descendant_id = rh.parent_req_id
                 -- prevents endless recursion in case of requirement cycles
@@ -104,7 +106,8 @@ impl<'db> Collection<'db> {
             )
             select last_collect_nr, product_id, id, descendant_product_id, descendant_id
             from TransitiveChildren
-            "
+            ",
+            collect_nr
         ).execute(self.connection_mut()).await?;
 
         let req_cycle_exists = sqlx::query!(
@@ -136,7 +139,7 @@ impl<'db> Collection<'db> {
             "
             delete from RequirementDescendants
             where last_collect_nr != $1
-            and (product_id = $2 or descendant_product_id = $2)
+            and product_id = $2
             ",
             collect_nr,
             product_id

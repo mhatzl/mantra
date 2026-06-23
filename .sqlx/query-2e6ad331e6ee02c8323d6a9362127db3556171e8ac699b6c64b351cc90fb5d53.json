@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with recursive TransitiveChildren(last_collect_nr, product_id, id, descendant_product_id, descendant_id) as\n            (\n                select\n                    $1,\n                    parent_product_id, parent_req_id,\n                    child_product_id, child_req_id\n                from RequirementHierarchies\n                union all\n                select $1, tc.product_id, tc.id, rh.child_product_id, rh.child_req_id\n                from RequirementHierarchies rh, TransitiveChildren tc\n                where tc.descendant_product_id = rh.parent_product_id and tc.descendant_id = rh.parent_req_id\n                -- prevents endless recursion in case of requirement cycles\n                -- match on parent to have the cycle entry in the descendants,\n                -- which is then detected in a separate query.\n                and (tc.id != rh.parent_req_id or tc.product_id != rh.parent_product_id)\n            )\n            -- replacing, because 'on conflict' seems to break with select instead of value\n            -- and the important info is insert and delete for such aggregated tables anyway\n            insert or replace into RequirementDescendants (\n                last_collect_nr,\n                product_id,\n                id,\n                descendant_product_id,\n                descendant_id\n            )\n            select last_collect_nr, product_id, id, descendant_product_id, descendant_id\n            from TransitiveChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2e6ad331e6ee02c8323d6a9362127db3556171e8ac699b6c64b351cc90fb5d53"
+}

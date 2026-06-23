@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select rh.child_req_id, rh.parent_req_id\n                from RequirementHierarchies rh, Requirements r\n                where r.id = rh.parent_req_id\n                and r.product_id = rh.parent_product_id\n                and r.last_collect_nr < rh.last_collect_nr\n                and rh.child_product_id = $1\n                and rh.parent_product_id = $1\n                union\n                select rh.child_req_id, rh.parent_req_id\n                from RequirementHierarchies rh, Requirements r, Products p\n                where r.id = rh.parent_req_id\n                and r.product_id = rh.parent_product_id\n                and rh.child_product_id = $1\n                and rh.parent_product_id != rh.child_product_id\n                and p.id = rh.parent_product_id\n                and r.last_collect_nr < p.last_collect_nr\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "child_req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_req_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a2ed7410b91d74f732ebb2c819ba83c3e75f0902e02e853926068a82dbde26ad"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from RequirementHierarchies\n                where child_product_id = $1 and child_req_id = $2\n                and last_collect_nr < $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "493941cb51cbfc7011c21903c01f439790979d6dec56a18f7ab76c3219a6d030"
+}
