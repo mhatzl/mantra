@@ -1,11 +1,10 @@
 # mantra-rust-macros
 
-This crate provides macros to trace requirements using `mantra`.
+This crate provides macros to trace requirements using [mantra](https://github.com/mhatzl/mantra).
 
 ## Traces
 
 Requirement traces may be created using either attribute or function-like macros.
-See `mantra-lang-tracing` on how to specify requirement IDs using `req` or `reqcov`.
 
 **Examples:**
 
@@ -43,3 +42,7 @@ trait SomeTrait {
     fn some_trait_fn() {}
 }
 ```
+
+# License
+
+MIT

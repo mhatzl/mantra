@@ -13,11 +13,13 @@ serde.workspace = true
 tree-sitter.workspace = true
 tree-sitter-rust.workspace = true
 serde_json.workspace = true
+log.workspace = true
 
 [build-dependencies]
 cc = "1.0.90"
 
 [dev-dependencies]
 mantra-rust-macros = { path = "../rust/mantra-rust-macros", version = "0" }
+insta = { version = "1.48.0", features = ["ron"] }
 
 [features]

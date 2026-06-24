@@ -16,6 +16,9 @@ use crate::{
     traces::variants::{AttributeTraceVariant, FnLikeTraceVariant},
 };
 
+#[cfg(test)]
+mod tests;
+
 pub struct RustCodeCollector;
 
 impl AnnotationCollector for RustCodeCollector {
@@ -173,7 +176,12 @@ fn traces_in_cfg_attr(
                 properties: Some(trace_props),
             }])
         } else {
-            // TODO: warn of invalid mantra trace
+            log::warn!(
+                "Could not extract requirements from mantra-compatible macro at line {}",
+                identifier_node.start_position().row
+                    + usize::try_from(start_line).unwrap_or_default()
+            );
+
             None
         }
     } else if identifier_node.utf8_text(content_bytes) == Ok("cfg_attr") {
@@ -464,20 +472,4 @@ fn goto_next_sibling_or_parent(cursor: &mut TreeCursor<'_>) -> Option<()> {
     }
 
     Some(())
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::collect::{collector::AnnotationCollector, rust::RustCodeCollector};
-
-    #[test]
-    fn simple_attrb() {
-        let content = r#"
-            #[req("ID"1)]
-            fn foo() {}
-            "#;
-        let annotations = RustCodeCollector::collect(content).unwrap();
-
-        println!("{annotations:?}");
-    }
 }

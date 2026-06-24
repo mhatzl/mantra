@@ -8,8 +8,10 @@ use mantra_schema::{
 
 use crate::collect::collector::AnnotationCollector;
 
-#[cfg(test)]
-mod tests;
+// TODO: implement plain text collector
+
+// #[cfg(test)]
+// mod tests;
 
 pub struct PlainTextCollector {
     annotations: Annotations,

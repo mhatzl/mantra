@@ -5,7 +5,6 @@ members = [
     "langs/mantra-lang-tracing",
     "langs/rust/mantra-rust-procm",
     "langs/rust/mantra-rust-macros",
-    "langs/rust/mantra-rust-trace",
     "schema", "schema-gen",
 ]
 
