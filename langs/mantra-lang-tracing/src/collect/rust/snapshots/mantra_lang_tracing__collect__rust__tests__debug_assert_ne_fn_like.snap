@@ -1,0 +1,38 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        fn foo() {\n            debug_assert_ne_req!(\"ID1.debug_assert\" => 1, 2)\n        }\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1.debug_assert",
+      ],
+      line: 3,
+      related_code: Some(CodeBlock(
+        kind: other,
+        span: LineSpan(
+          start: 3,
+          end: 3,
+        ),
+        content_hash: Some("e16b8dc7b30debcec46fda098b519871418f2a961e6fe76f8dd4c1c389ca3bdb"),
+      )),
+      kind: verifies,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 2,
+      span: LineSpan(
+        start: 2,
+        end: 4,
+      ),
+      kind: function,
+      content_hash: Some("0f73b5c10572ce4cc6cb049adc4a72ca4fdf6afe76a99efaf25a5fdbe5a5a2e6"),
+    ),
+  ],
+  coverage_excludes: [],
+)

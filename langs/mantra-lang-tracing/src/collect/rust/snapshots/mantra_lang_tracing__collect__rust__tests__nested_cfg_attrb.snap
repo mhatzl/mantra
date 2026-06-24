@@ -1,0 +1,36 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        #[cfg_attr(feature = \"some-feature\", cfg_attr(target_os = \"some-os\", req_link(\"ID1\")))]\n        fn foo() {}\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1",
+      ],
+      line: 2,
+      related_code: Some(3),
+      kind: links,
+      properties: Some({
+        "cfg_attr": [
+          "feature=\"some-feature\"",
+          "target_os=\"some-os\"",
+        ],
+      }),
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 3,
+      span: LineSpan(
+        start: 2,
+        end: 3,
+      ),
+      kind: function,
+      content_hash: Some("06933ac6b794feeb8547b8b52836e5a0530e181137bba20bc02cfbff101bd7bc"),
+    ),
+  ],
+  coverage_excludes: [],
+)

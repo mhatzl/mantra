@@ -1,0 +1,38 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        fn foo() {\n            impl_req!(\"ID1.impl\" => {\n                // some code...\n            })\n        }\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1.impl",
+      ],
+      line: 3,
+      related_code: Some(CodeBlock(
+        kind: other,
+        span: LineSpan(
+          start: 3,
+          end: 5,
+        ),
+        content_hash: Some("0d6b11940fa915c10b921e968597e3c338ff95eaaed9f2d849967c5a09bd0387"),
+      )),
+      kind: satisfies,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 2,
+      span: LineSpan(
+        start: 2,
+        end: 6,
+      ),
+      kind: function,
+      content_hash: Some("9e50c84a4a9bff24aab1b0cd012a051083a0d984e88b5df79a7e28766c0afcaf"),
+    ),
+  ],
+  coverage_excludes: [],
+)

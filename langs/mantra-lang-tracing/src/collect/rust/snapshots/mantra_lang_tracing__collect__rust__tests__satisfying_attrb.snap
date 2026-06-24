@@ -1,0 +1,31 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        #[req_satisfied(\"ID1\")]\n        fn foo() {}\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1",
+      ],
+      line: 2,
+      related_code: Some(3),
+      kind: satisfies,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 3,
+      span: LineSpan(
+        start: 2,
+        end: 3,
+      ),
+      kind: function,
+      content_hash: Some("ac67e1cd78826367a37e8c619a1624549c11f34bac0ed1c1a57d1f63b04dce4c"),
+    ),
+  ],
+  coverage_excludes: [],
+)
