@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use anyhow::bail;
+use anyhow::{Context, bail};
 use mantra_schema::{
     FmtHash, Properties,
     path::RelativePath,
@@ -24,14 +24,18 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &base_origin_hash
             && let Some(origin) = req_schema.origin
         {
-            self.insert_general_json(hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone())
+                .await
+                .context("Failed to insert the base origin")?;
         }
 
         // TODO: do not stop at first collect error
 
         for req in req_schema.requirements {
+            let req_id = req.id.clone();
             self.update_requirement(filepath, req, &base_origin_hash, &req_schema.properties)
-                .await?;
+                .await
+                .with_context(|| format!("Failed to update requirement '{}'", req_id))?;
         }
 
         Ok(())
@@ -52,15 +56,20 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to get collected dot-requirements")?;
 
         let mut missing_parent = Vec::new();
 
         for record in records {
-            // TODO: log missing dot-parent
-            // Only allow parent to be collected in the same (latest) collection.
             if let Some(parent_id) = self
-                .get_dot_parent(&product_id, collect_nr, &ReqId::from_str(&record.id)?)
+                .get_dot_parent(
+                    &product_id,
+                    collect_nr,
+                    &ReqId::from_str(&record.id).with_context(|| {
+                        format!("Received invalid requirement ID '{}'", record.id)
+                    })?,
+                )
                 .await
             {
                 sqlx::query!(
@@ -90,7 +99,13 @@ impl<'db> Collection<'db> {
                     parent_id
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed updating dot-hierarchy for requirement '{}'",
+                        record.id
+                    )
+                })?;
             } else {
                 missing_parent.push(record.id);
             }
@@ -98,7 +113,7 @@ impl<'db> Collection<'db> {
 
         if !missing_parent.is_empty() {
             for bad in missing_parent {
-                eprintln!("Parent of requirement '{bad}' was not collected!");
+                log::error!("Parent of requirement '{bad}' was not collected!");
             }
             anyhow::bail!("Missing parent requirement!");
         }
@@ -119,7 +134,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to get collected requirements")?;
 
         // Note: always deleting outdated data for collected reqs,
         // because this means that the data got removed in the original source.
@@ -135,7 +151,13 @@ impl<'db> Collection<'db> {
                 collect_nr
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated properties for requirement '{}'",
+                    record.id
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -148,7 +170,13 @@ impl<'db> Collection<'db> {
                 collect_nr
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated hierarchies for requirement '{}'",
+                    record.id
+                )
+            })?;
         }
 
         // Check bad req-hierarchies before deleting olds.
@@ -180,7 +208,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to check for bad requirement hierarchies")?;
 
         if !bad_hierarchies.is_empty() {
             for bad in bad_hierarchies {
@@ -204,7 +233,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated requirements base data")?;
 
         Ok(())
     }
@@ -233,7 +263,8 @@ impl<'db> Collection<'db> {
             req.id
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to check for duplicate requirement entries")?
         {
             bail!(
                 "Duplicate requirement ID '{}' found in the same collection! Duplicate definition in '{}'; Previous definition in '{}'.",
@@ -251,12 +282,17 @@ impl<'db> Collection<'db> {
         let data_filepath = filepath.as_str();
 
         let origin_hash = FmtHash::from(&req.origin);
-        self.insert_general_json(&origin_hash, req.origin).await?;
+        self.insert_general_json(&origin_hash, req.origin)
+            .await
+            .context("Failed to insert the requirement origin")?;
+
         let description_hash = req.description.as_ref().map(FmtHash::from);
         if let Some(hash) = &description_hash
             && let Some(description) = req.description
         {
-            self.insert_general_text(hash, description, None).await?;
+            self.insert_general_text(hash, description, None)
+                .await
+                .context("Failed to insert the requirement description")?;
         }
 
         sqlx::query!(
@@ -320,12 +356,16 @@ impl<'db> Collection<'db> {
             data_filepath
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update the requirement base data")?;
 
         if let Some(props) = merge_local_and_base_properties(req.properties, base_props) {
             for prop in props {
+                let key = &prop.0;
                 let value_hash = FmtHash::from(&prop.1);
-                self.insert_general_json(&value_hash, prop.1).await?;
+                self.insert_general_json(&value_hash, prop.1)
+                    .await
+                    .with_context(|| format!("Failed to insert content for property '{}'", key))?;
 
                 sqlx::query!(
                     "
@@ -351,11 +391,12 @@ impl<'db> Collection<'db> {
                     collect_nr,
                     req.id,
                     product_id,
-                    prop.0,
+                    key,
                     value_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| format!("Failed to update requirement property '{}'", key))?;
             }
         }
 
@@ -392,7 +433,13 @@ impl<'db> Collection<'db> {
                     parent.id
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update hierarchy with parent requirement '{}'",
+                        parent.id
+                    )
+                })?;
             }
         }
 
@@ -429,10 +476,10 @@ impl<'db> Collection<'db> {
     ) -> bool {
         sqlx::query!(
             "
-                    select id from Requirements
-                    where product_id = $1 and id = $2
-                    and last_collect_nr = $3
-                ",
+            select id from Requirements
+            where product_id = $1 and id = $2
+            and last_collect_nr = $3
+            ",
             product_id,
             req_id,
             collect_nr

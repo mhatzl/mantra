@@ -81,6 +81,13 @@ pub struct CoverageExclude {
     pub comment: String,
 }
 
+impl CoverageExclude {
+    /// The start line the coverage exclusion starts.
+    pub fn start_line(&self) -> Line {
+        self.kind.start_line()
+    }
+}
+
 /// The kind of coverage exclusion that was found in a file.
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
@@ -92,6 +99,16 @@ pub enum CoverageExcludeKind {
     Block { start: Line, end: Line },
     /// Excludes one line from coverage metrics.
     Line(Line),
+}
+
+impl CoverageExcludeKind {
+    /// The start line the coverage exclusion starts.
+    pub fn start_line(&self) -> Line {
+        match self {
+            CoverageExcludeKind::Block { start, end: _ } => *start,
+            CoverageExcludeKind::Line(line) => *line,
+        }
+    }
 }
 
 /// A *mantra* trace.

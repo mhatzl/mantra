@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::FmtHash;
 use mantra_schema::Line;
 use mantra_schema::Properties;
@@ -25,19 +26,24 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &base_origin_hash
             && let Some(origin) = review_schema.origin
         {
-            self.insert_general_json(hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone())
+                .await
+                .context("Failed to insert the base origin")?;
         }
 
         // TODO: do not stop at first collect error
 
         for review in review_schema.reviews {
+            let name = review.name.clone();
+
             self.update_review(
                 filepath,
                 review,
                 &base_origin_hash,
                 &review_schema.properties,
             )
-            .await?;
+            .await
+            .with_context(|| format!("Failed to update review '{}'", name))?;
         }
 
         Ok(())
@@ -56,11 +62,14 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to get collected reviews")?;
 
         // Note: always deleting outdated data for collected reviews,
         // because this means that the data got removed in the original source.
         for record in updated_records {
+            let review_name = record.name;
+
             sqlx::query!(
                 "
                 delete from ReviewAuthors
@@ -70,11 +79,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated authors for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -85,11 +100,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated properties for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -100,11 +121,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated revisions for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -115,11 +142,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated revision authors for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -130,11 +163,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated manually verified requirements for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -145,11 +184,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated test case overrides for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -160,11 +205,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated test-run line coverage overrides for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -175,11 +226,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated test-case line coverage overrides for review '{}'",
+                    review_name
+                )
+            })?;
 
             sqlx::query!(
                 "
@@ -190,11 +247,17 @@ impl<'db> Collection<'db> {
             ",
                 product_id,
                 collect_nr,
-                record.name,
+                review_name,
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated ignored review entries for review '{}'",
+                    review_name
+                )
+            })?;
         }
 
         // Note: due to cascade rules, deletions in the base Reviews table
@@ -208,7 +271,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated reviews")?;
 
         Ok(())
     }
@@ -238,13 +302,11 @@ impl<'db> Collection<'db> {
             review.utc_date
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to get collected reviews")?
         {
             anyhow::bail!(
-                "Duplicate review with name='{}' date='{}' found in the same collection! Duplicate definition in '{}'; Previous definition in '{}'.",
-                review.name,
-                review.utc_date,
-                filepath,
+                "Duplicate review entry found in the same collection! Previous definition in '{}'.",
                 record.data_filepath
             );
         }
@@ -260,13 +322,17 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &origin_hash
             && let Some(origin) = review.origin
         {
-            self.insert_general_json(hash, origin).await?;
+            self.insert_general_json(hash, origin)
+                .await
+                .context("Failed to insert the review origin")?;
         }
         let description_hash = review.description.as_ref().map(FmtHash::from);
         if let Some(hash) = &description_hash
             && let Some(description) = review.description
         {
-            self.insert_general_text(hash, description, None).await?;
+            self.insert_general_text(hash, description, None)
+                .await
+                .context("Failed to insert the review description")?;
         }
 
         sqlx::query!(
@@ -313,7 +379,8 @@ impl<'db> Collection<'db> {
             data_filepath
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update the review base data")?;
 
         for author in review.authors {
             sqlx::query!(
@@ -343,13 +410,17 @@ impl<'db> Collection<'db> {
                 author
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| format!("Failed to insert author '{}'", author))?;
         }
 
         if let Some(props) = merge_local_and_base_properties(review.properties, base_props) {
             for prop in props {
+                let key = &prop.0;
                 let value_hash = FmtHash::from(&prop.1);
-                self.insert_general_json(&value_hash, prop.1).await?;
+                self.insert_general_json(&value_hash, prop.1)
+                    .await
+                    .with_context(|| format!("Failed to insert content for property '{}'", key))?;
 
                 sqlx::query!(
                     "
@@ -378,11 +449,12 @@ impl<'db> Collection<'db> {
                     product_id,
                     review.name,
                     review.utc_date,
-                    prop.0,
+                    key,
                     value_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| format!("Failed to insert property '{}'", key))?;
             }
         }
 
@@ -419,7 +491,8 @@ impl<'db> Collection<'db> {
                     revision.comment
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| format!("Failed to insert revision '{}'", revision.nr))?;
 
                 for author in revision.authors {
                     sqlx::query!(
@@ -452,7 +525,13 @@ impl<'db> Collection<'db> {
                         author
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert revision author '{}' for revision '{}'",
+                            author, revision.nr
+                        )
+                    })?;
                 }
             }
         }
@@ -460,12 +539,24 @@ impl<'db> Collection<'db> {
         for verified_req in review.requirements {
             let comment_hash = FmtHash::from(&verified_req.comment);
             self.insert_general_text(&comment_hash, verified_req.comment, None)
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to insert verification comment for requirement '{}'",
+                        verified_req.id
+                    )
+                })?;
 
             match verified_req.id {
                 OneOrMultRequirementIds::One(id) => {
                     self.update_verified_req(&review.name, &review.utc_date, &id, &comment_hash)
-                        .await?;
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to insert review verification for requirement '{}'",
+                                id,
+                            )
+                        })?;
                 }
                 OneOrMultRequirementIds::Mult(ids) => {
                     for id in ids {
@@ -475,7 +566,13 @@ impl<'db> Collection<'db> {
                             &id,
                             &comment_hash,
                         )
-                        .await?;
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to insert review verification for requirement '{}'",
+                                id,
+                            )
+                        })?;
                     }
                 }
             }

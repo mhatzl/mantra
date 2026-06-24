@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::annotations::TraceKind;
 
 use crate::cmd::collect::Collection;
@@ -5,16 +6,36 @@ use crate::cmd::collect::Collection;
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_requirements_data(&mut self) -> Result<(), anyhow::Error> {
         // Note: order is important, because later queries build on updated tables
-        self.update_requirement_descendants().await?;
-        self.update_leaf_requirements().await?;
-        self.update_deprecated_requirements().await?;
-        self.update_excluded_requirements().await?;
-        self.update_optional_requirements().await?;
-        self.update_manual_requirements().await?;
-        self.update_usable_requirements().await?;
-        self.update_usable_manual_requirements().await?;
-        self.update_usable_non_manual_requirements().await?;
-        self.update_directly_satisfied_requirements().await?;
+        self.update_requirement_descendants()
+            .await
+            .context("Failed to update requirement descendants")?;
+        self.update_leaf_requirements()
+            .await
+            .context("Failed to update leaf requirements")?;
+        self.update_deprecated_requirements()
+            .await
+            .context("Failed to update deprecated requirements")?;
+        self.update_excluded_requirements()
+            .await
+            .context("Failed to update excluded requirements")?;
+        self.update_optional_requirements()
+            .await
+            .context("Failed to update optional requirements")?;
+        self.update_manual_requirements()
+            .await
+            .context("Failed to update manual requirements")?;
+        self.update_usable_requirements()
+            .await
+            .context("Failed to update usable requirements")?;
+        self.update_usable_manual_requirements()
+            .await
+            .context("Failed to update usable manual requirements")?;
+        self.update_usable_non_manual_requirements()
+            .await
+            .context("Failed to update usable non-manual requirements")?;
+        self.update_directly_satisfied_requirements()
+            .await
+            .context("Failed to update directly satisfied requirements")?;
 
         Ok(())
     }
@@ -69,7 +90,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -120,13 +142,15 @@ impl<'db> Collection<'db> {
             "
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to check if hierarchy cycle exists")?;
 
         if !req_cycle_exists.is_empty() {
             for bad in req_cycle_exists {
-                eprintln!(
+                log::error!(
                     "Requirement cycle detected for req '{}' in product id='{}'",
-                    bad.req_id, bad.product_id
+                    bad.req_id,
+                    bad.product_id
                 );
             }
             anyhow::bail!("Requirement cycle detected!");
@@ -145,7 +169,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -186,7 +211,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -236,7 +262,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -286,7 +313,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -336,7 +364,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -386,7 +415,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -434,7 +464,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -474,7 +505,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -512,7 +544,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }

@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::{FmtHash, product::Product};
 
 use crate::cmd::collect::Collection;
@@ -13,7 +14,8 @@ impl<'db> Collection<'db> {
         let description_hash = if let Some(description) = &product.description {
             let hash = FmtHash::from(&description);
             self.insert_general_text(&hash, description.clone(), None)
-                .await?;
+                .await
+                .context("Failed to insert the product description")?;
             Some(hash)
         } else {
             None
@@ -66,7 +68,8 @@ impl<'db> Collection<'db> {
             description_hash
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to insert the product base data")?;
 
         if let Some(properties) = product.properties {
             for property in properties {
@@ -74,7 +77,11 @@ impl<'db> Collection<'db> {
                 let value = property.1;
                 let hash = FmtHash::from(&value);
 
-                self.insert_general_json(&hash, value).await?;
+                self.insert_general_json(&hash, value)
+                    .await
+                    .with_context(|| {
+                        format!("Failed to insert the content for property '{}'", key)
+                    })?;
 
                 sqlx::query!(
                     "
@@ -101,7 +108,8 @@ impl<'db> Collection<'db> {
                     hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| format!("Failed to insert property '{}'", key))?;
             }
         }
 
@@ -121,7 +129,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated product properties")?;
 
         sqlx::query!(
             "
@@ -132,7 +141,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated product related files")?;
 
         Ok(())
     }

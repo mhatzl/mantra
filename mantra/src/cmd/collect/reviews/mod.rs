@@ -1,3 +1,4 @@
+use anyhow::Context;
 use ignore::types::TypesBuilder;
 use mantra_schema::{path::RelativePath, reviews::ReviewSchema};
 
@@ -54,6 +55,9 @@ impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
         filepath: &RelativePath,
         schema: ReviewSchema,
     ) -> Result<(), anyhow::Error> {
-        collection.update_per_review_schema(filepath, schema).await
+        collection
+            .update_per_review_schema(filepath, schema)
+            .await
+            .with_context(|| format!("Failed updating reviews collected from file '{}'", filepath))
     }
 }

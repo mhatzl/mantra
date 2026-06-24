@@ -1,9 +1,15 @@
+use anyhow::Context;
+
 use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_annotations_data(&mut self) -> Result<(), anyhow::Error> {
-        self.update_trace_spans().await?;
-        self.update_coverage_exclude_lines().await?;
+        self.update_trace_spans()
+            .await
+            .context("Failed to update trace spans")?;
+        self.update_coverage_exclude_lines()
+            .await
+            .context("Failed to update coverage exclusions")?;
 
         Ok(())
     }

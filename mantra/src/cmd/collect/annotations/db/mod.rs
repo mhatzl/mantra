@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{Context, bail};
 use mantra_schema::{
     FmtHash, Properties,
     annotations::{
@@ -16,14 +16,16 @@ impl<'db> Collection<'db> {
     pub(super) async fn update_per_annotation_schema(
         &mut self,
         filepath: &RelativePath,
-        annotaiton_schema: AnnotationSchema,
+        annotation_schema: AnnotationSchema,
     ) -> Result<(), anyhow::Error> {
-        let base_origin_hash = annotaiton_schema.origin.as_ref().map(FmtHash::from);
+        let base_origin_hash = annotation_schema.origin.as_ref().map(FmtHash::from);
 
         if let Some(hash) = &base_origin_hash
-            && let Some(origin) = annotaiton_schema.origin
+            && let Some(origin) = annotation_schema.origin
         {
-            self.insert_general_json(hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone())
+                .await
+                .context("Failed to insert the annotation base origin")?;
         }
 
         let collect_nr = self.collect_nr();
@@ -32,13 +34,15 @@ impl<'db> Collection<'db> {
 
         // TODO: do not stop at first collect error
 
-        for file_annotations in annotaiton_schema.files {
+        for file_annotations in annotation_schema.files {
+            let filepath = file_annotations.filepath.to_string();
             self.update_per_annotation_file(
                 file_annotations,
                 &base_origin_hash,
-                &annotaiton_schema.trace_properties,
+                &annotation_schema.trace_properties,
             )
-            .await?;
+            .await
+            .with_context(|| format!("Failed to update annotations for file: '{}'", filepath))?;
         }
 
         // Note: Must be added after file annotations, because for the annotation variant from content
@@ -60,7 +64,8 @@ impl<'db> Collection<'db> {
             data_filepath
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to store annotation data source")?;
 
         Ok(())
     }
@@ -78,7 +83,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete annotation file origins")?;
 
         sqlx::query!(
             "
@@ -89,7 +95,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete direct product requirement traces")?;
 
         sqlx::query!(
             "
@@ -100,7 +107,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete element idents")?;
 
         Ok(())
     }
@@ -118,7 +126,8 @@ impl<'db> Collection<'db> {
         let filepath = file_annotations.filepath.as_str();
 
         self.insert_file_hash(&file_annotations.filepath, &file_annotations.file_hash)
-            .await?;
+            .await
+            .context("Failed to insert file hash")?;
 
         // Filepath has been added in same collection already.
         // Ensure that values are matching to allow file skipping.
@@ -137,7 +146,8 @@ impl<'db> Collection<'db> {
             filepath
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to lookup existing annotation data sources")?
         .is_some()
         {
             let opt_prev_base_origin_hash = sqlx::query!(
@@ -152,14 +162,12 @@ impl<'db> Collection<'db> {
                 filepath
             )
             .fetch_optional(self.connection_mut())
-            .await?
+            .await
+            .context("Failed to lookup existing annotation file origins")?
             .map(|r| FmtHash::with_inner(r.base_origin_hash));
 
             if &opt_prev_base_origin_hash != base_origin_hash {
-                bail!(
-                    "Duplicate entry in same collection for filepath '{}' with different base origins.",
-                    filepath
-                );
+                bail!("Duplicate entry in same collection with different base origins");
             }
 
             log::info!(
@@ -177,7 +185,8 @@ impl<'db> Collection<'db> {
                 &file_annotations.file_hash,
                 &content,
             )
-            .await?;
+            .await
+            .context("Failed to insert file content")?;
         }
 
         sqlx::query!(
@@ -197,7 +206,8 @@ impl<'db> Collection<'db> {
             filepath
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to insert the annotation data source")?;
 
         if let Some(base_origin_hash) = base_origin_hash {
             sqlx::query!(
@@ -225,28 +235,49 @@ impl<'db> Collection<'db> {
                 base_origin_hash
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to insert annotation file origins")?;
         }
 
         // **Note:** Adding elements first to be able to map traces to elements later
         for element in file_annotations.annotations.elements {
+            let elm_name = element.name.clone();
+            let def_line = element.definition_line;
+
             self.update_element(filepath, &file_annotations.file_hash, element)
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update the element '{}' defined at line '{}'",
+                        elm_name, def_line
+                    )
+                })?;
         }
 
         for trace in file_annotations.annotations.traces {
+            let line = trace.line;
+
             self.update_trace(
                 filepath,
                 &file_annotations.file_hash,
                 trace,
                 base_trace_props,
             )
-            .await?;
+            .await
+            .with_context(|| format!("Failed to update the trace found at line '{}'", line))?;
         }
 
         for coverage_exclude in file_annotations.annotations.coverage_excludes {
+            let line = coverage_exclude.start_line();
+
             self.update_coverage_exclude(&file_annotations.file_hash, coverage_exclude)
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update the coverage exclusion starting at line '{}'",
+                        line
+                    )
+                })?;
         }
 
         Ok(())
@@ -302,7 +333,8 @@ impl<'db> Collection<'db> {
             element.content_hash
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed inserting element base data")?;
 
         if let Some(ident) = element.ident {
             sqlx::query!(
@@ -335,7 +367,8 @@ impl<'db> Collection<'db> {
                 ident
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed inserting the element identifier")?;
         }
 
         Ok(())
@@ -364,7 +397,8 @@ impl<'db> Collection<'db> {
             trace.line
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to get collected traces")?
         .is_some()
         {
             // If the trace and filepath have already been collected in this run,
@@ -388,14 +422,11 @@ impl<'db> Collection<'db> {
                 filepath
             )
             .fetch_optional(self.connection_mut())
-            .await?
+            .await
+            .context("Failed to get collected annotation data sources")?
             .is_some()
             {
-                bail!(
-                    "Duplicate entry for trace at line '{}' in file '{}'. Only one trace may be set per line.",
-                    trace.line,
-                    filepath
-                );
+                bail!("Duplicate entry for trace. Only one trace may be set per line.");
             }
         }
 
@@ -424,12 +455,17 @@ impl<'db> Collection<'db> {
             kind
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to insert trace base data")?;
 
         if let Some(props) = merge_local_and_base_properties(trace.properties, base_trace_props) {
             for prop in props {
                 let value_hash = FmtHash::from(&prop.1);
-                self.insert_general_json(&value_hash, prop.1).await?;
+                self.insert_general_json(&value_hash, prop.1)
+                    .await
+                    .with_context(|| {
+                        format!("Failed to insert trace content for property '{}'", &prop.0)
+                    })?;
 
                 sqlx::query!(
                     "
@@ -459,7 +495,8 @@ impl<'db> Collection<'db> {
                     value_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| format!("Failed to insert trace property '{}'", prop.0))?;
             }
         }
 
@@ -488,7 +525,8 @@ impl<'db> Collection<'db> {
                 trace.line
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .with_context(|| format!("Failed to insert trace to req '{}'", req_id))?;
 
             let req_available = sqlx::query!(
                 "
@@ -499,7 +537,8 @@ impl<'db> Collection<'db> {
                 product_id
             )
             .fetch_optional(self.connection_mut())
-            .await?
+            .await
+            .context("Failed to get collected requirements")?
             .is_some();
 
             if req_available {
@@ -533,7 +572,10 @@ impl<'db> Collection<'db> {
                     trace.line
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .with_context(|| {
+                    format!("Failed to insert product-related trace to req '{}'", req_id)
+                })?;
             }
         }
 
@@ -579,7 +621,13 @@ impl<'db> Collection<'db> {
                         code_block.content_hash
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert traced code block starting at line '{}'",
+                            code_block.span.start
+                        )
+                    })?;
                 }
                 TraceRelatedCodeVariant::ElementAtLine(def_line) => {
                     sqlx::query!(
@@ -606,7 +654,13 @@ impl<'db> Collection<'db> {
                         def_line
                     )
                     .execute(self.connection_mut())
-                    .await?;
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert trace relation to element defined at line '{}'",
+                            def_line
+                        )
+                    })?;
                 }
             }
         }
@@ -622,7 +676,8 @@ impl<'db> Collection<'db> {
         let collect_nr = self.collect_nr();
         let comment_hash = FmtHash::from(&coverage_exclude.comment);
         self.insert_general_text(&comment_hash, coverage_exclude.comment, None)
-            .await?;
+            .await
+            .context("Failed to insert coverage exclusion comment")?;
 
         match coverage_exclude.kind {
             CoverageExcludeKind::Block { start, end } => {
@@ -655,7 +710,8 @@ impl<'db> Collection<'db> {
                     comment_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert the coverage exclusion block")?;
             }
             CoverageExcludeKind::Line(line) => {
                 sqlx::query!(
@@ -683,7 +739,8 @@ impl<'db> Collection<'db> {
                     comment_hash
                 )
                 .execute(self.connection_mut())
-                .await?;
+                .await
+                .context("Failed to insert the coverage exclusion line")?;
             }
         }
 

@@ -1,3 +1,4 @@
+use anyhow::Context;
 use ignore::types::TypesBuilder;
 use mantra_schema::{path::RelativePath, requirements::RequirementSchema};
 
@@ -59,6 +60,14 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
         filepath: &RelativePath,
         schema: RequirementSchema,
     ) -> Result<(), anyhow::Error> {
-        collection.update_per_req_schema(filepath, schema).await
+        collection
+            .update_per_req_schema(filepath, schema)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed updating requirements collected from file '{}'",
+                    filepath
+                )
+            })
     }
 }

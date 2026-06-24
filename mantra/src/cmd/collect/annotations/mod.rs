@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_lang_tracing::collect::collector::AnnotationCollector;
 use mantra_schema::{
     annotations::{AnnotationSchema, Annotations, FileAnnotations},
@@ -58,13 +59,20 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
         collection
             .update_per_annotation_schema(filepath, schema)
             .await
+            .with_context(|| {
+                format!(
+                    "Failed updating annotations collected from file '{}'",
+                    filepath
+                )
+            })
     }
 }
 
 fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyhow::Error> {
     if file.extension() == Some("rs") {
         let annotations =
-            mantra_lang_tracing::collect::rust::RustCodeCollector::collect(file.content)?;
+            mantra_lang_tracing::collect::rust::RustCodeCollector::collect(file.content)
+                .context("Failed to collect annotations from Rust content")?;
         Ok(AnnotationSchema {
             schema_version: None,
             files: vec![FileAnnotations {
@@ -77,7 +85,7 @@ fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyh
             origin: None,
         })
     } else {
-        eprintln!(
+        log::error!(
             "Got unsupported file type to collect annotations from '{}'. No traces or elements are collected.",
             file.filepath
         );

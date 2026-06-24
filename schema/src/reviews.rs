@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
@@ -111,6 +113,25 @@ pub enum OneOrMultRequirementIds {
     One(ReqId),
     /// List of requirements that are all verified by one verification entry.
     Mult(Vec<ReqId>),
+}
+
+impl std::fmt::Display for OneOrMultRequirementIds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            OneOrMultRequirementIds::One(req_id) => write!(f, "{}", req_id),
+            OneOrMultRequirementIds::Mult(req_ids) => {
+                write!(
+                    f,
+                    "{}",
+                    req_ids
+                        .iter()
+                        .map(|r| r.deref().clone())
+                        .collect::<Vec<String>>()
+                        .join(",")
+                )
+            }
+        }
+    }
 }
 
 /// Represents review overrides for a specific test run.

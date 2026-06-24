@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::{
     annotations::TraceKind, report::requirement::RequirementState, test_runs::TestCaseState,
 };
@@ -7,30 +8,54 @@ use crate::cmd::collect::Collection;
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_verification_data(&mut self) -> Result<(), anyhow::Error> {
         self.update_trace_mapped_lines_only_covered_by_passed_test_runs()
-            .await?;
+            .await
+            .context("Failed to update trace mapped lines covered only by passed test runs")?;
         self.update_trace_mapped_lines_only_covered_by_passed_test_cases()
-            .await?;
+            .await
+            .context("Failed to update trace mapped lines covery only by passed test cases")?;
         self.update_trace_mapped_lines_only_covered_by_passed_tests()
-            .await?;
+            .await
+            .context("Failed to update trace mapped lines covered only by passed tests")?;
 
         self.update_trace_mapped_lines_covered_by_failed_test_runs()
-            .await?;
+            .await
+            .context("Failed to update trace mapped lines covered by failing test runs")?;
         self.update_trace_mapped_lines_covered_by_failed_test_cases()
-            .await?;
+            .await
+            .context("Failed to update trace mapped lines covered by failing test cases")?;
         self.update_trace_mapped_lines_covered_by_failed_tests()
-            .await?;
+            .await
+            .context("Failed to update trace mapped lines covered by failing tests")?;
 
-        self.update_traces_only_covered_by_passed_tests().await?;
-        self.update_traces_covered_by_failed_tests().await?;
+        self.update_traces_only_covered_by_passed_tests()
+            .await
+            .context("Failed to update traces covered only by passed tests")?;
+        self.update_traces_covered_by_failed_tests()
+            .await
+            .context("Failed to update traces covered by failing tests")?;
 
-        self.update_direct_req_verification_states().await?;
-        self.update_indirect_req_verification_states().await?;
-        self.update_req_verification_states().await?;
+        self.update_direct_req_verification_states()
+            .await
+            .context("Failed to update direct requirement states")?;
+        self.update_indirect_req_verification_states()
+            .await
+            .context("Failed to update indirect requirement states")?;
+        self.update_req_verification_states()
+            .await
+            .context("Failed to update aggregated requirement states")?;
 
-        self.update_verified_reqs().await?;
-        self.update_failed_reqs().await?;
-        self.update_skipped_reqs().await?;
-        self.update_unverified_reqs().await?;
+        self.update_verified_reqs()
+            .await
+            .context("Failed to update verified requirements")?;
+        self.update_failed_reqs()
+            .await
+            .context("Failed to update failed requirements")?;
+        self.update_skipped_reqs()
+            .await
+            .context("Failed to update skipped requirements")?;
+        self.update_unverified_reqs()
+            .await
+            .context("Failed to update unverified requirements")?;
 
         Ok(())
     }
@@ -108,7 +133,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -191,7 +217,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -248,7 +275,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -304,7 +332,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -358,7 +387,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -415,7 +445,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -472,7 +503,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -514,7 +546,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -986,7 +1019,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -1019,7 +1053,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update UsableNonLeafRequirements")?;
 
         // Table data is updated for all products, because requirements may be connected across products
         sqlx::query!(
@@ -1030,7 +1065,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated UsableNonLeafRequirements entries")?;
 
         sqlx::query!(
             "
@@ -1085,7 +1121,8 @@ impl<'db> Collection<'db> {
             req_unverified_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update RequirementsWithUnverifiedNonOptionalChildren")?;
 
         sqlx::query!(
             "
@@ -1095,7 +1132,10 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context(
+            "Failed to delete outdated RequirementsWithUnverifiedNonOptionalChildren entries",
+        )?;
 
         sqlx::query!(
             "
@@ -1150,7 +1190,8 @@ impl<'db> Collection<'db> {
             req_skipped_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update RequirementsWithSkippedNonOptionalChildren")?;
 
         sqlx::query!(
             "
@@ -1160,7 +1201,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated RequirementsWithSkippedNonOptionalChildren entries")?;
 
         sqlx::query!(
             "
@@ -1192,7 +1234,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update RequirementsWithOnlyOptionalChildren")?;
 
         sqlx::query!(
             "
@@ -1202,7 +1245,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated RequirementsWithOnlyOptionalChildren entries")?;
 
         // Note: The table may contain multiple state entries per requirement
         // This will be considered when updating IndirectRequirementVerificationStates below
@@ -1250,7 +1294,8 @@ impl<'db> Collection<'db> {
             req_unverified_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update StatesOfRequirementsWithOnlyOptionalChildren")?;
 
         // Table data is updated for all products, because requirements may be connected across products
         sqlx::query!(
@@ -1261,7 +1306,10 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context(
+            "Failed to delete outdated StatesOfRequirementsWithOnlyOptionalChildren entries",
+        )?;
 
         sqlx::query!(
             "
@@ -1292,7 +1340,8 @@ impl<'db> Collection<'db> {
             req_verified_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update VerifiedRequirementsWithOnlyOptionalChildren")?;
 
         // Table data is updated for all products, because requirements may be connected across products
         sqlx::query!(
@@ -1303,7 +1352,10 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context(
+            "Failed to delete outdated VerifiedRequirementsWithOnlyOptionalChildren entries",
+        )?;
 
         sqlx::query!(
             "
@@ -1395,7 +1447,7 @@ impl<'db> Collection<'db> {
             req_unverified_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await.context("Failed to update IndirectRequirementVerificationStates")?;
 
         sqlx::query!(
             "
@@ -1406,7 +1458,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated IndirectRequirementVerificationStates entries")?;
 
         Ok(())
     }
@@ -1515,7 +1568,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -1556,7 +1610,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -1597,7 +1652,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -1638,7 +1694,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -1679,7 +1736,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
