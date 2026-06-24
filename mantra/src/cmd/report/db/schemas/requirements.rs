@@ -47,7 +47,7 @@ pub async fn generate_requirements_schema<'db>(
         ),
         Manual(id) as (
             select mr.id
-            from ManualRequirements mr
+            from UsableManualRequirements mr
             where mr.product_id = $1
         )
         select
