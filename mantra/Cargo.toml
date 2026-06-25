@@ -9,9 +9,9 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0" }
-mantra-rust-macros = { path = "../langs/rust/mantra-rust-macros", version = "0" }
-mantra-schema = { path = "../schema", version = "0" }
+mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0.8.0-rc1" }
+mantra-rust-macros = { path = "../langs/rust/mantra-rust-macros", version = "0.8.0-rc1" }
+mantra-schema = { path = "../schema", version = "0.8.0-rc1" }
 regex.workspace = true
 log.workspace = true
 env_logger.workspace = true
@@ -20,14 +20,14 @@ serde_json.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
 urlencoding.workspace = true
+thiserror.workspace = true
+sqlx = { workspace = true, features = ["any", "derive", "macros", "migrate", "sqlite", "json", "runtime-tokio", "time"] }
 tokio = { version = "1.37.0", features = ["full"] }
 tokio-stream = "0.1.18"
 clap = { version = "4.5.4", features = ["derive", "env"] }
-sqlx = { workspace = true, features = ["any", "derive", "macros", "migrate", "sqlite", "json", "runtime-tokio", "time"] }
 toml = { version = "0.8.13", features = ["parse"] }
 ignore = "0.4.25"
 mime_guess = "2.0.5"
-thiserror = "1.0.59"
 minijinja = "2.19.0"
 encoding_rs_io = "0.1.7"
 covcon = "0.3.0"

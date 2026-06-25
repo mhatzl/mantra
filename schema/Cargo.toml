@@ -9,11 +9,11 @@ license.workspace = true
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
-time.workspace = true
 schemars.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+urlencoding.workspace = true
 sha2 = "0.10.9"
 base16ct = { version = "1.0.0", features = ["alloc"] }
 relative-path = { version = "2.0.1", features = ["alloc", "serde"] }
-sqlx.workspace = true
-thiserror = "1.0.59"
-urlencoding.workspace = true
+time = { version = "0.3.47", features = ["serde-human-readable", "macros"] }
