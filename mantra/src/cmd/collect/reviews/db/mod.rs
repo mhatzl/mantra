@@ -583,7 +583,14 @@ impl<'db> Collection<'db> {
                 if let Some(override_state) = test_case_override.state {
                     let comment_hash = FmtHash::from(&override_state.comment);
                     self.insert_general_text(&comment_hash, override_state.comment, None)
-                        .await?;
+                        .await
+                        .with_context(||
+                            format!(
+                                "Failed to insert state override comment for test case '{}' from test run '{}'",
+                                test_case_override.name,
+                                test_run_override.name
+                            )
+                        )?;
                     let state = override_state.new.as_nr();
 
                     let test_case_exists = sqlx::query!(
@@ -603,7 +610,8 @@ impl<'db> Collection<'db> {
                         test_case_override.name
                     )
                     .fetch_optional(self.connection_mut())
-                    .await?
+                    .await
+                    .context("Failed to get collected test cases")?
                     .is_some();
 
                     if test_case_exists {
@@ -655,8 +663,21 @@ impl<'db> Collection<'db> {
                             comment_hash
                         )
                         .execute(self.connection_mut())
-                        .await?;
+                        .await
+                        .with_context(||
+                            format!(
+                                "Failed to insert test case state override for test case '{}' from test run '{}'",
+                                test_case_override.name,
+                                test_run_override.name
+                            )
+                        )?;
                     } else {
+                        log::warn!(
+                            "Ignoring state override for unknown test case '{}' from test run '{}'",
+                            test_case_override.name,
+                            test_run_override.name
+                        );
+
                         let entry = DbIgnoredEntry::from_test_case_state(
                             test_run_override.name.clone(),
                             test_run_override.utc_date,
@@ -664,8 +685,16 @@ impl<'db> Collection<'db> {
                             override_state.new,
                             comment_hash,
                         );
+
                         self.insert_ignored_entry(&review.name, &review.utc_date, entry)
-                            .await?;
+                            .await
+                            .with_context(||
+                                format!(
+                                    "Failed to insert ignore entry for state override of unknown test case '{}' from test run '{}'",
+                                    test_case_override.name,
+                                    test_run_override.name
+                                )
+                            )?;
                     }
                 }
 
@@ -675,7 +704,16 @@ impl<'db> Collection<'db> {
                     for line_info in coverage_override.lines {
                         let comment_hash = FmtHash::from(&line_info.comment);
                         self.insert_general_text(&comment_hash, line_info.comment, None)
-                            .await?;
+                            .await
+                            .with_context(||
+                                format!(
+                                    "Failed to insert line coverage override comment for lines '{}' in file '{}' for test case '{}' from test run '{}'",
+                                    line_info.nrs.iter().map(|l| l.to_string()).collect::<Vec<String>>().join(","),
+                                    coverage_override.filepath,
+                                    test_case_override.name,
+                                    test_run_override.name
+                                )
+                            )?;
 
                         for line_nr in line_info.nrs {
                             let covered_line_exists = sqlx::query!(
@@ -694,7 +732,8 @@ impl<'db> Collection<'db> {
                                 line_nr
                             )
                             .fetch_optional(self.connection_mut())
-                            .await?
+                            .await
+                            .context("Failed to get collected test case line coverage")?
                             .is_some();
 
                             if covered_line_exists {
@@ -754,8 +793,25 @@ impl<'db> Collection<'db> {
                                     comment_hash
                                 )
                                 .execute(self.connection_mut())
-                                .await?;
+                                .await
+                                .with_context(||
+                                    format!(
+                                        "Failed to insert line coverage override for line '{}' in file '{}' for test case '{}' from test run '{}'",
+                                        line_nr,
+                                        coverage_override.filepath,
+                                        test_case_override.name,
+                                        test_run_override.name
+                                    )
+                                )?;
                             } else {
+                                log::warn!(
+                                    "Ignoring line coverage override for unknown line '{}' in file '{}' for test case '{}' from test run '{}'",
+                                    line_nr,
+                                    coverage_override.filepath,
+                                    test_case_override.name,
+                                    test_run_override.name
+                                );
+
                                 let entry = DbIgnoredEntry::from_test_case_line_coverage(
                                     test_run_override.name.clone(),
                                     test_run_override.utc_date,
@@ -765,8 +821,18 @@ impl<'db> Collection<'db> {
                                     line_info.hits,
                                     comment_hash.clone(),
                                 );
+
                                 self.insert_ignored_entry(&review.name, &review.utc_date, entry)
-                                    .await?;
+                                    .await
+                                    .with_context(||
+                                        format!(
+                                            "Failed to insert ignore entry for line coverage override for line '{}' in file '{}' for test case '{}' from test run '{}'",
+                                            line_nr,
+                                            coverage_override.filepath,
+                                            test_case_override.name,
+                                            test_run_override.name
+                                        )
+                                    )?;
                             }
                         }
                     }
@@ -779,7 +845,15 @@ impl<'db> Collection<'db> {
                 for line_info in coverage_override.lines {
                     let comment_hash = FmtHash::from(&line_info.comment);
                     self.insert_general_text(&comment_hash, line_info.comment, None)
-                        .await?;
+                        .await
+                        .with_context(||
+                            format!(
+                                "Failed to insert line coverage override comment for lines '{}' in file '{}' for test run '{}'",
+                                line_info.nrs.iter().map(|l| l.to_string()).collect::<Vec<String>>().join(","),
+                                coverage_override.filepath,
+                                test_run_override.name
+                            )
+                        )?;
 
                     for line_nr in line_info.nrs {
                         let covered_line_exists = sqlx::query!(
@@ -797,7 +871,8 @@ impl<'db> Collection<'db> {
                             line_nr
                         )
                         .fetch_optional(self.connection_mut())
-                        .await?
+                        .await
+                        .context("Failed to get collected test run line coverage")?
                         .is_some();
 
                         if covered_line_exists {
@@ -853,8 +928,23 @@ impl<'db> Collection<'db> {
                                 comment_hash
                             )
                             .execute(self.connection_mut())
-                            .await?;
+                            .await
+                            .with_context(||
+                                format!(
+                                    "Failed to insert line coverage override for line '{}' in file '{}' for test run '{}'",
+                                    line_nr,
+                                    coverage_override.filepath,
+                                    test_run_override.name
+                                )
+                            )?;
                         } else {
+                            log::warn!(
+                                "Ignoring line coverage override for unknown line '{}' in file '{}' for test run '{}'",
+                                line_nr,
+                                coverage_override.filepath,
+                                test_run_override.name
+                            );
+
                             let entry = DbIgnoredEntry::from_test_run_line_coverage(
                                 test_run_override.name.clone(),
                                 test_run_override.utc_date,
@@ -863,8 +953,17 @@ impl<'db> Collection<'db> {
                                 line_info.hits,
                                 comment_hash.clone(),
                             );
+
                             self.insert_ignored_entry(&review.name, &review.utc_date, entry)
-                                .await?;
+                                .await
+                                .with_context(||
+                                    format!(
+                                        "Failed to insert ignore entry for line coverage override for line '{}' in file '{}' for test run '{}'",
+                                        line_nr,
+                                        coverage_override.filepath,
+                                        test_run_override.name
+                                    )
+                                )?;
                         }
                     }
                 }
@@ -893,7 +992,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to get collected requirements")?
         .is_some();
 
         if req_available {
@@ -930,10 +1030,19 @@ impl<'db> Collection<'db> {
             .execute(self.connection_mut())
             .await?;
         } else {
+            log::warn!(
+                "Ignoring manual verification for unknown requirement '{}'",
+                req_id
+            );
+
             let ignored_entry =
                 DbIgnoredEntry::from_verified_req(req_id.clone(), comment_hash.clone());
+
             self.insert_ignored_entry(review_name, review_date, ignored_entry)
-                .await?;
+                .await
+                .context(
+                    "Failed to insert ignore entry for manual verification of unknown requirement",
+                )?;
         }
 
         Ok(())
@@ -948,8 +1057,10 @@ impl<'db> Collection<'db> {
         let collect_nr = self.collect_nr();
         let product_id = &self.product_id();
         let entry_hash = FmtHash::from(&entry);
+
         self.insert_general_json(&entry_hash, serde_json::json!(entry))
-            .await?;
+            .await
+            .context("Failed to insert ignore content")?;
 
         sqlx::query!(
             "

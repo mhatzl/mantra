@@ -24,12 +24,16 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &base_origin_hash
             && let Some(origin) = test_run_schema.origin
         {
-            self.insert_general_json(hash, origin.clone()).await?;
+            self.insert_general_json(hash, origin.clone())
+                .await
+                .context("Failed to insert the base origin")?;
         }
 
         // TODO: do not stop at first collect error
 
         for test_run in test_run_schema.test_runs {
+            let name = test_run.name.clone();
+
             self.update_per_test_run(
                 filepath,
                 test_run,
@@ -37,7 +41,8 @@ impl<'db> Collection<'db> {
                 &test_run_schema.test_run_properties,
                 &test_run_schema.test_case_properties,
             )
-            .await?;
+            .await
+            .with_context(|| format!("Failed to update test run '{}'", name))?;
         }
 
         Ok(())
@@ -56,7 +61,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to get collected test runs")?;
 
         // Note: always deleting outdated data for collected test runs,
         // because this means that the data got removed in the original source.
@@ -73,7 +79,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test run properties")?;
 
             sqlx::query!(
                 "
@@ -87,7 +94,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test run revisions")?;
 
             sqlx::query!(
                 "
@@ -101,7 +109,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test run revision authors")?;
 
             sqlx::query!(
                 "
@@ -116,7 +125,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test run hierarchies")?;
 
             sqlx::query!(
                 "
@@ -130,7 +140,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test run logs")?;
 
             sqlx::query!(
                 "
@@ -144,7 +155,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test run line coverage")?;
 
             sqlx::query!(
                 "
@@ -158,7 +170,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test cases")?;
 
             sqlx::query!(
                 "
@@ -172,7 +185,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated directly verified requirements by test cases")?;
 
             sqlx::query!(
                 "
@@ -186,7 +200,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test case properties")?;
 
             sqlx::query!(
                 "
@@ -200,7 +215,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test case logs")?;
 
             sqlx::query!(
                 "
@@ -214,7 +230,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test case locations")?;
 
             sqlx::query!(
                 "
@@ -228,7 +245,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test case state properties")?;
 
             sqlx::query!(
                 "
@@ -242,7 +260,8 @@ impl<'db> Collection<'db> {
                 record.utc_date
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to delete outdated test case line coverage")?;
         }
 
         // Note: due to cascade rules, deletions in the base TestRuns table
@@ -256,7 +275,8 @@ impl<'db> Collection<'db> {
             collect_nr
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated test run base data")?;
 
         Ok(())
     }
@@ -285,7 +305,8 @@ impl<'db> Collection<'db> {
             test_run_date
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to get collected test runs")?
         .is_some()
         {
             let records = sqlx::query!(
@@ -300,7 +321,8 @@ impl<'db> Collection<'db> {
                 test_run_date
             )
             .fetch_all(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to get collected test run data sources")?;
 
             let prev_filepaths = records.iter().fold(String::new(), |mut s, item| {
                 if !s.is_empty() {
@@ -311,10 +333,7 @@ impl<'db> Collection<'db> {
             });
 
             anyhow::bail!(
-                "Duplicate test run definition for name='{}' date='{}' found in the same collection! Duplicate definition in '{}';  Previous related filepaths: {}",
-                test_run_name,
-                test_run_date,
-                filepath,
+                "Duplicate test run definition found in the same collection! Previous related filepaths: {}",
                 prev_filepaths
             );
         }
@@ -366,7 +385,10 @@ impl<'db> Collection<'db> {
         // while building up the test run.
         if let Some(data_filepath) = filepath {
             self.insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, data_filepath)
-                .await?;
+                .await
+                .with_context(|| {
+                    format!("Failed to insert data source filepath '{}'", data_filepath)
+                })?;
         }
 
         let data_hash = FmtHash::from(&serde_json::json!({
@@ -380,14 +402,20 @@ impl<'db> Collection<'db> {
         if let Some(hash) = &origin_hash
             && let Some(origin) = test_run.origin
         {
-            self.insert_general_json(hash, origin).await?;
+            self.insert_general_json(hash, origin)
+                .await
+                .context("Failed to insert the test run origin")?;
         }
+
         let description_hash = test_run.description.as_ref().map(FmtHash::from);
         if let Some(hash) = &description_hash
             && let Some(description) = test_run.description
         {
-            self.insert_general_text(hash, description, None).await?;
+            self.insert_general_text(hash, description, None)
+                .await
+                .context("Failed to insert the test run description")?;
         }
+
         let duration = test_run.duration_sec.map(|d| d.as_seconds_f64());
 
         sqlx::query!(
@@ -599,6 +627,8 @@ impl<'db> Collection<'db> {
 
             // foreign key constraints are deferred for test run hierarchies
             // => safe to add child test run after hierarchy inside the same transaction
+            let name = child_test_run.name.clone();
+
             Box::pin(self.update_per_test_run(
                 filepath,
                 child_test_run,
@@ -606,7 +636,8 @@ impl<'db> Collection<'db> {
                 base_test_run_props,
                 base_test_case_props,
             ))
-            .await?;
+            .await
+            .with_context(|| format!("Failed to update child test run '{}'", name))?;
         }
 
         if let Some(logs) = test_run.logs {
@@ -614,8 +645,10 @@ impl<'db> Collection<'db> {
             for log in logs {
                 let log_src = log.source.as_nr();
                 let log_hash = FmtHash::from(&log.content);
+
                 self.insert_general_text(&log_hash, log.content, None)
-                    .await?;
+                    .await
+                    .context("Failed to insert the log content")?;
 
                 sqlx::query!(
                     "
@@ -654,11 +687,12 @@ impl<'db> Collection<'db> {
                 )
                 .execute(self.connection_mut())
                 .await
-                .context("Failed to insert data into TestRunLogs")?;
+                .with_context(|| format!("Failed to insert logs from source '{}'", log.source))?;
             }
         }
 
         for covered_file in test_run.covered_files {
+            let path = covered_file.filepath.clone();
             let filepath = covered_file.filepath.to_filepath();
 
             for line in covered_file.lines {
@@ -706,7 +740,12 @@ impl<'db> Collection<'db> {
                 )
                 .execute(self.connection_mut())
                 .await
-                .context("Failed to insert data into TestRunLineCoverage")?;
+                .with_context(|| {
+                    format!(
+                        "Failed to update test run line coverage for line '{}' in file '{}'",
+                        line.nr, path
+                    )
+                })?;
             }
         }
 
@@ -716,7 +755,9 @@ impl<'db> Collection<'db> {
             if let Some(hash) = &description_hash
                 && let Some(description) = test_case.description
             {
-                self.insert_general_text(hash, description, None).await?;
+                self.insert_general_text(hash, description, None)
+                    .await
+                    .context("Failed to insert the test case description")?;
             }
             let duration = test_case.duration_sec.map(|d| d.as_seconds_f64());
 
@@ -769,7 +810,12 @@ impl<'db> Collection<'db> {
             )
             .execute(self.connection_mut())
             .await
-            .context("Failed to insert data into TestCases")?;
+            .with_context(|| {
+                format!(
+                    "Failed to insert base data for test case '{}'",
+                    test_case.name
+                )
+            })?;
 
             for verified_req in test_case.verified_reqs {
                 sqlx::query!(
@@ -805,8 +851,8 @@ impl<'db> Collection<'db> {
                 .await
                 .with_context(|| {
                     format!(
-                        "Failed to insert req '{}' into TestCaseVerifiedRequirements",
-                        verified_req
+                        "Failed to insert req '{}' for test case '{}'",
+                        verified_req, test_case.name
                     )
                 })?;
             }
@@ -815,8 +861,17 @@ impl<'db> Collection<'db> {
                 merge_local_and_base_properties(test_case.properties, base_test_case_props)
             {
                 for property in properties {
+                    let key = &property.0;
                     let value_hash = FmtHash::from(&property.1);
-                    self.insert_general_json(&value_hash, property.1).await?;
+
+                    self.insert_general_json(&value_hash, property.1)
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to insert content for property '{}' of test case '{}'",
+                                key, test_case.name
+                            )
+                        })?;
 
                     sqlx::query!(
                         "
@@ -852,7 +907,12 @@ impl<'db> Collection<'db> {
                         value_hash
                     )
                     .execute(self.connection_mut())
-                    .await.context("Failed to insert data into TestCaseProperties")?;
+                    .await.with_context(|| {
+                        format!(
+                            "Failed to update property '{}' of test case '{}'",
+                            key, test_case.name
+                        )
+                    })?;
                 }
             }
 
@@ -862,7 +922,13 @@ impl<'db> Collection<'db> {
                     let log_src = log.source.as_nr();
                     let log_hash = FmtHash::from(&log.content);
                     self.insert_general_text(&log_hash, log.content, None)
-                        .await?;
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to insert content for '{}' log of test case '{}'",
+                                log.source, test_case.name
+                            )
+                        })?;
 
                     sqlx::query!(
                         "
@@ -905,7 +971,12 @@ impl<'db> Collection<'db> {
                     )
                     .execute(self.connection_mut())
                     .await
-                    .context("Failed to insert data into TestCaseLogs")?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to update '{}' log of test case '{}'",
+                            log.source, test_case.name
+                        )
+                    })?;
                 }
             }
 
@@ -957,13 +1028,27 @@ impl<'db> Collection<'db> {
                 )
                 .execute(self.connection_mut())
                 .await
-                .context("Failed to insert data into TestCaseLocations")?;
+                .with_context(|| {
+                    format!(
+                        "Failed to update the location of test case '{}'",
+                        test_case.name
+                    )
+                })?;
             }
 
             if let Some(state_props) = test_case.state_properties {
                 for property in state_props {
+                    let key = &property.0;
                     let value_hash = FmtHash::from(&property.1);
-                    self.insert_general_json(&value_hash, property.1).await?;
+
+                    self.insert_general_json(&value_hash, property.1)
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to insert content for the state property '{}' of test case '{}'",
+                                key, test_case.name
+                            )
+                        })?;
 
                     sqlx::query!(
                         "
@@ -999,11 +1084,17 @@ impl<'db> Collection<'db> {
                         value_hash
                     )
                     .execute(self.connection_mut())
-                    .await.context("Failed to insert data into TestCaseStateProperties")?;
+                    .await.with_context(|| {
+                        format!(
+                            "Failed to update the state property '{}' of test case '{}'",
+                            key, test_case.name
+                        )
+                    })?;
                 }
             }
 
             for covered_file in test_case.covered_files {
+                let path = covered_file.filepath.clone();
                 let filepath = covered_file.filepath.to_filepath();
 
                 for line in covered_file.lines {
@@ -1055,7 +1146,12 @@ impl<'db> Collection<'db> {
                     )
                     .execute(self.connection_mut())
                     .await
-                    .context("Failed to insert data into TestCaseLineCoverage")?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to update coverage for line '{}' in file '{}' for test case '{}'",
+                            line.nr, path, test_case.name
+                        )
+                    })?;
                 }
             }
         }

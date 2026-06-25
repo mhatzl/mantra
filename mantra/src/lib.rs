@@ -15,14 +15,16 @@ pub mod db;
 mod io;
 
 pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
-    let db = db::MantraDb::new(cfg.db.url.as_deref()).await?;
+    let db = db::MantraDb::new(cfg.db.url.as_deref())
+        .await
+        .map_err(MantraError::db_setup_error)?;
     let cfg_file: MantraConfigFile = async_deserialize_from_path(&cfg.config_filepath)
         .await
-        .map_err(MantraError::Cfg)?;
+        .map_err(MantraError::cfg_error)?;
     cfg_file
         .inheritable_product_cfg
         .check_validity()
-        .map_err(MantraError::Cfg)?;
+        .map_err(MantraError::cfg_error)?;
 
     match cfg.cmd {
         cmd::Cmd::Report(args) => cmd::report::report(
@@ -33,10 +35,10 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
                 args,
                 ReportEnvironmentVariables {},
             )
-            .map_err(MantraError::Cfg)?,
+            .map_err(MantraError::cfg_error)?,
         )
         .await
-        .map_err(MantraError::Report)?,
+        .map_err(MantraError::report_error)?,
         cmd::Cmd::Collect(args) => {
             let mut product_map = HashSet::new();
 
@@ -44,7 +46,7 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
                 let mut product = product_cfg
                     .product
                     .to_product(&cfg_file.inheritable_product_cfg)
-                    .map_err(MantraError::Cfg)?;
+                    .map_err(MantraError::cfg_error)?;
 
                 if !product_map.insert(product.id.clone()) {
                     log::warn!(
@@ -86,7 +88,7 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
                         },
                     )
                     .await
-                    .map_err(MantraError::Collect)?
+                    .map_err(MantraError::collect_error)?
                 }
             }
         }
@@ -100,13 +102,59 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum MantraError {
-    #[error("Failed to setup the database for mantra. Cause: {}", .0)]
-    DbSetup(#[from] db::DbError),
-    #[error("Failed to collect mantra data. Cause: {}", .0)]
-    Collect(anyhow::Error),
-    #[error("Failed to create the report. Cause: {}", .0)]
-    Report(anyhow::Error),
-    #[error("Failed to read the mantra config file. Cause: {}", .0)]
-    Cfg(anyhow::Error),
+#[error("Error: {}{}", .kind, if let Some(source) = .source {
+    format!("\n\nCaused by:\n{:?}", source)
+} else { String::new() })]
+pub struct MantraError {
+    kind: MantraErrorKind,
+    source: Option<anyhow::Error>,
+}
+
+impl MantraError {
+    pub fn without_source(kind: MantraErrorKind) -> Self {
+        Self { kind, source: None }
+    }
+
+    pub fn with_source(kind: MantraErrorKind, source: impl Into<anyhow::Error>) -> Self {
+        Self {
+            kind,
+            source: Some(source.into()),
+        }
+    }
+
+    pub fn db_setup_error(source: impl Into<anyhow::Error>) -> Self {
+        Self::with_source(MantraErrorKind::DbSetup, source)
+    }
+
+    pub fn collect_error(source: impl Into<anyhow::Error>) -> Self {
+        Self::with_source(MantraErrorKind::Collect, source)
+    }
+
+    pub fn report_error(source: impl Into<anyhow::Error>) -> Self {
+        Self::with_source(MantraErrorKind::Report, source)
+    }
+
+    pub fn cfg_error(source: impl Into<anyhow::Error>) -> Self {
+        Self::with_source(MantraErrorKind::Cfg, source)
+    }
+
+    pub fn kind(&self) -> MantraErrorKind {
+        self.kind
+    }
+
+    pub fn source(&self) -> Option<&anyhow::Error> {
+        self.source.as_ref()
+    }
+}
+
+#[derive(Debug, Clone, Copy, thiserror::Error)]
+pub enum MantraErrorKind {
+    #[error("Failed to setup the database for mantra.")]
+    DbSetup,
+    #[error("Failed to collect mantra data.")]
+    Collect,
+    #[error("Failed to create the report.")]
+    Report,
+    #[error("Failed to read the mantra config file.")]
+    Cfg,
 }

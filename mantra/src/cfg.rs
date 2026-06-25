@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::bail;
+use anyhow::{Context, bail};
 use mantra_schema::{
     Properties,
     product::{Product, ProductId},
@@ -179,27 +179,37 @@ impl ProductDataConfig {
         self,
         inheritable_cfg: &InheritableProductConfig,
     ) -> Result<Product, anyhow::Error> {
-        let name = resolve_product_name(self.name, &inheritable_cfg.name)?;
-        let base = resolve_optional_inheritable(self.base, &inheritable_cfg.base)?;
+        let name = resolve_product_name(self.name, &inheritable_cfg.name)
+            .context("Product name could not be resolved")?;
+        let base = resolve_optional_inheritable(self.base, &inheritable_cfg.base)
+            .context("Product base could not be resolved")?;
         if let Some(base) = &base {
-            valid_product_base(base)?;
+            valid_product_base(base)
+                .with_context(|| format!("Product base '{}' is invalid", base))?;
         }
 
-        let id = resolve_product_id(self.id, &name, base.as_deref())?;
+        let id = resolve_product_id(self.id, &name, base.as_deref())
+            .context("Product ID could not be resolved")?;
 
         Ok(Product {
             id,
             name,
             base,
-            version: resolve_optional_inheritable(self.version, &inheritable_cfg.version)?,
-            homepage: resolve_optional_inheritable(self.homepage, &inheritable_cfg.homepage)?,
-            repository: resolve_optional_inheritable(self.repository, &inheritable_cfg.repository)?,
-            license: resolve_optional_inheritable(self.license, &inheritable_cfg.license)?,
+            version: resolve_optional_inheritable(self.version, &inheritable_cfg.version)
+                .context("Product version could not be resolved")?,
+            homepage: resolve_optional_inheritable(self.homepage, &inheritable_cfg.homepage)
+                .context("Product homepage could not be resolved")?,
+            repository: resolve_optional_inheritable(self.repository, &inheritable_cfg.repository)
+                .context("Product repository could not be resolved")?,
+            license: resolve_optional_inheritable(self.license, &inheritable_cfg.license)
+                .context("Product license could not be resolved")?,
             description: resolve_optional_inheritable(
                 self.description,
                 &inheritable_cfg.description,
-            )?,
-            properties: resolve_optional_inheritable(self.properties, &inheritable_cfg.properties)?,
+            )
+            .context("Product description could not be resolved")?,
+            properties: resolve_optional_inheritable(self.properties, &inheritable_cfg.properties)
+                .context("Product properties could not be resolved")?,
         })
     }
 }
@@ -273,9 +283,7 @@ fn valid_non_inheritable(value: &str) -> bool {
 }
 
 fn valid_product_base(base: &str) -> Result<(), anyhow::Error> {
-    if !valid_non_inheritable(base) {
-        bail!("Product base cannot be inherited!");
-    } else if base.contains(NAME_BASE_DIVIDER) {
+    if base.contains(NAME_BASE_DIVIDER) {
         bail!("Product base must not contain '{}'", NAME_BASE_DIVIDER);
     }
 

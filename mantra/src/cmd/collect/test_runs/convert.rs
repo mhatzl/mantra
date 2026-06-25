@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use anyhow::Context;
 use chrono::FixedOffset;
 use mantra_schema::{
     Origin, Properties, Revision,
@@ -61,8 +62,10 @@ impl ShallowTestRun {
         let utc_date = match self.utc_date.or(coverage_timestamp) {
             Some(timestamp) => timestamp,
             None => {
-                // TODO: proper logging
-                eprintln!("No timestamp collected. Using local timestamp.");
+                log::warn!(
+                    "No timestamp collected for test run '{}'. Using local timestamp.",
+                    self.name
+                );
                 OffsetDateTime::now_utc()
             }
         };
@@ -107,11 +110,13 @@ impl WellKnownTestConversion for WellKnownTestFormat {
         match self {
             WellKnownTestFormat::Junit => {
                 if extension == "xml" {
-                    let junit_report = quick_junit::Report::deserialize_from_str(content)?;
-                    Ok(junit_to_shallow_test_run(junit_report, root_path)?)
+                    let junit_report = quick_junit::Report::deserialize_from_str(content)
+                        .context("Failed reading JUnit content")?;
+                    Ok(junit_to_shallow_test_run(junit_report, root_path)
+                        .context("Failed converting JUnit to mantra's test run schema")?)
                 } else {
                     anyhow::bail!(
-                        "Got unsupported test format extension for JUnit '{}'",
+                        "Got unsupported test format extension '{}' for JUnit ",
                         extension
                     )
                 }
@@ -134,7 +139,10 @@ fn junit_to_shallow_test_run(
 
     let mut inner_test_runs = Vec::with_capacity(junit.test_suites.len());
     for test_suite in junit.test_suites {
-        inner_test_runs.push(get_inner_test_run(test_suite, &name, utc_date)?);
+        inner_test_runs.push(
+            get_inner_test_run(test_suite, &name, utc_date)
+                .context("Failed to convert inner test runs")?,
+        );
     }
 
     Ok(ShallowTestRun {
@@ -179,7 +187,10 @@ impl WellKnownCoverageConversion for WellKnownCoverageFormat {
                     let cobertura =
                         match covcon::cobertura::schema_loose::Coverage::try_from(content) {
                             Ok(cov) => cov,
-                            Err(err) => return Err(anyhow::Error::from_boxed(err)),
+                            Err(err) => {
+                                return Err(anyhow::Error::from_boxed(err)
+                                    .context("Failed deserializing Cobertura XML content"));
+                            }
                         };
                     Ok(cobertura_to_well_known_coverage(
                         cobertura.into(),
@@ -187,11 +198,12 @@ impl WellKnownCoverageConversion for WellKnownCoverageFormat {
                     )?)
                 } else if extension == "json" || extension == "json5" {
                     let cobertura =
-                        json5::from_str::<covcon::cobertura::no_xml_loose::Coverage>(content)?;
+                        json5::from_str::<covcon::cobertura::no_xml_loose::Coverage>(content)
+                            .context("Failed deserializing Cobertura JSON content")?;
                     Ok(cobertura_to_well_known_coverage(cobertura, root_path)?)
                 } else {
                     anyhow::bail!(
-                        "Got unsupported coverage format extension for Cobertura '{}'",
+                        "Got unsupported coverage format extension '{}' for Cobertura",
                         extension
                     )
                 }
@@ -229,7 +241,7 @@ fn cobertura_to_well_known_coverage(
                     });
                 }
                 Err(_) => {
-                    eprintln!(
+                    log::warn!(
                         "Ignoring coverage data for file '{}'. Path could not be converted to a relative one.",
                         class.filename.display()
                     );

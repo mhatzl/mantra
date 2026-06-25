@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::Context;
 use glob::Pattern;
 use ignore::{
     WalkBuilder, WalkState,
@@ -43,19 +44,20 @@ pub(super) async fn collect<'db>(
 
     for cfg in cfgs {
         match cfg.source {
-            TestRunSourceVariant::WellKnown { test, coverage } => {
-                collect_well_known(
-                    collection,
-                    &cfg.path,
-                    cfg.origin,
-                    cfg.test_run_properties,
-                    cfg.test_case_properties,
-                    cfg.pattern.as_deref(),
-                    test,
-                    coverage,
-                )
-                .await?
-            }
+            TestRunSourceVariant::WellKnown { test, coverage } => collect_well_known(
+                collection,
+                &cfg.path,
+                cfg.origin,
+                cfg.test_run_properties,
+                cfg.test_case_properties,
+                cfg.pattern.as_deref(),
+                test,
+                coverage,
+            )
+            .await
+            .with_context(|| {
+                format!("Failed collecting well-known test data from '{}'", cfg.path)
+            })?,
             TestRunSourceVariant::Schema => {
                 collect_schema(
                     collection,
@@ -65,7 +67,13 @@ pub(super) async fn collect<'db>(
                     cfg.test_case_properties,
                     cfg.pattern.as_deref(),
                 )
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed collecting schema-based test data from '{}'",
+                        cfg.path
+                    )
+                })?;
             }
         }
     }
@@ -134,7 +142,7 @@ async fn collect_well_known<'db>(
                                         let _ = sender.send(data);
                                     }
                                     Err(err) => log::error!(
-                                        "Failed reading from well-known test format '{}'. Err: {err}",
+                                        "Failed collecting test run data from well-known test output '{}'. Err: {err}",
                                         filepath.display()
                                     ),
                                 }
@@ -151,7 +159,7 @@ async fn collect_well_known<'db>(
                                         let _ = sender.send(data);
                                     }
                                     Err(err) => log::error!(
-                                        "Failed reading from well-known coverage format '{}'. Err: {err}",
+                                        "Failed collecting coverage data from well-known coverage output '{}'. Err: {err}",
                                         filepath.display()
                                     ),
                                 }
@@ -170,14 +178,23 @@ async fn collect_well_known<'db>(
     while let Some(sent_data) = well_known_rx.recv().await {
         collection
             .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed inserting content hash for file '{}'",
+                    sent_data.filepath
+                )
+            })?;
         collection
             .insert_file_content(
                 &sent_data.filepath,
                 &sent_data.file_hash,
                 &sent_data.content,
             )
-            .await?;
+            .await
+            .with_context(|| {
+                format!("Failed inserting content for file '{}'", sent_data.filepath)
+            })?;
 
         match sent_data.data {
             CollectedWellKnown::Test(shallow_test_run) => {
@@ -193,7 +210,9 @@ async fn collect_well_known<'db>(
         }
     }
 
-    let _ = well_known_collection.await?;
+    let _ = well_known_collection
+        .await
+        .context("Failed collecting well-known test data")?;
 
     // merge shallow test runs + coverage data to proper test run
     if shallow_test_run_data.is_empty() {
@@ -215,7 +234,13 @@ async fn collect_well_known<'db>(
             .into_test_run(covered_files, coverage_timestamp);
         collection
             .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &shallow_data.0)
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed inserting test data source '{}' for test run '{}'",
+                    shallow_data.0, test_run.name
+                )
+            })?;
 
         test_run
     } else {
@@ -227,7 +252,13 @@ async fn collect_well_known<'db>(
         for data in test_run_data {
             collection
                 .insert_test_run_data_filepaths(&data.1.name, &data.1.utc_date, &data.0)
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed inserting test data source '{}' for test run '{}'",
+                        data.0, data.1.name
+                    )
+                })?;
             test_runs.push(data.1);
         }
 
@@ -250,7 +281,13 @@ async fn collect_well_known<'db>(
     for source_file in coverage_source_files {
         collection
             .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &source_file.0)
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed inserting coverage data source '{}' for test run '{}'",
+                    source_file.0, test_run.name
+                )
+            })?;
     }
 
     let test_run_schema = TestRunSchema {
@@ -264,7 +301,8 @@ async fn collect_well_known<'db>(
     // Note: filepaths for collected well-known data has been inserted above
     collection
         .update_per_test_run_schema(None, test_run_schema)
-        .await?;
+        .await
+        .context("Failed updating test run data collected from well-known formats")?;
 
     Ok(())
 }
@@ -297,8 +335,9 @@ fn to_sub_test_runs(
     let utc_date = match earliest_utc_date.or(coverage_timestamp) {
         Some(timestamp) => timestamp,
         None => {
-            // TODO: proper logging
-            eprintln!("No timestamp collected. Using local timestamp.");
+            log::warn!(
+                "No timestamp collected in any collected well-known test output. Using local timestamp."
+            );
             OffsetDateTime::now_utc()
         }
     };
@@ -452,10 +491,19 @@ async fn collect_schema<'db>(
     while let Some(mut data) = schema_rx.recv().await {
         collection
             .insert_file_hash(&data.filepath, &data.file_hash)
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed inserting the content hash for file '{}'",
+                    data.filepath
+                )
+            })?;
         collection
             .insert_file_content(&data.filepath, &data.file_hash, &data.content)
-            .await?;
+            .await
+            .with_context(|| {
+                format!("Failed inserting the content for file '{}'", data.filepath)
+            })?;
 
         if base_origin.is_some() && data.schema.origin.is_none() {
             data.schema.origin = base_origin.clone();
@@ -482,7 +530,13 @@ async fn collect_schema<'db>(
 
         collection
             .update_per_test_run_schema(Some(&data.filepath), data.schema)
-            .await?;
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed updating test run data collected from file '{}'",
+                    data.filepath
+                )
+            })?;
     }
 
     let _ = schema_collection.await?;

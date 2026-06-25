@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::Context;
+
 pub fn sync_read_encoding_independent(
     path: impl AsRef<std::path::Path>,
 ) -> Result<String, anyhow::Error> {
@@ -31,9 +33,9 @@ pub fn deserialize_serde_content<T: serde::de::DeserializeOwned>(
         Some("toml") => Ok(toml::from_str::<T>(content)?),
         // JSON5 is a superset of JSON, so JSON files are also accepted by JSON5
         Some("json") | Some("json5") => Ok(json5::from_str::<T>(content)?),
-        Some(extension) => Ok(json5::from_str::<T>(content).inspect_err(|_| {
-            eprintln!(
-                "Tried to read content from unsupported extension '{}'",
+        Some(extension) => Ok(json5::from_str::<T>(content).with_context(|| {
+            format!(
+                "Failed to get content from unsupported extension '{}'",
                 extension
             )
         })?),

@@ -10,7 +10,7 @@ async fn main() {
         .init();
 
     if let Err(err) = mantra::run(cfg).await {
-        println!("{err}");
+        eprintln!("{err}");
         std::process::exit(-1);
     }
 }

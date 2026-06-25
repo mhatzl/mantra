@@ -59,5 +59,12 @@ async fn detect_hierarchy_cycles(pool: MantraPool) {
     let Err(db_err) = tr_res else {
         panic!("Failed to detect test run cycle")
     };
-    assert_eq!(db_err.to_string(), "Test run cycle detected!");
+
+    for err in db_err.chain() {
+        if err.to_string() == "Test run cycle detected!" {
+            return;
+        }
+    }
+
+    panic!("Failed to detect the test run cycle!");
 }

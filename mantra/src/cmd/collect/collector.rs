@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use anyhow::Context;
 use ignore::{WalkBuilder, WalkState};
 use mantra_schema::{
     FmtHash,
@@ -107,7 +108,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                     let file =
                                         CollectableFile::new(&rel_filepath, &file_hash, &content);
 
-                                    // TODO: proper logging + error handling
+                                    // TODO: error handling
                                     match collect_fn(&file) {
                                         Ok(schema) => {
                                             let data = SentData {
@@ -118,7 +119,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                             };
                                             let _ = sender.send(data);
                                         }
-                                        Err(err) => eprintln!(
+                                        Err(err) => log::error!(
                                             "Failed reading schema from '{}'. Err: {err}",
                                             filepath.display()
                                         ),
@@ -140,18 +141,39 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
         while let Some(sent_data) = schema_rx.recv().await {
             self.collection
                 .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
-                .await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed inserting the content hash for file '{}'",
+                        sent_data.filepath
+                    )
+                })?;
             self.collection
                 .insert_file_content(
                     &sent_data.filepath,
                     &sent_data.file_hash,
                     &sent_data.content,
                 )
-                .await?;
-            C::update_db(&mut self.collection, &sent_data.filepath, sent_data.schema).await?;
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed inserting the content for file '{}'",
+                        sent_data.filepath
+                    )
+                })?;
+            C::update_db(&mut self.collection, &sent_data.filepath, sent_data.schema)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed updating data collected from file '{}'",
+                        sent_data.filepath
+                    )
+                })?;
         }
 
-        schema_collection.await?;
+        schema_collection
+            .await
+            .context("Failed collecting schema data")?;
 
         Ok(self.collection)
     }

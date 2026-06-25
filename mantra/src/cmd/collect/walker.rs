@@ -43,7 +43,7 @@ pub(super) fn content_to_schema<T: serde::de::DeserializeOwned>(
         // JSON5 is a superset of JSON, so JSON files are also accepted by JSON5
         Some("json") | Some("json5") => Ok(json5::from_str::<T>(file.content)?),
         Some(extension) => Ok(json5::from_str::<T>(file.content).inspect_err(|_| {
-            eprintln!(
+            log::warn!(
                 "Tried to read content from unsupported extension '{}'",
                 extension
             )

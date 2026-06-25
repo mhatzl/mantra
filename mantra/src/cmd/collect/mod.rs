@@ -44,7 +44,10 @@ pub async fn collect(db: &MantraDb, cfg: CollectConfig) -> Result<(), anyhow::Er
         .await
         .context("Failed to aggregate verification states")?;
 
-    collection.commit().await?;
+    collection
+        .commit()
+        .await
+        .context("Failed to commit the collected data")?;
 
     Ok(())
 }
@@ -53,7 +56,9 @@ async fn collect_data<'db>(
     db: &'db MantraDb,
     cfg: CollectConfig,
 ) -> Result<Collection<'db>, anyhow::Error> {
-    let mut collection = Collection::new(db, &cfg).await?;
+    let mut collection = Collection::new(db, &cfg)
+        .await
+        .context("Failed to create the data collector")?;
     collection
         .update_product(cfg.product)
         .await
@@ -147,7 +152,8 @@ impl<'db> Collection<'db> {
             config_value,
             cfg.args.replace_hashed,
         )
-        .await?;
+        .await
+        .context("Failed to insert the product configuration used to collect data")?;
 
         // TODO: add args and env data to table
 
@@ -170,11 +176,13 @@ impl<'db> Collection<'db> {
             config_hash
         )
         .execute(&mut *transaction.as_mut())
-        .await?;
+        .await
+        .context("Failed to create a new collection")?;
 
         let nr = sqlx::query!(r#"select max(nr) as "nr!" from Collections"#)
             .fetch_one(&mut *transaction.as_mut())
-            .await?
+            .await
+            .context("Failed to get the latest collection")?
             .nr;
 
         Ok(Self {
@@ -352,7 +360,8 @@ impl<'db> Collection<'db> {
             file_hash
         )
         .fetch_optional(self.connection_mut())
-        .await?
+        .await
+        .context("Failed to get collected product-related files")?
         .is_some()
         {
             anyhow::bail!(
@@ -385,7 +394,8 @@ impl<'db> Collection<'db> {
                 file_hash
             )
             .execute(self.connection_mut())
-            .await?;
+            .await
+            .context("Failed to update product-related files")?;
         }
 
         Ok(())

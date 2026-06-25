@@ -1,21 +1,46 @@
+use anyhow::Context;
 use mantra_schema::{report::tests::ResolvedLineCoverageState, test_runs::TestCaseState};
 
 use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_test_run_data(&mut self) -> Result<(), anyhow::Error> {
-        self.update_test_run_descendants().await?;
-        self.update_leaf_test_runs().await?;
-        self.update_obsolete_test_runs().await?;
-        self.resolve_test_case_states().await?;
-        self.update_usable_test_cases().await?;
-        self.resolve_line_coverage().await?;
-        self.update_failed_test_runs().await?;
-        self.update_skipped_test_runs().await?;
-        self.update_passed_test_runs().await?;
-        self.update_usable_test_runs().await?;
-        self.update_test_run_trace_coverage().await?;
-        self.update_test_case_trace_coverage().await?;
+        self.update_test_run_descendants()
+            .await
+            .context("Failed to update test run descendants")?;
+        self.update_leaf_test_runs()
+            .await
+            .context("Failed to update leaf test runs")?;
+        self.update_obsolete_test_runs()
+            .await
+            .context("Failed to update obsolete test runs")?;
+        self.resolve_test_case_states()
+            .await
+            .context("Failed to resolve test case states")?;
+        self.update_usable_test_cases()
+            .await
+            .context("Failed to update usable test cases")?;
+        self.resolve_line_coverage()
+            .await
+            .context("Failed to resolve line coverage")?;
+        self.update_failed_test_runs()
+            .await
+            .context("Failed to update failed test runs")?;
+        self.update_skipped_test_runs()
+            .await
+            .context("Failed to update skipped test runs")?;
+        self.update_passed_test_runs()
+            .await
+            .context("Failed to update passed test runs")?;
+        self.update_usable_test_runs()
+            .await
+            .context("Failed to update usable test runs")?;
+        self.update_test_run_trace_coverage()
+            .await
+            .context("Failed to update test run trace coverage")?;
+        self.update_test_case_trace_coverage()
+            .await
+            .context("Failed to update test case trace coverage")?;
 
         Ok(())
     }
@@ -90,13 +115,16 @@ impl<'db> Collection<'db> {
             "
         )
         .fetch_all(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed checking for test run cycles")?;
 
         if !test_run_cycle_exists.is_empty() {
             for bad in test_run_cycle_exists {
-                eprintln!(
+                log::error!(
                     "Test run cycle detected for test run name='{}' date='{}' in product id='{}'",
-                    bad.test_run_name, bad.test_run_date, bad.product_id
+                    bad.test_run_name,
+                    bad.test_run_date,
+                    bad.product_id
                 );
             }
             anyhow::bail!("Test run cycle detected!");
@@ -115,7 +143,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -156,7 +185,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -231,7 +261,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -286,7 +317,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -384,7 +416,8 @@ impl<'db> Collection<'db> {
             uncovered_state,
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update ResolvedTestRunLineCoverage")?;
 
         sqlx::query!(
             "
@@ -396,7 +429,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated ResolvedTestRunLineCoverage entries")?;
 
         sqlx::query!(
             "
@@ -486,7 +520,8 @@ impl<'db> Collection<'db> {
             uncovered_state,
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update ResolvedTestCaseLineCoverage")?;
 
         sqlx::query!(
             "
@@ -498,7 +533,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated ResolvedTestCaseLineCoverage entries")?;
 
         sqlx::query!(
             "
@@ -586,7 +622,8 @@ impl<'db> Collection<'db> {
             uncovered_state,
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to update ResolvedLineCoverageStates")?;
 
         sqlx::query!(
             "
@@ -598,7 +635,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated ResolvedLineCoverageStates entries")?;
 
         Ok(())
     }
@@ -681,7 +719,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -776,7 +815,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -885,7 +925,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -933,7 +974,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -995,7 +1037,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -1058,7 +1101,8 @@ impl<'db> Collection<'db> {
             product_id
         )
         .execute(self.connection_mut())
-        .await?;
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
