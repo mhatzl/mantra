@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{Context, bail};
 use mantra_schema::{
     product::ProductId,
     report::{
@@ -92,7 +92,14 @@ impl<'templates> MantraTemplates<'templates> {
                 && let Ok(filename) = dir_entry.file_name().into_string()
                 && let Ok(src) = crate::io::async_read_encoding_independent(dir_entry.path()).await
             {
-                self.environment.add_template_owned(filename, src)?;
+                self.environment
+                    .add_template_owned(filename, src)
+                    .with_context(|| {
+                        format!(
+                            "Failed adding custom template '{}'",
+                            dir_entry.path().display(),
+                        )
+                    })?;
             }
         }
 
@@ -109,10 +116,11 @@ impl<'templates> MantraTemplates<'templates> {
             bail!("JSON format does not allow templates!");
         }
 
-        let template = self
-            .environment
-            .get_template(template_name.template_name_for_format(format))?;
-        Ok(template.render(context)?)
+        let resolved_template_name = template_name.template_name_for_format(format);
+        let template = self.environment.get_template(resolved_template_name)?;
+        template
+            .render(context)
+            .with_context(|| format!("Failed rendering template '{}'", resolved_template_name))
     }
 }
 
