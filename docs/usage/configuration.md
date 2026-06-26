@@ -15,7 +15,7 @@ Those are covered in more detail under [usage/collect](collect/README.md).
 
 For reports, a path to custom templates may be set using `template_dir` under `reports`.
 All files in the given directory that are in the same format as the targeted report output format
-are then available and overwrite the [default templates](/mantra/src/cmd/report/templates/defaults) that are integrated into *mantra*.
+are then available and overwrite the *default templates* located under `mantra/src/cmd/report/templates/defaults` that are integrated into *mantra*.
 
 Below is the configuration used for *mantra* itself:
 
