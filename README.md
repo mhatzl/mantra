@@ -169,6 +169,13 @@ Note that it is not required to use this crate, because trace detection is only 
 For other languages and file formats, external tools may convert extracted data into the
 [AnnotationSchema](schema-gen/generated/collect/AnnotationSchema.json).
 
+If you want to use the macros from [mantra-rust-macros](langs/rust/mantra-rust-macros),
+add it to your Cargo.toml via
+
+```sh
+cargo add mantra-rust-macros
+```
+
 To express relations between requirements and traces, *mantra* supports the following kinds:
 - `clarifies` ... Use to trace data that provides additional information about a requirement e.g. diagrams
 - `satisfies` ... Use to trace to implementations of a requirement
