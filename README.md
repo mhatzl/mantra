@@ -9,19 +9,19 @@
 While requirements define the intent, implementation and testing define the actual state.
 Requirements traceability is an approach to keep those two sides synchronized,
 by mapping requirements to their implementations and tests. This mapping then allows to aggregate
-the [state](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstate-requirement-states) of requirements
+the [state](https://github.com/mhatzl/mantra/wiki/5-REQ-requirement#reqstate-requirement-states) of requirements
 and also has the benefit that navigating through a codebase becomes easier.
 
 **Requirement states handled by *mantra*:**
 - **Failed** ... At least one test mapping to the requirement has failed
-- **Verified** ... Requirements that fulfill *mantra*'s [`verified` conditions](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstateverified-verified-requirements)
+- **Verified** ... Requirements that fulfill *mantra*'s [`verified` conditions](https://github.com/mhatzl/mantra/wiki/5-REQ-requirement#reqstateverified-verified-requirements)
 - **Skipped** ... At least one test mapping to the requirement was skipped
-- **Unverified** ... Requirements that don't fulfill *mantra*'s [`verified` conditions](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstateverified-verified-requirements)
-- **Deprecated** ... For requirements that have been marked as [deprecated](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqdeprecate-deprecate-requirements)
-- **Excluded** ... For requirements that have been marked as [excluded](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqexclude-exclude-requirements)
+- **Unverified** ... Requirements that don't fulfill *mantra*'s [`verified` conditions](https://github.com/mhatzl/mantra/wiki/5-REQ-requirement#reqstateverified-verified-requirements)
+- **Deprecated** ... For requirements that have been marked as [deprecated](https://github.com/mhatzl/mantra/wiki/5-REQ-requirement#reqdeprecate-deprecate-requirements)
+- **Excluded** ... For requirements that have been marked as [excluded](https://github.com/mhatzl/mantra/wiki/5-REQ-requirement#reqexclude-exclude-requirements)
 
 Since requirements may be structured in a hierarchical manner,
-*mantra* has a set of [rules](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstate-requirement-states)
+*mantra* has a set of [rules](https://github.com/mhatzl/mantra/wiki/5-REQ-requirement#reqstate-requirement-states)
 that define how requirement states of children indirectly affect the state of their parents.
 This hierarchical state transfer helps to reduce the effort to track requirements,
 because at best, only leaf requirements (those without children) must be traced explicitly.
@@ -37,12 +37,12 @@ because at best, only leaf requirements (those without children) must be traced 
 8. Repeat from step 2 until the project is complete
 
 For a quick overview of those steps, see the [getting-started section](#getting-started) below.
-More details about using and configuring *mantra* may be found in the [/docs/usage](/docs/usage) folder.
-The goals, requirements, and decisions behind *mantra* are documented under [/docs/wiki](/docs/wiki/README.md), which is also published on *mantra*'s [GitHub wiki](https://github.com/mhatzl/mantra/wiki).
+More details about using and configuring *mantra* may be found in the [/docs/usage](docs/usage/README.md) folder.
+The goals, requirements, and decisions behind *mantra* are documented under `/docs/wiki`, which is also published on *mantra*'s [GitHub wiki](https://github.com/mhatzl/mantra/wiki).
 
 **Note:** Currently, focus is on support for Rust code, but built-in support for other languages is planned.
 If your language is not supported directly, you may create your own tooling that extracts relevant information
-and converts it into a format *mantra* understands following *mantra*'s [JSON schemas]().
+and converts it into a format *mantra* understands following *mantra*'s [JSON schemas](schema-gen/README.md).
 
 ## Installation
 ### Prerequisites
@@ -62,7 +62,7 @@ Ensure `cc` is available on `Path` if you install *mantra* from source.
 ## Getting Started
 
 This section provides a high-level overview to get you started using *mantra*.
-For more details, take a look at the [/usage](/docs/usage) folder.
+For more details, take a look at the [/docs/usage](docs/usage/README.md) folder.
 
 ### Configuring *mantra*
 
@@ -113,7 +113,7 @@ Test and code coverage results are expected under `target/nextest/default`, with
 Files containing manual reviews are expected to be located under the `reviews/` folder
 following the [ReviewSchema](schema-gen/generated/collect/ReviewSchema.json).
 
-More details related to *mantra*'s configuration file can be found under [/docs/usage/configuration](/docs/usage/configuration.md).
+More details related to *mantra*'s configuration file can be found under [/docs/usage/configuration](docs/usage/configuration.md).
 
 ### Defining Requirements
 
@@ -169,7 +169,7 @@ Note that it is not required to use this crate, because trace detection is only 
 For other languages and file formats, external tools may convert extracted data into the
 [AnnotationSchema](schema-gen/generated/collect/AnnotationSchema.json).
 
-If you want to use the macros from [mantra-macros](langs/rust/mantra-macros),
+If you want to use the macros from [mantra-macros](langs/rust/mantra-macros/README.md),
 add it to your Cargo.toml via
 
 ```sh
