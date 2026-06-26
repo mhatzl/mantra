@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select\n                td.product_id,\n                td.test_run_name,\n                td.test_run_date\n            from TestRunDescendants td\n            where td.test_run_name = td.descendant_test_run_name\n            and td.test_run_date = td.descendant_test_run_date\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "18a3519fc170f25a75fbf720847f46ed3ac47312aa48a7b008eae32c013b1d9d"
+}

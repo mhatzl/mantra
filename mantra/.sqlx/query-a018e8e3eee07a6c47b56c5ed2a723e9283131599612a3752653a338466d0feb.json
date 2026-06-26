@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select count(*) as \"len\" from TestRunLineCoverageOverrides\n                where product_id = $1\n                and test_run_name = $2\n                and test_run_date = $3\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "len",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a018e8e3eee07a6c47b56c5ed2a723e9283131599612a3752653a338466d0feb"
+}

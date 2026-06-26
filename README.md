@@ -1,190 +1,278 @@
 # mantra
 
-![build-test](https://github.com/mhatzl/mantra/actions/workflows/rust.yml/badge.svg?branch=main)
-[![docker](https://github.com/mhatzl/mantra/actions/workflows/docker.yml/badge.svg?branch=main)](https://hub.docker.com/r/manuelhatzl/mantra)
+[![crates.io](https://img.shields.io/crates/v/mantra.svg)](https://crates.io/crates/mantra)
 
 **M**anuels **AN**forderungs-**TRA**cing (or **MAN**aged **TRA**cing)
 
 *mantra* is a tool for easier tracing between requirements, implementation, and tests.
 
-Checkout the [usage example](/mantra/examples/) folder
-to see how requirement tracing with *mantra* works.
+While requirements define the intent, implementation and testing define the actual state.
+Requirements traceability is an approach to keep those two sides synchronized,
+by mapping requirements to their implementations and tests. This mapping then allows to aggregate
+the [state](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstate-requirement-states) of requirements
+and also has the benefit that navigating through a codebase becomes easier.
 
-## Core Concepts
+**Requirement states handled by *mantra*:**
+- **Failed** ... At least one test mapping to the requirement has failed
+- **Verified** ... Requirements that fulfill *mantra*'s [`verified` conditions](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstateverified-verified-requirements)
+- **Skipped** ... At least one test mapping to the requirement was skipped
+- **Unverified** ... Requirements that don't fulfill *mantra*'s [`verified` conditions](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstateverified-verified-requirements)
+- **Deprecated** ... For requirements that have been marked as [deprecated](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqdeprecate-deprecate-requirements)
+- **Excluded** ... For requirements that have been marked as [excluded](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqexclude-exclude-requirements)
 
-IDs are used to identify requirements, and reference them in the implementation and/or tests.
-These requirement IDs must be set manually on the implementation and test side.
-*mantra* then adds available requirements and found traces into a SQL database for further analysis.
+Since requirements may be structured in a hierarchical manner,
+*mantra* has a set of [rules](/docs/wiki/5-Requirements/5-REQ-requirement.md#reqstate-requirement-states)
+that define how requirement states of children indirectly affect the state of their parents.
+This hierarchical state transfer helps to reduce the effort to track requirements,
+because at best, only leaf requirements (those without children) must be traced explicitly.
 
-Using the trace information, test code coverage may be passed to *mantra*
-to get requirement coverage information.
+**The high-level usage flow of *mantra* is:**
+1. Configure where *mantra* should collect data from
+2. Add or modify requirements, giving each a unique ID
+3. Implement requirements, adding traces to requirements using their IDs
+4. Write tests, again adding traces to requirements using their IDs
+5. Optional: Create manual reviews e.g. to verify hard-to-test requirements
+6. Run `mantra collect`
+7. Run `mantra report` to generate a requirements traceability report
+8. Repeat from step 2 until the project is complete
 
-### Requirement ID
+For a quick overview of those steps, see the [getting-started section](#getting-started) below.
+More details about using and configuring *mantra* may be found in the [/docs/usage](/docs/usage) folder.
+The goals, requirements, and decisions behind *mantra* are documented under [/docs/wiki](/docs/wiki/README.md), which is also published on *mantra*'s [GitHub wiki](https://github.com/mhatzl/mantra/wiki).
 
-Every requirement must have a unique requirement ID.
-A requirement hierarchy may be created by using the parent ID as prefix followed by `.`.
+**Note:** Currently, focus is on support for Rust code, but built-in support for other languages is planned.
+If your language is not supported directly, you may create your own tooling that extracts relevant information
+and converts it into a format *mantra* understands following *mantra*'s [JSON schemas]().
 
-**Example:**
-
-```
-req_id
-
-req_id.sub_req_id
-```
-
-### Requirement tracing
-
-To get requirement traces, IDs may be referenced in the implementation and/or tests of your system/project.
-How requirement IDs are referenced may vary between programming languages.
-If no special syntax is defined for a file type, the default is to search for references
-having the form `[req(<requirement id(s)>)]`.
-
-**Language specific tracing:**
-
-- **Rust**: Uses [`mantra-rust-trace`](/langs/rust/mantra-rust-trace/README.md) to collect requirement traces
-
-  Add [`mantra-rust-macros`](/langs/rust/mantra-rust-macros/README.md) to your dependencies to create requirement traces using
-  the attribute macro `req` or the fn-like macro `reqcov`.
-
-  **Example:**
-
-  ```rust
-  use mantra_rust_macros::{req, reqcov};
-
-  #[req(req_id)]
-  fn some_fn() {
-    reqcov!(function_like_trace);
-  }
-  ```
-
-## Usage
+## Installation
 ### Prerequisites
 
-*mantra* uses the [tree-sitter]() crate to find traces in source code.
-This crate requires access to a [native C compiler](https://docs.rs/cc/latest/cc/#compile-time-requirements).
+*mantra* uses the [tree-sitter](https://crates.io/crates/tree-sitter) crate to find *mantra* annotations in source code,
+and [sqlx]() with bundled SQLite to store collected information.
+Those crates require access to a [native C compiler](https://docs.rs/cc/latest/cc/#compile-time-requirements).
 
-Ensure `cc` is available on `Path` when installing *mantra* via `cargo install`.
+Ensure `cc` is available on `Path` if you install *mantra* from source.
 
-### Per CLI
+### Via `cargo install`
 
-*mantra* may be installed using `cargo install mantra`.
+*mantra* may be installed from source via `cargo install mantra`.
 
-All information is stored in a SQL database and the connection may be set
-before any command using `url`. By default, the URL is `sqlite://mantra.db?mode=rwc`.
+**Note:** Ensure a native C compiler is available.
 
-**Note:** Only SQLite is supported for now, because some SQL queries contain SQLite specific syntax.
+## Getting Started
 
-- Collect all data at once
+This section provides a high-level overview to get you started using *mantra*.
+For more details, take a look at the [/usage](/docs/usage) folder.
 
-  `mantra collect [<filepath>]`
+### Configuring *mantra*
 
-  This will look for a TOML file at the given path.
-  By default, the path is set to `mantra.toml`.
+By default, *mantra* looks for a `mantra.json5` located at the current working directory.
+You may change this by explicitly setting a path via the `--config-filepath` argument.
+Currently, *mantra* accepts either `JSON5`, `JSON`, or `TOML` as file format for the configuration file,
+with the format being automatically detected based on the file extension.
 
-  **File structure:**
+The following configuration sets up the `mantra-demo` product for the `main` baseline (e.g. branch):
 
-  ```toml
-  # Project information that will be used by `mantra report`.
-  # The CLI arguments overwrite these settings.
-  #
-  # All fields are optional.
-  [project]
-  name = "project-name"
-  version = "0.1.0"
-  repository = "<link to the project repository>"
-  homepage = "<link to the project homepage>"
-
-  # Template paths that will be used by `mantra report`.
-  # The CLI arguments overwrite these settings.
-  #
-  # All fields are optional.
-  [report-template]
-  # The base template to use.
-  # Mantra uses the integrated report template if no base template is set.
-  base = "base-template.html"
-  # The template used to render the custom `data` field for requirements.
-  req-data = "data-template.html"
-  # The template used to render the custom `data` field for test runs.
-  test-run-data = "test-run-template.html"
-
-  # Collect requirements from local Markdown files.
-  [[requirements]]
-  # Root path to start looking for requirements.
-  # Empty means current directory.
-  root = ""
-  # Base URL for all requirements
-  origin = "https://github.com/mhatzl/mantra-wiki/tree/main/5-Requirements/"
-
-  # Collect requirements from JSON files adhering to the `RequirementSchema`.
-  [[requirements]]
-  # The path to JSON files containing requirements.
-  files = ["requirements.json"]
-
-  # Collect traces from local files
-  [[traces]]
-  # Root path to start looking for traces.
-  # Empty means current directory.
-  root = ""
-  # If 'false', the filepath will be stored relativ to the root path.
-  keep-path-absolute = false
-
-  # Collect traces from JSON files adhering to the `TraceSchema`.
-  [[traces]]
-  # The path to JSON files containing traces.
-  files = ["traces.json"]
-
-  # Collect coverage from JSON files adhering to the `CoverageSchema`.
-  [coverage]
-  # Path to JSON files containing coverage.
-  files = ["coverage.json"]
-
-  # Collect reviews from TOML files adhering to the `ReviewSchema`.
-  [review]
-  # List of review files to add.
-  files = ["first_review.toml"]
-  ```
-
-- Generate a report
-
-  `mantra report --formats=html,json <file path>`
-
-  This will create an HTML and JSON report at the given file path.
-  Optionally, a template file may be given via `--template`.
-  Templates may use the [Tera](https://keats.github.io/tera/docs/) template language.
-  The JSON form is passed to the template.
-  If no template is given, the [report_default_template](/mantra/src/cmd/report_default_template.html) is used.
-
-  To render custom data like requirement and test-run data,
-  the arguments `--req-template` and `--test-run-template` may be set to template files.
-  These templates are then pre-rendered using [Tera](https://keats.github.io/tera/docs/),
-  and the rendered content is made available as `rendered_data` next to the regular `data` fields.
-
-  Project name, version, repository, and homepage may be set using the arguments `--project-name`,
-  `--project-version`, `--project-repository`, and `--project-homepage`.
-  A tag name and link may also be set using the arguments `--tag-name` and `--tag-link`.
-  Tags should be used to indicate the requirements-snapshot/tag the report was generated with.
-
-  The template and project arguments may be set in the `mantra.toml` file,
-  because these settings are assumed to not change much.
-
-### Manual Reviews
-
-Requirements may be manually verified in reviews following the structure below:
-
-```toml
-name = "<review name>"
-date = "<yyyy-mm-dd HH:MM[optional [:SS.fraction]]>"
-reviewer = "<reviewer of this review>"
-comment = "<optional: general comment for this review>"
-
-[[requirement]]
-id = "<verified requirement ID>"
-comment = "<optional: comment for this specific ID>"
-
-[[requirement]]
-id = "<verified requirement ID>"
-comment = "<optional: comment for this specific ID>"
+```json5
+products: [{
+    name: "mantra-demo",
+    base: "main",
+    requirements: [{
+        path: "reqs/",
+        source: "schema",
+    }],
+    annotations: [{
+        path: "./",
+        source: "content",
+        pattern: "*.rs"
+    }],
+    test_runs: [{
+        path: "target/nextest/default",
+        source: {
+            test: {
+                format: "junit",
+                pattern: "*junit.xml",
+            },
+            coverage: {
+                format: "cobertura_loose",
+                pattern: "*cobertura.xml",
+            }
+        }
+    }],
+    reviews: [{
+        path: "reviews/",
+        source: "schema",
+    }]
+}],
 ```
+
+Based on this configuration, files defining requirements are expected to be located under the `reqs/` folder
+following the [RequirementSchema](schema-gen/generated/collect/RequirementSchema.json).
+Annotations such as requirement traces are extracted from Rust code files located in the repository.
+Test and code coverage results are expected under `target/nextest/default`, with test results following the [JUnit XML](https://llg.cubic.org/docs/junit/) format and code coverage being represented in the [Cobertura Loose XML](https://github.com/cobertura/cobertura/blob/master/cobertura/src/site/htdocs/xml/coverage-loose.dtd) format.
+Files containing manual reviews are expected to be located under the `reviews/` folder
+following the [ReviewSchema](schema-gen/generated/collect/ReviewSchema.json).
+
+More details related to *mantra*'s configuration file can be found under [/docs/usage/configuration](/docs/usage/configuration.md).
+
+### Defining Requirements
+
+Currently, only the [RequirementSchema](schema-gen/generated/collect/RequirementSchema.json) is supported as input for requirement definitions.
+
+The following configuration defines three requirements `gs-req-1`, `gs-req-2`, and `gs-req-1.sub-1`:
+
+```json5
+{
+    requirements: [{
+        id: "gs-req-1",
+        title: "First requirement",
+        origin: "Custom field to state where the requirement originated from",
+    },{
+        id: "gs-req-2",
+        title: "Second requirement",
+        origin: "Some origin...",
+        manual_verification: true,
+    },{
+        id: "gs-req-1.sub-1",
+        title: "First sub-requirement",
+        origin: {
+            url: "example.com",
+            accessed_on: "2026-06-22 12:00:00+1"
+        },
+        parents: [{ id: "gs-req-2" }],
+        optional: true,
+    }]
+}
+```
+
+The first requirement `gs-req-1` lists all mandatory fields. The `id` is used to identify the requirement
+throughout the collected data and must be unique per product.
+The `origin` field allows to add an origin where the requirement was originally defined at,
+which is common for projects working with issue trackers such as Jira.
+
+The `gs-req-1.sub-1` requirement combines the two ways to set up a hierarchical structure in *mantra*
+that allows to create non-cyclical relations between requirements.
+Using the *dot-notation* style, the requirement is set as child of `gs-req-1`,
+and `gs-req-2` is set as parent via the explizit `parents` list.
+Although good practice would be to list `gs-req-1` in the `parents` list again to help readability,
+it is not strictly required.
+
+Besides the mandatory fields, `gs-req-2` also sets `manual_verification`,
+which marks the requirement and all its children to require manual verification via at least one review.
+Marking `gs-req-1.sub-1` as `optional` tells *mantra* that parent requirements may be `verified`
+even if `gs-req-1.sub-1` is `unverified` or `skipped`.
+
+### Tracing Requirements in Code
+
+Currently, *mantra* is only able to detect traces in Rust code that match the macros defined in the [mantra-macros](langs/rust/mantra-macros) crate.
+Note that it is not required to use this crate, because trace detection is only based on macro names.
+For other languages and file formats, external tools may convert extracted data into the
+[AnnotationSchema](schema-gen/generated/collect/AnnotationSchema.json).
+
+If you want to use the macros from [mantra-macros](langs/rust/mantra-macros),
+add it to your Cargo.toml via
+
+```sh
+cargo add mantra-macros
+```
+
+To express relations between requirements and traces, *mantra* supports the following kinds:
+- `clarifies` ... Use to trace data that provides additional information about a requirement e.g. diagrams
+- `satisfies` ... Use to trace to implementations of a requirement
+- `verifies` ... Use to trace to tests or assertions that verify a requirement
+- `links` ... Plain trace to link to a requirement
+
+The following code contains satisfying and verifying traces for `gs-req-1`:
+
+```rust
+#[mantra_macros::req_satisfied("gs-req-1")]
+fn foo() -> bool {
+    // ...
+    true
+}
+
+#[test]
+fn test_foo_1() {
+    mantra_macros::assert_req!("gs-req-1" => foo(), "Verification using assert macro");
+}
+
+#[mantra_macros::req_test("gs-req-1")]
+#[test]
+fn test_foo_2() {
+    core::assert!(foo(), "Verification using attribute macro");
+}
+```
+
+### Mapping Requirements to Tests
+
+*mantra* uses line coverage metrics collected from tests to detect if a requirement has been verified.
+Consequently, a *verifying* trace alone is not enough to verify a requirement.
+The benefit is that combining traces with line coverage allows users to choose between manual tracing effort and safety guarantees.
+For example, if a *verifying* trace is set on a test and there is a code part with a *satisfying* trace to the same requirement, *mantra* checks if the test actually passed this code part.
+
+For Rust projects, a convenient way to get test and coverage results that are readable by *mantra*
+is to use [cargo-nextest](https://nexte.st/) with the JUnit feature and [grcov](https://github.com/mozilla/grcov/) with the Cobertura output format. See the `testcov` task in the [justfile](justfile) of the repository to see how this is set up for *mantra*.
+This convenience layer is internally converted to the [TestRunSchema](schema-gen/generated/collect/TestRunSchema.json), which external tools may target directly. 
+
+**Note:** Code coverage for Rust projects collected via `-Cinstrument-coverage` is only collected per binary.
+Consequently, it is not possible to get code coverage results per test case, which worsens the safety guarantees
+that *mantra* can verify.
+
+### Write Reviews
+
+Often, requirements cannot easily be tested automatically.
+For such requirements, *mantra* allows to set the `manual_verification` flag
+to explicitly state that this requirement must be verified manually in a review.
+Besides verifying requirements, reviews may also be used to overwrite test results,
+which is for example useful in case of flaky tests.
+
+Currently, can only be added following the [ReviewSchema](schema-gen/generated/collect/ReviewSchema.json).
+External tools may be used to extract data from other formats and convert to the schema.
+
+The review below verifies the manual requirement `gs-req-2`:
+
+```json5
+{
+    reviews: [{
+        name: "First review",
+        utc_date: "2026-05-17T17:00utc-01",
+        authors: ["Manuel"],
+        revisions: [{
+            nr: 1,
+            authors: ["Manuel"],
+            comment: "Initial review"
+        }],
+        requirements: [{
+            id: "gs-req-2",
+            comment: "Verifying the requirement"
+        }]
+    }]
+}
+```
+
+### Collect & Report
+
+Once all data that should be collected by *mantra* is available, run
+
+```sh
+mantra collect
+```
+
+This will create a SQLite file in the current working directory that contains all collected data.
+You may change the path to the SQLite file by setting the `--url` argument.
+Running the command again will update the database and remove outdated data.
+
+After collecting everything, run
+
+```sh
+mantra report --output-dir mantra-report/
+```
+
+This will store report output under `mantra-report`.
+By default, the report format will be HTML and is built up like a static website with the entry point located at `mantra-report/index.html`.
+
+Currently, *mantra* supports HTML and JSON as output formats. The JSON output is internally used
+to generate the HTML report using Jinja2 templates.
 
 # License
 

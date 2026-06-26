@@ -1,0 +1,21 @@
+{
+    requirements: [{
+        id: "gs-req-1",
+        title: "First requirement",
+        origin: "Custom field to state where the requirement originated from",
+    },{
+        id: "gs-req-2",
+        title: "Second requirement",
+        origin: "Some origin...",
+        manual_verification: true,
+    },{
+        id: "gs-req-1.sub-1",
+        title: "First sub-requirement",
+        origin: {
+            url: "example.com",
+            accessed_on: "2026-06-22 12:00:00+1"
+        },
+        parents: [{ id: "gs-req-2" }],
+        optional: true,
+    }]
+}

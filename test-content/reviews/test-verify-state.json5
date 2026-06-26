@@ -1,0 +1,18 @@
+{
+    reviews: [{
+        name: "Verifying test-verify-state conditions",
+        utc_date: "2026-02-19T11:49utc+01",
+        authors: ["Manuel"],
+        requirements: [{
+            id: [
+                "manual_req.no_trace.verified",
+                "manual_req.traced.verified",
+                "manual_req.traced.failed",
+                "manual_req.test_verified.verified",
+                "manual_req.test_verified.failed",
+                "manual_req.test_verified.skipped"
+            ],
+            comment: "Verifying requirements"
+        }]
+    }]
+}

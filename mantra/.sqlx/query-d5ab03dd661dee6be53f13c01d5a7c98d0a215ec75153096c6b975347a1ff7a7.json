@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from UsableManualRequirements\n            where last_collect_nr != $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "d5ab03dd661dee6be53f13c01d5a7c98d0a215ec75153096c6b975347a1ff7a7"
+}

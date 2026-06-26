@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            tc.utc_date,\n            tc.duration_sec,\n            gt.content as \"description?\",\n            tl.filepath as \"location_filepath?\",\n            tl.file_hash as \"location_file_hash?\",\n            tl.line as \"location_line?\"\n        from TestCases tc\n            left join GeneralTexts gt on tc.description_hash = gt.hash\n            left join TestCaseLocations tl on tl.product_id = $1\n                and tl.test_run_name = $2 and tl.test_run_date = $3\n                and tl.test_case_name = $4\n        where tc.product_id = $1\n        and tc.test_run_name = $2\n        and tc.test_run_date = $3\n        and tc.name = $4\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "utc_date",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_sec",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "description?",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "location_filepath?",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "location_file_hash?",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "location_line?",
+        "ordinal": 5,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "80716a75d6a88e7751794b1e3cd4a18799702329ad1ddde24b9e9f2b2007300b"
+}

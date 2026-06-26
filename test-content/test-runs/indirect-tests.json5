@@ -1,0 +1,39 @@
+{
+    test_runs: [{
+        name: "indirect-test-run",
+        utc_date: "2026-05-17T11:16:58Z",
+        nr_of_test_cases: 6,
+        test_cases: [{
+            name: "passed-directly-verifies",
+            state: "passed",
+            verified_reqs: [
+                "hl-2.ml-1.low-lvl-1.verified",
+                "hl-2.ml-1.low-lvl-2.verified",
+                "hl-2.ml-1.low-lvl-3.verified",
+                "hl-2.ml-1.low-lvl-4.verified",
+                "hl-2.ml-1.low-lvl-5.verified",
+                "hl-2.ml-2.low-lvl-1.verified-opt",
+                "hl-2.ml-2.low-lvl-2.verified-opt-1",
+                "hl-2.ml-2.low-lvl-2.verified-opt-2",
+                "hl-2.ml-3.verified-excluded",
+                "hl-2.ml-4.verified-deprecated",
+            ]
+        },{
+            name: "failed-directly-verifies",
+            state: "failed",
+            verified_reqs: [
+                "hl-2.ml-1.low-lvl-2.failed-opt",
+                "hl-2.ml-3.failed-excluded",
+                "hl-2.ml-4.failed-deprecated",
+            ]
+        },{
+            name: "skipped-directly-verifies",
+            state: "skipped",
+            verified_reqs: [
+                "hl-2.ml-1.low-lvl-3.skipped-opt",
+                "hl-2.ml-3.skipped-excluded",
+                "hl-2.ml-4.skipped-deprecated"
+            ]
+        }],
+    }]
+}

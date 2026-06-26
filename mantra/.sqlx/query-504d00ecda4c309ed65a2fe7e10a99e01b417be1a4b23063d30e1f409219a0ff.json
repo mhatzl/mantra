@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select rp.property_key, v.content\n        from ReviewProperties rp left join GeneralJson v on rp.value_hash = v.hash\n        where rp.product_id = $1 and rp.review_name = $2\n        and rp.review_date = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "504d00ecda4c309ed65a2fe7e10a99e01b417be1a4b23063d30e1f409219a0ff"
+}

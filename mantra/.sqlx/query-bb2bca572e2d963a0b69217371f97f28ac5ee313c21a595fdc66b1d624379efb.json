@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into ExcludedRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with MarkedExclude(product_id, id) as (\n                select product_id, id\n                from Requirements\n                where exclude = true\n                and last_collect_nr = $1\n                and product_id = $2\n            ),\n            ParentMarkedExclude(product_id, id) as (\n                select rd.descendant_product_id, rd.descendant_id\n                from RequirementDescendants rd, MarkedExclude md\n                where rd.product_id = md.product_id and rd.id = md.id\n            )\n            select $1 as last_collect_nr, product_id, id\n            from MarkedExclude\n            union all\n            select $1 as last_collect_nr, product_id, id\n            from ParentMarkedExclude\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "bb2bca572e2d963a0b69217371f97f28ac5ee313c21a595fdc66b1d624379efb"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select rp.property_key, v.content\n        from TestCaseProperties rp, GeneralJson v\n        where rp.product_id = $1 and rp.test_run_name = $2\n        and rp.test_run_date = $3 and rp.test_case_name = $4\n        and rp.value_hash = v.hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "492eb5fc8cc367672c4834162e5662526c2bf99cfef9295dfcb7dc9842981dc1"
+}

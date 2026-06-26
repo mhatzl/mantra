@@ -1,0 +1,495 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RequirementReportSchema",
+  "type": "object",
+  "required": [
+    "deprecated",
+    "excluded",
+    "id",
+    "manual_verification",
+    "optional",
+    "product",
+    "state",
+    "title"
+  ],
+  "properties": {
+    "base_origin": true,
+    "children": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/RequirementReference"
+      }
+    },
+    "covered_by": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RequirementCoverageByTests"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "deprecated": {
+      "description": "true: Marks the requirement to be deprecated.\n\n**Note:** All potential children of such a requirement are also marked as deprecated. [req(\"req.deprecated\")]",
+      "type": "boolean"
+    },
+    "description": {
+      "description": "Optional description of the requirement. [req(\"req.description\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "excluded": {
+      "description": "true: Instructs mantra to exclude the requirement for the product it is mapped to.\n\n**Note:** All potential children of such a requirement will also be excluded. [req(\"req.exclude\")]",
+      "type": "boolean"
+    },
+    "id": {
+      "description": "ID of the requirement. [req(\"req.id\")]",
+      "type": "string"
+    },
+    "manual_verification": {
+      "description": "true: Marks the requirement to require manual verification.\n\n**Note:** All potential children of such a requirement are also marked to require manual verification. [req(\"req.manual\")]",
+      "type": "boolean"
+    },
+    "optional": {
+      "description": "true: Instructs mantra to treat the requirement for the product as optional.\n\n**Note:** All potential children of such a requirement are also marked as optional. [req(\"req.optional\")]",
+      "type": "boolean"
+    },
+    "origin": {
+      "description": "Origin where the requirement is defined at. [req(\"req.origin\")]"
+    },
+    "parents": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/RequirementReference"
+      }
+    },
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "properties": {
+      "description": "List of custom properties of a requirement. [req(\"req.properties\")]",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "reviewed_in": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/RequirementReviewReference"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state": {
+      "$ref": "#/definitions/RequirementState"
+    },
+    "title": {
+      "description": "Title of the requirement. [req(\"req.title\")]",
+      "type": "string"
+    },
+    "traces": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RequirementTracesOverview"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RequirementCoverageByTestCases": {
+      "type": "object",
+      "required": [
+        "directly_verified",
+        "product_id",
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "covered_traces": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TraceReference"
+          }
+        },
+        "directly_verified": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "RequirementCoverageByTestRuns": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "covered_traces": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/TraceReference"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "RequirementCoverageByTests": {
+      "type": "object",
+      "required": [
+        "test_cases",
+        "test_runs"
+      ],
+      "properties": {
+        "test_cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementCoverageByTestCases"
+          }
+        },
+        "test_runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementCoverageByTestRuns"
+          }
+        }
+      }
+    },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementReviewReference": {
+      "type": "object",
+      "required": [
+        "comment",
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ReviewState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "excluded"
+      ]
+    },
+    "RequirementTracesOverview": {
+      "type": "object",
+      "required": [
+        "all",
+        "summary"
+      ],
+      "properties": {
+        "all": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TraceReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/TracesSummary"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
+      ]
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
+          ]
+        }
+      ]
+    },
+    "TraceKind": {
+      "description": "The trace kind. [req(\"trace.kind\")]",
+      "oneOf": [
+        {
+          "description": "Trace links to an artifact that provides clarification for a requirement.",
+          "type": "string",
+          "enum": [
+            "clarifies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that satisfies a requirement.",
+          "type": "string",
+          "enum": [
+            "satisfies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that verifies a requirement.",
+          "type": "string",
+          "enum": [
+            "verifies"
+          ]
+        },
+        {
+          "description": "Trace link that provides no additional information.",
+          "type": "string",
+          "enum": [
+            "links"
+          ]
+        }
+      ]
+    },
+    "TraceReference": {
+      "type": "object",
+      "required": [
+        "file_hash",
+        "filepath",
+        "kind",
+        "line"
+      ],
+      "properties": {
+        "file_hash": {
+          "type": "string"
+        },
+        "filepath": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/TraceKind"
+        },
+        "line": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "TracesSummary": {
+      "type": "object",
+      "required": [
+        "clarifies",
+        "links",
+        "satisfies",
+        "total",
+        "verifies"
+      ],
+      "properties": {
+        "clarifies": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "links": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "satisfies": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "verifies": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    }
+  }
+}

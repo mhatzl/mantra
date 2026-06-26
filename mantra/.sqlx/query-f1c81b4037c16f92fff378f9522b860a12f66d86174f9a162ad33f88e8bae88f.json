@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select state as \"state!:i64\"\n            from TestRunStates\n            where product_id = $1\n            and test_run_name = $2\n            and test_run_date = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "state!:i64",
+        "ordinal": 0,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "f1c81b4037c16f92fff378f9522b860a12f66d86174f9a162ad33f88e8bae88f"
+}

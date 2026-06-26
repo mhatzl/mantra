@@ -2,7 +2,7 @@ use clap::Parser;
 
 #[tokio::main]
 async fn main() {
-    let cfg = mantra::cfg::Config::parse();
+    let cfg = mantra::cfg::CliConfig::parse();
 
     env_logger::builder()
         .filter_level(log::LevelFilter::Info)
@@ -10,7 +10,7 @@ async fn main() {
         .init();
 
     if let Err(err) = mantra::run(cfg).await {
-        println!("{err}");
+        eprintln!("{err}");
         std::process::exit(-1);
     }
 }

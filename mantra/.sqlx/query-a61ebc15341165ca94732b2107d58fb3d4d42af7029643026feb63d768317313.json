@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select gj.content\n        from IgnoredReviewEntries ie, GeneralJson gj\n        where ie.product_id = $1\n        and ie.review_name = $2\n        and ie.review_date = $3\n        and ie.entry_hash = gj.hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a61ebc15341165ca94732b2107d58fb3d4d42af7029643026feb63d768317313"
+}

@@ -1,29 +1,28 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "mantra",
     "langs/mantra-lang-tracing",
-    "langs/rust/mantra-rust-procm",
-    "langs/rust/mantra-rust-macros",
-    "langs/rust/mantra-rust-trace",
-    "langs/rust/examples/*", "schema", "schema-gen",
+    "langs/rust/mantra-procm",
+    "langs/rust/mantra-macros",
+    "schema", "schema-gen",
 ]
 
 [workspace.dependencies]
-proc-macro2 = "1.0.81"
 regex = "1.10.4"
-tree-sitter = "0.22.0"
-tree-sitter-rust = "0.21.0"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0" }
-time = { version = "0.3.36", features = ["serde", "formatting", "parsing", "macros"] }
 log = "0.4.21"
 env_logger = "0.11.3"
 schemars = "0.8.21"
+sqlx = "0.8.6"
+anyhow = "1.0.100"
+urlencoding = "2.1.3"
+thiserror = "1.0.59"
 
 [workspace.package]
-version = "0.7.7"
-edition = "2021"
+version = "0.8.0-rc1"
+edition = "2024"
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"
 

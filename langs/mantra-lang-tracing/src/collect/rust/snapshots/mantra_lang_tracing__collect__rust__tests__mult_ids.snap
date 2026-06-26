@@ -1,0 +1,32 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        #[req(\"ID1\", \"ID2\")]\n        fn foo() {}\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1",
+        "ID2",
+      ],
+      line: 2,
+      related_code: Some(3),
+      kind: satisfies,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 3,
+      span: LineSpan(
+        start: 2,
+        end: 3,
+      ),
+      kind: function,
+      content_hash: Some("ca0ad6b42f32a522499bc87595e265cb26d70fc2877d34151a46d91f9bf48bcc"),
+    ),
+  ],
+  coverage_excludes: [],
+)

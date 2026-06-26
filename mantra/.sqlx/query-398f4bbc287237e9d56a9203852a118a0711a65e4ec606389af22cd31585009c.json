@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select revision, comment\n        from ReviewRevisions\n        where product_id = $1 and review_name = $2\n        and review_date = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "revision",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "comment",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "398f4bbc287237e9d56a9203852a118a0711a65e4ec606389af22cd31585009c"
+}

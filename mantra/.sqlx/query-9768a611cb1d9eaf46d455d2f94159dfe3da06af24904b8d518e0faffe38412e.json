@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ManuallyVerifiedRequirements (\n                    last_collect_nr,\n                    req_id,\n                    product_id,\n                    review_name,\n                    review_date,\n                    comment_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6\n                )\n                on conflict (product_id, req_id, review_name, review_date)\n                do update set\n                    last_collect_nr = excluded.last_collect_nr,\n                    comment_hash = excluded.comment_hash\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "9768a611cb1d9eaf46d455d2f94159dfe3da06af24904b8d518e0faffe38412e"
+}

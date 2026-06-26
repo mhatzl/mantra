@@ -1,0 +1,953 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SourceFileReportSchema",
+  "type": "object",
+  "required": [
+    "collected_by",
+    "filepath",
+    "hashed_info"
+  ],
+  "properties": {
+    "collected_by": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProductMetadata"
+      }
+    },
+    "filepath": {
+      "type": "string"
+    },
+    "hashed_info": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/HashedSourceFileInfo"
+      }
+    },
+    "product_coverage": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/SourceFileProductCoverage"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "CodeBlock": {
+      "description": "A generic code block that is linked to a trace. [req(\"trace.code_block\")]",
+      "type": "object",
+      "required": [
+        "kind",
+        "span"
+      ],
+      "properties": {
+        "content_hash": {
+          "description": "The SHA256 content hash of the code block.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "description": "The kind of the code block.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/CodeBlockKind"
+            }
+          ]
+        },
+        "span": {
+          "description": "The line span of the code block. [req(\"trace.code_block.span\")]",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LineSpan"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CodeBlockKind": {
+      "description": "The code block kind.",
+      "type": "string",
+      "enum": [
+        "other",
+        "if",
+        "else_if",
+        "else",
+        "loop",
+        "while",
+        "for",
+        "match"
+      ]
+    },
+    "CoverageExclude": {
+      "description": "Coverage exclusion information found in a file. e.g. markers in code files may be used to exclude uncoverable lines from being considered for code coverage metrics.\n\nTODO: add requirement trace",
+      "type": "object",
+      "required": [
+        "comment",
+        "kind"
+      ],
+      "properties": {
+        "comment": {
+          "description": "Mandatory comment on why the exclusion is acceptable.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "The kind of coverage exclusion.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/CoverageExcludeKind"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CoverageExcludeKind": {
+      "description": "The kind of coverage exclusion that was found in a file.",
+      "oneOf": [
+        {
+          "description": "Excludes a code span from coverage metrics. Both lines are inclusive!",
+          "type": "object",
+          "required": [
+            "block"
+          ],
+          "properties": {
+            "block": {
+              "type": "object",
+              "required": [
+                "end",
+                "start"
+              ],
+              "properties": {
+                "end": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "start": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Excludes one line from coverage metrics.",
+          "type": "object",
+          "required": [
+            "line"
+          ],
+          "properties": {
+            "line": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "CoveredLineTestReference": {
+      "type": "object",
+      "required": [
+        "hits",
+        "test"
+      ],
+      "properties": {
+        "hits": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "test": {
+          "$ref": "#/definitions/TestReference"
+        }
+      }
+    },
+    "CoveredLinesSummary": {
+      "type": "object",
+      "required": [
+        "covered",
+        "excluded",
+        "overridden",
+        "total",
+        "uncovered"
+      ],
+      "properties": {
+        "covered": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "excluded": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "overridden": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uncovered": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    },
+    "ElementKind": {
+      "description": "Defines supported element kinds. [req(\"trace.element.kind\")]",
+      "oneOf": [
+        {
+          "description": "Variant that should be used if no other one fits.",
+          "type": "string",
+          "enum": [
+            "other"
+          ]
+        },
+        {
+          "description": "Marks an element as a test or test case.",
+          "type": "string",
+          "enum": [
+            "test"
+          ]
+        },
+        {
+          "description": "A module or package.",
+          "type": "string",
+          "enum": [
+            "module"
+          ]
+        },
+        {
+          "description": "A function or method.",
+          "type": "string",
+          "enum": [
+            "function"
+          ]
+        },
+        {
+          "description": "A variable or static.",
+          "type": "string",
+          "enum": [
+            "variable"
+          ]
+        },
+        {
+          "description": "A constant.",
+          "type": "string",
+          "enum": [
+            "const"
+          ]
+        },
+        {
+          "description": "A type, struct, enum, class, or union.",
+          "type": "string",
+          "enum": [
+            "type"
+          ]
+        },
+        {
+          "description": "A field or property.",
+          "type": "string",
+          "enum": [
+            "field"
+          ]
+        },
+        {
+          "description": "A trait, interface, or other abstract type.",
+          "type": "string",
+          "enum": [
+            "trait"
+          ]
+        },
+        {
+          "description": "A function signature or virtual function that has no *body*. It is likely declared inside a trait/interface.",
+          "type": "string",
+          "enum": [
+            "function_signature"
+          ]
+        }
+      ]
+    },
+    "ExclusionAnnotationReference": {
+      "type": "object",
+      "required": [
+        "comment",
+        "def_line"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "def_line": {
+          "description": "The line the exclude annotation was defined at.",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "HashedSourceFileInfo": {
+      "type": "object",
+      "required": [
+        "file_hash"
+      ],
+      "properties": {
+        "annotations": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ResolvedAnnotations"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "file_hash": {
+          "type": "string"
+        },
+        "product_coverage": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/SourceFileProductCoverage"
+          }
+        }
+      }
+    },
+    "LineSpan": {
+      "type": "object",
+      "required": [
+        "end",
+        "start"
+      ],
+      "properties": {
+        "end": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "start": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "excluded"
+      ]
+    },
+    "ResolvedAnnotations": {
+      "type": "object",
+      "properties": {
+        "coverage_excludes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/CoverageExclude"
+          }
+        },
+        "elements": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedElement"
+          }
+        },
+        "traces": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedTrace"
+          }
+        }
+      }
+    },
+    "ResolvedElement": {
+      "type": "object",
+      "required": [
+        "definition_line",
+        "kind",
+        "name",
+        "span"
+      ],
+      "properties": {
+        "definition_line": {
+          "description": "The line the element is defined at.\n\n**Note:** This might differ from `span.start`, because in Rust for example, attributes & doc-comments are part of the span, but the definition of an element starts below them.\n\nTODO: trace req",
+          "type": "integer",
+          "format": "int64"
+        },
+        "idents": {
+          "description": "The fully qualified identifier of the element. [req(\"trace.element.ident\")]",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedElementIdent"
+          }
+        },
+        "kind": {
+          "description": "The kind of the element. [req(\"trace.element.kind\")]",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ElementKind"
+            }
+          ]
+        },
+        "name": {
+          "description": "The element name.\n\n**Note:** This is not the fully qualified identifier.",
+          "type": "string"
+        },
+        "span": {
+          "description": "The line span of the element. [req(\"trace.element.span\")]",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LineSpan"
+            }
+          ]
+        }
+      }
+    },
+    "ResolvedElementIdent": {
+      "type": "object",
+      "required": [
+        "ident",
+        "product_ids"
+      ],
+      "properties": {
+        "ident": {
+          "type": "string"
+        },
+        "product_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ResolvedLineState": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "uncovered"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "covered"
+          ],
+          "properties": {
+            "covered": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/CoveredLineTestReference"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Line was excluded from coverage analysis. An optional reference to an exclusion annotation is given, if the exclusion was based on a mantra annotation.",
+          "type": "object",
+          "required": [
+            "excluded"
+          ],
+          "properties": {
+            "excluded": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ExclusionAnnotationReference"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "overriden"
+          ],
+          "properties": {
+            "overriden": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ReviewOverride"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResolvedTrace": {
+      "type": "object",
+      "required": [
+        "kind",
+        "line",
+        "resolved_ids",
+        "unknown_ids"
+      ],
+      "properties": {
+        "kind": {
+          "description": "Trace kind. [req(\"trace.kind`\")]",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TraceKind"
+            }
+          ]
+        },
+        "line": {
+          "description": "The line the trace is defined at. [req(\"trace.origin\")]",
+          "type": "integer",
+          "format": "int64"
+        },
+        "properties": {
+          "description": "List of custom properties that may be set on a trace. [req(\"trace.properties\")]",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "related_code": {
+          "description": "Optional related code block or element that is linked to the trace. [req(\"trace.code_block\", \"trace.element\")]",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TraceRelatedCodeVariant"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolved_ids": {
+          "description": "The requirement IDs that are referenced by the trace. [req(\"trace.id\", \"trace.mult_reqs\")]",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "unknown_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ReviewOverride": {
+      "type": "object",
+      "required": [
+        "comment",
+        "review"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "original_hits": {
+          "description": "The original hits that were collected from the tests.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "review": {
+          "$ref": "#/definitions/ReviewReference"
+        },
+        "set_hits": {
+          "description": "The hits set by the review.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        }
+      }
+    },
+    "ReviewReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ReviewState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
+      ]
+    },
+    "SourceFileProductCoverage": {
+      "type": "object",
+      "required": [
+        "lines",
+        "product",
+        "summary"
+      ],
+      "properties": {
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SourceLineInfo"
+          }
+        },
+        "product": {
+          "$ref": "#/definitions/ProductMetadata"
+        },
+        "summary": {
+          "$ref": "#/definitions/SourceProductCoverageSummary"
+        }
+      }
+    },
+    "SourceLineInfo": {
+      "description": "Coverage information of a line in a file. [req(\"testcov.cov.lines\")]",
+      "type": "object",
+      "required": [
+        "nr",
+        "state"
+      ],
+      "properties": {
+        "nr": {
+          "description": "The line number.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "state": {
+          "$ref": "#/definitions/ResolvedLineState"
+        }
+      }
+    },
+    "SourceProductCoverageSummary": {
+      "type": "object",
+      "required": [
+        "lines",
+        "product_id"
+      ],
+      "properties": {
+        "lines": {
+          "$ref": "#/definitions/CoveredLinesSummary"
+        },
+        "product_id": {
+          "type": "string"
+        }
+      }
+    },
+    "TestCaseReference": {
+      "type": "object",
+      "required": [
+        "product_id",
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "TestReference": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "test_run"
+          ],
+          "properties": {
+            "test_run": {
+              "$ref": "#/definitions/TestRunReference"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "test_case"
+          ],
+          "properties": {
+            "test_case": {
+              "$ref": "#/definitions/TestCaseReference"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TestRunReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
+          ]
+        }
+      ]
+    },
+    "TraceKind": {
+      "description": "The trace kind. [req(\"trace.kind\")]",
+      "oneOf": [
+        {
+          "description": "Trace links to an artifact that provides clarification for a requirement.",
+          "type": "string",
+          "enum": [
+            "clarifies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that satisfies a requirement.",
+          "type": "string",
+          "enum": [
+            "satisfies"
+          ]
+        },
+        {
+          "description": "Trace links to an artifact that verifies a requirement.",
+          "type": "string",
+          "enum": [
+            "verifies"
+          ]
+        },
+        {
+          "description": "Trace link that provides no additional information.",
+          "type": "string",
+          "enum": [
+            "links"
+          ]
+        }
+      ]
+    },
+    "TraceRelatedCodeVariant": {
+      "description": "Possible related code variants for a trace. [req(\"trace.code_block\", \"trace.element\")]",
+      "anyOf": [
+        {
+          "description": "Code block that is linked to the trace. [req(\"trace.code_block\")]",
+          "allOf": [
+            {
+              "$ref": "#/definitions/CodeBlock"
+            }
+          ]
+        },
+        {
+          "description": "Definition line of an element the trace is related to in the source file.\n\ne.g. line of a function definition. [req(\"trace.element\")]",
+          "type": "integer",
+          "format": "int64"
+        }
+      ]
+    }
+  }
+}

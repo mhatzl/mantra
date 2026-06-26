@@ -1,0 +1,243 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>{{ schema.name }}</h1>
+<h2>Metadata</h2>
+<ul>
+    <li>
+        <strong>State:</strong>
+        <span class="state-{{ schema.state }}">{{ schema.state }}</span>
+    </li>
+    <li><strong>Date: </strong> {{ schema.utc_date }}</li>
+    <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
+    <li><strong>Nr. of Test Cases:</strong> {{ schema.nr_of_test_cases }}</li>
+</ul>
+
+<h2>Description</h2>
+{% if schema.description %} {{ schema.description }} {% else %} No description
+set for this test run. {% endif %}
+
+<h2>Test Cases</h2>
+{% if schema.test_cases %} {% set act_nr_test_cases =
+schema.test_cases.summary.total %} {% else %} {% set act_nr_test_cases = 0 %} {%
+endif %} {% if schema.nr_of_test_cases > act_nr_test_cases %}
+<p>
+    {{ schema.nr_of_test_cases - act_nr_test_cases }} test cases in child test
+    runs.
+</p>
+{% endif %} {% if schema.test_cases %}
+<h3>Failed</h3>
+<ul>
+    {% for test_case in schema.test_cases.failed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Passed</h3>
+<ul>
+    {% for test_case in schema.test_cases.passed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Skipped</h3>
+<ul>
+    {% for test_case in schema.test_cases.skipped %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Unknown</h3>
+<ul>
+    {% for test_case in schema.test_cases.unknown %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h3>Obsolete</h3>
+<ul>
+    {% for test_case in schema.test_cases.obsolete %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
+            >{{ test_case.test_case_name }}</a
+        ><span class="state-badge state-{{ test_case.state }}"
+            >{{ test_case.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% elif schema.nr_of_test_cases == 0 %} - {% endif %}
+<h2>Children Test Runs</h2>
+{% if schema.child_test_runs %}
+<ul>
+    {% for child in schema.child_test_runs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(child) }}.html"
+            >{{ child.utc_date }} {{ child.name }}</a
+        ><span class="state-badge state-{{ child.state }}"
+            >{{ child.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %} - {% endif %}
+<h2>Parent Test Runs</h2>
+{% if schema.parent_test_runs %}
+<ul>
+    {% for parent in schema.parent_test_runs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(parent) }}.html"
+            >{{ parent.utc_date }} {{ parent.name }}</a
+        ><span class="state-badge state-{{ parent.state }}"
+            >{{ parent.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %} - {% endif %}
+
+<h2>Related Requirements</h2>
+{% if schema.related_reqs %}
+<ul>
+    {% for req in schema.related_reqs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req.req) }}.html"
+            >{{ req.req.id }}</a
+        ><span class="state-badge state-{{ req.req.state }}"
+            >{{ req.req.state }}</span
+        >{% if req.req.optional %}<span class="optional-badge">optional</span>{%
+        endif %} {% if req.kind.traced %} covered by traces
+        <ul>
+            {% for trace in req.kind.traced %}
+            <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+            {% endfor %}
+        </ul>
+        {% else %} Directly Verified {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %} No related requirements found. {% endif %}
+
+<h2>Coverage</h2>
+{% if schema.coverage %}
+<h3>Summary</h3>
+<h4>Lines</h4>
+<ul>
+    <li><strong>Total:</strong> {{ schema.coverage.summary.lines.total }}</li>
+    <li>
+        <strong>Covered:</strong> {{ schema.coverage.summary.lines.covered.cnt
+        }} ({{ schema.coverage.summary.lines.covered.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Excluded:</strong> {{ schema.coverage.summary.lines.excluded.cnt
+        }} ({{ schema.coverage.summary.lines.excluded.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Overridden Covered:</strong> {{
+        schema.coverage.summary.lines.overridden_covered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_covered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Overridden Uncovered:</strong> {{
+        schema.coverage.summary.lines.overridden_uncovered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_uncovered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Uncovered:</strong> {{
+        schema.coverage.summary.lines.uncovered.cnt }} ({{
+        schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h3>Covered Traces</h3>
+{% if schema.coverage.covered_traces %}
+<ul>
+    {% for trace in schema.coverage.covered_traces %}
+    <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+    {% endfor %}
+</ul>
+
+<h3>Covered Files</h3>
+<ul>
+    {% for file in schema.coverage.covered_files %}
+    <li>{{ file.filepath }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No traces covered</p>
+{% endif %} {% else %} No coverage data available. {% endif %}
+
+<h2>Review Overrides</h2>
+{% if schema.overridden_by %}
+<ul>
+    {% for review in schema.overridden_by %}
+    <li>
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+            >{{ review.name }}</a
+        ><span class="state-badge state-{{ review.state }}"
+            >{{ review.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No results overridden by reviews.</p>
+{% endif %}
+
+<h2>Log Output</h2>
+{% if schema.logs %} {% for log in schema.logs %}
+<details>
+    <summary><strong>{{ log.source }}</strong></summary>
+    <pre><code>{{ log.content }}</code></pre>
+</details>
+{% endfor %} {% else %} No logs captured. {% endif %}
+
+<h2>Revisions</h2>
+{% if schema.revisions %}
+<table>
+    <thead>
+        <tr>
+            <th>Nr.</th>
+            <th>Authors</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for revision in schema.revisions %}
+        <tr>
+            <td>{{ revision.nr }}</td>
+            <td>
+                {% for author in revision.authors %}{{ author }},{% endfor %}
+            </td>
+            <td>{{ revision.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>-</p>
+{% endif %} {% endblock %}

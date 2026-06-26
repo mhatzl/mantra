@@ -1,0 +1,14 @@
+[package]
+name = "mantra-macros"
+description = "Provides macros to create requirement traces and coverage logs for the `mantra` framework."
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+mantra-procm = { path = "../mantra-procm", version = "0.8.0-rc1" }
+# defmt = { version = "0.3.6", optional = true }
+
+[features]
+# defmt = ["dep:defmt"]

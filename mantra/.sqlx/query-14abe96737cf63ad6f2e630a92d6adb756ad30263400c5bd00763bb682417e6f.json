@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select distinct dt.filepath, dt.file_hash, dt.line, t.kind\n            from TracesCoveredByTestRuns tr, DirectProductReqTraces dt, Traces t\n            where tr.product_id = $1 and dt.product_id = $1\n            and dt.req_id = $2\n            and tr.test_run_name = $3 and tr.test_run_date = $4\n            and dt.file_hash = t.file_hash and dt.line = t.line\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_hash",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "line",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "kind",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "14abe96737cf63ad6f2e630a92d6adb756ad30263400c5bd00763bb682417e6f"
+}

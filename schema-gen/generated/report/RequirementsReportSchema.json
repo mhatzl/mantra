@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RequirementsReportSchema",
+  "type": "object",
+  "required": [
+    "product",
+    "requirements"
+  ],
+  "properties": {
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "requirements": {
+      "$ref": "#/definitions/RequirementsOverview"
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "excluded"
+      ]
+    },
+    "RequirementsOverview": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "excluded",
+        "failed",
+        "skipped",
+        "summary",
+        "unverified",
+        "verified"
+      ],
+      "properties": {
+        "deprecated": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "excluded": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "failed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/RequirementsSummary"
+        },
+        "unverified": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        },
+        "verified": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequirementReference"
+          }
+        }
+      }
+    },
+    "RequirementsSummary": {
+      "type": "object",
+      "required": [
+        "deprecated",
+        "excluded",
+        "failed",
+        "mandatory_total",
+        "mandatory_verified",
+        "manuals_total",
+        "manuals_verified",
+        "skipped",
+        "total",
+        "unverified",
+        "verified"
+      ],
+      "properties": {
+        "deprecated": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "excluded": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "failed": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "mandatory_total": {
+          "description": "Metric for how many requirements are non-optional.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "mandatory_verified": {
+          "description": "Metric for how many non-optional requirements are verified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "manuals_total": {
+          "description": "Metric for how many requirements require manual verification.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "manuals_verified": {
+          "description": "Metric for how many requirements requiring manual verification have been verified.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Aggregated"
+            }
+          ]
+        },
+        "skipped": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "unverified": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "verified": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    }
+  }
+}

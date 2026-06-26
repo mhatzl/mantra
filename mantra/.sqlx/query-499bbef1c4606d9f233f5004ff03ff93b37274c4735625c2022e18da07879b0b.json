@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    co.cov_line,\n                    co.hits as new_hits,\n                    tr.hits as old_hits,\n                    gt.content\n                from\n                    TestRunLineCoverageOverrides co,\n                    TestRunLineCoverage tr,\n                    GeneralTexts gt\n                where co.product_id = $1 and tr.product_id = $1\n                and co.test_run_name = $2 and tr.test_run_name = $2\n                and co.test_run_date = $3 and tr.test_run_date = $3\n                and co.cov_filepath = $4 and tr.cov_filepath = $4\n                and co.cov_line = tr.cov_line\n                and co.comment_hash = gt.hash\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_line",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "new_hits",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "old_hits",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "content",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "499bbef1c4606d9f233f5004ff03ff93b37274c4735625c2022e18da07879b0b"
+}

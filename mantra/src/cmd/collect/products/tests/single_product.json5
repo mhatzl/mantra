@@ -1,0 +1,6 @@
+{
+    products: [{
+        id: "p1",
+        name: "test"
+    }]
+}

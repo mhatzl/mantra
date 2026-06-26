@@ -1,0 +1,31 @@
+{
+    reviews: [{
+        name: "First review",
+        utc_date: "2026-05-17T17:00utc-01",
+        authors: ["Manuel"],
+        revisions: [{
+            nr: 1,
+            authors: ["Manuel"],
+            comment: "Initial review"
+        },{
+            nr: 2,
+            authors: ["Manuel"],
+            comment: "Add revision"
+        }],
+        requirements: [{
+            id: "req-1",
+            comment: "Verifying the requirement"
+        }],
+        test_run_overrides: [{
+            name: "0b149ef4-7230-43e2-8167-81fb5d1ff645/mantra::well_known_tests",
+            utc_date: "+002026-05-11T09:24:00.110000000Z",
+            test_cases: [{
+                name: "mantra::well_known_tests/second_test",
+                state: {
+                    new: "passed",
+                    comment: "Test state override"
+                }
+            }]
+        }]
+    }]
+}

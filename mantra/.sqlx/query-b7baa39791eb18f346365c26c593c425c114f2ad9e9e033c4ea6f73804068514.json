@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select id from Requirements\n                where product_id = $1 and last_collect_nr = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b7baa39791eb18f346365c26c593c425c114f2ad9e9e033c4ea6f73804068514"
+}

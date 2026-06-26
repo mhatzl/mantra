@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into RequirementProperties (\n                        last_collect_nr,\n                        req_id,\n                        product_id,\n                        property_key,\n                        value_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5\n                    )\n                    on conflict (req_id, product_id, property_key)\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr,\n                        value_hash = excluded.value_hash\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "34403373edcf21d8e42587a350631f73fdeca1077f9d6162776281272d9be09c"
+}

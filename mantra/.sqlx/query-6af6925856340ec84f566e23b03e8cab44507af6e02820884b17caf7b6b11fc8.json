@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select sum(coverable_lines) as \"coverable_lines!:i64\"\n        from CoverableLinesPerFilepath\n        where product_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "coverable_lines!:i64",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "6af6925856340ec84f566e23b03e8cab44507af6e02820884b17caf7b6b11fc8"
+}

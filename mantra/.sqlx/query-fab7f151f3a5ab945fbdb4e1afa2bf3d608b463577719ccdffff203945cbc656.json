@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        select * from TestCases\n                        where\n                            last_collect_nr = $1\n                            and product_id = $2\n                            and test_run_name = $3\n                            and test_run_date = $4\n                            and name = $5\n                        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "description_hash",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_sec",
+        "ordinal": 8,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "fab7f151f3a5ab945fbdb4e1afa2bf3d608b463577719ccdffff203945cbc656"
+}

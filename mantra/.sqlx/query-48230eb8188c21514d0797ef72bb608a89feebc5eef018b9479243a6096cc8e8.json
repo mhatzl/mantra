@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into UsableTestRuns (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            from PassedTestRuns\n            where last_collect_nr = $1 and product_id = $2\n            except\n            select\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            from ObsoleteTestRuns\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "48230eb8188c21514d0797ef72bb608a89feebc5eef018b9479243a6096cc8e8"
+}

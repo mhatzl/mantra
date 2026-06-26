@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ProductProperties\n            where product_id = $1 and last_collect_nr < $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "fa406c684b663220745542380c528b7b216884e4a6b9997ad023832c9fd987f9"
+}

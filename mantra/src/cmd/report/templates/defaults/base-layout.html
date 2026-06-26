@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{% block title %}Mantra Report{% endblock %}</title>
+        {% block base_style %} {% from 'base-style.html' import base %} {{
+        base() }} {% endblock %}
+        <style>
+            :root {
+                --side-content-bg: #194e80;
+                --side-content-color: #eee;
+            }
+
+            header {
+                background: var(--side-content-bg);
+                color: var(--side-content-color);
+                width: 100%;
+            }
+
+            .full-width {
+                display: flex;
+                width: 100%;
+                --nav-width: 280px;
+            }
+
+            .sidebar {
+                width: var(--nav-width);
+                min-height: 100vh;
+                background: var(--side-content-bg);
+                color: var(--side-content-color);
+            }
+
+            @media (max-width: 750px) {
+                .sidebar {
+                    display: none;
+                }
+            }
+
+            .sidebar ul {
+                list-style: none;
+            }
+
+            .sidebar a {
+                display: block;
+                padding-left: 1rem;
+                text-decoration: none;
+                color: var(--side-content-color);
+                transition:
+                    background 0.2s,
+                    color 0.2s;
+            }
+
+            .sidebar a:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: #fff;
+            }
+
+            .content {
+                margin: 5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            {% block header %}
+            <p
+                style="
+                    text-align: center;
+                    margin: 0;
+                    padding-bottom: 1rem;
+                    padding-top: 0.5rem;
+                "
+            >
+                <strong>Mantra Report</strong>
+            </p>
+            {% endblock %}
+        </header>
+
+        <div class="full-width">
+            <div class="sidebar">
+                {% block nav %} {% from 'nav.html' import nav_item %} {{
+                nav_item(nav, path_to_root) }} {% endblock %}
+            </div>
+            <main class="content">{% block content %}{% endblock %}</main>
+        </div>
+    </body>
+</html>

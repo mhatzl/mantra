@@ -1,0 +1,38 @@
+{
+    test_runs: [{
+        name: "test-run-1",
+        utc_date: "2026-02-19T11:16:58Z",
+        nr_of_test_cases: 3,
+        test_cases: [{
+            name: "failed-case",
+            state: "failed",
+            verified_reqs: [
+                "req-1.sub-1.sub-sub-1",
+                "req-2.sub-1.sub-sub-1",
+                "req-4",
+            ]
+        },{
+            name: "verifying-case",
+            state: "passed",
+            verified_reqs: [
+                "req-1",
+                "req-2",
+                "req-2.sub-2",
+                "req-3",
+                "req-3.sub-2",
+                "req-4.sub-1",
+                "req-5.sub-1",
+                "req-6",
+                "req-6.sub-2",
+                "req-7.sub-2",
+            ]
+        },{
+            name: "skipped-case",
+            state: "skipped",
+            verified_reqs: [
+                "req-6.sub-1",
+                "req-7.sub-1",
+            ]
+        }]
+    }]
+}

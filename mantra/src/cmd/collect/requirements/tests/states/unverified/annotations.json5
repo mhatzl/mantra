@@ -1,0 +1,25 @@
+{
+    files: [{
+        filepath: "test.rs",
+        file_hash: "<place hash here>",
+        annotations: {
+            traces: [{
+                ids: ["req-satisfy", "req-satisfy-verify", "req-mult-satisfy"],
+                line: 10,
+                kind: "satisfies",
+            },{
+                ids: ["req-verify"],
+                line: 20,
+                kind: "verifies",
+            },{
+                ids: ["req-satisfy-verify", "req-mult-satisfy"],
+                line: 110,
+                kind: "satisfies",
+            },{
+                ids: ["req-satisfy-verify"],
+                line: 120,
+                kind: "verifies",
+            }]
+        }
+    }]
+}

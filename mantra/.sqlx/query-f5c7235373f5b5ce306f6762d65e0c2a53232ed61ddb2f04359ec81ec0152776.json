@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "select max(nr) as \"nr!\" from Collections",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr!",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "f5c7235373f5b5ce306f6762d65e0c2a53232ed61ddb2f04359ec81ec0152776"
+}

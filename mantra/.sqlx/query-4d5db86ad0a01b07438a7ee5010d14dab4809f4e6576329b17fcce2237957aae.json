@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select author\n                from ReviewRevisionAuthors\n                where product_id = $1 and review_name = $2\n                and review_date = $3 and revision = $4\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "author",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4d5db86ad0a01b07438a7ee5010d14dab4809f4e6576329b17fcce2237957aae"
+}

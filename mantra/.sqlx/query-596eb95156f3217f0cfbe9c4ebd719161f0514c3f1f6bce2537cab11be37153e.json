@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select distinct\n            dt.req_id,\n            rs.state,\n            case\n                when exists (\n                    select id\n                    from OptionalRequirements o\n                    where o.product_id = $1\n                    and o.id = dt.req_id\n                ) then true\n                else false\n            end as \"optional!:bool\",\n            dt.filepath,\n            dt.file_hash,\n            dt.line,\n            t.kind\n        from\n            TraceCoveragePerTestCases tc,\n            DirectProductReqTraces dt,\n            Traces t,\n            RequirementVerificationStates rs\n        where tc.product_id = $1 and dt.product_id = $1\n        and rs.product_id = $1\n        and tc.test_run_name = $2 and tc.test_run_date = $3\n        and tc.test_case_name = $4\n        and tc.filepath = dt.filepath and tc.file_hash = dt.file_hash\n        and tc.traced_line = dt.line and dt.file_hash = t.file_hash\n        and dt.line = t.line\n        and rs.id = dt.req_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Null"
+      },
+      {
+        "name": "filepath",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_hash",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "line",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "kind",
+        "ordinal": 6,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "596eb95156f3217f0cfbe9c4ebd719161f0514c3f1f6bce2537cab11be37153e"
+}

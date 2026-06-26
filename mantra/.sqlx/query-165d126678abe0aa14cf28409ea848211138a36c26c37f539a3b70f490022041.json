@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            select * from TestRunLineCoverage\n                            where\n                                product_id = $1 and test_run_name = $2\n                                and test_run_date = $3 and cov_filepath = $4\n                                and cov_line = $5\n                            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "cov_filepath",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "cov_file_hash",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "cov_line",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "hits",
+        "ordinal": 7,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "165d126678abe0aa14cf28409ea848211138a36c26c37f539a3b70f490022041"
+}

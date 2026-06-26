@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select distinct\n            tr.product_id,\n            tr.test_run_name,\n            tr.test_run_date,\n            ts.state as \"state!:i64\"\n        from\n            TracesCoveredByTestRuns tr,\n            DirectProductReqTraces dt,\n            TestRunStates ts\n        where tr.product_id = $1 and dt.product_id = $1 and ts.product_id = $1\n        and tr.filepath = dt.filepath and tr.file_hash = dt.file_hash\n        and tr.traced_line = dt.line and dt.req_id = $2\n        and tr.test_run_name = ts.test_run_name\n        and tr.test_run_date = ts.test_run_date\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 3,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "06a18d965792ffca2c9cb97e40c29aae570b04d9916e0fe14b181f2bce7f97b6"
+}

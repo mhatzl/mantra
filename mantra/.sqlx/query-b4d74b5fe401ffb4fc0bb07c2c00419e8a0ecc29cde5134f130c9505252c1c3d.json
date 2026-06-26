@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select id, data_filepath\n            from Requirements\n            where last_collect_nr = $1 and product_id = $2\n            and id = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "data_filepath",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b4d74b5fe401ffb4fc0bb07c2c00419e8a0ecc29cde5134f130c9505252c1c3d"
+}

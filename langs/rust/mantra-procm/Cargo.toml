@@ -1,0 +1,13 @@
+[package]
+name = "mantra-procm"
+description = "Defines procedural macros used by `mantra-macros`."
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+# quote = "1.0"
+
+[lib]
+proc-macro = true

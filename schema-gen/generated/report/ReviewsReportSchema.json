@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReviewsReportSchema",
+  "type": "object",
+  "required": [
+    "product",
+    "reviews"
+  ],
+  "properties": {
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "reviews": {
+      "$ref": "#/definitions/ReviewsOverview"
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "Aggregated": {
+      "type": "object",
+      "required": [
+        "cnt",
+        "percentage"
+      ],
+      "properties": {
+        "cnt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "percentage": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ReviewReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/ReviewState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
+      ]
+    },
+    "ReviewsOverview": {
+      "type": "object",
+      "required": [
+        "obsolete",
+        "summary",
+        "valid"
+      ],
+      "properties": {
+        "obsolete": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReviewReference"
+          }
+        },
+        "summary": {
+          "$ref": "#/definitions/ReviewsSummary"
+        },
+        "valid": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ReviewReference"
+          }
+        }
+      }
+    },
+    "ReviewsSummary": {
+      "type": "object",
+      "required": [
+        "obsolete",
+        "total",
+        "valid"
+      ],
+      "properties": {
+        "obsolete": {
+          "$ref": "#/definitions/Aggregated"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "valid": {
+          "$ref": "#/definitions/Aggregated"
+        }
+      }
+    }
+  }
+}

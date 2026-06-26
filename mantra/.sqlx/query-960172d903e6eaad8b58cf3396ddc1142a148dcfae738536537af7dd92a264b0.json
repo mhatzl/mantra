@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select filepath from TestRunDataFilepaths\n                where last_collect_nr = $1 and product_id = $2\n                and test_run_name = $3 and test_run_date = $4\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "960172d903e6eaad8b58cf3396ddc1142a148dcfae738536537af7dd92a264b0"
+}

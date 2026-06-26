@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from ElementIdents\n                where product_id = $1 and last_collect_nr < $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "19ff1e0ef265ef74863facb51e08229a030f99878cac4b6127006442f3bbd591"
+}

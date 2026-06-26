@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            rs.product_id,\n            rs.id,\n            rs.state,\n            case when exists (\n                select id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.id = rs.id\n            ) then true\n            else false\n            end as \"optional!:bool\"\n        from RequirementVerificationStates rs\n        where rs.product_id = $1 and not exists (\n            select rh.parent_req_id\n            from RequirementHierarchies rh\n            where rh.child_product_id = rs.product_id\n            and rh.child_req_id = rs.id\n            and rh.parent_product_id = $1 -- child to other product is fine\n        )\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 3,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "dc4e44173a56dd60950db758ccbb5b3645df0eaa1dde125b15cb277346ed58ea"
+}

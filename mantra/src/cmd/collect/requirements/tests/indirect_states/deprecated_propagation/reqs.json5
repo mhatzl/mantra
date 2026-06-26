@@ -1,0 +1,38 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Deprecated First Requirement",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Deprecated)",
+        origin: "Deprecated state test",
+    },{
+        id: "req-1.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Deprecated)",
+        origin: "Deprecated state test",
+    },{
+        id: "req-1.sub-2",
+        title: "Second Sub-Requirement (Indirectly Deprecated)",
+        origin: "Deprecated state test",
+    },{
+        id: "req-2",
+        title: "Regular Requirement",
+        origin: "Deprecated state test",
+        deprecated: false,
+    },{
+        id: "req-2.sub-1",
+        title: "First Sub-Requirement (Directly Deprecated)",
+        origin: "Deprecated state test",
+        deprecated: true,
+    },{
+        id: "req-2.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Deprecated)",
+        origin: "Deprecated state test",
+    },{
+        id: "req-2.sub-2",
+        title: "Second Sub-Requirement",
+        origin: "Deprecated state test",
+    }]
+}

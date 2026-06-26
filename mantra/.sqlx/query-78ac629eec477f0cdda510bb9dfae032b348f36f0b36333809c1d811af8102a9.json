@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select base_origin_hash\n                from AnnotatedFileOrigins\n                where last_collect_nr = $1 and product_id = $2\n                and filepath = $3\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "base_origin_hash",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "78ac629eec477f0cdda510bb9dfae032b348f36f0b36333809c1d811af8102a9"
+}

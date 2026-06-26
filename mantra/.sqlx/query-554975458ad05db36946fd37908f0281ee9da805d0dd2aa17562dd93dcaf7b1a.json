@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into StatesOfRequirementsWithOnlyOptionalChildren (\n                last_collect_nr,\n                product_id,\n                id,\n                state\n            )\n            -- may contain duplicate differing state entries of requirements\n            with recursive StatesOfReqWithOnlyOptionalChildren (id, product_id, state) as (\n                select lr.id, lr.product_id, ds.state\n                from\n                    LeafRequirements lr,\n                    DirectRequirementVerificationStates ds\n                where lr.id = ds.id and lr.product_id = ds.product_id\n\n                union all\n\n                select\n                    r.id,\n                    r.product_id,\n                    case\n                        when ds.state = $3 or sor.state = $3 then $3\n                        when ds.state = $2 or (ds.state = $4 and sor.state = $2) then $2\n                        else ds.state\n                    end\n                from\n                    RequirementsWithOnlyOptionalChildren r,\n                    DirectRequirementVerificationStates ds,\n                    RequirementHierarchies rh,\n                    StatesOfReqWithOnlyOptionalChildren sor\n                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id\n                and r.id = ds.id and r.product_id = ds.product_id\n                and sor.id = rh.child_req_id and sor.product_id = rh.child_product_id\n            )\n            select $1, product_id, id, state\n            from StatesOfReqWithOnlyOptionalChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "554975458ad05db36946fd37908f0281ee9da805d0dd2aa17562dd93dcaf7b1a"
+}

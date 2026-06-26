@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from UsableNonLeafRequirements\n            where last_collect_nr != $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "0cbad21d8f08bc5b3e096d2d00a3c57a4ff1a3f4ca583acf1ba03b36eff61700"
+}

@@ -59,8 +59,8 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-[@HatzlManuel](https://twitter.com/HatzlManuel).
+reported to the community leaders responsible for enforcement on
+[Bluesky](https://bsky.app/profile/mhatzl.bsky.social).
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select name, utc_date from TestRuns\n                where product_id = $1 and last_collect_nr = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d71b6753bbade45fa25b163ca1ec617b661a8fefa801ae4e63a8061499de2629"
+}

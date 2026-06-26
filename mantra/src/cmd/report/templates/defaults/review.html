@@ -1,0 +1,268 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>{{ schema.name }}</h1>
+<h2>Metadata</h2>
+<ul>
+    <li>
+        <strong>State:</strong>
+        <span class="state-{{ schema.state }}">{{ schema.state }}</span>
+    </li>
+    <li><strong>Date: </strong> {{ schema.utc_date }}</li>
+    <li>
+        <strong>Authors:</strong> {% for author in schema.authors %}{{ author
+        }},{% endfor %}
+    </li>
+    <li>
+        <strong>Ignored Entries:</strong> {% if schema.ignored_entries %}{{
+        schema.ignored_entries.total }}{% else %}-{% endif %}
+    </li>
+</ul>
+
+<h2>Description</h2>
+{% if schema.description %} {{ schema.description }} {% else %}
+<p>No description set for this review.</p>
+{% endif %}
+
+<h2>Verified Requirements</h2>
+{% if schema.requirements %}
+<ul>
+    {% for rv in schema.requirements %}
+    <li>
+        <strong>Requirement:</strong>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(rv.req) }}.html"
+            >{{ rv.req.id }}</a
+        >
+
+        <p>{{ rv.comment}}</p>
+    </li>
+    {% endfor %}
+</ul>
+{% else %} None. {% endif %}
+
+<h2>Test Overrides</h2>
+{% if schema.test_run_overrides %} {% for tro in schema.test_run_overrides %}
+<h3>
+    Test Run:
+    <a href="{{ path_to_root }}/{{ test_run_url_path(tro.test_run) }}.html"
+        >{{ tro.test_run.name }}</a
+    >
+</h3>
+<h4>Test Case Overrides</h4>
+{% for tco in tro.test_cases %}
+<h5>
+    Test Case:
+    <a href="{{ path_to_root }}/{{ test_case_url_path(tco.test_case) }}.html"
+        >{{ tco.test_case.test_case_name }}</a
+    >
+</h5>
+<p><strong>State:</strong></p>
+{% if tco.state %}
+<ul>
+    <li>
+        <strong>New:</strong>
+        <span class="state-{{ tco.state.new }}">{{ tco.state.new }}</span>
+    </li>
+    <li>
+        <strong>Old:</strong>
+        <span class="state-{{ tco.state.old }}">{{ tco.state.old }}</span>
+    </li>
+    <li><strong>Comment:</strong> {{ tco.state.comment }}</li>
+</ul>
+{% else %}Unchanged{% endif %}
+<p><strong>Coverage Overrides:</strong></p>
+{% if tco.coverage %}
+<ul>
+    {% for file in tco.coverage %}
+    <li>{{ file.filepath }}</li>
+    <table>
+        <thead>
+            <tr>
+                <td>Line Nr.</td>
+                <td>New Hits</td>
+                <td>Old Hits</td>
+                <td>Comment</td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cl in file.lines %}
+            <tr>
+                <td>{{ cl.nr }}</td>
+                <td>
+                    {% if cl.new_hits %}{{ cl.new_hits }}{% else %}uncovered{%
+                    endif %}
+                </td>
+                <td>
+                    {% if cl.old_hits %}{{ cl.old_hits }}{% else %}uncovered{%
+                    endif %}
+                </td>
+                <td>{{ cl.comment }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+</ul>
+{% else %} None. {% endif %} {% endfor %}
+
+<h4>Coverage Overrides</h4>
+{% if tro.coverage %}
+<ul>
+    {% for file in tro.coverage %}
+    <li>{{ file.filepath }}</li>
+    <table>
+        <thead>
+            <tr>
+                <td>Line Nr.</td>
+                <td>New Hits</td>
+                <td>Old Hits</td>
+                <td>Comment</td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cl in file.lines %}
+            <tr>
+                <td>{{ cl.nr }}</td>
+                <td>
+                    {% if cl.new_hits %}{{ cl.new_hits }}{% else %}uncovered{%
+                    endif %}
+                </td>
+                <td>
+                    {% if cl.old_hits %}{{ cl.old_hits }}{% else %}uncovered{%
+                    endif %}
+                </td>
+                <td>{{ cl.comment }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+</ul>
+{% else %}
+<p>None.</p>
+{% endif %} {% endfor %} {% else %}
+<p>None.</p>
+{% endif %}
+
+<h2>Ignored Entries</h2>
+{% if schema.ignored_entries %}
+<h3>Requirements</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for req in schema.ignored_entries.requirements %}
+        <tr>
+            <td>{{ req.id }}</td>
+            <td>{{ req.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Test Case State Overrides</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Test Run Name</th>
+            <th>Test Run Date</th>
+            <th>Test Case Name</th>
+            <th>New State</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ov in schema.ignored_entries.test_case_state_overrides %}
+        <tr>
+            <td>{{ ov.test_run_name }}</td>
+            <td>{{ ov.test_run_date }}</td>
+            <td>{{ ov.test_case_name }}</td>
+            <td>{{ ov.state }}</td>
+            <td>{{ ov.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Test Case Line Coverage Overrides</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Test Run Name</th>
+            <th>Test Run Date</th>
+            <th>Test Case Name</th>
+            <th>Covered Filepath</th>
+            <th>Covered Line</th>
+            <th>New Hits</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ov in schema.ignored_entries.test_case_line_coverage_overrides %}
+        <tr>
+            <td>{{ ov.test_run_name }}</td>
+            <td>{{ ov.test_run_date }}</td>
+            <td>{{ ov.test_case_name }}</td>
+            <td>{{ ov.cov_filepath }}</td>
+            <td>{{ ov.cov_line }}</td>
+            <td>{%if ov.hits %}{{ ov.hits }}{% else %}uncovered{% endif %}</td>
+            <td>{{ ov.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Test Run Line Coverage Overrides</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Test Run Name</th>
+            <th>Test Run Date</th>
+            <th>Covered Filepath</th>
+            <th>Covered Line</th>
+            <th>New Hits</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ov in schema.ignored_entries.test_run_line_coverage_overrides %}
+        <tr>
+            <td>{{ ov.test_run_name }}</td>
+            <td>{{ ov.test_run_date }}</td>
+            <td>{{ ov.cov_filepath }}</td>
+            <td>{{ ov.cov_line }}</td>
+            <td>{%if ov.hits %}{{ ov.hits }}{% else %}uncovered{% endif %}</td>
+            <td>{{ ov.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %} None. {% endif %}
+
+<h2>Revisions</h2>
+{% if schema.revisions %}
+<table>
+    <thead>
+        <tr>
+            <th>Nr.</th>
+            <th>Authors</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for revision in schema.revisions %}
+        <tr>
+            <td>{{ revision.nr }}</td>
+            <td>
+                {% for author in revision.authors %}{{ author }},{% endfor %}
+            </td>
+            <td>{{ revision.comment }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>-</p>
+{% endif %} {% endblock %}

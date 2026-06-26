@@ -1,0 +1,114 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "First Requirement (Directly Verified + Indirectly Failed)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Failed)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-1.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Directly Failed)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-1.sub-2",
+        title: "Second Sub-Requirement (Optional + Unverified)",
+        origin: "Indirect-Direct requirement test",
+        optional: true,
+    },{
+        id: "req-2",
+        title: "Regular Requirement (Directly Verified + Indirectly Failed)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-2.sub-1",
+        title: "First Sub-Requirement (Indirectly Failed)",
+        origin: "Indirect-Direct requirement test",
+        optional: true,
+    },{
+        id: "req-2.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Indirectly Optional + Directly Failed)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-2.sub-2",
+        title: "Second Sub-Requirement (Directly Verified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-3",
+        title: "Third Requirement (Directly Verified + Indirectly Unverified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-3.sub-1",
+        title: "First Sub-Requirement (Unverified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-3.sub-2",
+        title: "Second Sub-Requirement (Optional + Verified)",
+        origin: "Indirect-Direct requirement test",
+        optional: true,
+    },{
+        id: "req-4",
+        title: "Fourth Requirement (Directly Failed + Indirectly Verified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-4.sub-1",
+        title: "First Sub-Requirement (Directly Verified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-4.sub-2",
+        title: "Second Sub-Requirement (Optional + Unverified)",
+        origin: "Indirect-Direct requirement test",
+        optional: true
+    },{
+        id: "req-5",
+        title: "Fifth Requirement (Indirectly Verified)",
+        origin: "Indirect-Direct requirement test",
+        optional: true
+    },{
+        id: "req-5.sub-1",
+        title: "First Sub-Requirement (Directly Verified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-5.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Unverified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-5.sub-2",
+        title: "Second Sub-Requirement (Unverified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-6",
+        title: "Sixth Requirement (Directly Verified)",
+        origin: "Indirect-Direct requirement test",
+        optional: true
+    },{
+        id: "req-6.sub-1",
+        title: "First Sub-Requirement (Directly Skipped)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-6.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Unverified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-6.sub-2",
+        title: "Second Sub-Requirement (Verified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-7",
+        title: "Sixth Requirement (Verified)",
+        origin: "Indirect-Direct requirement test",
+        optional: true
+    },{
+        id: "req-7.sub-1",
+        title: "First Sub-Requirement (Directly Skipped)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-7.sub-1.sub-sub-1",
+        title: "First Sub-Sub-Requirement (Unverified)",
+        origin: "Indirect-Direct requirement test",
+    },{
+        id: "req-7.sub-2",
+        title: "Second Sub-Requirement (Verified)",
+        origin: "Indirect-Direct requirement test",
+    }]
+}

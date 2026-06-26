@@ -1,0 +1,32 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Failed First Requirement",
+        origin: "Failed state test",
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Not Failed)",
+        origin: "Failed state test",
+    },{
+        id: "req-2",
+        title: "Second Requirement (Indirectly Failed)",
+        origin: "Failed state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Failed Second Sub-Requirement",
+        origin: "Failed state test",
+    },{
+        id: "req-skipped",
+        title: "Failed + Skipped Requirement",
+        origin: "Failed state test",
+    },{
+        id: "req-verified",
+        title: "Failed + Verified Requirement",
+        origin: "Failed state test",
+    },{
+        id: "req-manual",
+        title: "Failed + Manually Reviewed Requirement",
+        origin: "Failed state test",
+        manual_verification: true,
+    }]
+}

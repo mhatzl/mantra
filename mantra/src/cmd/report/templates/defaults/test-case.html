@@ -1,0 +1,128 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>{{ schema.name }}</h1>
+<h2>Metadata</h2>
+<ul>
+    <li>
+        <strong>State:</strong>
+        <span class="state-{{ schema.state }}">{{ schema.state }}</span>
+    </li>
+    <li>
+        <strong>Test Run:</strong>
+        <a
+            href="{{ path_to_root }}/{{ test_run_url_path(schema.test_run) }}.html"
+            >{{ schema.test_run.name }}</a
+        >
+    </li>
+    <li>
+        <strong>Date:</strong> {%if schema.utc_date %}{{ schema.utc_date }}{%
+        else %}-{% endif %}
+    </li>
+    <li><strong>Duration:</strong> {{ schema.duration_sec }}s</li>
+    <li>
+        <strong>Location:</strong> {% if schema.location %}{{
+        schema.location.filepath }}#{{ schema.location.line }}{% else
+        %}Unknown{% endif %}
+    </li>
+</ul>
+
+<h2>Description</h2>
+{% if schema.description %} {{ schema.description }} {% else %} No description
+set for this test case. {% endif %}
+
+<h2>Related Requirements</h2>
+{% if schema.related_reqs %}
+<ul>
+    {% for req in schema.related_reqs %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req.req) }}.html"
+            >{{ req.req.id }}</a
+        ><span class="state-badge state-{{ req.req.state }}"
+            >{{ req.req.state }}</span
+        >{% if req.req.optional %}<span class="optional-badge">optional</span>{%
+        endif %} {% if req.kind.traced %} covered by traces
+        <ul>
+            {% for trace in req.kind.traced %}
+            <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+            {% endfor %}
+        </ul>
+        {% else %} Directly Verified {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %} No related requirements found. {% endif %}
+
+<h2>Coverage</h2>
+{% if schema.coverage %}
+<h3>Summary</h3>
+<h4>Lines</h4>
+<ul>
+    <li><strong>Total:</strong> {{ schema.coverage.summary.lines.total }}</li>
+    <li>
+        <strong>Covered:</strong> {{ schema.coverage.summary.lines.covered.cnt
+        }} ({{ schema.coverage.summary.lines.covered.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Excluded:</strong> {{ schema.coverage.summary.lines.excluded.cnt
+        }} ({{ schema.coverage.summary.lines.excluded.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Overridden Covered:</strong> {{
+        schema.coverage.summary.lines.overridden_covered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_covered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Overridden Uncovered:</strong> {{
+        schema.coverage.summary.lines.overridden_uncovered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_uncovered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Uncovered:</strong> {{
+        schema.coverage.summary.lines.uncovered.cnt }} ({{
+        schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h3>Covered Traces</h3>
+{% if schema.coverage.covered_traces %}
+<ul>
+    {% for trace in schema.coverage.covered_traces %}
+    <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+    {% endfor %}
+</ul>
+
+<h3>Covered Files</h3>
+<ul>
+    {% for file in schema.coverage.covered_files %}
+    <li>{{ file.filepath }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No traces covered</p>
+{% endif %} {% else %} No coverage data available. {% endif %}
+
+<h2>Review Overrides</h2>
+{% if schema.overridden_by %}
+<ul>
+    {% for review in schema.overridden_by %}
+    <li>
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+            >{{ review.name }}</a
+        ><span class="state-badge state-{{ review.state }}"
+            >{{ review.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No results overridden by reviews.</p>
+{% endif %}
+
+<h2>Log Output</h2>
+{% if schema.logs %} {% for log in schema.logs %}
+<details>
+    <summary><strong>{{ log.source }}</strong></summary>
+    <pre><code>{{ log.content }}</code></pre>
+</details>
+{% endfor %} {% else %} No logs captured. {% endif %} {% endblock %}

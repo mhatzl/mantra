@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select state, count(test_run_name) as \"cnt!:i64\"\n        from ResolvedTestCaseStates\n        where product_id = $1\n        group by state\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "state",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "cnt!:i64",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "af2f0a75aa08caea6317a38471d0946282b72c4da3d860b3617eddde32df1f6f"
+}

@@ -1,0 +1,40 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>Summary</h1>
+<ul>
+    <li><strong>Total:</strong> {{ schema.reviews.summary.total }}</li>
+    <li>
+        <strong>Obsolete:</strong> {{ schema.reviews.summary.obsolete.cnt }} ({{
+        schema.reviews.summary.obsolete.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Valid:</strong> {{ schema.reviews.summary.valid.cnt }} ({{
+        schema.reviews.summary.valid.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h1>Obsolete Reviews</h1>
+<ul>
+    {% for review in schema.reviews.obsolete %}
+    <li>
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+            >{{ review.name }}</a
+        ><span class="state-badge state-{{ review.state }}"
+            >{{ review.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h1>Valid Reviews</h1>
+<ul>
+    {% for review in schema.reviews.valid %}
+    <li>
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+            >{{ review.name }}</a
+        ><span class="state-badge state-{{ review.state }}"
+            >{{ review.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

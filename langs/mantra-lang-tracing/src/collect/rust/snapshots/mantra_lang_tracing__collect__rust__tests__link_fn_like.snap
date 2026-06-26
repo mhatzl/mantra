@@ -1,0 +1,38 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        fn foo() {\n            link_req!(\"ID1.link\" => {\n                // some code...\n            })\n        }\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1.link",
+      ],
+      line: 3,
+      related_code: Some(CodeBlock(
+        kind: other,
+        span: LineSpan(
+          start: 3,
+          end: 5,
+        ),
+        content_hash: Some("891c26833a6813f487b4f8d6ae4744a79723ae3fb6b6c4c7c11c89525b89d39c"),
+      )),
+      kind: links,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 2,
+      span: LineSpan(
+        start: 2,
+        end: 6,
+      ),
+      kind: function,
+      content_hash: Some("5c566de912f4d36e1b62e2b2843f2be84abefa377f87229b05a9fec86b308eeb"),
+    ),
+  ],
+  coverage_excludes: [],
+)

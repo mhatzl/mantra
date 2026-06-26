@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select filepath\n            from AnnotatedDataSources\n            where last_collect_nr = $1 and product_id = $2\n            and filepath = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "filepath",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "886d7d7396c85833f9bfdb8737288a493a812881ed9711169402323fc4c99949"
+}

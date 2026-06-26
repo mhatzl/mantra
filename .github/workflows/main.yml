@@ -1,0 +1,48 @@
+name: testcov
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  format:
+    name: Check Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run cargo fmt
+        run: cargo fmt -- --check
+
+  # lint:
+  #   name: Run Linter (clippy)
+  #   runs-on: ubuntu-latest
+  #   # [req:qa.sustain]
+  #   needs: format
+
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #   - name: Run linter
+  #     run: cargo clippy -- -D warnings
+
+  test:
+    name: Run Tests and Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: taiki-e/install-action@nextest
+      - uses: taiki-e/install-action@just
+      - uses: taiki-e/install-action@grcov
+      - name: Run tests
+        run: just testcov
+      - name: Collect data
+        run: just collect
+      - name: Generate report
+        run: just report

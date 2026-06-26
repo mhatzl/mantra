@@ -1,0 +1,167 @@
+{% extends "base-layout.html" %} {% block content %}
+<h1>Summary</h1>
+<h2>Test Cases</h2>
+<ul>
+    <li><strong>Total:</strong> {{ schema.test_cases_summary.total }}</li>
+    <li>
+        <strong>Passed:</strong> {{ schema.test_cases_summary.passed.cnt }} ({{
+        schema.test_cases_summary.passed.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Failed:</strong> {{ schema.test_cases_summary.failed.cnt }} ({{
+        schema.test_cases_summary.failed.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Skipped:</strong> {{ schema.test_cases_summary.skipped.cnt }}
+        ({{ schema.test_cases_summary.skipped.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Unknown:</strong> {{ schema.test_cases_summary.unknown.cnt }}
+        ({{ schema.test_cases_summary.unknown.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Obsolete:</strong> {{ schema.test_cases_summary.obsolete.cnt }}
+        ({{ schema.test_cases_summary.obsolete.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h2>Test Runs</h2>
+<ul>
+    <li><strong>Total:</strong> {{ schema.test_runs.summary.total }}</li>
+    <li>
+        <strong>Passed:</strong> {{ schema.test_runs.summary.passed.cnt }} ({{
+        schema.test_runs.summary.passed.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Failed:</strong> {{ schema.test_runs.summary.failed.cnt }} ({{
+        schema.test_runs.summary.failed.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Skipped:</strong> {{ schema.test_runs.summary.skipped.cnt }} ({{
+        schema.test_runs.summary.skipped.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Unknown:</strong> {{ schema.test_runs.summary.unknown.cnt }} ({{
+        schema.test_runs.summary.unknown.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Obsolete:</strong> {{ schema.test_runs.summary.obsolete.cnt }}
+        ({{ schema.test_runs.summary.obsolete.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h2>Coverage</h2>
+<h3>Lines</h3>
+<ul>
+    <li><strong>Total:</strong> {{ schema.coverage.summary.lines.total }}</li>
+    <li>
+        <strong>Covered:</strong> {{ schema.coverage.summary.lines.covered.cnt
+        }} ({{ schema.coverage.summary.lines.covered.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Excluded:</strong> {{ schema.coverage.summary.lines.excluded.cnt
+        }} ({{ schema.coverage.summary.lines.excluded.percentage | round(2) }}%)
+    </li>
+    <li>
+        <strong>Overridden Covered:</strong> {{
+        schema.coverage.summary.lines.overridden_covered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_covered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Overridden Uncovered:</strong> {{
+        schema.coverage.summary.lines.overridden_uncovered.cnt }} ({{
+        schema.coverage.summary.lines.overridden_uncovered.percentage | round(2)
+        }}%)
+    </li>
+    <li>
+        <strong>Uncovered:</strong> {{
+        schema.coverage.summary.lines.uncovered.cnt }} ({{
+        schema.coverage.summary.lines.uncovered.percentage | round(2) }}%)
+    </li>
+</ul>
+
+<h1>Test Runs</h1>
+<h2>Failed Test Runs</h2>
+<ul>
+    {% for test_run in schema.test_runs.failed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.name }}</a
+        ><span class="state-badge state-{{ test_run.state }}"
+            >{{ test_run.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Skipped Test Runs</h2>
+<ul>
+    {% for test_run in schema.test_runs.skipped %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.name }}</a
+        ><span class="state-badge state-{{ test_run.state }}"
+            >{{ test_run.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Unknown Test Runs</h2>
+<ul>
+    {% for test_run in schema.test_runs.unknown %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.name }}</a
+        ><span class="state-badge state-{{ test_run.state }}"
+            >{{ test_run.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Obsolete Test Runs</h2>
+<ul>
+    {% for test_run in schema.test_runs.obsolete %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.name }}</a
+        ><span class="state-badge state-{{ test_run.state }}"
+            >{{ test_run.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Passed Test Runs</h2>
+<ul>
+    {% for test_run in schema.test_runs.passed %}
+    <li>
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+            >{{ test_run.name }}</a
+        ><span class="state-badge state-{{ test_run.state }}"
+            >{{ test_run.state }}</span
+        >
+    </li>
+    {% endfor %}
+</ul>
+
+<h1>Coverage</h1>
+<h2>Covered Traces</h2>
+{% if schema.coverage.covered_traces %}
+<ul>
+    {% for trace in schema.coverage.covered_traces %}
+    <li>{{ trace.filepath }}#{{ trace.line }} ({{ trace.kind }})</li>
+    {% endfor %}
+</ul>
+
+<h2>Covered Files</h2>
+<ul>
+    {% for file in schema.coverage.covered_files %}
+    <li>{{ file.filepath }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No traces covered</p>
+{% endif %} {% endblock %}

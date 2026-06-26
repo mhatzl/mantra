@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select name, utc_date, data_filepath\n            from Reviews\n            where last_collect_nr = $1 and product_id = $2\n            and name = $3 and utc_date = $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "data_filepath",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3cdbc6752a0c66edd679932d1c536698112ab5110e2e923ba67e76a6fc5997eb"
+}

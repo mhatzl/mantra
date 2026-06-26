@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Requirements (\n                last_collect_nr,\n                id,\n                product_id,\n                manual_verification,\n                deprecated,\n                exclude,\n                optional,\n                title,\n                base_origin_hash,\n                origin_hash,\n                description_hash,\n                data_hash,\n                data_filepath\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                $11,\n                $12,\n                $13\n            )\n            on conflict (id, product_id)\n            do update set\n                last_collect_nr = excluded.last_collect_nr,\n                manual_verification = excluded.manual_verification,\n                deprecated = excluded.deprecated,\n                exclude = excluded.exclude,\n                optional = excluded.optional,\n                title = excluded.title,\n                base_origin_hash = excluded.base_origin_hash,\n                origin_hash = excluded.origin_hash,\n                description_hash = excluded.description_hash,\n                data_hash = excluded.data_hash,\n                data_filepath = excluded.data_filepath\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "725dc580e95b53fd34ce5df098418af120d7569fa5f2160bfb571326e9dcc520"
+}

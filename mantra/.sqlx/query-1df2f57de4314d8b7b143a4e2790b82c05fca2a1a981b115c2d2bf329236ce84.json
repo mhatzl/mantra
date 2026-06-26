@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into LeafRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select last_collect_nr, product_id, id\n            from Requirements\n            where last_collect_nr = $1 and product_id = $2\n            and id not in (\n                select parent_req_id\n                from RequirementHierarchies\n                where parent_product_id = $2\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "1df2f57de4314d8b7b143a4e2790b82c05fca2a1a981b115c2d2bf329236ce84"
+}

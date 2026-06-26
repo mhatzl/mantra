@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from ReviewRevisions\n                where product_id = $1 and last_collect_nr < $2\n                and review_name = $3 and review_date = $4\n\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "ef406417a91e2214d0da9eb68acd58e8adbc10c25700b363d47c874022a8793a"
+}

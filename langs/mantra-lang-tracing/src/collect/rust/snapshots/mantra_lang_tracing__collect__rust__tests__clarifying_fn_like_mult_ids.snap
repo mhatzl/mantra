@@ -1,0 +1,39 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        fn foo() {\n            clarify_req!(\"ID1\", \"ID2\" => {\n                // some code...\n            })\n        }\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        "ID1",
+        "ID2",
+      ],
+      line: 3,
+      related_code: Some(CodeBlock(
+        kind: other,
+        span: LineSpan(
+          start: 3,
+          end: 5,
+        ),
+        content_hash: Some("0394006e441c0db8782a03792170664ff10d8ee9435ea233551e8280e4ec9eab"),
+      )),
+      kind: clarifies,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 2,
+      span: LineSpan(
+        start: 2,
+        end: 6,
+      ),
+      kind: function,
+      content_hash: Some("47403715781e1fd49a726b095028630d40f1ffb8574fcb153dd76b6cc8d61a08"),
+    ),
+  ],
+  coverage_excludes: [],
+)

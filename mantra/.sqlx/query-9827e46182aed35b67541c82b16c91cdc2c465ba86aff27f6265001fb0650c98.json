@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            tr.nr_of_test_cases,\n            tr.duration_sec,\n            gt.content as \"description?\",\n            og.content as \"origin?\",\n            bo.content as \"base_origin?\"\n        from TestRuns tr\n        left join GeneralTexts gt on tr.description_hash = gt.hash\n        left join GeneralJson og on tr.origin_hash = og.hash\n        left join GeneralJson bo on tr.base_origin_hash = bo.hash\n        where tr.product_id = $1 and tr.name = $2\n        and tr.utc_date = $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr_of_test_cases",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "duration_sec",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "description?",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "origin?",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "base_origin?",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9827e46182aed35b67541c82b16c91cdc2c465ba86aff27f6265001fb0650c98"
+}

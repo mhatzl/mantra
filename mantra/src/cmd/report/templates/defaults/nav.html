@@ -1,0 +1,71 @@
+{% macro nav_item(nav, path_to_root) -%}
+<nav>
+    <a href="{{ path_to_root }}/index.html">Products</a>
+    <ul>
+        {% for p in nav.products %}
+        <li>
+            <a
+                href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}.html"
+                >{{ p.product.id }}</a
+            >
+            <ul>
+                <li>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/evidence-matrix.html"
+                        >Evidence Matrix</a
+                    >
+                </li>
+                <li>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/requirements.html"
+                        >Requirements</a
+                    >
+                    <ul>
+                        {% for req in p.root_requirements %}
+                        <li>
+                            <a
+                                href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+                                >{{ req.id }}</a
+                            >
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/test-runs.html"
+                        >Test Runs</a
+                    >
+                    <ul>
+                        {% for test_run in p.root_test_runs %}
+                        <li>
+                            <a
+                                href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+                                >{{ test_run.name }}</a
+                            >
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li>
+                    <a
+                        href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/reviews.html"
+                        >Reviews</a
+                    >
+                    <ul>
+                        {% for review in p.reviews %}
+                        <li>
+                            <a
+                                href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+                                >{{ review.name }}</a
+                            >
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+{%- endmacro %}

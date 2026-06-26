@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select\n                rd.product_id,\n                rd.id as req_id\n            from RequirementDescendants rd\n            where rd.product_id = rd.descendant_product_id and rd.id = rd.descendant_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "req_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "74446e9106edfe993fca18c8289456a113ddb1d8c2f510ac816fc7f4379a1ee5"
+}

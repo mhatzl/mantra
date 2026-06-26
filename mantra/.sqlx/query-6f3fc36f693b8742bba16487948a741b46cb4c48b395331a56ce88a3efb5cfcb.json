@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into RequirementsWithSkippedNonOptionalChildren (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with recursive ReqsWithSkippedNonOptionalChildren (id, product_id) as (\n                select r.id, r.product_id\n                from UsableNonLeafRequirements r\n                where exists (\n                    select rh.child_req_id\n                    from\n                        RequirementHierarchies rh,\n                        DirectRequirementVerificationStates ds,\n                        LeafRequirements lr\n                    where r.id = rh.parent_req_id\n                    and r.product_id = rh.parent_product_id\n                    and rh.child_req_id = lr.id\n                    and rh.child_product_id = lr.product_id\n                    and lr.id = ds.id and lr.product_id = ds.product_id\n                    and ds.state = $2\n                    and not exists (\n                        select op.id\n                        from OptionalRequirements op\n                        where op.id = rh.child_req_id\n                        and op.product_id = rh.child_product_id\n                    )\n                )\n\n                union all\n\n                select r.id, r.product_id\n                from\n                    UsableNonLeafRequirements r,\n                    ReqsWithSkippedNonOptionalChildren sc,\n                    RequirementHierarchies rh\n                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id\n                and sc.id = rh.child_req_id and sc.product_id = rh.child_product_id\n                and not exists (\n                    select op.id\n                    from OptionalRequirements op\n                    where op.id = rh.child_req_id\n                    and op.product_id = rh.child_product_id\n                )\n            )\n            select $1, r.product_id, r.id\n            from ReqsWithSkippedNonOptionalChildren r\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6f3fc36f693b8742bba16487948a741b46cb4c48b395331a56ce88a3efb5cfcb"
+}

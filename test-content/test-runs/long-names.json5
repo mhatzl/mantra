@@ -1,0 +1,11 @@
+{
+    test_runs: [{
+        name: "this-is-a-test-run-name-that-is-intentionally-too-long-for-a-filename-on-some-operating-systems-which-would-cause-an-error-when-generating-a-report-because-every-test-run-has-its-own-report-file-with-the-date-and-name-used-as-filename-and-test-tooling-might-generate-too-long-test-names-so-mantra-converts-those-cases-to-a-base16-encoded-string-of-the-sha256-hash-of-the-intended-filename",
+        utc_date: "2026-05-17T11:16:58Z",
+        nr_of_test_cases: 1,
+        test_cases: [{
+            name: "this-is-a-test-case-name-that-is-intentionally-too-long-for-a-filename-on-some-operating-systems-which-would-cause-an-error-when-generating-a-report-because-every-test-case-has-its-own-report-file-with-the-name-used-as-filename-and-test-tooling-might-generate-too-long-test-names-so-mantra-converts-those-cases-to-a-base16-encoded-string-of-the-sha256-hash-of-the-intended-filename",
+            state: "passed",
+        }],
+    }]
+}

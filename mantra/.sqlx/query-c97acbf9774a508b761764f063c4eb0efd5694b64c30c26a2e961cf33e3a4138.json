@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into OptionalRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with MarkedOptional(product_id, id) as (\n                select product_id, id\n                from Requirements\n                where optional = true\n                and last_collect_nr = $1\n                and product_id = $2\n            ),\n            ParentMarkedOptional(product_id, id) as (\n                select rd.descendant_product_id, rd.descendant_id\n                from RequirementDescendants rd, MarkedOptional md\n                where rd.product_id = md.product_id and rd.id = md.id\n            )\n            select $1 as last_collect_nr, product_id, id\n            from MarkedOptional\n            union all\n            select $1 as last_collect_nr, product_id, id\n            from ParentMarkedOptional\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c97acbf9774a508b761764f063c4eb0efd5694b64c30c26a2e961cf33e3a4138"
+}

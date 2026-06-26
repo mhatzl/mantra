@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into IgnoredReviewEntries (\n                    last_collect_nr,\n                    product_id,\n                    review_name,\n                    review_date,\n                    entry_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5\n                )\n                on conflict (product_id, review_name, review_date, entry_hash)\n                do update set\n                    last_collect_nr = excluded.last_collect_nr\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "cb8a8e8431a92ae471394b34bfab2b516ba4c7c11a0d6436be98dae48d2e10ec"
+}

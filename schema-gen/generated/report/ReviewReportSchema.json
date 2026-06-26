@@ -1,0 +1,655 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReviewReportSchema",
+  "type": "object",
+  "required": [
+    "authors",
+    "name",
+    "product",
+    "state",
+    "utc_date"
+  ],
+  "properties": {
+    "authors": {
+      "description": "The authors that were part of the review. [req(\"review.authors\")]",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_origin": true,
+    "description": {
+      "description": "Optional description of the review. [req(\"review.description\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ignored_entries": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/IgnoredEntries"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "name": {
+      "description": "The name of the review. [req(\"review.id\")]",
+      "type": "string"
+    },
+    "origin": {
+      "description": "Optional origin of the review. [req(\"review.origin\")]"
+    },
+    "product": {
+      "$ref": "#/definitions/ProductMetadata"
+    },
+    "properties": {
+      "description": "Optional properties related to this review.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "requirements": {
+      "description": "List of requirements that are verified in this review. [req(\"review.verify_req\")]",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/VerifiedRequirement"
+      }
+    },
+    "revisions": {
+      "description": "Optional revisions for the review.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/Revision"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state": {
+      "$ref": "#/definitions/ReviewState"
+    },
+    "test_run_overrides": {
+      "description": "List of test run overrides added with this review. [req(\"review.test_case_state\", \"review.coverage\")]",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/ResolvedOverrideTestRun"
+      }
+    },
+    "utc_date": {
+      "description": "The UTC date and time the review was started. [req(\"review.id\")]",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "IgnoredEntries": {
+      "type": "object",
+      "required": [
+        "total"
+      ],
+      "properties": {
+        "requirements": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredManualRequirementVerification"
+          }
+        },
+        "test_case_line_coverage_overrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredTestCaseLineCoverageOverride"
+          }
+        },
+        "test_case_state_overrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredTestCaseStateOverride"
+          }
+        },
+        "test_run_line_coverage_overrides": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/IgnoredTestRunLineCoverageOverride"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "IgnoredManualRequirementVerification": {
+      "type": "object",
+      "required": [
+        "comment",
+        "id"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "IgnoredTestCaseLineCoverageOverride": {
+      "type": "object",
+      "required": [
+        "comment",
+        "cov_filepath",
+        "cov_line",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "cov_filepath": {
+          "type": "string"
+        },
+        "cov_line": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "IgnoredTestCaseStateOverride": {
+      "type": "object",
+      "required": [
+        "comment",
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestCaseState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "IgnoredTestRunLineCoverageOverride": {
+      "type": "object",
+      "required": [
+        "comment",
+        "cov_filepath",
+        "cov_line",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "cov_filepath": {
+          "type": "string"
+        },
+        "cov_line": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "ProductMetadata": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "base": {
+          "description": "Optional baseline of the product. e.g. git branch or commit hash\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "homepage": {
+          "description": "Optional link to the homepage of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "The product ID.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "license": {
+          "description": "Optional license of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "The name of the product.\n\nTODO: map to requirement",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Optional link to the repository of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Optional version of the product.\n\nTODO: map to requirement",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RequirementReference": {
+      "type": "object",
+      "required": [
+        "id",
+        "optional",
+        "product_id",
+        "state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/RequirementState"
+        }
+      }
+    },
+    "RequirementState": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "verified",
+        "skipped",
+        "unverified",
+        "deprecated",
+        "excluded"
+      ]
+    },
+    "ResolvedOverrideCoveredLineInfo": {
+      "type": "object",
+      "required": [
+        "comment",
+        "nr"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "new_hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "nr": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "old_hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        }
+      }
+    },
+    "ResolvedOverrideFileCoverage": {
+      "type": "object",
+      "required": [
+        "filepath",
+        "lines"
+      ],
+      "properties": {
+        "filepath": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideCoveredLineInfo"
+          }
+        }
+      }
+    },
+    "ResolvedOverrideTestCase": {
+      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\", \"review.coverage\")]",
+      "type": "object",
+      "required": [
+        "test_case"
+      ],
+      "properties": {
+        "coverage": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideFileCoverage"
+          }
+        },
+        "state": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ResolvedOverrideTestCaseState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "test_case": {
+          "description": "Name of the test case whose state and/or related code coverage is overridden in a review.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TestCaseReference"
+            }
+          ]
+        }
+      }
+    },
+    "ResolvedOverrideTestCaseState": {
+      "description": "Represents a test case state override in a review. [req(\"review.test_case_state\")]",
+      "type": "object",
+      "required": [
+        "comment",
+        "new",
+        "old"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "new": {
+          "$ref": "#/definitions/TestCaseState"
+        },
+        "old": {
+          "$ref": "#/definitions/TestCaseState"
+        }
+      }
+    },
+    "ResolvedOverrideTestRun": {
+      "type": "object",
+      "required": [
+        "test_run"
+      ],
+      "properties": {
+        "coverage": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideFileCoverage"
+          }
+        },
+        "test_cases": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/ResolvedOverrideTestCase"
+          }
+        },
+        "test_run": {
+          "$ref": "#/definitions/TestRunReference"
+        }
+      }
+    },
+    "ReviewState": {
+      "type": "string",
+      "enum": [
+        "obsolete",
+        "valid"
+      ]
+    },
+    "Revision": {
+      "type": "object",
+      "required": [
+        "authors",
+        "comment",
+        "nr"
+      ],
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": "string"
+        },
+        "nr": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TestCaseReference": {
+      "type": "object",
+      "required": [
+        "product_id",
+        "state",
+        "test_case_name",
+        "test_run_date",
+        "test_run_name"
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "test_case_name": {
+          "type": "string"
+        },
+        "test_run_date": {
+          "type": "string"
+        },
+        "test_run_name": {
+          "type": "string"
+        }
+      }
+    },
+    "TestCaseState": {
+      "description": "Possible states a test case may be in. [req(\"testcov.test_case.state\")]",
+      "oneOf": [
+        {
+          "description": "Test case failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test case passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test case was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test case is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "TestRunReference": {
+      "type": "object",
+      "required": [
+        "name",
+        "product_id",
+        "state",
+        "utc_date"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/TestState"
+        },
+        "utc_date": {
+          "type": "string"
+        }
+      }
+    },
+    "TestState": {
+      "description": "Possible states a test run or test case may be in.",
+      "oneOf": [
+        {
+          "description": "Test failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        },
+        {
+          "description": "Test is obsolete.\n\nObsolete tests must not be considered for coverage analysis.",
+          "type": "string",
+          "enum": [
+            "obsolete"
+          ]
+        }
+      ]
+    },
+    "VerifiedRequirement": {
+      "type": "object",
+      "required": [
+        "comment",
+        "req"
+      ],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        "req": {
+          "$ref": "#/definitions/RequirementReference"
+        }
+      }
+    }
+  }
+}

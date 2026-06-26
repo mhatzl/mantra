@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into TestCaseVerifiedRequirements (\n                        last_collect_nr,\n                        product_id,\n                        test_run_name,\n                        test_run_date,\n                        test_case_name,\n                        req_id\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6\n                    )\n                    on conflict (product_id, test_run_name, test_run_date, test_case_name, req_id)\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "207eafa45c3b6dd0626d7ccc7ebbfb731af68aeeea077e3798e9ff15cd0c8398"
+}

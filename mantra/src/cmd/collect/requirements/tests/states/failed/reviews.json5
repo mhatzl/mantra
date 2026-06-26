@@ -1,0 +1,11 @@
+{
+    reviews: [{
+        name: "First review",
+        utc_date: "2026-02-17T17:00utc-01",
+        authors: ["Manuel"],
+        requirements: [{
+            id: "req-manual",
+            comment: "Verifying the requirement"
+        }],
+    }]
+}

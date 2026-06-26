@@ -1,0 +1,27 @@
+{
+    test_runs: [{
+        name: "test-run-1",
+        utc_date: "2026-02-19T11:16:58Z",
+        nr_of_test_cases: 3,
+        test_cases: [{
+            name: "verifying-case",
+            state: "passed",
+            verified_reqs: [
+                "req-1.sub-1"
+            ],
+            covered_files: [{
+                filepath: "test.rs",
+                lines: [{
+                    nr: 10,
+                    hits: 1,
+                },{
+                    nr: 20,
+                    hits: 1,
+                },{
+                    nr: 120,
+                    hits: 1,
+                }]
+            }]
+        },]
+    }]
+}

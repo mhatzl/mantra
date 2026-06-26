@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RequirementSchema",
+  "description": "Defines the schema to exchange requirements related information. [req(\"exchange.requirements.schema\")]",
+  "type": "object",
+  "required": [
+    "requirements"
+  ],
+  "properties": {
+    "origin": {
+      "description": "Optional base origin of the requirements in this entry. e.g. specific branch or commit from a git repository"
+    },
+    "properties": {
+      "description": "Optional properties related to all requirements in this entry.\n\n**Note:** If a requirement sets a property key directly, the value set at the requirement will be taken.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "requirements": {
+      "description": "List of requirements.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Requirement"
+      }
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Requirement": {
+      "description": "This struct defines the information *mantra* stores about a requirement. [req(\"req\")]",
+      "type": "object",
+      "required": [
+        "id",
+        "origin",
+        "title"
+      ],
+      "properties": {
+        "deprecated": {
+          "description": "true: Marks the requirement to be deprecated.\n\n**Note:** All potential children of such a requirement are also marked as deprecated. [req(\"req.deprecated\")]",
+          "default": false,
+          "type": "boolean"
+        },
+        "description": {
+          "description": "Optional description of the requirement. [req(\"req.description\")]",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exclude": {
+          "description": "true: Instructs mantra to exclude the requirement for the product it is mapped to.\n\n**Note:** All potential children of such a requirement will also be excluded. [req(\"req.exclude\")]",
+          "default": false,
+          "type": "boolean"
+        },
+        "id": {
+          "description": "ID of the requirement. [req(\"req.id\")]",
+          "type": "string"
+        },
+        "manual_verification": {
+          "description": "true: Marks the requirement to require manual verification.\n\n**Note:** All potential children of such a requirement are also marked to require manual verification. [req(\"req.manual\")]",
+          "default": false,
+          "type": "boolean"
+        },
+        "optional": {
+          "description": "true: Instructs mantra to treat the requirement for the product as optional.\n\n**Note:** All potential children of such a requirement are also marked as optional. [req(\"req.optional\")]",
+          "default": false,
+          "type": "boolean"
+        },
+        "origin": {
+          "description": "Origin where the requirement is defined at. [req(\"req.origin\")]"
+        },
+        "parents": {
+          "description": "Optional list of parent requirement IDs. [req(\"req.hierarchy.mult_parents\")]",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/RequirementPk"
+          }
+        },
+        "properties": {
+          "description": "List of custom properties of a requirement. [req(\"req.properties\")]",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "title": {
+          "description": "Title of the requirement. [req(\"req.title\")]",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RequirementPk": {
+      "description": "This struct defines the primary key to identify requirements for a product.",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "description": "ID of the parent requirement. [req(\"req.id\")]",
+          "type": "string"
+        },
+        "product_id": {
+          "description": "ID of the product the parent requirement is defined in. If `None`, the parent is assumed to be defined in the same product as the child requirement.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

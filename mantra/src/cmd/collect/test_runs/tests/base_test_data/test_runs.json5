@@ -1,0 +1,24 @@
+{
+    test_runs: [{
+        name: "tr-1",
+        utc_date: "2026-03-28T13:00:00Z",
+        nr_of_test_cases: 0,
+        tests: [],
+        test_runs: [{
+            name: "tr-1.sub",
+            utc_date: "2026-03-28T13:00:00Z",
+            nr_of_test_cases: 0,
+            tests: [],
+        }]
+    },{
+        name: "tr-2",
+        utc_date: "2026-03-28T13:00:00Z",
+        nr_of_test_cases: 0,
+        tests: [],
+    },{
+        name: "tr-3",
+        utc_date: "2026-03-28T13:00:00Z",
+        nr_of_test_cases: 0,
+        tests: [],
+    }]
+}

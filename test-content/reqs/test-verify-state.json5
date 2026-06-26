@@ -1,0 +1,133 @@
+{
+    requirements: [{
+        id: "no_satisfy_but_verify",
+        title: "Collection of reqs with no satisfy but verify traces",
+        origin: "JSON schema",
+    },{
+        id: "no_satisfy_but_verify.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "no_satisfy_but_verify.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "no_satisfy_but_verify.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "satisfy_and_verify",
+        title: "Collection of reqs with satisfy and verify traces",
+        origin: "JSON schema",
+    },{
+        id: "satisfy_and_verify.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "satisfy_and_verify.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "satisfy_and_verify.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "no_verify_but_satisfy",
+        title: "Collection of reqs with no verify but satisfy traces",
+        origin: "JSON schema",
+    },{
+        id: "no_verify_but_satisfy.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "no_verify_but_satisfy.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "no_verify_but_satisfy.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test",
+        title: "Collection of reqs with explicit verifications from test cases",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.no_trace.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.no_trace.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.no_trace.skipped",
+        title: "Skipped State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.no_trace.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.traced.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.traced.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.traced.skipped",
+        title: "Skipped State",
+        origin: "JSON schema",
+    },{
+        id: "direct_verify_test.traced.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req",
+        title: "Collection of reqs with manual verifications",
+        origin: "JSON schema",
+        // makes all sub-reqs also "manual"
+        manual_verification: true,
+    },{
+        id: "manual_req.no_trace.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.no_trace.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.traced.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.traced.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.traced.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.test_verified.verified",
+        title: "Verified State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.test_verified.failed",
+        title: "Failed State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.test_verified.skipped",
+        title: "Skipped State",
+        origin: "JSON schema",
+    },{
+        id: "manual_req.test_verified.unverified",
+        title: "Unverified State",
+        origin: "JSON schema",
+    },{
+        id: "not_mentioned",
+        title: "Req is not traced and has no mapped test case or review => Unverified State",
+        origin: "JSON schema",
+    }]
+}

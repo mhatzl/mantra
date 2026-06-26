@@ -1,0 +1,406 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TestRunSchema",
+  "description": "Defines the schema to exchange test and coverage related information. [req(\"exchange.testcov.schema\")]",
+  "type": "object",
+  "required": [
+    "test_runs"
+  ],
+  "properties": {
+    "origin": {
+      "description": "Optional base origin of the test runs in this entry. e.g. specific branch or commit from a git repository"
+    },
+    "schema_version": {
+      "description": "The schema version. [req(\"exchange.versioned\")]",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "test_case_properties": {
+      "description": "Optional properties related to all test cases in this entry.\n\n**Note:** If a test case sets a property key directly, the value set at the test case will be taken.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "test_run_properties": {
+      "description": "Optional properties related to all test runs in this entry.\n\n**Note:** If a test run sets a property key directly, the value set at the test run will be taken.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "test_runs": {
+      "description": "List of test runs containing test and coverage information.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TestRun"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "CoveredFile": {
+      "description": "Represents coverage information per file. [req(\"testcov.cov\")]",
+      "type": "object",
+      "required": [
+        "filepath"
+      ],
+      "properties": {
+        "file_hash": {
+          "description": "Optional hash of the file content to detect changes. Coverage formats may not provide the file hash, therefore it must be optional.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filepath": {
+          "description": "File the coverage information is for.",
+          "type": "string"
+        },
+        "lines": {
+          "description": "Coverage information for a line in the file. [req(\"testcov.cov.lines\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CoveredLine"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "CoveredLine": {
+      "description": "Coverage information of a line in a file. [req(\"testcov.cov.lines\")]",
+      "type": "object",
+      "required": [
+        "nr"
+      ],
+      "properties": {
+        "hits": {
+          "description": "The number of times this line has been reached during execution of a test run or test case. If None, the line is marked to be ignored from line coverage analysis.\n\n**Note:** The line might be covered by other test runs or test cases. To permanently exclude lines, see the AnnotationSchema.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "nr": {
+          "description": "The line number.",
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LogOutput": {
+      "description": "Log output of tests.",
+      "type": "object",
+      "required": [
+        "content",
+        "source"
+      ],
+      "properties": {
+        "content": {
+          "description": "The log content that was output.",
+          "type": "string"
+        },
+        "source": {
+          "description": "The source the log was output to.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LogSource"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "LogSource": {
+      "description": "Source of the log output of tests.",
+      "type": "string",
+      "enum": [
+        "Stdout",
+        "Stderr"
+      ]
+    },
+    "Revision": {
+      "type": "object",
+      "required": [
+        "authors",
+        "comment",
+        "nr"
+      ],
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": "string"
+        },
+        "nr": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TestCase": {
+      "description": "Represents a test case in *mantra*. [req(\"testcov.test_case\")]",
+      "type": "object",
+      "required": [
+        "name",
+        "state"
+      ],
+      "properties": {
+        "covered_files": {
+          "description": "Optional list of coverage data per file that was collected during the execution of the test case. [req(\"testcov.cov\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CoveredFile"
+          }
+        },
+        "description": {
+          "description": "Optional description of the test case.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duration_sec": {
+          "description": "Optional duration about how long the test case took.",
+          "default": null,
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "location": {
+          "description": "Optional location of the test case. [req(\"testcov.test_case.origin\")]",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TestCaseLocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "logs": {
+          "description": "Optional logs that were output during the test case execution.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/LogOutput"
+          }
+        },
+        "name": {
+          "description": "The name of the test case. [req(\"testcov.test_case.id\")]",
+          "type": "string"
+        },
+        "properties": {
+          "description": "Optional field to store custom properties per test case. [req(\"testcov.test_case.metadata\")]",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "state": {
+          "description": "State of the test case. [req(\"testcov.test_case.state\")]",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TestCaseState"
+            }
+          ]
+        },
+        "state_properties": {
+          "description": "Optional reason for the test case state. [req(\"testcov.test_case.state.reason\")]",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "utc_date": {
+          "description": "Optional UTC date the test case execution started.\n\n**Note:** The date must be given in ISO8601 format.",
+          "default": null,
+          "type": "string"
+        },
+        "verified_reqs": {
+          "description": "Optional requirements that were explicitely verified by the test case.",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "TestCaseLocation": {
+      "description": "The location of a test case. [req(\"testcov.test_case.origin\")]",
+      "type": "object",
+      "required": [
+        "file_hash",
+        "filepath",
+        "line"
+      ],
+      "properties": {
+        "file_hash": {
+          "description": "The hash of the file content at the time the test case was executed. [req(\"changes.track.test_runs\")]",
+          "type": "string"
+        },
+        "filepath": {
+          "description": "The filepath the test case is defined in.",
+          "type": "string"
+        },
+        "line": {
+          "description": "The line in the file the test case is defined at.",
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TestCaseState": {
+      "description": "Possible states a test case may be in. [req(\"testcov.test_case.state\")]",
+      "oneOf": [
+        {
+          "description": "Test case failed.",
+          "type": "string",
+          "enum": [
+            "failed"
+          ]
+        },
+        {
+          "description": "Test case passed successfully.",
+          "type": "string",
+          "enum": [
+            "passed"
+          ]
+        },
+        {
+          "description": "Test case was skipped in the related test run.",
+          "type": "string",
+          "enum": [
+            "skipped"
+          ]
+        },
+        {
+          "description": "Test case is in an unknown state.\n\nThis likely indicates that a test case did not finish execution, and is treated as *failed* state. [req(\"testcov.test_case.state.unknown\")]",
+          "type": "string",
+          "enum": [
+            "unknown"
+          ]
+        }
+      ]
+    },
+    "TestRun": {
+      "description": "Represents a test run in *mantra*. [req(\"testcov.test_run\")]",
+      "type": "object",
+      "required": [
+        "name",
+        "nr_of_test_cases",
+        "test_cases",
+        "utc_date"
+      ],
+      "properties": {
+        "covered_files": {
+          "description": "Optional list of coverage information per file that was collected during the test run. [req(\"testcov.cov\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CoveredFile"
+          }
+        },
+        "description": {
+          "description": "Optional description of the test run.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duration_sec": {
+          "description": "Optional duration about how long the test run took.",
+          "default": null,
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "logs": {
+          "description": "Optional logs that were output during the execution of the test run.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/LogOutput"
+          }
+        },
+        "name": {
+          "description": "The name of the test run. [req(\"testcov.test_run.id\")]",
+          "type": "string"
+        },
+        "nr_of_test_cases": {
+          "description": "Nr of test cases that are part of the test run.\n\n**Note:** Must match with the number of entries in the `test_cases` field, plus the number of entries in the `test_cases` fields of all child test runs. In case this differs, it indicates that not all test cases have finished execution.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "origin": {
+          "description": "Optional origin of the test run. [req(\"testcov.test_run.origin\")]"
+        },
+        "properties": {
+          "description": "Optional field to store custom information per test run. [req(\"testcov.test_run.metadata\")]",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "revisions": {
+          "description": "Optional revisions for the test run.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/Revision"
+          }
+        },
+        "test_cases": {
+          "description": "List of test cases that are part of the test run. [req(\"testcov.test_case\")]",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          }
+        },
+        "test_runs": {
+          "description": "Optionally nested test runs. [req(\"testcov.test_run.nested\")]",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestRun"
+          }
+        },
+        "utc_date": {
+          "description": "The UTC date the test run execution started.\n\n**Note:** The date must be given in ISO8601 format. [req(\"testcov.test_run.date\")]",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

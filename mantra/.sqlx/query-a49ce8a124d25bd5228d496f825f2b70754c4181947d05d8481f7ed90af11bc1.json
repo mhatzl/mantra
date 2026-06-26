@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into LeafTestRuns (\n                last_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            select last_collect_nr, product_id, name, utc_date\n            from TestRuns\n            where last_collect_nr = $1 and product_id = $2\n            except\n            select last_collect_nr, product_id, parent_name, parent_date\n            from TestRunHierarchies\n            where last_collect_nr = $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a49ce8a124d25bd5228d496f825f2b70754c4181947d05d8481f7ed90af11bc1"
+}

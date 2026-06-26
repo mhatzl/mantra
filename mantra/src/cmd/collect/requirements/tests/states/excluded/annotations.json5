@@ -1,0 +1,17 @@
+{
+    files: [{
+        filepath: "test.rs",
+        file_hash: "<place hash here>",
+        annotations: {
+            traces: [{
+                ids: ["req-8"],
+                line: 10,
+                kind: "satisfies",
+            }, {
+                ids: ["req-9"],
+                line: 20,
+                kind: "verifies",
+            }]
+        }
+    }]
+}

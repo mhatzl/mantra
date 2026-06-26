@@ -1,0 +1,14 @@
+{
+    products: [{
+        id: "p1",
+        name: "test",
+        requirements: [{
+            path: "reqs.json5",
+            source: "schema",
+        }],
+        test_runs: [{
+            path: "test_runs.json5",
+            source: "schema",
+        }]
+    }]
+}

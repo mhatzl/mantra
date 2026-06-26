@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select rp.property_key, gj.content\n            from RequirementProperties rp, GeneralJson gj\n            where rp.product_id = $1 and rp.req_id = $2\n            and gj.hash = rp.value_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "2a5974587ce65b329378b33c9997028aa088a2237088430f18eb1a44d4ca68d2"
+}
