@@ -14,6 +14,9 @@ pub mod cmd;
 pub mod db;
 mod io;
 
+#[cfg(feature = "macros")]
+pub use mantra_macros as macros;
+
 pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
     let db = db::MantraDb::new(cfg.db.url.as_deref())
         .await

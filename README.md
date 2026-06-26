@@ -164,16 +164,16 @@ even if `gs-req-1.sub-1` is `unverified` or `skipped`.
 
 ### Tracing Requirements in Code
 
-Currently, *mantra* is only able to detect traces in Rust code that match the macros defined in the [mantra-rust-macros](langs/rust/mantra-rust-macros) crate.
+Currently, *mantra* is only able to detect traces in Rust code that match the macros defined in the [mantra-macros](langs/rust/mantra-macros) crate.
 Note that it is not required to use this crate, because trace detection is only based on macro names.
 For other languages and file formats, external tools may convert extracted data into the
 [AnnotationSchema](schema-gen/generated/collect/AnnotationSchema.json).
 
-If you want to use the macros from [mantra-rust-macros](langs/rust/mantra-rust-macros),
+If you want to use the macros from [mantra-macros](langs/rust/mantra-macros),
 add it to your Cargo.toml via
 
 ```sh
-cargo add mantra-rust-macros
+cargo add mantra-macros
 ```
 
 To express relations between requirements and traces, *mantra* supports the following kinds:
@@ -185,7 +185,7 @@ To express relations between requirements and traces, *mantra* supports the foll
 The following code contains satisfying and verifying traces for `gs-req-1`:
 
 ```rust
-#[mantra_rust_macros::req_satisfied("gs-req-1")]
+#[mantra_macros::req_satisfied("gs-req-1")]
 fn foo() -> bool {
     // ...
     true
@@ -193,10 +193,10 @@ fn foo() -> bool {
 
 #[test]
 fn test_foo_1() {
-    mantra_rust_macros::assert_req!("gs-req-1" => foo(), "Verification using assert macro");
+    mantra_macros::assert_req!("gs-req-1" => foo(), "Verification using assert macro");
 }
 
-#[mantra_rust_macros::req_test("gs-req-1")]
+#[mantra_macros::req_test("gs-req-1")]
 #[test]
 fn test_foo_2() {
     core::assert!(foo(), "Verification using attribute macro");

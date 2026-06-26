@@ -1,3 +1,2 @@
-# Macros are defined in those crates and use non-existing requirements for tests
-langs/rust/mantra-rust-procm/
-langs/rust/mantra-rust-macros/
+# Tests use non-existing requirements
+langs/rust/mantra-macros/tests/

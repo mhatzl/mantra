@@ -10,7 +10,7 @@ license.workspace = true
 
 [dependencies]
 mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0.8.0-rc1" }
-mantra-rust-macros = { path = "../langs/rust/mantra-rust-macros", version = "0.8.0-rc1" }
+mantra-macros = { path = "../langs/rust/mantra-macros", version = "0.8.0-rc1" }
 mantra-schema = { path = "../schema", version = "0.8.0-rc1" }
 regex.workspace = true
 log.workspace = true
@@ -39,3 +39,6 @@ lsp-types = "0.97.0"
 
 [dev-dependencies]
 test-case = "3"
+
+[features]
+macros = []

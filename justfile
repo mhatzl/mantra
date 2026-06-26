@@ -1,7 +1,8 @@
 # Note: DATABASE_PATH set in ".env".
 db_path := justfile_directory() + "/mantra.db"
 db_url := "sqlite://" + db_path + "?mode=rwc"
-test_db_url := "sqlite://" + justfile_directory() + "/mantra_test.db" + "?mode=rwc"
+test_db_path := justfile_directory() + "/mantra_test.db"
+test_db_url := "sqlite://" + test_db_path + "?mode=rwc"
 
 db-reset:
     rm -f {{ db_path }}
@@ -30,6 +31,9 @@ collect:
 report:
     rm -rf target/mantra-report
     cargo run -p mantra -- --db-url={{ test_db_url }} report --formats=json --formats=html  --output-dir=target/mantra-report/
+
+rm-test-db:
+    rm -f {{ test_db_path }}
 
 # Call: `just setup-test-db <copied path to cfg file>`
 setup-test-db CFG DB="test_db":

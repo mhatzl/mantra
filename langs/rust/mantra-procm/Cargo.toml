@@ -1,6 +1,6 @@
 [package]
-name = "mantra-rust-procm"
-description = "Defines procedural macros used by `mantra-rust-macros`."
+name = "mantra-procm"
+description = "Defines procedural macros used by `mantra-macros`."
 version.workspace = true
 edition.workspace = true
 repository.workspace = true

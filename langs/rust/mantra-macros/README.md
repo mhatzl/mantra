@@ -1,4 +1,4 @@
-# mantra-rust-macros
+# mantra-macros
 
 This crate provides macros to trace requirements using [mantra](https://github.com/mhatzl/mantra).
 
@@ -9,7 +9,7 @@ Requirement traces may be created using either attribute or function-like macros
 **Examples:**
 
 ```rust
-use mantra_rust_macros::{req_satisfied, verify_req};
+use mantra_macros::{req_satisfied, verify_req};
 
 /// Tells mantra that `some_fn()` satisfies requirement `req-1`.
 #[req_satisfied("req-1")]

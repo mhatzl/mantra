@@ -3,8 +3,8 @@ resolver = "3"
 members = [
     "mantra",
     "langs/mantra-lang-tracing",
-    "langs/rust/mantra-rust-procm",
-    "langs/rust/mantra-rust-macros",
+    "langs/rust/mantra-procm",
+    "langs/rust/mantra-macros",
     "schema", "schema-gen",
 ]
 
