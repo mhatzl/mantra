@@ -45,24 +45,30 @@ If your language is not supported directly, you may create your own tooling that
 and converts it into a format *mantra* understands following *mantra*'s [JSON schemas](schema-gen/README.md).
 
 ## Installation
-### Prerequisites
 
-*mantra* uses the [tree-sitter](https://crates.io/crates/tree-sitter) crate to find *mantra* annotations in source code,
-and [sqlx]() with bundled SQLite to store collected information.
-Those crates require access to a [native C compiler](https://docs.rs/cc/latest/cc/#compile-time-requirements).
+*mantra* is a Rust project with native C dependencies.
 
-Ensure `cc` is available on `Path` if you install *mantra* from source.
+You will need the following dependencies to install *mantra*:
 
-### Via `cargo install`
+* A modern Rust toolchain (usually via [`rustup`](https://rustup.rs/))
+  + The minimum supported rust version (MSRV) is listed in `mantra/Cargo.toml`
+* A [modern native C compiler](https://docs.rs/cc/latest/cc/#compile-time-requirements) providing the `cc` binary (usually via `clang` or `gcc`)
 
-*mantra* may be installed from source via `cargo install mantra`.
+*mantra* may then be installed:
 
-**Note:** Ensure a native C compiler is available.
+```bash
+cargo install --locked mantra
+```
 
-## Getting Started
+## Usage
 
 This section provides a high-level overview to get you started using *mantra*.
 For more details, take a look at the [/docs/usage](docs/usage/README.md) folder.
+
+In order to use *mantra* for Rust projects, you typically want the following prerequisites installed:
+
+* [`cargo-nextest`](https://nexte.st/) (usually via `cargo install --locked cargo-nextest`)
+* [`grcov`](https://github.com/mozilla/grcov/) (usually via `cargo install --locked grcov`)
 
 ### Configuring *mantra*
 
@@ -71,7 +77,7 @@ You may change this by explicitly setting a path via the `--config-filepath` arg
 Currently, *mantra* accepts either `JSON5`, `JSON`, or `TOML` as file format for the configuration file,
 with the format being automatically detected based on the file extension.
 
-The following configuration sets up the `mantra-demo` product for the `main` baseline (e.g. branch):
+The following configuration sets up a `mantra-demo` product for the `main` baseline (e.g. branch):
 
 ```json5
 products: [{
@@ -153,7 +159,7 @@ which is common for projects working with issue trackers such as Jira.
 The `gs-req-1.sub-1` requirement combines the two ways to set up a hierarchical structure in *mantra*
 that allows to create non-cyclical relations between requirements.
 Using the *dot-notation* style, the requirement is set as child of `gs-req-1`,
-and `gs-req-2` is set as parent via the explizit `parents` list.
+and `gs-req-2` is set as parent via the explicit `parents` list.
 Although good practice would be to list `gs-req-1` in the `parents` list again to help readability,
 it is not strictly required.
 
@@ -206,9 +212,9 @@ fn test_foo_2() {
 ### Mapping Requirements to Tests
 
 *mantra* uses line coverage metrics collected from tests to detect if a requirement has been verified.
-Consequently, a *verifying* trace alone is not enough to verify a requirement.
+Consequently, a `verifies` trace alone is not enough to verify a requirement.
 The benefit is that combining traces with line coverage allows users to choose between manual tracing effort and safety guarantees.
-For example, if a *verifying* trace is set on a test and there is a code part with a *satisfying* trace to the same requirement, *mantra* checks if the test actually passed this code part.
+For example, if a `verifies` trace is set on a test and there is a code part with a `satisfies` trace to the same requirement, *mantra* checks if the test actually passed this code part.
 
 For Rust projects, a convenient way to get test and coverage results that are readable by *mantra*
 is to use [cargo-nextest](https://nexte.st/) with the JUnit feature and [grcov](https://github.com/mozilla/grcov/) with the Cobertura output format. See the `testcov` task in the [justfile](justfile) of the repository to see how this is set up for *mantra*.
