@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-mantra-schema = { path = "../../schema", version = "0.8.0-rc1" }
+mantra-schema = { path = "../../schema", version = "0.8.0" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -19,7 +19,7 @@ tree-sitter-rust = "0.24.0"
 cc = "1.0.90"
 
 [dev-dependencies]
-mantra-macros = { path = "../rust/mantra-macros", version = "0.8.0-rc1" }
+mantra-macros = { path = "../rust/mantra-macros", version = "0.8.0" }
 insta = { version = "1.48.0", features = ["ron"] }
 
 [features]
