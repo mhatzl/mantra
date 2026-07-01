@@ -37,12 +37,12 @@ because at best, only leaf requirements (those without children) must be traced 
 8. Repeat from step 2 until the project is complete
 
 For a quick overview of those steps, see the [getting-started section](#getting-started) below.
-More details about using and configuring *mantra* may be found in the [/docs/usage](docs/usage/README.md) folder.
+More details about using and configuring *mantra* may be found in the `/docs/usage` folder.
 The goals, requirements, and decisions behind *mantra* are documented under `/docs/wiki`, which is also published on *mantra*'s [GitHub wiki](https://github.com/mhatzl/mantra/wiki).
 
 **Note:** Currently, focus is on support for Rust code, but built-in support for other languages is planned.
 If your language is not supported directly, you may create your own tooling that extracts relevant information
-and converts it into a format *mantra* understands following *mantra*'s [JSON schemas](schema-gen/README.md).
+and converts it into a format *mantra* understands following *mantra*'s JSON schemas available at `schema-gen/generated`.
 
 ## Installation
 
@@ -63,7 +63,7 @@ cargo install --locked mantra
 ## Usage
 
 This section provides a high-level overview to get you started using *mantra*.
-For more details, take a look at the [/docs/usage](docs/usage/README.md) folder.
+For more details, take a look at the `/docs/usage` folder.
 
 In order to use *mantra* for Rust projects, you typically want the following prerequisites installed:
 
@@ -113,17 +113,17 @@ products: [{
 ```
 
 Based on this configuration, files defining requirements are expected to be located under the `reqs/` folder
-following the [RequirementSchema](schema-gen/generated/collect/RequirementSchema.json).
+following the `RequirementSchema`.
 Annotations such as requirement traces are extracted from Rust code files located in the repository.
 Test and code coverage results are expected under `target/nextest/default`, with test results following the [JUnit XML](https://llg.cubic.org/docs/junit/) format and code coverage being represented in the [Cobertura Loose XML](https://github.com/cobertura/cobertura/blob/master/cobertura/src/site/htdocs/xml/coverage-loose.dtd) format.
 Files containing manual reviews are expected to be located under the `reviews/` folder
-following the [ReviewSchema](schema-gen/generated/collect/ReviewSchema.json).
+following the `ReviewSchema`.
 
-More details related to *mantra*'s configuration file can be found under [/docs/usage/configuration](docs/usage/configuration.md).
+More details related to *mantra*'s configuration file can be found under `/docs/usage/configuration.md`.
 
 ### Defining Requirements
 
-Currently, only the [RequirementSchema](schema-gen/generated/collect/RequirementSchema.json) is supported as input for requirement definitions.
+Currently, only the `RequirementSchema` is supported as input for requirement definitions.
 
 The following configuration defines three requirements `gs-req-1`, `gs-req-2`, and `gs-req-1.sub-1`:
 
@@ -170,12 +170,12 @@ even if `gs-req-1.sub-1` is `unverified` or `skipped`.
 
 ### Tracing Requirements in Code
 
-Currently, *mantra* is only able to detect traces in Rust code that match the macros defined in the [mantra-macros](langs/rust/mantra-macros) crate.
+Currently, *mantra* is only able to detect traces in Rust code that match the macros defined in the [mantra-macros](https://crates.io/crates/mantra-macros) crate.
 Note that it is not required to use this crate, because trace detection is only based on macro names.
 For other languages and file formats, external tools may convert extracted data into the
-[AnnotationSchema](schema-gen/generated/collect/AnnotationSchema.json).
+`AnnotationSchema`.
 
-If you want to use the macros from [mantra-macros](langs/rust/mantra-macros/README.md),
+If you want to use the macros from [mantra-macros](https://crates.io/crates/mantra-macros),
 add it to your Cargo.toml via
 
 ```sh
@@ -217,8 +217,9 @@ The benefit is that combining traces with line coverage allows users to choose b
 For example, if a `verifies` trace is set on a test and there is a code part with a `satisfies` trace to the same requirement, *mantra* checks if the test actually passed this code part.
 
 For Rust projects, a convenient way to get test and coverage results that are readable by *mantra*
-is to use [cargo-nextest](https://nexte.st/) with the JUnit feature and [grcov](https://github.com/mozilla/grcov/) with the Cobertura output format. See the `testcov` task in the [justfile](justfile) of the repository to see how this is set up for *mantra*.
-This convenience layer is internally converted to the [TestRunSchema](schema-gen/generated/collect/TestRunSchema.json), which external tools may target directly. 
+is to use [cargo-nextest](https://nexte.st/) with the JUnit feature and [grcov](https://github.com/mozilla/grcov/) with the Cobertura output format.
+See the `testcov` task in the `justfile` of the repository to see how this is set up for *mantra*.
+This convenience layer is internally converted to the `TestRunSchema`, which external tools may target directly. 
 
 **Note:** Code coverage for Rust projects collected via `-Cinstrument-coverage` is only collected per binary.
 Consequently, it is not possible to get code coverage results per test case, which worsens the safety guarantees
@@ -232,7 +233,7 @@ to explicitly state that this requirement must be verified manually in a review.
 Besides verifying requirements, reviews may also be used to overwrite test results,
 which is for example useful in case of flaky tests.
 
-Currently, can only be added following the [ReviewSchema](schema-gen/generated/collect/ReviewSchema.json).
+Currently, reviews can only be added following the `ReviewSchema`.
 External tools may be used to extract data from other formats and convert to the schema.
 
 The review below verifies the manual requirement `gs-req-2`:
