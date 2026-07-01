@@ -10,9 +10,9 @@ license.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0.8.0-rc1" }
-mantra-macros = { path = "../langs/rust/mantra-macros", version = "0.8.0-rc1" }
-mantra-schema = { path = "../schema", version = "0.8.0-rc1" }
+mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0.8.0" }
+mantra-macros = { path = "../langs/rust/mantra-macros", version = "0.8.0" }
+mantra-schema = { path = "../schema", version = "0.8.0" }
 regex.workspace = true
 log.workspace = true
 env_logger.workspace = true

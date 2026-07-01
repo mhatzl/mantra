@@ -7,7 +7,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-mantra-procm = { path = "../mantra-procm", version = "0.8.0-rc1" }
+mantra-procm = { path = "../mantra-procm", version = "0.8.0" }
 # defmt = { version = "0.3.6", optional = true }
 
 [features]
