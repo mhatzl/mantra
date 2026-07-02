@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into UsableLeafRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            select\n                ur.last_collect_nr,\n                ur.product_id,\n                ur.id\n            from UsableRequirements ur, LeafRequirements lr\n            where ur.last_collect_nr = $1 and ur.product_id = $2\n            and lr.last_collect_nr = $1 and lr.product_id = $2\n            and ur.id = lr.id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "81028f42f90669a046622ba98865df442933240e5c9d7bda54e2533d1f9ca64d"
+}

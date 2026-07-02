@@ -1035,6 +1035,41 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            insert or replace into UsableLeafRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            select
+                ur.last_collect_nr,
+                ur.product_id,
+                ur.id
+            from UsableRequirements ur, LeafRequirements lr
+            where ur.last_collect_nr = $1 and ur.product_id = $2
+            and lr.last_collect_nr = $1 and lr.product_id = $2
+            and ur.id = lr.id
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update UsableLeafRequirements")?;
+
+        // Table data is updated for all products, because requirements may be connected across products
+        sqlx::query!(
+            "
+            delete from UsableLeafRequirements
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to delete outdated UsableLeafRequirements entries")?;
+
+        sqlx::query!(
+            "
             insert or replace into UsableNonLeafRequirements (
                 last_collect_nr,
                 product_id,
@@ -1067,142 +1102,6 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Failed to delete outdated UsableNonLeafRequirements entries")?;
-
-        sqlx::query!(
-            "
-            insert or replace into RequirementsWithUnverifiedNonOptionalChildren (
-                last_collect_nr,
-                product_id,
-                id
-            )
-            with recursive ReqsWithUnverifiedNonOptionalChildren (id, product_id) as (
-                select r.id, r.product_id
-                from UsableNonLeafRequirements r
-                where exists (
-                    select rh.child_req_id
-                    from
-                        RequirementHierarchies rh,
-                        DirectRequirementVerificationStates ds,
-                        LeafRequirements lr
-                    where r.id = rh.parent_req_id
-                    and r.product_id = rh.parent_product_id
-                    and rh.child_req_id = lr.id
-                    and rh.child_product_id = lr.product_id
-                    and lr.id = ds.id and lr.product_id = ds.product_id
-                    and ds.state = $2
-                    and not exists (
-                        select op.id
-                        from OptionalRequirements op
-                        where op.id = rh.child_req_id
-                        and op.product_id = rh.child_product_id
-                    )
-                )
-
-                union all
-
-                select r.id, r.product_id
-                from
-                    UsableNonLeafRequirements r,
-                    ReqsWithUnverifiedNonOptionalChildren uc,
-                    RequirementHierarchies rh
-                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
-                and uc.id = rh.child_req_id and uc.product_id = rh.child_product_id
-                and not exists (
-                    select op.id
-                    from OptionalRequirements op
-                    where op.id = rh.child_req_id
-                    and op.product_id = rh.child_product_id
-                )
-            )
-            select $1, r.product_id, r.id
-            from ReqsWithUnverifiedNonOptionalChildren r
-            ",
-            collect_nr,
-            req_unverified_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to update RequirementsWithUnverifiedNonOptionalChildren")?;
-
-        sqlx::query!(
-            "
-            delete from RequirementsWithUnverifiedNonOptionalChildren
-            where last_collect_nr != $1
-            ",
-            collect_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context(
-            "Failed to delete outdated RequirementsWithUnverifiedNonOptionalChildren entries",
-        )?;
-
-        sqlx::query!(
-            "
-            insert or replace into RequirementsWithSkippedNonOptionalChildren (
-                last_collect_nr,
-                product_id,
-                id
-            )
-            with recursive ReqsWithSkippedNonOptionalChildren (id, product_id) as (
-                select r.id, r.product_id
-                from UsableNonLeafRequirements r
-                where exists (
-                    select rh.child_req_id
-                    from
-                        RequirementHierarchies rh,
-                        DirectRequirementVerificationStates ds,
-                        LeafRequirements lr
-                    where r.id = rh.parent_req_id
-                    and r.product_id = rh.parent_product_id
-                    and rh.child_req_id = lr.id
-                    and rh.child_product_id = lr.product_id
-                    and lr.id = ds.id and lr.product_id = ds.product_id
-                    and ds.state = $2
-                    and not exists (
-                        select op.id
-                        from OptionalRequirements op
-                        where op.id = rh.child_req_id
-                        and op.product_id = rh.child_product_id
-                    )
-                )
-
-                union all
-
-                select r.id, r.product_id
-                from
-                    UsableNonLeafRequirements r,
-                    ReqsWithSkippedNonOptionalChildren sc,
-                    RequirementHierarchies rh
-                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
-                and sc.id = rh.child_req_id and sc.product_id = rh.child_product_id
-                and not exists (
-                    select op.id
-                    from OptionalRequirements op
-                    where op.id = rh.child_req_id
-                    and op.product_id = rh.child_product_id
-                )
-            )
-            select $1, r.product_id, r.id
-            from ReqsWithSkippedNonOptionalChildren r
-            ",
-            collect_nr,
-            req_skipped_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to update RequirementsWithSkippedNonOptionalChildren")?;
-
-        sqlx::query!(
-            "
-            delete from RequirementsWithSkippedNonOptionalChildren
-            where last_collect_nr != $1
-            ",
-            collect_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated RequirementsWithSkippedNonOptionalChildren entries")?;
 
         sqlx::query!(
             "
@@ -1262,7 +1161,7 @@ impl<'db> Collection<'db> {
             with recursive StatesOfReqWithOnlyOptionalChildren (id, product_id, state) as (
                 select lr.id, lr.product_id, ds.state
                 from
-                    LeafRequirements lr,
+                    UsableLeafRequirements lr,
                     DirectRequirementVerificationStates ds
                 where lr.id = ds.id and lr.product_id = ds.product_id
 
@@ -1356,6 +1255,173 @@ impl<'db> Collection<'db> {
         .context(
             "Failed to delete outdated VerifiedRequirementsWithOnlyOptionalChildren entries",
         )?;
+
+        sqlx::query!(
+            "
+            insert or replace into RequirementsWithUnverifiedNonOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            with recursive ReqsWithUnverifiedNonOptionalChildren (id, product_id) as (
+                select r.id, r.product_id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rh.child_req_id
+                    from
+                        RequirementHierarchies rh,
+                        DirectRequirementVerificationStates ds,
+                        UsableLeafRequirements lr
+                    where r.id = rh.parent_req_id
+                    and r.product_id = rh.parent_product_id
+                    and rh.child_req_id = lr.id
+                    and rh.child_product_id = lr.product_id
+                    and lr.id = ds.id and lr.product_id = ds.product_id
+                    and ds.state = $2
+                    and not exists (
+                        select op.id
+                        from OptionalRequirements op
+                        where op.id = rh.child_req_id
+                        and op.product_id = rh.child_product_id
+                    )
+                ) or exists (
+                    select ooc.id
+                    from
+                        DirectRequirementVerificationStates ds,
+                        RequirementsWithOnlyOptionalChildren ooc
+                    where r.product_id = ds.product_id
+                    and r.last_collect_nr = ds.last_collect_nr
+                    and r.id = ds.id
+                    and r.product_id = ooc.product_id
+                    and r.last_collect_nr = ooc.last_collect_nr
+                    and r.id = ooc.id
+                    and ds.state = $2
+                    and not exists (
+                        select vr.id
+                        from VerifiedRequirementsWithOnlyOptionalChildren vr
+                        where r.product_id = vr.product_id
+                        and r.last_collect_nr = vr.last_collect_nr
+                        and r.id = vr.id
+                    )
+                )
+
+                union all
+
+                select r.id, r.product_id
+                from
+                    UsableNonLeafRequirements r,
+                    ReqsWithUnverifiedNonOptionalChildren uc,
+                    RequirementHierarchies rh
+                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
+                and uc.id = rh.child_req_id and uc.product_id = rh.child_product_id
+                and not exists (
+                    select op.id
+                    from OptionalRequirements op
+                    where op.id = rh.child_req_id
+                    and op.product_id = rh.child_product_id
+                )
+            )
+            select $1, r.product_id, r.id
+            from ReqsWithUnverifiedNonOptionalChildren r
+            ",
+            collect_nr,
+            req_unverified_nr
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update RequirementsWithUnverifiedNonOptionalChildren")?;
+
+        sqlx::query!(
+            "
+            delete from RequirementsWithUnverifiedNonOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await
+        .context(
+            "Failed to delete outdated RequirementsWithUnverifiedNonOptionalChildren entries",
+        )?;
+
+        sqlx::query!(
+            "
+            insert or replace into RequirementsWithSkippedNonOptionalChildren (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            with recursive ReqsWithSkippedNonOptionalChildren (id, product_id) as (
+                select r.id, r.product_id
+                from UsableNonLeafRequirements r
+                where exists (
+                    select rh.child_req_id
+                    from
+                        RequirementHierarchies rh,
+                        DirectRequirementVerificationStates ds,
+                        UsableLeafRequirements lr
+                    where r.id = rh.parent_req_id
+                    and r.product_id = rh.parent_product_id
+                    and rh.child_req_id = lr.id
+                    and rh.child_product_id = lr.product_id
+                    and lr.id = ds.id and lr.product_id = ds.product_id
+                    and ds.state = $2
+                    and not exists (
+                        select op.id
+                        from OptionalRequirements op
+                        where op.id = rh.child_req_id
+                        and op.product_id = rh.child_product_id
+                    )
+                ) or exists (
+                    select ooc.id
+                    from
+                        DirectRequirementVerificationStates ds,
+                        RequirementsWithOnlyOptionalChildren ooc
+                    where r.product_id = ds.product_id
+                    and r.last_collect_nr = ds.last_collect_nr
+                    and r.id = ds.id
+                    and r.product_id = ooc.product_id
+                    and r.last_collect_nr = ooc.last_collect_nr
+                    and r.id = ooc.id
+                    and ds.state = $2
+                )
+
+                union all
+
+                select r.id, r.product_id
+                from
+                    UsableNonLeafRequirements r,
+                    ReqsWithSkippedNonOptionalChildren sc,
+                    RequirementHierarchies rh
+                where r.id = rh.parent_req_id and r.product_id = rh.parent_product_id
+                and sc.id = rh.child_req_id and sc.product_id = rh.child_product_id
+                and not exists (
+                    select op.id
+                    from OptionalRequirements op
+                    where op.id = rh.child_req_id
+                    and op.product_id = rh.child_product_id
+                )
+            )
+            select $1, r.product_id, r.id
+            from ReqsWithSkippedNonOptionalChildren r
+            ",
+            collect_nr,
+            req_skipped_nr
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update RequirementsWithSkippedNonOptionalChildren")?;
+
+        sqlx::query!(
+            "
+            delete from RequirementsWithSkippedNonOptionalChildren
+            where last_collect_nr != $1
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to delete outdated RequirementsWithSkippedNonOptionalChildren entries")?;
 
         sqlx::query!(
             "

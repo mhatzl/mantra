@@ -1,0 +1,82 @@
+{
+    requirements: [
+        {
+            id: "req-1",
+            title: "First Requirement (Indirectly Unverified)",
+            origin: "Nested requirement test",
+        },
+        {
+            id: "req-1.sub-1",
+            title: "First Sub-Requirement (Unverified)",
+            origin: "Nested requirement test",
+        },
+        {
+            id: "req-1.sub-1.sub-sub-1",
+            title: "First Sub-Sub-Requirement (Optional + Unverified)",
+            origin: "Nested requirement test",
+            optional: true,
+        },
+        {
+            id: "req-1.sub-1.sub-sub-2",
+            title: "First Sub-Sub-Requirement (Optional + Unverified)",
+            origin: "Nested requirement test",
+            optional: true,
+        },
+        {
+            id: "req-1.sub-1.sub-sub-3",
+            title: "First Sub-Sub-Requirement (Excluded)",
+            origin: "Nested requirement test",
+            exclude: true,
+        },
+        {
+            id: "req-1.sub-2",
+            title: "First Sub-Requirement (Directly Verified)",
+            origin: "Nested requirement test",
+        },
+        {
+            id: "req-1.sub-3",
+            title: "First Sub-Requirement (Excluded)",
+            origin: "Nested requirement test",
+            exclude: true,
+        },
+        {
+            id: "req-2",
+            title: "First Requirement (Indirectly Skipped)",
+            origin: "Nested requirement test",
+        },
+        {
+            id: "req-2.sub-1",
+            title: "First Sub-Requirement (Directly Skipped)",
+            origin: "Nested requirement test",
+        },
+        {
+            id: "req-2.sub-1.sub-sub-1",
+            title: "First Sub-Sub-Requirement (Optional + Unverified)",
+            origin: "Nested requirement test",
+            optional: true,
+        },
+        {
+            id: "req-2.sub-1.sub-sub-2",
+            title: "First Sub-Sub-Requirement (Optional + Unverified)",
+            origin: "Nested requirement test",
+            optional: true,
+        },
+        {
+            id: "req-2.sub-1.sub-sub-3",
+            title: "First Sub-Sub-Requirement (Deprecated)",
+            origin: "Nested requirement test",
+            deprecated: true,
+        },
+        {
+            id: "req-2.sub-2",
+            title: "First Sub-Requirement (Directly Verified)",
+            origin: "Nested requirement test",
+        },
+        {
+            id: "req-2.sub-3",
+            title: "First Sub-Requirement (Excluded)",
+            origin: "Nested requirement test",
+            exclude: true,
+        }
+    ]
+}
