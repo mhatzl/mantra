@@ -171,6 +171,14 @@ create table DirectRequirementVerificationStates (
     foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
 );
 
+create table UsableLeafRequirements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
 create table UsableNonLeafRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,

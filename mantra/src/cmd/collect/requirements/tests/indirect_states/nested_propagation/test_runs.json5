@@ -1,0 +1,26 @@
+{
+    test_runs: [
+        {
+            name: "test-run-1",
+            utc_date: "2026-02-19T11:16:58Z",
+            nr_of_test_cases: 2,
+            test_cases: [
+                {
+                    name: "verifying-case",
+                    state: "passed",
+                    verified_reqs: [
+                        "req-1.sub-2",
+                        "req-2.sub-2",
+                    ]
+                },
+                {
+                    name: "skipped-case",
+                    state: "skipped",
+                    verified_reqs: [
+                        "req-2.sub-1",
+                    ]
+                }
+            ]
+        }
+    ]
+}

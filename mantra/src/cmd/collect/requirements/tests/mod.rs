@@ -845,6 +845,202 @@ mod indirect_states {
             "Expected req-5.sub-2 to require manual verification."
         );
     }
+
+    #[sqlx::test]
+    async fn nested_req(pool: MantraPool) {
+        let unverified_state = RequirementState::Unverified.as_nr();
+        let verified_state = RequirementState::Verified.as_nr();
+        let skipped_state = RequirementState::Skipped.as_nr();
+        let excluded_state = RequirementState::Excluded.as_nr();
+        let deprecated_state = RequirementState::Deprecated.as_nr();
+
+        let db = db_from_dir!(pool, "indirect_states/nested_propagation").unwrap();
+
+        let unverified_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            unverified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let skipped_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            skipped_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let excluded_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            excluded_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let deprecated_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from RequirementVerificationStates
+            where state = $1
+            ",
+            deprecated_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        let optional_reqs: Vec<String> = sqlx::query!(
+            "
+            select id from OptionalRequirements
+            "
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+
+        assert!(
+            unverified_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to be unverified."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to be unverified."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to be optional."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
+            "Expected req-1.sub-1.sub-sub-2 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
+            "Expected req-1.sub-1.sub-sub-2 to be optional."
+        );
+        assert!(
+            excluded_reqs.contains(&"req-1.sub-1.sub-sub-3".to_string()),
+            "Expected req-1.sub-1.sub-sub-3 to be excluded."
+        );
+        assert!(
+            verified_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to be verified."
+        );
+        assert!(
+            excluded_reqs.contains(&"req-1.sub-3".to_string()),
+            "Expected req-1.sub-3 to be excluded."
+        );
+        assert!(
+            skipped_reqs.contains(&"req-2".to_string()),
+            "Expected req-2 to be skipped."
+        );
+        assert!(
+            skipped_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to be skipped."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to be optional."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
+            "Expected req-2.sub-1.sub-sub-2 to be unverified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
+            "Expected req-2.sub-1.sub-sub-2 to be optional."
+        );
+        assert!(
+            deprecated_reqs.contains(&"req-2.sub-1.sub-sub-3".to_string()),
+            "Expected req-2.sub-1.sub-sub-3 to be deprecated."
+        );
+        assert!(
+            verified_reqs.contains(&"req-2.sub-2".to_string()),
+            "Expected req-2.sub-2 to be verified."
+        );
+        assert!(
+            excluded_reqs.contains(&"req-2.sub-3".to_string()),
+            "Expected req-2.sub-3 to be excluded."
+        );
+    }
 }
 
 mod states {
