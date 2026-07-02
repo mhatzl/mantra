@@ -3,10 +3,10 @@ name = "mantra"
 description = "`mantra` offers a lightweight approach for requirement tracing and coverage."
 rust-version = "1.90"
 readme.workspace = true
-version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
+version = "0.8.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
