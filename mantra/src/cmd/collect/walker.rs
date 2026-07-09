@@ -65,7 +65,7 @@ pub(super) fn content_to_schema<T: MantraSchema + serde::de::DeserializeOwned>(
     }
 }
 
-trait MantraSchema {
+pub(super) trait MantraSchema {
     fn related_product(&self) -> Option<&ProductId>;
 }
 

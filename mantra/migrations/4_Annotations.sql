@@ -48,22 +48,32 @@ create table TraceProperties (
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
--- Table to store requirement IDs linked to traces.
+-- Table to store requirement IDs linked to traces that were detected in the content mapping to the file hash.
 --
--- **Note:** Actual mapping to the Requirements table is done indirectly via ProductRelatedFiles.
+-- **Note:** Actual mapping to the Requirements table is done in ProductRelatedFiles.
 -- [req("trace.id", "trace.mult_reqs")]
-create table DirectReqTraces (
+create table DetectedReqTraces (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Product ID that may be set directly for the requirement trace.
+    -- If this is an empty string, then only the requirement ID was set.
+    -- Since it is part of the primary key it cannot be null and an empty string is an invalid product ID.
+    --
+    -- **Note:** Not referencing the Products table, because the product might not have been collected yet.
+    product_id text not null,
     -- Requirement ID that is directly set on the trace.
     req_id text not null,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
     line integer not null,
-    primary key (req_id, file_hash, line),
+    primary key (product_id, req_id, file_hash, line),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
 );
 
+-- Table to map requirement traces to products.
+--
+-- **Note:** No reference to DirectReqTraces, because an empty product ID in DirectReqTraces would match for all products.
+-- [req("trace.id", "trace.mult_reqs")]
 create table DirectProductReqTraces (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -72,9 +82,9 @@ create table DirectProductReqTraces (
     file_hash text not null,
     line integer not null,
     primary key (product_id, req_id, filepath, file_hash, line),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
     foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade,
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
-    foreign key (req_id, file_hash, line) references DirectReqTraces (req_id, file_hash, line) on delete cascade
+    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade    
 );
 
 -- Table to store language elements such as functions, tests, structs, enums, classes, ...
