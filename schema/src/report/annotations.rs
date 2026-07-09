@@ -5,7 +5,7 @@ use crate::{
     annotations::{CoverageExclude, ElementKind, TraceKind, TraceRelatedCodeVariant},
     product::ProductId,
     report::{Aggregated, requirement::RequirementReference},
-    requirements::ReqId,
+    requirements::RequirementPk,
 };
 
 #[derive(
@@ -74,7 +74,7 @@ pub struct ResolvedTrace {
     /// The requirement IDs that are referenced by the trace.
     /// [req("trace.id", "trace.mult_reqs")]
     pub resolved_ids: Vec<RequirementReference>,
-    pub unknown_ids: Vec<ReqId>,
+    pub unknown_ids: Vec<RequirementPk>,
     /// The line the trace is defined at.
     /// [req("trace.origin")]
     pub line: Line,

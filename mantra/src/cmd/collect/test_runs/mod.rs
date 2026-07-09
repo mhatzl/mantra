@@ -292,6 +292,7 @@ async fn collect_well_known<'db>(
 
     let test_run_schema = TestRunSchema {
         schema_version: None,
+        product_id: None,
         test_runs: vec![test_run],
         test_run_properties,
         test_case_properties,
@@ -438,6 +439,7 @@ async fn collect_schema<'db>(
     base_test_case_properties: Option<Properties>,
     pattern: Option<&str>,
 ) -> Result<(), anyhow::Error> {
+    let product_id = collection.product_id();
     let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
 
     let (schema_sender, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
@@ -450,6 +452,7 @@ async fn collect_schema<'db>(
         let collect_fn = walker::content_to_schema::<TestRunSchema>;
 
         walk_builder.build_parallel().run(|| {
+            let pid = product_id.clone();
             let root_path = abs_cfg_file_dir_path.clone();
             let sender = schema_sender.clone();
             Box::new(move |path_res| {
@@ -463,8 +466,8 @@ async fn collect_schema<'db>(
                         let file = CollectableFile::new(&rel_filepath, &file_hash, &content);
 
                         // TODO: proper error handling
-                        match collect_fn(&file) {
-                            Ok(schema) => {
+                        match collect_fn(&pid, &file) {
+                            Ok(Some(schema)) => {
                                 let data = SentSchemaData {
                                     schema,
                                     filepath: rel_filepath,
@@ -472,6 +475,9 @@ async fn collect_schema<'db>(
                                     content,
                                 };
                                 let _ = sender.send(data);
+                            }
+                            Ok(None) => {
+                                log::info!("Nothing collected from file '{}'", filepath.display());
                             }
                             Err(err) => log::error!(
                                 "Failed reading schema from '{}'. Err: {err}",

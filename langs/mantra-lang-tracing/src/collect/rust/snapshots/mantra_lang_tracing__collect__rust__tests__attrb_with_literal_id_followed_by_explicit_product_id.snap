@@ -1,6 +1,6 @@
 ---
 source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
-info: "\n        #[req_verified(\"ID1\")]\n        fn foo() {}\n        "
+info: "\n        #[req(\"ID1\", { id: \"ID2\", product_id: \"product-b\"})]\n        fn foo() {}\n        "
 ---
 Annotations(
   traces: [
@@ -10,10 +10,14 @@ Annotations(
           id: "ID1",
           product_id: None,
         ),
+        RequirementPk(
+          id: "ID2",
+          product_id: Some("product-b"),
+        ),
       ],
       line: 2,
       related_code: Some(3),
-      kind: verifies,
+      kind: satisfies,
       properties: None,
     ),
   ],
@@ -27,7 +31,7 @@ Annotations(
         end: 3,
       ),
       kind: function,
-      content_hash: Some("bc33b06534d07cd592a5ee36d953de0451097812fcc6f94b7554e2253e223dee"),
+      content_hash: Some("a77ab7dc64011876fefc5f34233e4b5a0113402c8e333acf3355701b31b06246"),
     ),
   ],
   coverage_excludes: [],

@@ -417,3 +417,129 @@ fn debug_assert_ne_fn_like() {
         }
     );
 }
+
+#[test]
+fn attrb_with_explicit_product_id() {
+    let content = r#"
+        #[req({ id: "ID1", product_id: "product-id"})]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
+
+#[test]
+fn attrb_with_explicit_product_id_quoted_idents() {
+    let content = r#"
+        #[req({ "id": "ID1", "product_id": "product-id"})]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
+
+#[test]
+fn attrb_with_explicit_product_id_trailing_comma() {
+    let content = r#"
+        #[req({ id: "ID1", product_id: "product-id",})]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
+
+#[test]
+fn attrb_with_explicit_object_no_product_id() {
+    let content = r#"
+        #[req({ id: "ID1"})]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
+
+#[test]
+fn attrb_with_explicit_object_no_product_id_trailing_comma() {
+    let content = r#"
+        #[req({ id: "ID1",})]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
+
+#[test]
+fn attrb_with_explicit_product_id_followed_by_literal_id() {
+    let content = r#"
+        #[req({ id: "ID1", product_id: "product-id"}, "ID2")]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
+
+#[test]
+fn attrb_with_literal_id_followed_by_explicit_product_id() {
+    let content = r#"
+        #[req("ID1", { id: "ID2", product_id: "product-b"})]
+        fn foo() {}
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}

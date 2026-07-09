@@ -1,8 +1,8 @@
 use crate::path::RelativePathBuf;
 
+use crate::product::ProductId;
+use crate::requirements::RequirementPk;
 use crate::{ConversionError, FmtHash, Line, LineSpan, Origin, Properties};
-
-use super::requirements::ReqId;
 
 /// Defines the schema to exchange mantra annotation related information.
 /// [req("exchange.traces.schema")]
@@ -15,6 +15,9 @@ pub struct AnnotationSchema {
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
+    /// Optional product ID to specify the product the annotations are part of.
+    /// If this field is not set, the ID of the product whose configuration included this schema is used.
+    pub product_id: Option<ProductId>,
     /// List of files that contain mantra annotations.
     pub files: Vec<FileAnnotations>,
     /// Optional properties related to detected traces in all files in this entry.
@@ -119,8 +122,12 @@ impl CoverageExcludeKind {
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Trace {
     /// The requirement IDs that are referenced by the trace.
+    /// May optionally set the product ID in addition to the requirement ID.
+    ///
+    /// e.g. `"req-id"` or `{ id: "req-id", product_id: "product-id" }`
+    ///
     /// [req("trace.id", "trace.mult_reqs")]
-    pub ids: Vec<ReqId>,
+    pub ids: Vec<RequirementPk>,
     /// The line the trace is defined at.
     /// [req("trace.origin")]
     pub line: Line,
@@ -139,12 +146,12 @@ impl std::fmt::Display for Trace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Traces req({}) at line '{}'.",
+            "Traces '{}' at line '{}'.",
             self.ids
                 .iter()
-                .map(|id| id.to_string())
+                .map(|r| r.id.to_string())
                 .collect::<Vec<String>>()
-                .join(","),
+                .join("', '"),
             self.line
         )?;
 

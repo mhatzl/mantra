@@ -6,7 +6,8 @@ use mantra_schema::{
     annotations::{
         Annotations, CodeBlock, Element, ElementKind, Trace, TraceKind, TraceRelatedCodeVariant,
     },
-    requirements::ReqId,
+    product::ProductId,
+    requirements::{ReqId, RequirementPk},
 };
 use serde_json::Map;
 use tree_sitter::{Node, Parser, TreeCursor};
@@ -389,7 +390,7 @@ fn get_req_ids(
     content: &[u8],
     start_line: Line,
     fn_like: bool,
-) -> Result<Vec<ReqId>, anyhow::Error> {
+) -> Result<Vec<RequirementPk>, anyhow::Error> {
     let line = args_node.start_position().row + start_line.try_into().unwrap_or(0);
 
     if args_node.has_error() {
@@ -399,21 +400,26 @@ fn get_req_ids(
     let mut ids = Vec::new();
 
     let mut cursor = args_node.walk();
-    let mut expected_kind = "(";
+    let mut expected_kinds: &[&str] = &["("];
     let mut reached_end = false;
 
     for child in args_node.children(&mut cursor) {
-        if expected_kind == child.kind() {
-            if expected_kind == "(" {
-                expected_kind = "string_literal";
-            } else if expected_kind == "string_literal"
+        if expected_kinds.contains(&child.kind()) {
+            if child.kind() == "token_tree" {
+                let req_pk = get_req_pk(&child, content, start_line)?;
+                ids.push(req_pk);
+                expected_kinds = &[","];
+            } else if child.kind() == "string_literal"
                 && let Some(content_node) = child.named_child(0)
                 && let Ok(id) = content_node.utf8_text(content)
             {
-                ids.push(ReqId::from_str(id)?);
-                expected_kind = ",";
+                ids.push(RequirementPk {
+                    id: ReqId::from_str(id)?,
+                    product_id: None,
+                });
+                expected_kinds = &[","];
             } else {
-                expected_kind = "string_literal";
+                expected_kinds = &["string_literal", "token_tree"];
             }
         } else if child.kind() == ")" || (child.kind() == "=>" && fn_like) {
             // Note: ")" is end of a simple macro and "=>" marks start of code block in fn-like macros
@@ -421,7 +427,7 @@ fn get_req_ids(
             break;
         } else {
             bail!(
-                "Mantra trace at line '{line}' must only consist of comma separated string literals!"
+                "Mantra trace at line '{line}' must only consist of comma separated string literals or objects with fields 'id' and 'product_id'!"
             );
         }
     }
@@ -431,6 +437,180 @@ fn get_req_ids(
     }
 
     Ok(ids)
+}
+
+fn get_req_pk(
+    tree_node: &Node<'_>,
+    content: &[u8],
+    _start_line: Line,
+) -> Result<RequirementPk, anyhow::Error> {
+    const ID_IDENT: &str = "id";
+    const PRODUCT_ID_IDENT: &str = "product_id";
+
+    let mut id = None;
+    let mut product_id = None;
+
+    let mut cursor = tree_node.walk();
+    let mut children = tree_node.children(&mut cursor);
+    let curly_open = children.next().ok_or(anyhow!(
+        "Expected '{{' as start of a requirement trace using the explicit object notation."
+    ))?;
+
+    if curly_open.kind() != "{" {
+        bail!("Expected '{{' as start of a requirement trace using the explicit object notation.")
+    }
+
+    let first_field = children.next().ok_or(anyhow!(
+        "Expected first field of a requirement trace using the explicit object notation."
+    ))?;
+    let first_field_separator = children.next().ok_or(anyhow!(
+        "Expected field separator ':' of a requirement trace using the explicit object notation."
+    ))?;
+
+    if first_field_separator.kind() != ":" {
+        bail!(
+            "Expected field separator ':' of a requirement trace using the explicit object notation."
+        );
+    }
+
+    let first_field_value = children.next().ok_or(anyhow!(
+        "Expected field value of a requirement trace using the explicit object notation."
+    ))?;
+
+    let resolved_first_ident = if first_field.kind() == "identifier"
+        && let Ok(ident) = first_field.utf8_text(content)
+    {
+        ident
+    } else if first_field.kind() == "string_literal"
+        && let Some(content_node) = first_field.named_child(0)
+        && let Ok(key) = content_node.utf8_text(content)
+    {
+        key
+    } else {
+        bail!(
+            "Expected either '{}' or '{}' as keys",
+            ID_IDENT,
+            PRODUCT_ID_IDENT
+        )
+    };
+
+    if resolved_first_ident != ID_IDENT && resolved_first_ident != PRODUCT_ID_IDENT {
+        bail!(
+            "Found field '{}'. Allowed fields are '{}' and '{}'",
+            resolved_first_ident,
+            ID_IDENT,
+            PRODUCT_ID_IDENT,
+        );
+    }
+
+    if first_field_value.kind() != "string_literal" {
+        bail!(
+            "Expected string literal as value for field '{}' of a requirement trace using the explicit object notation.",
+            resolved_first_ident
+        );
+    }
+
+    let first_field_value_content = first_field_value
+        .named_child(0)
+        .ok_or(anyhow!("Expected string value"))?;
+    let first_value = first_field_value_content.utf8_text(content)?;
+
+    if resolved_first_ident == ID_IDENT {
+        id = Some(ReqId::from_str(first_value)?);
+    } else if resolved_first_ident == PRODUCT_ID_IDENT {
+        product_id = Some(ProductId::from_str(first_value)?);
+    }
+
+    let mut next_child = children
+        .next()
+        .ok_or(anyhow!("Expected ',' or closing '}}'"))?;
+
+    if next_child.kind() == "," {
+        next_child = children
+            .next()
+            .ok_or(anyhow!("Expected identifier or closing '}}'"))?;
+
+        if next_child.kind() == "identifier" || next_child.kind() == "string_literal" {
+            let resolved_second_ident = if first_field.kind() == "identifier"
+                && let Ok(ident) = next_child.utf8_text(content)
+            {
+                ident
+            } else if next_child.kind() == "string_literal"
+                && let Some(content_node) = next_child.named_child(0)
+                && let Ok(key) = content_node.utf8_text(content)
+            {
+                key
+            } else {
+                bail!("Failed to extract the second key");
+            };
+
+            let second_field_separator = children.next().ok_or(anyhow!(
+                "Expected field separator ':' of a requirement trace using the explicit object notation."
+            ))?;
+
+            if second_field_separator.kind() != ":" {
+                bail!(
+                    "Expected field separator ':' of a requirement trace using the explicit object notation."
+                );
+            }
+
+            let second_field_value = children.next().ok_or(anyhow!(
+                "Expected field value of a requirement trace using the explicit object notation."
+            ))?;
+
+            if second_field_value.kind() != "string_literal" {
+                bail!(
+                    "Expected string literal as value for field '{}' of a requirement trace using the explicit object notation.",
+                    resolved_second_ident
+                );
+            }
+
+            let second_field_value_content = second_field_value
+                .named_child(0)
+                .ok_or(anyhow!("Expected string value"))?;
+            let second_value = second_field_value_content.utf8_text(content)?;
+
+            if resolved_second_ident == ID_IDENT {
+                if id.is_some() {
+                    bail!("Duplicate field '{}'", ID_IDENT);
+                } else {
+                    id = Some(ReqId::from_str(second_value)?);
+                }
+            } else if resolved_second_ident == PRODUCT_ID_IDENT {
+                if product_id.is_some() {
+                    bail!("Duplicate field '{}'", PRODUCT_ID_IDENT);
+                } else {
+                    product_id = Some(ProductId::from_str(second_value)?);
+                }
+            }
+
+            next_child = children
+                .next()
+                .ok_or(anyhow!("Expected either ',' or '}}'"))?;
+
+            if next_child.kind() == "," {
+                next_child = children.next().ok_or(anyhow!("Expected '}}'"))?;
+            }
+        }
+    }
+
+    if next_child.kind() != "}" {
+        bail!("Expected closing '}}'");
+    }
+
+    if children.next().is_some() {
+        bail!("Expected no more tokens after closing '}}'");
+    }
+
+    Ok(RequirementPk {
+        id: id.ok_or_else(|| {
+            anyhow!(
+                "Missing field '{}' for the explicit requirement trace object notation",
+                ID_IDENT
+            )
+        })?,
+        product_id,
+    })
 }
 
 fn get_attrb_macro_trace_kind(node: &Node<'_>, content: &[u8]) -> Option<TraceKind> {
