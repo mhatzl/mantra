@@ -1,6 +1,6 @@
 use anyhow::Context;
 use ignore::types::TypesBuilder;
-use mantra_schema::{path::RelativePath, reviews::ReviewSchema};
+use mantra_schema::{path::RelativePath, product::ProductId, reviews::ReviewSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},
@@ -43,9 +43,14 @@ impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
 
     fn collect_fn(
         &self,
-    ) -> Result<fn(&CollectableFile) -> Result<ReviewSchema, anyhow::Error>, anyhow::Error> {
+    ) -> Result<
+        fn(&ProductId, &CollectableFile) -> Result<Option<ReviewSchema>, anyhow::Error>,
+        anyhow::Error,
+    > {
         match self.source {
-            ReviewSourceVariant::Markup => Ok(|file: &CollectableFile| todo!()),
+            ReviewSourceVariant::Markup => {
+                Ok(|product_id: &ProductId, file: &CollectableFile| todo!())
+            }
             ReviewSourceVariant::Schema => Ok(walker::content_to_schema::<ReviewSchema>),
         }
     }

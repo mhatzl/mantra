@@ -6,7 +6,10 @@ Annotations(
   traces: [
     Trace(
       ids: [
-        "ID1",
+        RequirementPk(
+          id: "ID1",
+          product_id: None,
+        ),
       ],
       line: 2,
       related_code: Some(4),
@@ -15,7 +18,10 @@ Annotations(
     ),
     Trace(
       ids: [
-        "ID2",
+        RequirementPk(
+          id: "ID2",
+          product_id: None,
+        ),
       ],
       line: 3,
       related_code: Some(4),

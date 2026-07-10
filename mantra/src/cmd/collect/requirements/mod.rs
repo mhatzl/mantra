@@ -1,6 +1,6 @@
 use anyhow::Context;
 use ignore::types::TypesBuilder;
-use mantra_schema::{path::RelativePath, requirements::RequirementSchema};
+use mantra_schema::{path::RelativePath, product::ProductId, requirements::RequirementSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectRequirementsConfig, RequirementSourceVariant},
@@ -47,10 +47,14 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
 
     fn collect_fn(
         &self,
-    ) -> Result<fn(&CollectableFile) -> Result<RequirementSchema, anyhow::Error>, anyhow::Error>
-    {
+    ) -> Result<
+        fn(&ProductId, &CollectableFile) -> Result<Option<RequirementSchema>, anyhow::Error>,
+        anyhow::Error,
+    > {
         match self.source {
-            RequirementSourceVariant::Markup => Ok(|file: &CollectableFile| todo!()),
+            RequirementSourceVariant::Markup => {
+                Ok(|product_id: &ProductId, file: &CollectableFile| todo!())
+            }
             RequirementSourceVariant::Schema => Ok(walker::content_to_schema::<RequirementSchema>),
         }
     }

@@ -3,7 +3,7 @@ use std::ops::Deref;
 use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
-use crate::{Line, Origin, Properties, Revision, test_runs::TestCaseState};
+use crate::{Line, Origin, Properties, Revision, product::ProductId, test_runs::TestCaseState};
 
 use super::requirements::ReqId;
 
@@ -35,6 +35,9 @@ pub struct ReviewSchema {
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
+    /// Optional product ID to specify the product the reviews are part of.
+    /// If this field is not set, the ID of the product whose configuration included this schema is used.
+    pub product_id: Option<ProductId>,
     pub reviews: Vec<Review>,
     /// Optional properties related to all reviews in this entry.
     ///

@@ -5,6 +5,7 @@ use ignore::{WalkBuilder, WalkState};
 use mantra_schema::{
     FmtHash,
     path::{PathExt, RelativePath, RelativePathBuf},
+    product::ProductId,
 };
 use tokio::task::JoinSet;
 
@@ -42,8 +43,9 @@ pub(super) trait SingleFileCollectable<'db, T> {
     fn pattern(&self) -> Option<&str>;
     fn custom_ignore_filename(&self) -> &'static str;
     fn modify_walker(&self, builder: &mut WalkBuilder) -> Result<(), anyhow::Error>;
-    fn collect_fn(&self)
-    -> Result<fn(&CollectableFile) -> Result<T, anyhow::Error>, anyhow::Error>;
+    fn collect_fn(
+        &self,
+    ) -> Result<fn(&ProductId, &CollectableFile) -> Result<Option<T>, anyhow::Error>, anyhow::Error>;
     async fn update_db(
         collection: &mut Collection<'db>,
         filepath: &RelativePath,
@@ -74,6 +76,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
             return Ok(self.collection);
         }
 
+        let product_id = self.collection.product_id();
         let abs_cfg_file_dir_path = self.collection.abs_cfg_file_parent_path();
 
         let (schema_tx, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
@@ -85,6 +88,8 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                 let root_path = root.clone();
                 let start_path = cfg.path().to_logical_path(&root);
                 let glob_pattern = cfg.pattern().and_then(|p| glob::Pattern::new(p).ok());
+                let pid = product_id.clone();
+
                 task_set.spawn(async move {
                     let mut walk_builder = walker::base_mantra_walker(start_path, glob_pattern);
                     walk_builder.add_custom_ignore_filename(cfg.custom_ignore_filename());
@@ -94,6 +99,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                     let collect_fn = cfg.collect_fn()?;
 
                     walk_builder.build_parallel().run(|| {
+                        let pid = pid.clone();
                         let root_path = root_path.clone();
                         let sender = schema_sender.clone();
                         Box::new(move |path_res| {
@@ -109,8 +115,8 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                         CollectableFile::new(&rel_filepath, &file_hash, &content);
 
                                     // TODO: error handling
-                                    match collect_fn(&file) {
-                                        Ok(schema) => {
+                                    match collect_fn(&pid, &file) {
+                                        Ok(Some(schema)) => {
                                             let data = SentData {
                                                 schema,
                                                 filepath: rel_filepath,
@@ -118,6 +124,12 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                                 content,
                                             };
                                             let _ = sender.send(data);
+                                        }
+                                        Ok(None) => {
+                                            log::info!(
+                                                "Nothing collected from file '{}'",
+                                                filepath.display()
+                                            );
                                         }
                                         Err(err) => log::error!(
                                             "Failed reading schema from '{}'. Err: {err}",

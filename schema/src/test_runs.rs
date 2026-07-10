@@ -1,6 +1,7 @@
 use time::{Duration, OffsetDateTime};
 
 use crate::path::RelativePathBuf;
+use crate::product::ProductId;
 use crate::{ConversionError, FmtHash};
 use crate::{Line, Origin, Properties, Revision, requirements::ReqId};
 
@@ -24,6 +25,9 @@ pub struct TestRunSchema {
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
+    /// Optional product ID to specify the product the test runs are part of.
+    /// If this field is not set, the ID of the product whose configuration included this schema is used.
+    pub product_id: Option<ProductId>,
     /// List of test runs containing test and coverage information.
     pub test_runs: Vec<TestRun>,
     /// Optional properties related to all test runs in this entry.

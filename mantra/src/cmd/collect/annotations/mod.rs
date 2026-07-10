@@ -1,8 +1,9 @@
 use anyhow::Context;
 use mantra_lang_tracing::collect::collector::AnnotationCollector;
 use mantra_schema::{
-    annotations::{AnnotationSchema, Annotations, FileAnnotations},
+    annotations::{AnnotationSchema, FileAnnotations},
     path::RelativePath,
+    product::ProductId,
 };
 
 use crate::cmd::collect::{
@@ -43,8 +44,10 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
 
     fn collect_fn(
         &self,
-    ) -> Result<fn(&CollectableFile) -> Result<AnnotationSchema, anyhow::Error>, anyhow::Error>
-    {
+    ) -> Result<
+        fn(&ProductId, &CollectableFile) -> Result<Option<AnnotationSchema>, anyhow::Error>,
+        anyhow::Error,
+    > {
         match self.source {
             AnnotationSourceVariant::Content => Ok(collect_from_content),
             AnnotationSourceVariant::Schema => Ok(walker::content_to_schema::<AnnotationSchema>),
@@ -68,13 +71,17 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
     }
 }
 
-fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyhow::Error> {
+fn collect_from_content(
+    product_id: &ProductId,
+    file: &CollectableFile,
+) -> Result<Option<AnnotationSchema>, anyhow::Error> {
     if file.extension() == Some("rs") {
         let annotations =
             mantra_lang_tracing::collect::rust::RustCodeCollector::collect(file.content)
                 .context("Failed to collect annotations from Rust content")?;
-        Ok(AnnotationSchema {
+        Ok(Some(AnnotationSchema {
             schema_version: None,
+            product_id: None,
             files: vec![FileAnnotations {
                 filepath: file.filepath.clone(),
                 file_hash: file.file_hash.clone(),
@@ -83,27 +90,13 @@ fn collect_from_content(file: &CollectableFile) -> Result<AnnotationSchema, anyh
             }],
             trace_properties: None,
             origin: None,
-        })
+        }))
     } else {
         log::error!(
             "Got unsupported file type to collect annotations from '{}'. No traces or elements are collected.",
             file.filepath
         );
 
-        Ok(AnnotationSchema {
-            schema_version: None,
-            files: vec![FileAnnotations {
-                filepath: file.filepath.clone(),
-                file_hash: file.file_hash.clone(),
-                annotations: Annotations {
-                    traces: vec![],
-                    elements: vec![],
-                    coverage_excludes: vec![],
-                },
-                content: Some(file.content.to_string()),
-            }],
-            trace_properties: None,
-            origin: None,
-        })
+        Ok(None)
     }
 }

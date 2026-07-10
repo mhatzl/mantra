@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anyhow::{Context, bail};
 use mantra_schema::{
     FmtHash, Properties,
@@ -500,11 +502,18 @@ impl<'db> Collection<'db> {
             }
         }
 
-        for req_id in trace.ids {
+        for traced_req in &trace.ids {
+            let traced_product_id = if let Some(pid) = &traced_req.product_id {
+                pid.to_string()
+            } else {
+                String::new()
+            };
+
             sqlx::query!(
                 "
-                insert into DirectReqTraces (
+                insert into DetectedReqTraces (
                     last_collect_nr,
+                    product_id,
                     req_id,
                     file_hash,
                     line
@@ -513,37 +522,47 @@ impl<'db> Collection<'db> {
                     $1,
                     $2,
                     $3,
-                    $4
+                    $4,
+                    $5
                 )
-                on conflict (req_id, file_hash, line)
+                on conflict (product_id, req_id, file_hash, line)
                 do update set
                     last_collect_nr = excluded.last_collect_nr
                 ",
                 collect_nr,
-                req_id,
+                traced_product_id,
+                traced_req.id,
                 file_hash,
                 trace.line
             )
             .execute(self.connection_mut())
             .await
-            .with_context(|| format!("Failed to insert trace to req '{}'", req_id))?;
+            .with_context(|| format!("Failed to insert trace to req '{}'", traced_req.id))?;
 
-            let req_available = sqlx::query!(
-                "
+            // If no product ID is set for a requirement trace, the current product collecting data is assumed to be intended.
+            let trace_for_current_product = traced_req
+                .product_id
+                .as_ref()
+                .map(|pid| pid == product_id)
+                .unwrap_or(true);
+
+            if trace_for_current_product {
+                let req_available = sqlx::query!(
+                    "
                 select id from Requirements
                 where id = $1 and product_id = $2
                 ",
-                req_id,
-                product_id
-            )
-            .fetch_optional(self.connection_mut())
-            .await
-            .context("Failed to get collected requirements")?
-            .is_some();
+                    traced_req.id,
+                    product_id
+                )
+                .fetch_optional(self.connection_mut())
+                .await
+                .context("Failed to get collected requirements")?
+                .is_some();
 
-            if req_available {
-                sqlx::query!(
-                    "
+                if req_available {
+                    sqlx::query!(
+                        "
                     insert into DirectProductReqTraces (
                         last_collect_nr,
                         product_id,
@@ -564,18 +583,22 @@ impl<'db> Collection<'db> {
                     do update set
                         last_collect_nr = excluded.last_collect_nr
                     ",
-                    collect_nr,
-                    product_id,
-                    req_id,
-                    filepath,
-                    file_hash,
-                    trace.line
-                )
-                .execute(self.connection_mut())
-                .await
-                .with_context(|| {
-                    format!("Failed to insert product-related trace to req '{}'", req_id)
-                })?;
+                        collect_nr,
+                        product_id,
+                        traced_req.id,
+                        filepath,
+                        file_hash,
+                        trace.line
+                    )
+                    .execute(self.connection_mut())
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert product-related trace to req '{}'",
+                            traced_req.id
+                        )
+                    })?;
+                }
             }
         }
 

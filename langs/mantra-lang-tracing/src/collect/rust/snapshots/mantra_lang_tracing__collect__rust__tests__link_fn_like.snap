@@ -6,7 +6,10 @@ Annotations(
   traces: [
     Trace(
       ids: [
-        "ID1.link",
+        RequirementPk(
+          id: "ID1.link",
+          product_id: None,
+        ),
       ],
       line: 3,
       related_code: Some(CodeBlock(
