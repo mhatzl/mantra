@@ -5,9 +5,7 @@
 <ul>
     <li>
         <strong>State:</strong>
-        <span class="state-badge state-{{ schema.state }}"
-            >{{ schema.state }}</span
-        >
+        <span class="state-badge state-{{ schema.state }}">{{ schema.state }}</span>
     </li>
     <li>
         <strong>Manual Verification:</strong> {{ schema.manual_verification }}
@@ -16,6 +14,20 @@
     <li><strong>Deprecated:</strong> {{ schema.deprecated }}</li>
     <li><strong>Excluded:</strong> {{ schema.excluded }}</li>
 </ul>
+
+{% if schema.replaced_by %}
+<h2>Replaced By</h2>
+<ul>
+    {% for req in schema.replaced_by %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html">{{ req.id }}</a><span
+            class="state-badge state-{{ req.state }}">{{ req.state }}</span>{% if req.optional %}<span
+            class="optional-badge">optional</span>{%
+        endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 <h2>Description</h2>
 {% if schema.description %} {{ schema.description }} {% else %}
@@ -26,11 +38,9 @@
 <ul>
     {% for child in schema.children %}
     <li>
-        <a href="{{ path_to_root }}/{{ requirement_url_path(child) }}.html"
-            >{{ child.id }}</a
-        ><span class="state-badge state-{{ child.state }}"
-            >{{ child.state }}</span
-        >{% if child.optional %}<span class="optional-badge">optional</span>{%
+        <a href="{{ path_to_root }}/{{ requirement_url_path(child) }}.html">{{ child.id }}</a><span
+            class="state-badge state-{{ child.state }}">{{ child.state }}</span>{% if child.optional %}<span
+            class="optional-badge">optional</span>{%
         endif %}
     </li>
     {% endfor %}
@@ -39,11 +49,9 @@
 <ul>
     {% for parent in schema.parents %}
     <li>
-        <a href="{{ path_to_root }}/{{ requirement_url_path(parent) }}.html"
-            >{{ parent.id }}</a
-        ><span class="state-badge state-{{ parent.state }}"
-            >{{ parent.state }}</span
-        >{% if parent.optional %}<span class="optional-badge">optional</span>{%
+        <a href="{{ path_to_root }}/{{ requirement_url_path(parent) }}.html">{{ parent.id }}</a><span
+            class="state-badge state-{{ parent.state }}">{{ parent.state }}</span>{% if parent.optional %}<span
+            class="optional-badge">optional</span>{%
         endif %}
     </li>
     {% endfor %}
@@ -54,20 +62,14 @@
     {% for test_run in schema.covered_by.test_runs %}
     <li>
         <strong>Test Run:</strong>
-        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
-            >{{ test_run.name }}</a
-        ><span class="state-badge state-{{ test_run.state }}"
-            >{{ test_run.state }}</span
-        >
+        <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html">{{ test_run.name }}</a><span
+            class="state-badge state-{{ test_run.state }}">{{ test_run.state }}</span>
     </li>
     {% endfor %} {% for test_case in schema.covered_by.test_cases %}
     <li>
         <strong>Test Case:</strong>
-        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html"
-            >{{ test_case.test_case_name }}</a
-        ><span class="state-badge state-{{ test_case.state }}"
-            >{{ test_case.state }}</span
-        >
+        <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html">{{ test_case.test_case_name }}</a><span
+            class="state-badge state-{{ test_case.state }}">{{ test_case.state }}</span>
     </li>
     {% endfor %}
 </ul>
@@ -76,11 +78,20 @@
 <ul>
     {% for review in schema.reviewed_in %}
     <li>
-        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
-            >{{ review.name }}</a
-        ><span class="state-badge state-{{ review.state }}"
-            >{{ review.state }}</span
-        >
+        <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html">{{ review.name }}</a><span
+            class="state-badge state-{{ review.state }}">{{ review.state }}</span>
+    </li>
+    {% endfor %}
+</ul>
+
+<h2>Replaces</h2>
+<ul>
+    {% for req in schema.replaces %}
+    <li>
+        <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html">{{ req.id }}</a><span
+            class="state-badge state-{{ req.state }}">{{ req.state }}</span>{% if req.optional %}<span
+            class="optional-badge">optional</span>{%
+        endif %}
     </li>
     {% endfor %}
 </ul>

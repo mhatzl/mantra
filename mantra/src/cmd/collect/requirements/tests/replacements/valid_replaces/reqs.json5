@@ -1,0 +1,52 @@
+{
+    requirements: [
+        {
+            id: "req-1",
+            title: "First Requirement (Replaced by req-2)",
+            origin: "Replacement test",
+        },
+        {
+            id: "req-2",
+            title: "Second Requirement",
+            origin: "Replacement test",
+            replaces: [
+                "req-1"
+            ]
+        },
+        {
+            id: "req-3",
+            title: "Second Requirement (Replaced by req-4)",
+            origin: "Replacement test",
+        },
+        {
+            id: "req-4",
+            title: "Second Requirement (Replaced by req-5)",
+            origin: "Replacement test",
+            replaces: [
+                "req-3"
+            ]
+        },
+        {
+            id: "req-5",
+            title: "Second Requirement",
+            origin: "Replacement test",
+            replaces: [
+                "req-4"
+            ]
+        },
+        {
+            id: "req-6",
+            title: "Second Requirement (Replaced by req-7)",
+            origin: "Replacement test",
+        },
+        {
+            id: "req-7",
+            title: "Second Requirement (Directly Deprecated)",
+            origin: "Replacement test",
+            deprecated: true,
+            replaces: [
+                "req-6"
+            ]
+        }
+    ]
+}

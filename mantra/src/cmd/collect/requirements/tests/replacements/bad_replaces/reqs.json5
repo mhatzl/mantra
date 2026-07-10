@@ -1,0 +1,17 @@
+{
+    requirements: [
+        {
+            id: "req-1",
+            title: "First Requirement",
+            origin: "Bad replacement test",
+        },
+        {
+            id: "req-1.sub-1",
+            title: "Sub Requirement cannot replace ancestor",
+            origin: "Bad replacement test",
+            replaces: [
+                "req-1"
+            ]
+        }
+    ]
+}

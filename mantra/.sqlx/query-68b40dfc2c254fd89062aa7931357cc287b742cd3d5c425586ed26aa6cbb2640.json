@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            rr.replaced_req_id,\n            rs.state,\n            case when exists (\n                select o.id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.id = rr.replaced_req_id\n            ) then true\n            else false\n            end as \"optional!:bool\"\n        from RequirementReplacements rr, RequirementVerificationStates rs\n        where rr.product_id = $1 and rr.req_id = $2\n        and rs.product_id = $1 and rs.id = rr.replaced_req_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "replaced_req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "68b40dfc2c254fd89062aa7931357cc287b742cd3d5c425586ed26aa6cbb2640"
+}

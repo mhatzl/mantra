@@ -75,3 +75,17 @@ create table RequirementHierarchies (
     foreign key (child_product_id, child_req_id) references Requirements (product_id, id) on delete cascade deferrable initially deferred,
     foreign key (parent_product_id, parent_req_id) references Requirements (product_id, id) on delete cascade deferrable initially deferred
 );
+
+-- Table to map if a requirement replaces others.
+-- Replacements are only possible inside the same product.
+-- [req("req.replacing")]
+create table RequirementReplacements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    req_id text not null,
+    product_id text not null,
+    -- Requirement id that is replaced by the requirement set in "req_id"
+    replaced_req_id text not null,
+    constraint RequirementReplacementPk primary key (req_id, product_id, replaced_req_id),
+    foreign key (req_id, product_id) references Requirements (id, product_id) on delete cascade,
+    foreign key (replaced_req_id, product_id) references Requirements (id, product_id) on delete cascade deferrable initially deferred
+);

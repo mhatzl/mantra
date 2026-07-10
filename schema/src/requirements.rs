@@ -126,6 +126,9 @@ pub struct Requirement {
     /// [req("req.optional")]
     #[serde(default)]
     pub optional: bool,
+    /// Optional list of requirements that this requirement replaces.
+    /// Replacing a requirement is only possible inside the same product and marks replaced requirements as *deprecated*.
+    pub replaces: Option<Vec<ReqId>>,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,

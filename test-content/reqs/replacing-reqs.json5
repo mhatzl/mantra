@@ -1,0 +1,59 @@
+{
+    requirements: [
+        {
+            id: "replaced-req-1",
+            title: "First requirement",
+            origin: "Replacing requirements",
+        },
+        {
+            id: "replacing-req-1",
+            title: "Requirement replacing 'replaced-req-1'",
+            origin: "Replacing requirements",
+            replaces: [
+                "replaced-req-1"
+            ],
+        },
+        {
+            id: "replaced-req-2",
+            title: "Second requirement",
+            origin: "Replacing requirements",
+        },
+        {
+            id: "partial-req-2-replace-1",
+            title: "Partial replace for requirement 'replaced-req-2'",
+            origin: "Replacing requirements",
+            replaces: [
+                "replaced-req-2"
+            ],
+        },
+        {
+            id: "partial-req-2-replace-2",
+            title: "Partial replace for requirement 'replaced-req-2'",
+            origin: "Replacing requirements",
+            replaces: [
+                "replaced-req-2"
+            ],
+        },
+        {
+            id: "replaced-req-3",
+            title: "Third requirement",
+            origin: "Replacing requirements",
+        },
+        {
+            id: "replacing-req-3",
+            title: "Requirement replacing 'replaced-req-3'",
+            origin: "Replacing requirements",
+            replaces: [
+                "replaced-req-3"
+            ],
+        },
+        {
+            id: "replacing-replaced-req-3",
+            title: "Requirement replacing 'replaced-req-3'",
+            origin: "Replacing requirements",
+            replaces: [
+                "replacing-req-3"
+            ],
+        },
+    ]
+}

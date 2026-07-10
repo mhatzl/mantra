@@ -177,6 +177,25 @@ impl<'db> Collection<'db> {
                     record.id
                 )
             })?;
+
+            sqlx::query!(
+                "
+                delete from RequirementReplacements
+                where product_id = $1 and req_id = $2
+                and last_collect_nr < $3
+            ",
+                product_id,
+                record.id,
+                collect_nr
+            )
+            .execute(self.connection_mut())
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to delete outdated requirement replacements for requirement '{}'",
+                    record.id
+                )
+            })?;
         }
 
         // Check bad req-hierarchies before deleting olds.
@@ -438,6 +457,42 @@ impl<'db> Collection<'db> {
                     format!(
                         "Failed to update hierarchy with parent requirement '{}'",
                         parent.id
+                    )
+                })?;
+            }
+        }
+
+        if let Some(replaced_reqs) = req.replaces {
+            for replaced_req in replaced_reqs {
+                sqlx::query!(
+                    "
+                    insert into RequirementReplacements (
+                        last_collect_nr,
+                        product_id,
+                        req_id,
+                        replaced_req_id
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (product_id, req_id, replaced_req_id)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                    collect_nr,
+                    product_id,
+                    req.id,
+                    replaced_req
+                )
+                .execute(self.connection_mut())
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update requirement replacement for requirement '{}'",
+                        replaced_req
                     )
                 })?;
             }

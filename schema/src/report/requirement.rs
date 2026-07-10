@@ -61,6 +61,12 @@ pub struct RequirementReportSchema {
     /// **Note:** All potential children of such a requirement are also marked as optional.
     /// [req("req.optional")]
     pub optional: bool,
+    /// Optional list of requirements that this requirement replaces.
+    pub replaces: Option<Vec<RequirementReference>>,
+    /// Optional list of requirements that this requirement is replaced by.
+    ///
+    /// **Note:** If a requirement is replaced by others, it is automatically marked as deprecated.
+    pub replaced_by: Option<Vec<RequirementReference>>,
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,

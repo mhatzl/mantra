@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select rr.req_id, rr.replaced_req_id\n            from RequirementReplacements rr, RequirementDescendants rd\n            where rr.last_collect_nr = $1 and rr.product_id = $2\n            and rr.last_collect_nr = rd.last_collect_nr\n            and rr.product_id = rd.product_id\n            and rr.product_id = rd.descendant_product_id\n            and rr.replaced_req_id = rd.id\n            and rr.req_id = rd.descendant_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "replaced_req_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0258b1bc5c3bcc6cfd2b32ef266d36a192b4a303d7e9d62fd1e7694d53bd40c1"
+}
