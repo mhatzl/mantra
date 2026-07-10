@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use mantra_schema::annotations::TraceKind;
 
 use crate::cmd::collect::Collection;
@@ -18,6 +18,11 @@ impl<'db> Collection<'db> {
         self.update_excluded_requirements()
             .await
             .context("Failed to update excluded requirements")?;
+
+        self.check_replacing_requirements()
+            .await
+            .context("Failed checking requirement replacements")?;
+
         self.update_optional_requirements()
             .await
             .context("Failed to update optional requirements")?;
@@ -175,6 +180,42 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    async fn check_replacing_requirements(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        let bad_replacements = sqlx::query!(
+            "
+            select rr.req_id, rr.replaced_req_id
+            from RequirementReplacements rr, RequirementDescendants rd
+            where rr.last_collect_nr = $1 and rr.product_id = $2
+            and rr.last_collect_nr = rd.last_collect_nr
+            and rr.product_id = rd.product_id
+            and rr.product_id = rd.descendant_product_id
+            and rr.replaced_req_id = rd.id
+            and rr.req_id = rd.descendant_id
+            ",
+            collect_nr,
+            product_id
+        )
+        .fetch_all(self.connection_mut())
+        .await?;
+
+        for bad_record in &bad_replacements {
+            log::error!(
+                "Requirement '{}' cannot replace its ancestor '{}'",
+                bad_record.req_id,
+                bad_record.replaced_req_id
+            );
+        }
+
+        if bad_replacements.is_empty() {
+            Ok(())
+        } else {
+            Err(anyhow!("Requirement tried to replace its ancestor"))
+        }
+    }
+
     async fn update_leaf_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
@@ -234,6 +275,12 @@ impl<'db> Collection<'db> {
                 where deprecated = true
                 and last_collect_nr = $1
                 and product_id = $2
+
+                union
+
+                select product_id, replaced_req_id
+                from RequirementReplacements
+                where last_collect_nr = $1 and product_id = $2
             ),
             ParentMarkedDeprecated(product_id, id) as (
                 select rd.descendant_product_id, rd.descendant_id

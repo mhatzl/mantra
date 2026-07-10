@@ -10,7 +10,7 @@ use mantra_schema::{
         requirement::{
             RequirementCoverageByTestCases, RequirementCoverageByTestRuns,
             RequirementCoverageByTests, RequirementReference, RequirementReportSchema,
-            RequirementReviewReference, RequirementTracesOverview,
+            RequirementReviewReference, RequirementState, RequirementTracesOverview,
         },
         test_case::TestCaseReference,
         test_run::TestRunReference,
@@ -160,6 +160,9 @@ pub async fn generate_requirement_schema<'db>(
 
     let traces = requirement_traces(transaction, &product.id, req_id).await?;
 
+    let replaces = requirement_replacements(transaction, &product.id, req_id).await?;
+    let replaced_by = requirement_replaced(transaction, &product.id, req_id).await?;
+
     Ok(RequirementReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         state: req.state.try_into()?,
@@ -178,6 +181,8 @@ pub async fn generate_requirement_schema<'db>(
         deprecated: req.deprecated,
         excluded: req.excluded,
         optional: req.optional,
+        replaces,
+        replaced_by,
         properties,
     })
 }
@@ -541,4 +546,94 @@ async fn requirement_traces<'db>(
         summary: traces_summary,
         all: traces,
     }))
+}
+
+async fn requirement_replacements<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Vec<RequirementReference>>, anyhow::Error> {
+    let replaced_records = sqlx::query!(
+        r#"
+        select
+            rr.replaced_req_id,
+            rs.state,
+            case when exists (
+                select o.id
+                from OptionalRequirements o
+                where o.product_id = $1 and o.id = rr.replaced_req_id
+            ) then true
+            else false
+            end as "optional!:bool"
+        from RequirementReplacements rr, RequirementVerificationStates rs
+        where rr.product_id = $1 and rr.req_id = $2
+        and rs.product_id = $1 and rs.id = rr.replaced_req_id
+        "#,
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if replaced_records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut replaced_reqs = Vec::with_capacity(replaced_records.len());
+
+    for record in replaced_records {
+        replaced_reqs.push(RequirementReference {
+            product_id: product_id.clone(),
+            id: ReqId::from_str(&record.replaced_req_id)?,
+            state: RequirementState::try_from(record.state)?,
+            optional: record.optional,
+        })
+    }
+
+    Ok(Some(replaced_reqs))
+}
+
+async fn requirement_replaced<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Vec<RequirementReference>>, anyhow::Error> {
+    let replaced_by_records = sqlx::query!(
+        r#"
+        select
+            rr.req_id,
+            rs.state,
+            case when exists (
+                select o.id
+                from OptionalRequirements o
+                where o.product_id = $1 and o.id = rr.req_id
+            ) then true
+            else false
+            end as "optional!:bool"
+        from RequirementReplacements rr, RequirementVerificationStates rs
+        where rr.product_id = $1 and rr.replaced_req_id = $2
+        and rs.product_id = $1 and rs.id = rr.req_id
+        "#,
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if replaced_by_records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut replaced_by_reqs = Vec::with_capacity(replaced_by_records.len());
+
+    for record in replaced_by_records {
+        replaced_by_reqs.push(RequirementReference {
+            product_id: product_id.clone(),
+            id: ReqId::from_str(&record.req_id)?,
+            state: RequirementState::try_from(record.state)?,
+            optional: record.optional,
+        })
+    }
+
+    Ok(Some(replaced_by_reqs))
 }
