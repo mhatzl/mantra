@@ -14,6 +14,7 @@ pub mod cfg;
 pub mod collector;
 pub mod db;
 pub mod lsif;
+pub mod markup;
 pub mod products;
 pub mod requirements;
 pub mod reviews;
