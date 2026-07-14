@@ -27,7 +27,7 @@ Annotations(
         end: 3,
       ),
       kind: function,
-      content_hash: Some("7f3a0b5acca5b17a8a75c0d0f8bf40277622475977261211aeceebbcfe2018bf"),
+      content_hash: Some("e2ba2322b0a6c043806215a29e5261a579d4ad2482d7538b3df4136ce831be0b"),
     ),
   ],
   coverage_excludes: [],

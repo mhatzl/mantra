@@ -1295,6 +1295,7 @@ dependencies = [
  "env_logger",
  "glob",
  "ignore",
+ "insta",
  "json5",
  "log",
  "lsp-types",

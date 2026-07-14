@@ -6,13 +6,8 @@
 
 - Parents: ["req-1"]
 - **Optional:** true
-- **Custom-Map:** {
-    key: "value",
-  }
-- Custom-List: [
-    "entry-1",
-    "entry-2",
-  ]
+
+Some description for the requirement.
 
 # `req-3`: Title
 

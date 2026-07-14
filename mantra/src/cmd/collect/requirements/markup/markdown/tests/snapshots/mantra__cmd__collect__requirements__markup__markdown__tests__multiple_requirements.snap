@@ -1,0 +1,58 @@
+---
+source: mantra/src/cmd/collect/requirements/markup/markdown/tests/mod.rs
+---
+RequirementSchema(
+  schema_version: "0.8.0",
+  product_id: Some("product-id"),
+  requirements: [
+    Requirement(
+      id: "req-1",
+      parents: None,
+      title: "First Requirement Title",
+      description: Some("Description for the first requirement.\n"),
+      origin: {
+        "line": 1,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-2",
+      parents: None,
+      title: "Second Requirement Title",
+      description: Some("Description for the second requirement.\n"),
+      origin: {
+        "line": 5,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-3",
+      parents: None,
+      title: "Third Requirement Title",
+      description: Some("Description for the third requirement.\n"),
+      origin: {
+        "line": 9,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+  ],
+  properties: None,
+  origin: Some({
+    "file": "multiple_requirements.md",
+  }),
+)

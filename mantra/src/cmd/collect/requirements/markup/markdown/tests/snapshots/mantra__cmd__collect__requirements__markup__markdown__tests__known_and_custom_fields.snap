@@ -1,0 +1,80 @@
+---
+source: mantra/src/cmd/collect/requirements/markup/markdown/tests/mod.rs
+---
+RequirementSchema(
+  schema_version: "0.8.0",
+  product_id: Some("product-id"),
+  requirements: [
+    Requirement(
+      id: "req-1",
+      parents: None,
+      title: "Title",
+      description: None,
+      origin: {
+        "line": 1,
+      },
+      manual_verification: true,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: Some({
+        "mantra_unknown": "Some custom property value",
+      }),
+    ),
+    Requirement(
+      id: "req-2",
+      parents: Some([
+        RequirementPk(
+          id: "req-1",
+          product_id: None,
+        ),
+      ]),
+      title: "Title",
+      description: None,
+      origin: {
+        "line": 6,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: true,
+      replaces: None,
+      properties: Some({
+        "Custom-List": [
+          "entry-1",
+          "entry-2",
+        ],
+        "Custom-Map": {
+          "key": "value",
+        },
+      }),
+    ),
+    Requirement(
+      id: "req-3",
+      parents: Some([
+        RequirementPk(
+          id: "req-1",
+          product_id: None,
+        ),
+      ]),
+      title: "Title",
+      description: None,
+      origin: {
+        "line": 18,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: Some({
+        "some_flag": false,
+      }),
+    ),
+  ],
+  properties: None,
+  origin: Some({
+    "file": "known_and_custom_fields.md",
+  }),
+)

@@ -40,6 +40,7 @@ lsp-types = "0.97.0"
 comrak = "0.53.0"
 
 [dev-dependencies]
+insta.workspace = true
 test-case = "3"
 
 [features]

@@ -153,7 +153,9 @@ fn extract_requirements(
         let line = node.data().sourcepos.start.line;
 
         if matches!(node.data().value, NodeValue::Heading(_))
-            && let Some(req_heading) = extract_requirement_heading(node)?
+            && let Some(req_heading) = extract_requirement_heading(node).with_context(|| {
+                format!("Failed extracting a requirement heading at line '{line}'")
+            })?
         {
             let mut requirement = Requirement::new_minimal(
                 req_heading.id,
@@ -161,7 +163,9 @@ fn extract_requirements(
                 RequirementOrigin { line }.to_value()?,
             );
 
-            fill_req_body(&mut requirement, &mut top_nodes)?;
+            fill_req_body(&mut requirement, &mut top_nodes).with_context(|| {
+                format!("Failed to parse the requirement body for the requirement '{}' defined at line '{}'", requirement.id, line)
+            })?;
 
             requirements.push(requirement);
         } else {
@@ -191,9 +195,11 @@ struct RequirementHeading {
 fn extract_requirement_heading(
     heading_node: Node,
 ) -> Result<Option<RequirementHeading>, anyhow::Error> {
+    let line = heading_node.data().sourcepos.start.line;
     let mut children = heading_node.children();
+    let first_child = children.next();
 
-    if let Some(req_id_part) = children.next()
+    if let Some(req_id_part) = first_child
         && let NodeValue::Code(enclosed_id) = &req_id_part.data().value
     {
         let req_id = ReqId::from_str(&enclosed_id.literal)?;
@@ -207,18 +213,28 @@ fn extract_requirement_heading(
 
         let trimmed = title_part.trim();
 
-        if let Some(title) = trimmed.strip_prefix(": ") {
+        if let Some(title) = trimmed.strip_prefix(":") {
             if trimmed != title_part.trim_end() {
+                log::warn!("Remove space before ':' in requirement heading at line '{line}'");
+            }
+            if !title.starts_with(' ') {
                 log::warn!(
-                    "Remove space before ':' in requirement heading at line '{}'",
-                    heading_node.data().sourcepos.start.line
-                );
+                    "A whitespace should be set between the separator ':' and requirement title at line '{line}'"
+                )
+            }
+
+            let title = origify_content(title.trim());
+
+            if title.is_empty() {
+                bail!("Missing title after ':' for the requirement definition");
             }
 
             return Ok(Some(RequirementHeading {
                 id: req_id,
                 title: title.to_string(),
             }));
+        } else {
+            bail!("Missing title separator ':' after requirement ID");
         }
     }
 
@@ -250,7 +266,8 @@ fn fill_req_body(
             .expect("Peek above ensures that there is a node");
         let children = node.children().peekable();
 
-        let req_fields: ReqFields = extract_req_fields(children)?;
+        let req_fields: ReqFields = extract_req_fields(children)
+            .context("Failed to extract requirement fields from the bullet list")?;
 
         requirement.deprecated = req_fields.deprecated.unwrap_or_default();
         requirement.exclude = req_fields.exclude.unwrap_or_default();
@@ -273,6 +290,7 @@ fn fill_req_body(
 
         let mut s = String::new();
         comrak::format_commonmark(next, &Options::default(), &mut s)?;
+        s = origify_content(&s);
 
         if let Some(desc) = description.as_mut() {
             desc.push_str(&s);
@@ -359,24 +377,14 @@ fn extract_req_fields(
         {
             let _ = para_children.next(); // skip key child
 
-            let value = para_children.fold(String::new(), |mut base, n| {
-                let mut s = String::new();
-                let _ = comrak::format_commonmark(n, &Options::default(), &mut s);
-                base.push_str(&s);
-                base
-            });
+            let value = flattened_content(para_children);
 
-            (key.to_string(), value)
+            (origify_content(key), value)
         } else if matches!(first_child.data().value, NodeValue::Text(_)) {
-            let kv = para_children.fold(String::new(), |mut base, n| {
-                let mut s = String::new();
-                let _ = comrak::format_commonmark(n, &Options::default(), &mut s);
-                base.push_str(&s);
-                base
-            });
+            let kv = flattened_content(para_children);
 
             if let Some((key, value)) = kv.split_once(':') {
-                (key.to_string(), value.to_string())
+                (origify_content(key), origify_content(value))
             } else {
                 bail!(
                     "List key-value entry is missing the ':' delimiter at line '{}'",
@@ -403,7 +411,9 @@ fn extract_req_fields(
                 // Faking trace syntax by turning '["req-id"]' into '[req("req-id")]'
                 let val = raw_value.replacen("[", "[req(", 1);
                 let Some((modified_list, _)) = val.rsplit_once(']') else {
-                    bail!("Parents list must end with ']'");
+                    bail!(
+                        "Parents field value must be a list of requirement references and end with ']'"
+                    );
                 };
 
                 let annotations =
@@ -425,14 +435,14 @@ fn extract_req_fields(
                     .expect("Checked above that exactly one entry exists");
 
                 if fields.parents.is_some() {
-                    bail!("Field 'Parents' was set more than once");
+                    bail!("Duplicate entry! Key 'Parents' has been set more than once");
                 } else {
                     fields.parents = Some(parent_refs.ids);
                 }
             }
             FieldKey::ManualVerification => {
                 update_bool(&mut fields.manual_verification, &raw_value)
-                    .context("Key: Manual Verification")?
+                    .context("Key: Manual Verification (or alias 'Manual')")?
             }
             FieldKey::Deprecated => {
                 update_bool(&mut fields.deprecated, &raw_value).context("Key: Deprecated")?
@@ -447,13 +457,12 @@ fn extract_req_fields(
                 let req_ids: Vec<ReqId> = json5::from_str(&raw_value)?;
 
                 if fields.replaces.is_some() {
-                    bail!("Field 'Replaces' was set more than once");
+                    bail!("Duplicate entry! Key 'Replaces' has been set more than once");
                 } else {
                     fields.replaces = Some(req_ids);
                 }
             }
             FieldKey::Properties => {
-                eprintln!("{raw_value}");
                 let value: serde_json::Value = json5::from_str(&raw_value)?;
 
                 if let Some(properties) = &mut fields.properties {
@@ -470,6 +479,25 @@ fn extract_req_fields(
     Ok(fields)
 }
 
+fn flattened_content(
+    children: comrak::arena_tree::Children<'_, std::cell::RefCell<comrak::nodes::Ast>>,
+) -> String {
+    let content = children.fold(String::new(), |mut base, n| {
+        let mut s = String::new();
+        let _ = comrak::format_commonmark(n, &Options::default(), &mut s);
+        base.push_str(&s);
+        base
+    });
+
+    origify_content(&content)
+}
+
+fn origify_content(content: &str) -> String {
+    // comrak escapes potential Markdown tokens that didn't result in a Markdown item.
+    // Since there seems to be no way to get the original content, *unescaping* seems to be the closest way to get to the original.
+    content.replace("\\", "").replace("\\", "")
+}
+
 fn match_bool(s: &str) -> Result<bool, anyhow::Error> {
     match s.trim().to_lowercase().as_str() {
         "true" => Ok(true),
@@ -482,7 +510,7 @@ fn update_bool(b: &mut Option<bool>, new: &str) -> Result<(), anyhow::Error> {
     let new_b = match_bool(new)?;
 
     if b.is_some() {
-        bail!("Duplicate entry! Key has been set previously");
+        bail!("Duplicate entry! Key has been set more than once");
     } else {
         *b = Some(new_b);
     }

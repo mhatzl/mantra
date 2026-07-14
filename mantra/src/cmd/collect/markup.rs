@@ -1,7 +1,7 @@
 use mantra_schema::{Origin, Properties, product::ProductId};
 
 /// The frontmatter delimiter for Markdown
-pub const MD_FRONTMATTER_DELIMITER: &str = "---";
+pub const MD_FRONTMATTER_DELIMITER: &str = "+++";
 
 /// Frontmatter that may be set at the start of markup documents.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

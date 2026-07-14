@@ -1,61 +1,140 @@
-use comrak::{Arena, nodes::NodeValue};
-use mantra_schema::{FmtHash, path::RelativePathBuf, product::ProductId};
+use mantra_schema::{path::RelativePathBuf, product::ProductId};
 
-use crate::cmd::collect::{collector::CollectableFile, requirements::markup::markdown};
+use crate::cmd::collect::requirements::markup::markdown;
+
+mod incomplete_fields;
+mod incomplete_headings;
 
 macro_rules! test_file {
     ($f:literal) => {{
         let content = include_str!($f);
 
-        CollectableFile {
-            filepath: RelativePathBuf::from($f),
-            file_hash: FmtHash::new(content),
+        $crate::cmd::collect::collector::CollectableFile {
+            filepath: mantra_schema::path::RelativePathBuf::from($f),
+            file_hash: mantra_schema::FmtHash::new(content),
             content,
         }
     }};
 }
+use test_file;
 
 macro_rules! expect_schema {
     ($f:literal) => {
         expect_schema!($f, "product-id")
     };
     ($f:literal, $pid:literal) => {{
-        let schema = markdown::collect_requirements(
-            &ProductId::new(String::from($pid)).unwrap(),
-            &test_file!($f),
-        )
-        .unwrap()
-        .unwrap();
+        let file = test_file!($f);
+        let schema =
+            markdown::collect_requirements(&ProductId::new(String::from($pid)).unwrap(), &file)
+                .unwrap()
+                .unwrap();
 
         schema
     }};
 }
 
 #[test]
-fn markdown_single_files() {
-    let arena = Arena::default();
-    let mut options = comrak::Options::default();
-    options.extension.front_matter_delimiter = Some("---".to_owned());
+fn diff_product_frontmatter() {
+    let file = test_file!("diff_product_frontmatter.md");
+    let no_schema =
+        markdown::collect_requirements(&ProductId::new(String::from("other-pid")).unwrap(), &file)
+            .unwrap();
 
-    let root_node =
-        comrak::parse_document(&arena, include_str!("mantra_known_fields.md"), &options);
-
-    if root_node.data().value != NodeValue::Document {
-        panic!("Expected Markdown root to be a document");
-    }
-
-    let top_nodes = root_node.children().peekable();
-
-    for child in top_nodes {
-        eprintln!("{child:#?}");
-    }
+    assert_eq!(
+        no_schema, None,
+        "File is set for other product, so no requirement is collected"
+    );
 }
 
 #[test]
-fn markdown_single_requirement() {
+fn dot_nested_requirements() {
+    let schema = expect_schema!("dot_nested_requirements.md");
+
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
+}
+
+#[test]
+fn known_and_custom_fields() {
+    let schema = expect_schema!("known_and_custom_fields.md");
+
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
+}
+
+#[test]
+fn mantra_known_fields() {
     let schema = expect_schema!("mantra_known_fields.md");
 
-    eprintln!("{schema:#?}");
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
+}
+
+#[test]
+fn matching_frontmatter() {
+    let schema = expect_schema!("matching_frontmatter.md");
+
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
+}
+
+#[test]
+fn multiple_requirements() {
+    let schema = expect_schema!("multiple_requirements.md");
+
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
+}
+
+#[test]
+fn parents_and_dot_combination() {
+    let schema = expect_schema!("parents_and_dot_combination.md");
+
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
+}
+
+#[test]
+fn single_requirement() {
+    let schema = expect_schema!("single_requirement.md");
+
+    insta::with_settings!(
+        {
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(schema);
+        }
+    );
 }
 
 #[test]
