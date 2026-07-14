@@ -17,7 +17,7 @@ pub(super) struct SingleFileCollector<'db, T, C: SingleFileCollectable<'db, T>> 
     schema: PhantomData<T>,
 }
 
-pub(super) struct CollectableFile<'a> {
+pub struct CollectableFile<'a> {
     pub(super) filepath: RelativePathBuf,
     pub(super) file_hash: FmtHash,
     pub(super) content: &'a str,

@@ -256,7 +256,7 @@ fn get_element(
     let item = cursor.node();
     let element_start_node = get_element_start_node(cursor);
     let element_content_hash = Some(FmtHash::new(&String::from_utf8(
-        content[element_start_node.start_byte()..=item.end_byte()].to_vec(),
+        content[element_start_node.start_byte()..item.end_byte()].to_vec(),
     )?));
 
     let name = if item.kind() == "function_item"
