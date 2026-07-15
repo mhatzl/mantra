@@ -99,12 +99,9 @@ impl MantraDb {
     }
 
     pub(crate) async fn start_transaction(&self) -> Result<MantraTransaction<'_>, DbError> {
-        match self.pool.try_begin().await {
-            Ok(Some(t)) => Ok(t),
-            Ok(None) => Err(DbError::execution_error(anyhow::anyhow!(
-                "Failed to start a transaction."
-            ))),
-            Err(err) => Err(DbError::execution_error(err)),
+        match self.pool.begin().await {
+            Ok(t) => Ok(t),
+            Err(err) => Err(DbError::connection_error(err)),
         }
     }
 
