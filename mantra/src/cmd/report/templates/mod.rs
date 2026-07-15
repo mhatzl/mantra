@@ -48,6 +48,10 @@ impl<'templates> MantraTemplates<'templates> {
             include_str!("defaults/requirement.html"),
         )?;
         environment.add_template(
+            TemplateName::RequirementOrigin.template_name_for_format(&ReportFormat::Html),
+            include_str!("defaults/requirement-origin.html"),
+        )?;
+        environment.add_template(
             TemplateName::Requirements.template_name_for_format(&ReportFormat::Html),
             include_str!("defaults/requirements.html"),
         )?;
@@ -134,6 +138,7 @@ pub enum TemplateName {
     Product,
     Products,
     Requirement,
+    RequirementOrigin,
     Requirements,
     Review,
     Reviews,
@@ -165,6 +170,9 @@ impl TemplateName {
             TemplateName::Product => template_format_concat!("product", format),
             TemplateName::Products => template_format_concat!("products", format),
             TemplateName::Requirement => template_format_concat!("requirement", format),
+            TemplateName::RequirementOrigin => {
+                template_format_concat!("requirement-origin", format)
+            }
             TemplateName::Requirements => template_format_concat!("requirements", format),
             TemplateName::Review => template_format_concat!("review", format),
             TemplateName::Reviews => template_format_concat!("reviews", format),
