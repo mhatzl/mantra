@@ -5,7 +5,7 @@
 {% macro origin_listitem(product, base_origin, origin) -%}
 {% if base_origin.file and origin.line %}
 <li><strong>Origin:</strong> {% if product.repository and product.base %}
-    <a href="{{ product.repository }}/tree/{{ product.base }}/{{ base_origin.file}}#L{{ origin.line
+    <a href="{{ product.repository }}/blob/{{ product.base }}/{{ base_origin.file}}#L{{ origin.line
             }}">{{ base_origin.file}}#L{{ origin.line
         }}</a>{% else %}{{ base_origin.file}}#L{{ origin.line
     }}{% endif %}
