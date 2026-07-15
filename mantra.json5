@@ -4,6 +4,7 @@
     repository: "https://github.com/mhatzl/mantra",
     products: [
         {
+            id: "mantra",
             name: "$inherit",
             license: "$inherit",
             repository: "$inherit",
