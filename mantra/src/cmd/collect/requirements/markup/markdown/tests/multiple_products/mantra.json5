@@ -1,0 +1,24 @@
+{
+    products: [
+        {
+            id: "A",
+            name: "product A",
+            requirements: [
+                {
+                    path: "./",
+                    source: "markup",
+                }
+            ]
+        },
+        {
+            id: "B",
+            name: "product B",
+            requirements: [
+                {
+                    path: "./",
+                    source: "markup",
+                }
+            ]
+        }
+    ]
+}

@@ -4,6 +4,7 @@ use crate::cmd::collect::requirements::markup::markdown;
 
 mod incomplete_fields;
 mod incomplete_headings;
+mod multiple_products;
 
 macro_rules! test_file {
     ($f:literal) => {{
