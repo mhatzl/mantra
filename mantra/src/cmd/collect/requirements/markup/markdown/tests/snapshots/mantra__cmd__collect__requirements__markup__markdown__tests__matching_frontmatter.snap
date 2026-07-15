@@ -1,0 +1,31 @@
+---
+source: mantra/src/cmd/collect/requirements/markup/markdown/tests/mod.rs
+---
+RequirementSchema(
+  schema_version: "0.8.0",
+  product_id: Some("product-id"),
+  requirements: [
+    Requirement(
+      id: "req-id",
+      parents: None,
+      title: "Requirement Title",
+      description: Some("Requirement description.\n## Additional section\nThis is also part of the description, because it is no sub-requirement definition.\n"),
+      origin: {
+        "line": 10,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+  ],
+  properties: Some({
+    "key_1": "value-1",
+    "key_2": "value-2",
+  }),
+  origin: Some({
+    "file": "matching_frontmatter.md",
+  }),
+)

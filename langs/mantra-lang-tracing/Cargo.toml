@@ -20,6 +20,6 @@ cc = "1.0.90"
 
 [dev-dependencies]
 mantra-macros = { path = "../rust/mantra-macros", version = "0.8.0" }
-insta = { version = "1.48.0", features = ["ron"] }
+insta.workspace = true
 
 [features]

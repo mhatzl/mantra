@@ -134,6 +134,24 @@ pub struct Requirement {
     pub properties: Option<Properties>,
 }
 
+impl Requirement {
+    pub fn new_minimal(id: ReqId, title: String, origin: Origin) -> Self {
+        Self {
+            id,
+            parents: None,
+            title,
+            description: None,
+            origin,
+            manual_verification: false,
+            deprecated: false,
+            exclude: false,
+            optional: false,
+            replaces: None,
+            properties: None,
+        }
+    }
+}
+
 /// This struct defines the primary key to identify requirements for a product.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]

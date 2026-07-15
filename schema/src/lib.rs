@@ -45,7 +45,7 @@ pub struct LineSpan {
     pub end: Line,
 }
 
-fn serialize_schema_version<S>(_value: &Option<String>, ser: S) -> Result<S::Ok, S::Error>
+pub fn serialize_schema_version<S>(_value: &Option<String>, ser: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

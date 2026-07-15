@@ -1,3 +1,5 @@
+{% import 'requirement-origin.html' as origin_macros %}
+
 {% extends "base-layout.html" %} {% block content %}
 <h1>{{ schema.id }}: {{ schema.title }}</h1>
 
@@ -13,6 +15,7 @@
     <li><strong>Optional:</strong> {{ schema.optional }}</li>
     <li><strong>Deprecated:</strong> {{ schema.deprecated }}</li>
     <li><strong>Excluded:</strong> {{ schema.excluded }}</li>
+    {{ origin_macros.origin_listitem(schema.product, schema.base_origin, schema.origin) }}
 </ul>
 
 {% if schema.replaced_by %}

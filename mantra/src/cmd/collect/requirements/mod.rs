@@ -53,7 +53,9 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
     > {
         match self.source {
             RequirementSourceVariant::Markup => {
-                Ok(|product_id: &ProductId, file: &CollectableFile| todo!())
+                Ok(|product_id: &ProductId, file: &CollectableFile| {
+                    markup::collect_requirements(product_id, file)
+                })
             }
             RequirementSourceVariant::Schema => Ok(walker::content_to_schema::<RequirementSchema>),
         }

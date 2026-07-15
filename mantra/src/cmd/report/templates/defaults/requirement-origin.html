@@ -1,0 +1,14 @@
+<!-- 
+ The 'origin_listitem' is used in 'requirements.html' to add an Origin list entry.
+ Overwrite this macro if you have a custom origin but want to keep the default requirement page template.
+-->
+{% macro origin_listitem(product, base_origin, origin) -%}
+{% if base_origin.file and origin.line %}
+<li><strong>Origin:</strong> {% if product.repository and product.base %}
+    <a href="{{ product.repository }}/blob/{{ product.base }}/{{ base_origin.file}}#L{{ origin.line
+            }}">{{ base_origin.file}}#L{{ origin.line
+        }}</a>{% else %}{{ base_origin.file}}#L{{ origin.line
+    }}{% endif %}
+</li>
+{% endif %}
+{%- endmacro %}

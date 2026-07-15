@@ -1,0 +1,191 @@
+---
+source: mantra/src/cmd/collect/requirements/markup/markdown/tests/mod.rs
+---
+RequirementSchema(
+  schema_version: "0.8.0",
+  product_id: Some("product-id"),
+  requirements: [
+    Requirement(
+      id: "req-1",
+      parents: None,
+      title: "First Requirement Title",
+      description: Some("Description for the first requirement.\n"),
+      origin: {
+        "line": 1,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-1.sub-1",
+      parents: Some([
+        RequirementPk(
+          id: "req-1",
+          product_id: None,
+        ),
+      ]),
+      title: "First Sub-Requirement of the First Requirement",
+      description: Some("Description of the first sub-requirement of [req_link(\"req-1\")].\nThis description is not part of the description for [req_link(\"req-1\")].\n**Note:** Setting `req-1` explicitly in the parent field has no effect, since the dot-notation already marks `req-1` as parent.\n"),
+      origin: {
+        "line": 5,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-1.sub-2",
+      parents: None,
+      title: "Second Sub-Requirement of the First Requirement",
+      description: Some("Description of the second sub-requirement of [req_link(\"req-1\")].\nThis description is not part of the description for [req_link(\"req-1\")].\n"),
+      origin: {
+        "line": 14,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-2",
+      parents: None,
+      title: "Second Requirement Title",
+      description: Some("Description for the second requirement.\n"),
+      origin: {
+        "line": 19,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-2.sub-1",
+      parents: Some([
+        RequirementPk(
+          id: "req-1",
+          product_id: None,
+        ),
+        RequirementPk(
+          id: "req-2",
+          product_id: None,
+        ),
+      ]),
+      title: "First Sub-Requirement of the Second Requirement",
+      description: Some("Description of the first sub-requirement of [req_link(\"req-2\")].\nThis description is not part of the description for [req_link(\"req-2\")].\nThe requirement is also a child of [req_link(\"req-1\")].\nExplicitly setting `req-2` in the parents field is optional.\n"),
+      origin: {
+        "line": 23,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-3",
+      parents: Some([
+        RequirementPk(
+          id: "req-1",
+          product_id: None,
+        ),
+      ]),
+      title: "Third Requirement Title",
+      description: Some("Description for the third requirement.\nThe requirement is also a child of [req_link(\"req-1\")].\n"),
+      origin: {
+        "line": 33,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-3.sub-1",
+      parents: None,
+      title: "First Sub-Requirement of the Third Requirement",
+      description: Some("Description of the first sub-requirement of [req_link(\"req-3\")].\nThis description is not part of the description for [req_link(\"req-3\")].\n"),
+      origin: {
+        "line": 40,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-3.sub-1.sub-sub-1",
+      parents: None,
+      title: "First Sub-Sub-Requirement of the Third Requirement",
+      description: Some("Description of the first sub-sub-requirement of [req_link(\"req-3.sub-1\")].\nThis description is not part of the description for [req_link(\"req-3.sub-1\")].\n"),
+      origin: {
+        "line": 45,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-3.sub-1.sub-sub-2",
+      parents: None,
+      title: "Second Sub-Sub-Requirement of the Third Requirement",
+      description: Some("Description of the second sub-sub-requirement of [req_link(\"req-3.sub-1\")].\nThis description is not part of the description for [req_link(\"req-3.sub-1\")].\n"),
+      origin: {
+        "line": 50,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+    Requirement(
+      id: "req-3.sub-1.sub-sub-3",
+      parents: Some([
+        RequirementPk(
+          id: "req-3.sub-1.sub-sub-1",
+          product_id: None,
+        ),
+        RequirementPk(
+          id: "req-3.sub-1.sub-sub-2",
+          product_id: None,
+        ),
+      ]),
+      title: "Third Sub-Sub-Requirement of the Third Requirement",
+      description: Some("Description of the third sub-sub-requirement of [req_link(\"req-3.sub-1\")].\nThis description is not part of the description for [req_link(\"req-3.sub-1\")].\nThe requirement is also a child of [req_link(\"req-3.sub-1.sub-sub-1\")] and [req_link(\"req-3.sub-1.sub-sub-2\")].\n"),
+      origin: {
+        "line": 55,
+      },
+      manual_verification: false,
+      deprecated: false,
+      exclude: false,
+      optional: false,
+      replaces: None,
+      properties: None,
+    ),
+  ],
+  properties: None,
+  origin: Some({
+    "file": "parents_and_dot_combination.md",
+  }),
+)
