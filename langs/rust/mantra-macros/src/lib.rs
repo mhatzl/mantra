@@ -1,3 +1,5 @@
+#![no_std]
+
 pub use mantra_procm::*;
 
 #[macro_export]
