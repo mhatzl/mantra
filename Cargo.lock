@@ -1338,12 +1338,18 @@ dependencies = [
 name = "mantra-macros"
 version = "0.8.0"
 dependencies = [
+ "defmt",
  "mantra-procm",
+ "regex",
 ]
 
 [[package]]
 name = "mantra-procm"
 version = "0.8.0"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "mantra-schema"
