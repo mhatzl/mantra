@@ -39,6 +39,9 @@ impl LineCoverage {
     pub fn log(&self) {
         #[cfg(feature = "defmt")]
         defmt::println!("{}", self);
+
+        #[cfg(feature = "log")]
+        log::info!("{}", self);
     }
 
     /// Returns `true` if the given string starts like a mantra coverage log message.

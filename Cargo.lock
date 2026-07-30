@@ -1339,6 +1339,7 @@ name = "mantra-macros"
 version = "0.8.0"
 dependencies = [
  "defmt",
+ "log",
  "mantra-procm",
  "regex",
 ]
