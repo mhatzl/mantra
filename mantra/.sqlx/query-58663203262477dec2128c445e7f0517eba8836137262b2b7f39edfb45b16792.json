@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into OptionalRequirements (\n                last_collect_nr,\n                product_id,\n                id\n            )\n            with recursive IsMandatory(last_collect_nr, product_id, id) as (\n                select r.last_collect_nr, r.product_id, r.id\n                from Requirements r, RootRequirements rr\n                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr\n                and r.product_id = rr.product_id\n                and r.id = rr.id\n                and r.optional = false\n\n                union all\n\n                -- TODO: fix last_collect_nr check for rh\n                select im.last_collect_nr, rh.child_product_id, rh.child_req_id\n                from IsMandatory im, RequirementHierarchies rh, Requirements r\n                where im.product_id = rh.parent_product_id\n                and im.id = rh.parent_req_id\n                and im.last_collect_nr = r.last_collect_nr\n                and rh.child_product_id = r.product_id and rh.child_req_id = r.id\n                and r.optional = false\n            ),\n            IsOptional(last_collect_nr, product_id, id) as (\n                select last_collect_nr, product_id, id\n                from Requirements r\n                where not exists (\n                    select *\n                    from IsMandatory im\n                    where im.last_collect_nr = r.last_collect_nr\n                    and im.product_id = r.product_id\n                    and im.id = r.id\n                )\n            )\n            select distinct $1 as last_collect_nr, product_id, id\n            from IsOptional\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "58663203262477dec2128c445e7f0517eba8836137262b2b7f39edfb45b16792"
+}
