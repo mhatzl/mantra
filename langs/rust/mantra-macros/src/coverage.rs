@@ -114,6 +114,28 @@ pub enum ExtractError {
     BadFile,
 }
 
+#[cfg(feature = "extract")]
+impl core::fmt::Display for ExtractError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExtractError::Unmatched => {
+                write!(f, "Given content did not match a mantra coverage statement")
+            }
+            ExtractError::BadLine => write!(
+                f,
+                "The line entry for the mantra coverage statement is invalid"
+            ),
+            ExtractError::BadFile => write!(
+                f,
+                "The file entry for the mantra coverage statement is invalid"
+            ),
+        }
+    }
+}
+
+#[cfg(feature = "extract")]
+impl core::error::Error for ExtractError {}
+
 #[cfg(all(test, feature = "extract"))]
 mod tests {
     use core::{assert_eq, str::FromStr};
