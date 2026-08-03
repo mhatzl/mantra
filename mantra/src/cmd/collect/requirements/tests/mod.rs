@@ -96,6 +96,10 @@ mod indirect_states {
             !depr_reqs.contains(&"req-2.sub-2".to_string()),
             "Expected req-2.sub-2 to **not** have deprecated state."
         );
+        assert!(
+            depr_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to have deprecated state indirectly due to at least one parent being deprecated."
+        );
     }
 
     #[sqlx::test]
@@ -154,6 +158,10 @@ mod indirect_states {
         assert!(
             !excluded_reqs.contains(&"req-2.sub-2".to_string()),
             "Expected req-2.sub-2 to **not** have excluded state."
+        );
+        assert!(
+            !excluded_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to **not** have excluded state."
         );
     }
 
@@ -354,6 +362,14 @@ mod indirect_states {
         assert!(
             optional_reqs.contains(&"req-5.sub-2".to_string()),
             "Expected req-5.sub-2 to be optional."
+        );
+        assert!(
+            verified_reqs.contains(&"req-6".to_string()),
+            "Expected req-6to be verified."
+        );
+        assert!(
+            !optional_reqs.contains(&"req-6".to_string()),
+            "Expected req-6 to **not** be optional."
         );
     }
 
@@ -843,6 +859,14 @@ mod indirect_states {
         assert!(
             manual_reqs.contains(&"req-5.sub-2".to_string()),
             "Expected req-5.sub-2 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-6".to_string()),
+            "Expected req-6 to be verified."
+        );
+        assert!(
+            !manual_reqs.contains(&"req-6".to_string()),
+            "Expected req-6 to **not** require manual verification."
         );
     }
 
