@@ -436,26 +436,40 @@ impl<'db> Collection<'db> {
                 product_id,
                 id
             )
-            with MarkedOptional(product_id, id) as (
-                select product_id, id
-                from Requirements
-                where optional = true
-                and last_collect_nr = $1
-                and product_id = $2
+            with recursive IsMandatory(last_collect_nr, product_id, id) as (
+                select r.last_collect_nr, r.product_id, r.id
+                from Requirements r, RootRequirements rr
+                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
+                and r.product_id = rr.product_id
+                and r.id = rr.id
+                and r.optional = false
+
+                union all
+
+                -- TODO: fix last_collect_nr check for rh
+                select im.last_collect_nr, rh.child_product_id, rh.child_req_id
+                from IsMandatory im, RequirementHierarchies rh, Requirements r
+                where im.product_id = rh.parent_product_id
+                and im.id = rh.parent_req_id
+                and im.last_collect_nr = r.last_collect_nr
+                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
+                and r.optional = false
             ),
-            ParentMarkedOptional(product_id, id) as (
-                select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedOptional md
-                where rd.product_id = md.product_id and rd.id = md.id
+            IsOptional(last_collect_nr, product_id, id) as (
+                select last_collect_nr, product_id, id
+                from Requirements r
+                where not exists (
+                    select *
+                    from IsMandatory im
+                    where im.last_collect_nr = r.last_collect_nr
+                    and im.product_id = r.product_id
+                    and im.id = r.id
+                )
             )
-            select $1 as last_collect_nr, product_id, id
-            from MarkedOptional
-            union all
-            select $1 as last_collect_nr, product_id, id
-            from ParentMarkedOptional
+            select distinct $1 as last_collect_nr, product_id, id
+            from IsOptional
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
