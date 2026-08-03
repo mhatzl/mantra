@@ -501,26 +501,40 @@ impl<'db> Collection<'db> {
                 product_id,
                 id
             )
-            with MarkedManual(product_id, id) as (
-                select product_id, id
-                from Requirements
-                where manual_verification = true
-                and last_collect_nr = $1
-                and product_id = $2
+            with recursive NonManual(last_collect_nr, product_id, id) as (
+                select r.last_collect_nr, r.product_id, r.id
+                from Requirements r, RootRequirements rr
+                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
+                and r.product_id = rr.product_id
+                and r.id = rr.id
+                and r.manual_verification = false
+
+                union all
+
+                -- TODO: fix last_collect_nr check for rh
+                select nm.last_collect_nr, rh.child_product_id, rh.child_req_id
+                from NonManual nm, RequirementHierarchies rh, Requirements r
+                where nm.product_id = rh.parent_product_id
+                and nm.id = rh.parent_req_id
+                and nm.last_collect_nr = r.last_collect_nr
+                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
+                and r.manual_verification = false
             ),
-            ParentMarkedManual(product_id, id) as (
-                select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedManual md
-                where rd.product_id = md.product_id and rd.id = md.id
+            IsManual(last_collect_nr, product_id, id) as (
+                select last_collect_nr, product_id, id
+                from Requirements r
+                where not exists (
+                    select *
+                    from NonManual nm
+                    where nm.last_collect_nr = r.last_collect_nr
+                    and nm.product_id = r.product_id
+                    and nm.id = r.id
+                )
             )
-            select $1 as last_collect_nr, product_id, id
-            from MarkedManual
-            union all
-            select $1 as last_collect_nr, product_id, id
-            from ParentMarkedManual
+            select distinct $1 as last_collect_nr, product_id, id
+            from IsManual
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;

@@ -103,8 +103,8 @@
         {
             id: "req-6",
             parents: [
-                "req-3",
-                "req-4"
+                "req-2",
+                "req-3"
             ],
             title: "Requirement with 1/2 manual parents (Not Manual)",
             origin: "Manual requirement test",
