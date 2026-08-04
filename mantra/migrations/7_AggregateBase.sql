@@ -1,5 +1,15 @@
 -- Contains tables used as base for many follow up analysis steps.
 
+-- Contains requirements that have no parents.
+-- Root requirements also have no parents across products.
+create table RootRequirements (
+    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    id text not null,
+    primary key (product_id, id),
+    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+);
+
 -- Contains descendants per requirements.
 create table RequirementDescendants (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
@@ -34,7 +44,7 @@ create table DeprecatedRequirements (
 
 -- Contains requirements that are marked to `exclude` them.
 --
--- **Note:** Children of explicitly marked requirements are also affected.
+-- **Note:** Propagates to child requirements if all parents are marked `exclude`.
 create table ExcludedRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -45,7 +55,7 @@ create table ExcludedRequirements (
 
 -- Contains requirements that are marked as `optional`.
 --
--- **Note:** Children of explicitly marked requirements are also affected.
+-- **Note:** Propagates to child requirements if all parents are marked `optional`.
 create table OptionalRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
@@ -56,7 +66,7 @@ create table OptionalRequirements (
 
 -- Contains requirements that are marked to require `manual verification`.
 --
--- **Note:** Children of explicitly marked requirements are also affected.
+-- **Note:** Propagates to child requirements if all parents are marked to require `manual verification`.
 create table ManualRequirements (
     last_collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,

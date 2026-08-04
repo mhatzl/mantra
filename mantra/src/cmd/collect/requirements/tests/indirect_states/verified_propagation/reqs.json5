@@ -1,0 +1,64 @@
+{
+    requirements: [
+        {
+            id: "req-1",
+            title: "1. Requirement (Indirectly Verified)",
+            origin: "Verified requirement test",
+        },
+        {
+            id: "req-1.sub-1",
+            title: "1.1. Sub-Requirement (Directly Verified)",
+            origin: "Verified requirement test",
+        },
+        {
+            id: "req-2",
+            title: "2. Requirement (Directly reviewed + Indirectly Unverified)",
+            origin: "Verified requirement test",
+            manual_verification: true
+        },
+        {
+            id: "req-2.sub-1",
+            title: "2.1. Sub-Requirement (Directly Verified)",
+            origin: "Verified requirement test",
+            // This way, the sub-requirement is **not** getting the "manual" mark from "req-2", because "req-1" does not require manual verification
+            parents: [
+                "req-1"
+            ]
+        },
+        {
+            id: "req-2.sub-2",
+            title: "2.2. Sub-Requirement (Unverified + Manual)",
+            origin: "Verified requirement test",
+        },
+        {
+            id: "req-3",
+            title: "3. Requirement (Indirectly Verified)",
+            origin: "Verified requirement test",
+        },
+        {
+            id: "req-3.sub-1",
+            title: "3.1. Sub-Requirement (Optional + Directly Verified + Indirectly Unverified)",
+            origin: "Verified requirement test",
+            optional: true
+        },
+        {
+            id: "req-3.sub-1.sub-sub-1",
+            title: "3.1.1. Sub-Sub-Requirement (Optional + Verified)",
+            origin: "Verified requirement test",
+        },
+        {
+            id: "req-3.sub-1.sub-sub-2",
+            title: "3.1.2. Sub-Sub-Requirement (Mandatory + Unverified)",
+            origin: "Verified requirement test",
+            // prevents the optional flag from propagating from "req-3.sub-1.sub-sub-2"
+            parents: [
+                "req-2.sub-2"
+            ]
+        },
+        {
+            id: "req-3.sub-2",
+            title: "3.2. Sub-Requirement (Directly Verified)",
+            origin: "Verified requirement test",
+        },
+    ]
+}

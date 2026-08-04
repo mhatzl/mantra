@@ -6,6 +6,9 @@ use crate::cmd::collect::Collection;
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_requirements_data(&mut self) -> Result<(), anyhow::Error> {
         // Note: order is important, because later queries build on updated tables
+        self.update_root_requirements()
+            .await
+            .context("Failed to update root requirements")?;
         self.update_requirement_descendants()
             .await
             .context("Failed to update requirement descendants")?;
@@ -41,6 +44,48 @@ impl<'db> Collection<'db> {
         self.update_directly_satisfied_requirements()
             .await
             .context("Failed to update directly satisfied requirements")?;
+
+        Ok(())
+    }
+
+    async fn update_root_requirements(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+
+        sqlx::query!(
+            "
+            insert or replace into RootRequirements (
+                last_collect_nr,
+                product_id,
+                id
+            )
+            select $1 as last_collect_nr, product_id, id
+            from Requirements r
+            where r.last_collect_nr = $1 and r.product_id = $2
+            and not exists (
+                select *
+                from RequirementHierarchies rh
+                where rh.child_product_id = r.product_id
+                and rh.child_req_id = r.id
+            )
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        sqlx::query!(
+            "
+            delete from RootRequirements
+            where last_collect_nr != $1 and product_id = $2
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -326,26 +371,40 @@ impl<'db> Collection<'db> {
                 product_id,
                 id
             )
-            with MarkedExclude(product_id, id) as (
-                select product_id, id
-                from Requirements
-                where exclude = true
-                and last_collect_nr = $1
-                and product_id = $2
+            with recursive IsIncluded(last_collect_nr, product_id, id) as (
+                select r.last_collect_nr, r.product_id, r.id
+                from Requirements r, RootRequirements rr
+                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
+                and r.product_id = rr.product_id
+                and r.id = rr.id
+                and r.exclude = false
+
+                union all
+
+                -- TODO: fix last_collect_nr check for rh
+                select ii.last_collect_nr, rh.child_product_id, rh.child_req_id
+                from IsIncluded ii, RequirementHierarchies rh, Requirements r
+                where ii.product_id = rh.parent_product_id
+                and ii.id = rh.parent_req_id
+                and ii.last_collect_nr = r.last_collect_nr
+                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
+                and r.exclude = false
             ),
-            ParentMarkedExclude(product_id, id) as (
-                select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedExclude md
-                where rd.product_id = md.product_id and rd.id = md.id
+            IsExcluded(last_collect_nr, product_id, id) as (
+                select last_collect_nr, product_id, id
+                from Requirements r
+                where not exists (
+                    select *
+                    from IsIncluded ii
+                    where ii.last_collect_nr = r.last_collect_nr
+                    and ii.product_id = r.product_id
+                    and ii.id = r.id
+                )
             )
-            select $1 as last_collect_nr, product_id, id
-            from MarkedExclude
-            union all
-            select $1 as last_collect_nr, product_id, id
-            from ParentMarkedExclude
+            select distinct $1 as last_collect_nr, product_id, id
+            from IsExcluded
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -377,26 +436,40 @@ impl<'db> Collection<'db> {
                 product_id,
                 id
             )
-            with MarkedOptional(product_id, id) as (
-                select product_id, id
-                from Requirements
-                where optional = true
-                and last_collect_nr = $1
-                and product_id = $2
+            with recursive IsMandatory(last_collect_nr, product_id, id) as (
+                select r.last_collect_nr, r.product_id, r.id
+                from Requirements r, RootRequirements rr
+                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
+                and r.product_id = rr.product_id
+                and r.id = rr.id
+                and r.optional = false
+
+                union all
+
+                -- TODO: fix last_collect_nr check for rh
+                select im.last_collect_nr, rh.child_product_id, rh.child_req_id
+                from IsMandatory im, RequirementHierarchies rh, Requirements r
+                where im.product_id = rh.parent_product_id
+                and im.id = rh.parent_req_id
+                and im.last_collect_nr = r.last_collect_nr
+                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
+                and r.optional = false
             ),
-            ParentMarkedOptional(product_id, id) as (
-                select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedOptional md
-                where rd.product_id = md.product_id and rd.id = md.id
+            IsOptional(last_collect_nr, product_id, id) as (
+                select last_collect_nr, product_id, id
+                from Requirements r
+                where not exists (
+                    select *
+                    from IsMandatory im
+                    where im.last_collect_nr = r.last_collect_nr
+                    and im.product_id = r.product_id
+                    and im.id = r.id
+                )
             )
-            select $1 as last_collect_nr, product_id, id
-            from MarkedOptional
-            union all
-            select $1 as last_collect_nr, product_id, id
-            from ParentMarkedOptional
+            select distinct $1 as last_collect_nr, product_id, id
+            from IsOptional
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -428,26 +501,40 @@ impl<'db> Collection<'db> {
                 product_id,
                 id
             )
-            with MarkedManual(product_id, id) as (
-                select product_id, id
-                from Requirements
-                where manual_verification = true
-                and last_collect_nr = $1
-                and product_id = $2
+            with recursive NonManual(last_collect_nr, product_id, id) as (
+                select r.last_collect_nr, r.product_id, r.id
+                from Requirements r, RootRequirements rr
+                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
+                and r.product_id = rr.product_id
+                and r.id = rr.id
+                and r.manual_verification = false
+
+                union all
+
+                -- TODO: fix last_collect_nr check for rh
+                select nm.last_collect_nr, rh.child_product_id, rh.child_req_id
+                from NonManual nm, RequirementHierarchies rh, Requirements r
+                where nm.product_id = rh.parent_product_id
+                and nm.id = rh.parent_req_id
+                and nm.last_collect_nr = r.last_collect_nr
+                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
+                and r.manual_verification = false
             ),
-            ParentMarkedManual(product_id, id) as (
-                select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedManual md
-                where rd.product_id = md.product_id and rd.id = md.id
+            IsManual(last_collect_nr, product_id, id) as (
+                select last_collect_nr, product_id, id
+                from Requirements r
+                where not exists (
+                    select *
+                    from NonManual nm
+                    where nm.last_collect_nr = r.last_collect_nr
+                    and nm.product_id = r.product_id
+                    and nm.id = r.id
+                )
             )
-            select $1 as last_collect_nr, product_id, id
-            from MarkedManual
-            union all
-            select $1 as last_collect_nr, product_id, id
-            from ParentMarkedManual
+            select distinct $1 as last_collect_nr, product_id, id
+            from IsManual
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;

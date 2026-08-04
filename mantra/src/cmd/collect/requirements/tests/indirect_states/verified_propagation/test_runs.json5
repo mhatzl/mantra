@@ -9,8 +9,11 @@
                     name: "verifying-case",
                     state: "passed",
                     verified_reqs: [
-                        "req-2.sub-2",
-                        "req-6",
+                        "req-1.sub-1",
+                        "req-2.sub-1",
+                        "req-3.sub-1",
+                        "req-3.sub-1.sub-sub-1",
+                        "req-3.sub-2",
                     ]
                 },
             ]
