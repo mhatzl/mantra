@@ -8,7 +8,12 @@ license.workspace = true
 
 [dependencies]
 mantra-procm = { path = "../mantra-procm", version = "0.8.0" }
-# defmt = { version = "0.3.6", optional = true }
+regex = { workspace = true, optional = true }
+log = { workspace = true, optional = true }
+defmt = { version = "1", optional = true }
 
 [features]
-# defmt = ["dep:defmt"]
+coverage = []
+log = ["coverage", "dep:log"]
+defmt = ["coverage", "dep:defmt", "mantra-procm/defmt"]
+extract = ["dep:regex"]
