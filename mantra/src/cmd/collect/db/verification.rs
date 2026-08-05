@@ -1303,7 +1303,14 @@ impl<'db> Collection<'db> {
                         and r.last_collect_nr = vr.last_collect_nr
                         and r.id = vr.id
                     )
-                )
+                ) or exists (
+                    -- manual requirements must be reviewed directly independent of the state of children
+					select mr.product_id, mr.id
+                    from ManualRequirements mr, DirectRequirementVerificationStates ds
+                    where mr.product_id = r.product_id and mr.id = r.id
+                    and ds.product_id = mr.product_id and ds.id = mr.id
+                    and ds.state = $2
+				)
 
                 union all
 

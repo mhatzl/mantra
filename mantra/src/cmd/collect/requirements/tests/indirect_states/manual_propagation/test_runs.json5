@@ -11,6 +11,8 @@
                     verified_reqs: [
                         "req-2.sub-2",
                         "req-6",
+                        "req-7.sub-1.sub-sub-1",
+                        "req-7.sub-2",
                     ]
                 },
             ]

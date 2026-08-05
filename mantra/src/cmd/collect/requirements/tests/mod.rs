@@ -1040,6 +1040,38 @@ mod indirect_states {
             !manual_reqs.contains(&"req-6".to_string()),
             "Expected req-6 to **not** require manual verification."
         );
+        assert!(
+            unverified_reqs.contains(&"req-7".to_string()),
+            "Expected req-7 to be unverified."
+        );
+        assert!(
+            !manual_reqs.contains(&"req-7".to_string()),
+            "Expected req-7 to **not** require manual verification."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-7.sub-1".to_string()),
+            "Expected req-7.sub-1 to be unverified."
+        );
+        assert!(
+            manual_reqs.contains(&"req-7.sub-1".to_string()),
+            "Expected req-7.sub-1 to require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+            "Expected req-7.sub-1.sub-sub-1 to be verified."
+        );
+        assert!(
+            !manual_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+            "Expected req-7.sub-1.sub-sub-1 to **not** require manual verification."
+        );
+        assert!(
+            verified_reqs.contains(&"req-7.sub-2".to_string()),
+            "Expected req-7.sub-2 to be verified."
+        );
+        assert!(
+            !manual_reqs.contains(&"req-7.sub-2".to_string()),
+            "Expected req-7.sub-2 to **not** require manual verification."
+        );
     }
 
     #[sqlx::test]
