@@ -108,6 +108,30 @@
             ],
             title: "Requirement with 1/2 manual parents (Not Manual)",
             origin: "Manual requirement test",
+        },
+        {
+            id: "req-7",
+            title: "Seventh Requirement (Unverified)",
+            origin: "Manual requirement test",
+        },
+        {
+            id: "req-7.sub-1",
+            title: "Seventh First Sub-Requirement (Unverified)",
+            origin: "Manual requirement test",
+            manual_verification: true
+        },
+        {
+            id: "req-7.sub-1.sub-sub-1",
+            title: "Seventh First Sub-Sub-Requirement (Verified)",
+            origin: "Manual requirement test",
+            parents: [
+                "req-7.sub-2"
+            ]
+        },
+        {
+            id: "req-7.sub-2",
+            title: "Seventh Second Sub-Requirement (Verified)",
+            origin: "Manual requirement test",
         }
     ]
 }

@@ -1304,11 +1304,12 @@ impl<'db> Collection<'db> {
                         and r.id = vr.id
                     )
                 ) or exists (
-						select mr.product_id, mr.id
-                        from ManualRequirements mr, DirectRequirementVerificationStates ds
-                        where mr.product_id = r.product_id and mr.id = r.id
-                        and ds.product_id = mr.product_id and ds.id = mr.id
-                        and ds.state = $2
+                    -- manual requirements must be reviewed directly independent of the state of children
+					select mr.product_id, mr.id
+                    from ManualRequirements mr, DirectRequirementVerificationStates ds
+                    where mr.product_id = r.product_id and mr.id = r.id
+                    and ds.product_id = mr.product_id and ds.id = mr.id
+                    and ds.state = $2
 				)
 
                 union all
