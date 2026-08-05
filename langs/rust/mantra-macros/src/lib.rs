@@ -4,6 +4,9 @@ pub use mantra_procm::*;
 
 pub mod coverage;
 
+#[cfg(all(feature = "log", feature = "defmt"))]
+compile_error!("Features 'log' and 'defmt' must not both be activated at the same time");
+
 #[cfg(feature = "coverage")]
 #[doc(hidden)]
 #[macro_export]
