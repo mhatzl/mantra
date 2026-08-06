@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{io::Cursor, str::FromStr};
 
 use anyhow::{anyhow, bail};
 use mantra_schema::{
@@ -105,6 +105,9 @@ impl AnnotationCollector for RustCodeCollector {
                 let end = node.end_position().row.try_into().unwrap_or(-1) + start_line;
                 let node_hash = Some(FmtHash::new(node.utf8_text(content_bytes)?));
 
+                let inner_traces =
+                    nested_fn_like(&mut args_node.walk(), content_bytes, start_line)?;
+
                 traces.push(Trace {
                     ids,
                     line: traced_line,
@@ -119,6 +122,10 @@ impl AnnotationCollector for RustCodeCollector {
                     kind: trace_kind,
                     properties: None,
                 });
+
+                if !inner_traces.is_empty() {
+                    traces.extend(inner_traces);
+                }
             } else if node_kind.ends_with("_item")
                 || node_kind == "extern_crate_declaration"
                 || node_kind == "use_declaration"
@@ -133,6 +140,54 @@ impl AnnotationCollector for RustCodeCollector {
             coverage_excludes: vec![],
         })
     }
+}
+
+fn nested_fn_like(
+    cursor: &mut TreeCursor,
+    content_bytes: &[u8],
+    start_line: Line,
+) -> Result<Vec<Trace>, anyhow::Error> {
+    let mut traces = Vec::new();
+
+    loop {
+        let go_next_sibling_or_parent = !cursor.goto_first_child();
+        if go_next_sibling_or_parent && goto_next_sibling_or_parent(cursor).is_none() {
+            break;
+        }
+
+        let node = cursor.node();
+        let node_kind = node.kind();
+
+        if node_kind == "identifier"
+            && let Some(trace_kind) = get_fn_macro_trace_kind(&node, content_bytes)
+            && let Some(exclamation) = node.next_sibling()
+            && exclamation.kind() == "!"
+            && let Some(macro_body) = exclamation.next_sibling()
+            && macro_body.kind() == "token_tree"
+        {
+            let ids = get_req_ids(&macro_body, content_bytes, start_line, true)?;
+            let traced_line: Line = node.start_position().row.try_into().unwrap_or(-1) + start_line;
+            let end = macro_body.end_position().row.try_into().unwrap_or(-1) + start_line;
+            let node_hash = Some(FmtHash::new(node.utf8_text(content_bytes)?));
+
+            traces.push(Trace {
+                ids,
+                line: traced_line,
+                related_code: Some(TraceRelatedCodeVariant::CodeBlock(CodeBlock {
+                    kind: mantra_schema::annotations::CodeBlockKind::Other,
+                    content_hash: node_hash,
+                    span: LineSpan {
+                        start: traced_line,
+                        end,
+                    },
+                })),
+                kind: trace_kind,
+                properties: None,
+            });
+        }
+    }
+
+    Ok(traces)
 }
 
 fn parse_cfg_attr_for_traces(

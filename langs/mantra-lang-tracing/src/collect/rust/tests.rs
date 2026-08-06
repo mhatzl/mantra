@@ -543,3 +543,27 @@ fn attrb_with_literal_id_followed_by_explicit_product_id() {
         }
     );
 }
+
+#[test]
+fn nested_fn_like() {
+    let content = r#"
+        fn foo() {
+            satisfy_req!("ID1" => {
+                // some code...
+                clarify_req!("ID2" => {
+                    // nested code ...
+                });
+            });
+        }
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}
