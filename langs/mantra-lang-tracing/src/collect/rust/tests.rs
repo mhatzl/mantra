@@ -567,3 +567,27 @@ fn nested_fn_like() {
         }
     );
 }
+
+#[test]
+fn fn_like_in_unknown_macro() {
+    let content = r#"
+        fn foo() {
+            some_other_fn_like!(
+                // some code...
+                satisfy_req!("ID2" => {
+                    // nested code ...
+                });
+            );
+        }
+        "#;
+    let annotations = RustCodeCollector::collect(content).unwrap();
+
+    insta::with_settings!(
+        {
+            info => &content,
+            omit_expression => true
+        }, {
+            insta::assert_ron_snapshot!(annotations);
+        }
+    );
+}

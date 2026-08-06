@@ -126,6 +126,13 @@ impl AnnotationCollector for RustCodeCollector {
                 if !inner_traces.is_empty() {
                     traces.extend(inner_traces);
                 }
+            } else if node_kind == "macro_invocation" {
+                // checks body of unknown fn-like
+                let inner_traces = nested_fn_like(&mut node.walk(), content_bytes, start_line)?;
+
+                if !inner_traces.is_empty() {
+                    traces.extend(inner_traces);
+                }
             } else if node_kind.ends_with("_item")
                 || node_kind == "extern_crate_declaration"
                 || node_kind == "use_declaration"
