@@ -1,3 +1,23 @@
+-- Table to represent the requirement hierarchy.
+--
+-- [req("req.hierarchy")]
+create table RequirementHierarchies (
+    child_collect_nr integer not null,
+    -- Product ID the child requirement is defined in.
+    child_product_id text not null,
+    -- The ID of the child requirement, whose content referenced the parent ID.
+    child_req_id text not null,
+    -- The product ID the parent requirement is defined in.
+    parent_product_id text not null,
+    -- The ID of the parent requirement.
+    parent_req_id text not null,
+    -- 'true' makes the child requirement optional for the parent requirement.
+    optional bool not null,
+    primary key (child_collect_nr, child_product_id, child_req_id, parent_collect_nr, parent_product_id, parent_req_id),
+    foreign key (child_collect_nr, child_product_id, child_req_id) references Requirements (collect_nr, product_id, id) on delete cascade deferrable initially deferred,
+    foreign key (parent_collect_nr, parent_product_id, parent_req_id) references Requirements (collect_nr, product_id, id) on delete cascade deferrable initially deferred
+);
+
 -- Contains tables used as base for many follow up analysis steps.
 
 -- Contains requirements that have no parents.

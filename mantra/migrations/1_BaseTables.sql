@@ -6,9 +6,7 @@ create table GeneralTexts (
     -- Hash of the content
     hash text not null primary key,
     -- Content that is either plain text or of unknown format to mantra.
-    content text not null,
-    -- Optional MIME/media type of the stored content.
-    media_type text
+    content text not null
 );
 
 -- Table to store JSON content and the related hash.
@@ -42,6 +40,15 @@ create table Collections (
     -- Optional hash of the environmental variables set that are relevant for mantra
     -- when calling `mantra collect`.
     env_vars_hash text references GeneralJson (hash) on delete restrict
+);
+
+create table CollectedFiles (
+    collect_nr integer not null references Collections (nr) on delete cascade,
+    filepath text not null,
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    -- Optional MIME/media type of the stored content.
+    media_type text,
+    primary key (collect_nr, filepath)
 );
 
 -- Table to store logs that were encountered while executing `mantra collect`.

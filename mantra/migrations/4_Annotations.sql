@@ -1,27 +1,28 @@
 
 -- Table to store the filepaths of files that contained annotations.
--- The related file hash is stored in the ProductRelatedFiles table.
+-- The related file hash is stored in the CollectedFiles table.
 create table AnnotatedDataSources (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
-    product_id text not null,
+    collect_nr integer not null,
     filepath text not null,
-    primary key (product_id, filepath),
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
+    primary key (collect_nr, filepath),
+    foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete restrict
 );
 
 create table AnnotatedFileOrigins (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     filepath text not null,
     base_origin_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (product_id, filepath),
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade
+    primary key (collect_nr, product_id, filepath),
+    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (collect_nr, filepath) references AnnotatedDataSources (collect_nr, filepath) on delete restrict
 );
 
 -- Table to store all traces.
 -- [req("trace.origin", "changes.track")]
 create table Traces (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate trace entries in one collection for the same line
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at in the file.
@@ -36,7 +37,8 @@ create table Traces (
 -- Table to store custom properties of traces.
 -- [req("trace.properties")]
 create table TraceProperties (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate property keys in one collection for the same trace
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
@@ -53,12 +55,13 @@ create table TraceProperties (
 -- **Note:** Actual mapping to the Requirements table is done in ProductRelatedFiles.
 -- [req("trace.id", "trace.mult_reqs")]
 create table DetectedReqTraces (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate requirement entries in one collection for the same trace
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Product ID that may be set directly for the requirement trace.
     -- If this is an empty string, then only the requirement ID was set.
     -- Since it is part of the primary key it cannot be null and an empty string is an invalid product ID.
     --
-    -- **Note:** Not referencing the Products table, because the product might not have been collected yet.
+    -- **Note:** Not referencing the Products table, because the set product might not be collected.
     product_id text not null,
     -- Requirement ID that is directly set on the trace.
     req_id text not null,
@@ -75,16 +78,16 @@ create table DetectedReqTraces (
 -- **Note:** No reference to DirectReqTraces, because an empty product ID in DirectReqTraces would match for all products.
 -- [req("trace.id", "trace.mult_reqs")]
 create table DirectProductReqTraces (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     req_id text not null,
     filepath text not null,
     file_hash text not null,
     line integer not null,
-    primary key (product_id, req_id, filepath, file_hash, line),
+    primary key (collect_nr, product_id, req_id, filepath, file_hash, line),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
-    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade,
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade    
+    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
+    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 -- Table to store language elements such as functions, tests, structs, enums, classes, ...
@@ -93,7 +96,8 @@ create table DirectProductReqTraces (
 -- Due to feature flags or language semantics, idents may be declared multiple times, and are therefore not unique.
 -- [req("trace.element")]
 create table Elements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate entries in one collection for the same element
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Name of the element.
     --
     -- **Note:** The fully qualified identifier is stored in ElementIdents.
@@ -119,7 +123,7 @@ create table Elements (
 );
 
 create table ElementIdents (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     -- File the element is defined in.
     filepath text not null,
@@ -128,15 +132,16 @@ create table ElementIdents (
     -- Line the element is defined at.
     definition_line integer not null,
     ident text not null,
-    primary key (product_id, filepath, file_hash, definition_line),
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
+    primary key (collect_nr, product_id, filepath, file_hash, definition_line),
+    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, definition_line) references Elements (file_hash, definition_line) on delete cascade
 );
 
 -- Table to store language code blocks that are linked to traces.
 -- [req("trace.code_block")]
 create table TracedCodeBlocks (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate code block entries in one collection
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the code block is set.
@@ -168,7 +173,8 @@ create table TracedCodeBlocks (
 --
 -- [req("trace.element")]
 create table DirectTracedElements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate traced element entries in one collection
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the element was detected at.
@@ -188,7 +194,8 @@ create table DirectTracedElements (
 --
 -- TODO: add req trace
 create table CoverageBlockExcludes (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate entries in one collection
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- First line that must be excluded from code coverage analysis until the `end_line`.
@@ -197,6 +204,8 @@ create table CoverageBlockExcludes (
     end_line integer not null,
     -- Hash of the comment explaining why the spanned lines must be excluded from code coverage calculations.
     comment_hash text not null references GeneralTexts (hash) on delete restrict,
+    -- Optional MIME/media type of coverage exclusion related general texts (e.g. comment).
+    media_type text,
     primary key (file_hash, start_line),
     constraint start_le_end check (start_line <= end_line)
 );
@@ -205,13 +214,16 @@ create table CoverageBlockExcludes (
 --
 -- TODO: add req trace
 create table CoverageLineExcludes (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- Used to detect duplicate entries in one collection
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- Line that must be excluded from code coverage analysis.
     line integer not null,
     -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
     comment_hash text not null references GeneralTexts (hash) on delete restrict,
+    -- Optional MIME/media type of coverage exclusion related general texts (e.g. comment).
+    media_type text,
     primary key (file_hash, line)
 );
 
