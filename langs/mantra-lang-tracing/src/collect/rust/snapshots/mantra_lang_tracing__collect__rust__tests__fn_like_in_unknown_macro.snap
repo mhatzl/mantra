@@ -1,0 +1,41 @@
+---
+source: langs/mantra-lang-tracing/src/collect/rust/tests.rs
+info: "\n        fn foo() {\n            some_other_fn_like!(\n                // some code...\n                satisfy_req!(\"ID2\" => {\n                    // nested code ...\n                });\n            );\n        }\n        "
+---
+Annotations(
+  traces: [
+    Trace(
+      ids: [
+        RequirementPk(
+          id: "ID2",
+          product_id: None,
+        ),
+      ],
+      line: 5,
+      related_code: Some(CodeBlock(
+        kind: other,
+        span: LineSpan(
+          start: 5,
+          end: 7,
+        ),
+        content_hash: Some("f477d0c55e7e23391a21b4182c1d7b8018a740a42f7471567fe32518d6aa0d19"),
+      )),
+      kind: satisfies,
+      properties: None,
+    ),
+  ],
+  elements: [
+    Element(
+      ident: None,
+      name: "foo",
+      definition_line: 2,
+      span: LineSpan(
+        start: 2,
+        end: 9,
+      ),
+      kind: function,
+      content_hash: Some("1eda427728ae85c826acb63121daa87705ccdb13a6b267e5601fd5df4a4673df"),
+    ),
+  ],
+  coverage_excludes: [],
+)
