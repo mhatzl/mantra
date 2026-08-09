@@ -132,7 +132,8 @@ create table DirectRequirementVerificationStates (
     -- 0=failed; 1=verified; 2=skipped; 3=unverified
     state integer not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, req_id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, req_id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table UsableLeafRequirements (
@@ -141,7 +142,8 @@ create table UsableLeafRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table UsableNonLeafRequirements (
@@ -150,7 +152,8 @@ create table UsableNonLeafRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table RequirementsWithOnlyOptionalChildren (
@@ -159,7 +162,8 @@ create table RequirementsWithOnlyOptionalChildren (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table RequirementsWithUnverifiedNonOptionalChildren (
@@ -168,7 +172,8 @@ create table RequirementsWithUnverifiedNonOptionalChildren (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table RequirementsWithSkippedNonOptionalChildren (
@@ -177,7 +182,8 @@ create table RequirementsWithSkippedNonOptionalChildren (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Note: May contain multiple states per requirement
@@ -188,7 +194,8 @@ create table StatesOfRequirementsWithOnlyOptionalChildren (
     req_id text not null,
     state integer not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id, state),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table VerifiedRequirementsWithOnlyOptionalChildren (
@@ -197,17 +204,12 @@ create table VerifiedRequirementsWithOnlyOptionalChildren (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains verification states for requirements based on the requirement hierarchy.
 -- This table only contains non-leaf requirements (requirements that have at least one child).
--- States:
--- - verified: all non-optional descendants are verified
--- - failed: at least one descendant failed (or is of unknown state)
---      also including optional descendants
--- - skipped: at least one non-optional descendant was skipped, and none failed or are unverified
--- - unverified: at least one non-optional descendant was unverified, but none failed or were skipped
 create table IndirectRequirementVerificationStates (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr,
@@ -215,7 +217,8 @@ create table IndirectRequirementVerificationStates (
     req_id text not null,
     state integer not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 create table RequirementVerificationStates (
@@ -225,65 +228,54 @@ create table RequirementVerificationStates (
     req_id text not null,
     state integer not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are successfully verified.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is verified.
--- For non-leaf requirements:
--- - The IndirectRequirementVerificationStates must **not** be failed
--- - If an entry in DirectRequirementVerificationStates exists it must be verified
--- - If no entry in DirectRequirementVerificationStates exists the indirect state must be verified
 create table VerifiedRequirements (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are skipped.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is skipped.
--- For non-leaf requirements, either
--- - IndirectRequirementVerificationStates = skipped
---   DirectRequirementVerificationStates = verified or skipped or unverified
--- - IndirectRequirementVerificationStates = verified or skipped
---   DirectRequirementVerificationStates = skipped
 create table SkippedRequirements (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are skipped.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is failed.
--- For non-leaf requirements, either IndirectRequirementVerificationStates = failed
--- or DirectRequirementVerificationStates = failed
 create table FailedRequirements (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are unverified.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is unverified.
--- For non-leaf requirements, either
--- - IndirectRequirementVerificationStates = unverified
---   DirectRequirementVerificationStates = unverified
--- - IndirectRequirementVerificationStates = skipped, or unverified
---   DirectRequirementVerificationStates = unverified
 create table UnverifiedRequirements (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );

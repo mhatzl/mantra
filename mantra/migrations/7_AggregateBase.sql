@@ -31,13 +31,14 @@ create table RootRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains descendants per requirements.
 create table RequirementDescendants (
     -- the collection in which the entry was added
-    -- may either match with collect_nr or descendant_collect_nr
+    -- must either match with req_collect_nr or descendant_collect_nr
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,
@@ -48,7 +49,7 @@ create table RequirementDescendants (
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id, descendant_collect_nr, descendant_product_id, descendant_id),
     foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
     foreign key (descendant_collect_nr, descendant_product_id, descendant_id) references Requirements(collect_nr, product_id, id) on delete cascade,
-    constraint related_collection (agg_collect_nr = req_collect_nr or agg_collect_nr = descendant_collect_nr)
+    constraint related_collection check (agg_collect_nr = req_collect_nr or agg_collect_nr = descendant_collect_nr)
 );
 
 -- Contains requirements that have no child requirements.
@@ -58,7 +59,8 @@ create table LeafRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are marked as `deprecated`.
@@ -70,7 +72,8 @@ create table DeprecatedRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are marked to `exclude` them.
@@ -82,7 +85,8 @@ create table ExcludedRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are marked as `optional`.
@@ -94,7 +98,8 @@ create table OptionalRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are marked to require `manual verification`.
@@ -106,7 +111,8 @@ create table ManualRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are neither deprecated nor excluded.
@@ -116,7 +122,8 @@ create table UsableRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains *usable* requirements that are not part of the ManualRequirements table.
@@ -126,7 +133,8 @@ create table UsableNonManualRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains *usable* requirements that are part of the ManualRequirements table.
@@ -136,7 +144,8 @@ create table UsableManualRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that are satisfied either by a *satisfies* trace mentioning the ID,
@@ -147,7 +156,8 @@ create table DirectlySatisfiedRequirements (
     product_id text not null,
     req_id text not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains the line span affected by a trace.
@@ -220,7 +230,6 @@ create table LikelyObsoleteTestRuns (
 );
 
 -- Contains the resolved state of test cases considering potential overrides from reviews.
--- TODO: check for primary and foreign key
 create table ResolvedTestCaseStates (
     collect_nr integer not null,
     product_id text not null,
@@ -230,7 +239,10 @@ create table ResolvedTestCaseStates (
     -- State of the test case.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed; 4=obsolete
     -- [req("testcov.test_case.state")]
-    state integer not null
+    state integer not null,
+    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
+        references TestCases (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
 );
 
 create view PassedTestCases as
