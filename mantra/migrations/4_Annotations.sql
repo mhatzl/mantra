@@ -24,14 +24,13 @@ create table Traces (
     -- Used to detect duplicate trace entries in one collection for the same line
     last_collect_nr integer not null references Collections (nr) on delete restrict,
     -- Hash of the file content.
-    file_hash text not null,
+    file_hash text not null references FileHashes (hash) on delete restrict,
     -- Line the trace was detected at in the file.
     line integer not null,
     -- Trace kind (0 = clarifies, 1 = satisfies, 2 = verifies, 3 = links).
     -- [req("trace.kind")]
     kind integer not null,
-    primary key (file_hash, line),
-    foreign key (file_hash) references FileHashes (hash) on delete restrict
+    primary key (file_hash, line)
 );
 
 -- Table to store custom properties of traces.

@@ -7,6 +7,7 @@ create table RequirementHierarchies (
     child_product_id text not null,
     -- The ID of the child requirement, whose content referenced the parent ID.
     child_req_id text not null,
+    parent_collect_nr integer not null,
     -- The product ID the parent requirement is defined in.
     parent_product_id text not null,
     -- The ID of the parent requirement.
@@ -23,113 +24,130 @@ create table RequirementHierarchies (
 -- Contains requirements that have no parents.
 -- Root requirements also have no parents across products.
 create table RootRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- the collection in which the requirement is a root requirement
+    -- **Note:** Needed in case later collections affect the requirements hierarchy without collecting the requirement itself
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains descendants per requirements.
 create table RequirementDescendants (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    -- the collection in which the entry was added
+    -- may either match with collect_nr or descendant_collect_nr
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
+    req_id text not null,
+    descendant_collect_nr integer not null,
     descendant_product_id text not null,
     descendant_id text not null,
-    primary key (product_id, id, descendant_product_id, descendant_id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade,
-    foreign key (descendant_product_id, descendant_id) references Requirements(product_id, id) on delete cascade
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id, descendant_collect_nr, descendant_product_id, descendant_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    foreign key (descendant_collect_nr, descendant_product_id, descendant_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint related_collection (agg_collect_nr = req_collect_nr or agg_collect_nr = descendant_collect_nr)
 );
 
 -- Contains requirements that have no child requirements.
 create table LeafRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains requirements that are marked as `deprecated`.
 --
 -- **Note:** Children of explicitly marked requirements are also affected.
 create table DeprecatedRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains requirements that are marked to `exclude` them.
 --
 -- **Note:** Propagates to child requirements if all parents are marked `exclude`.
 create table ExcludedRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains requirements that are marked as `optional`.
 --
 -- **Note:** Propagates to child requirements if all parents are marked `optional`.
 create table OptionalRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains requirements that are marked to require `manual verification`.
 --
 -- **Note:** Propagates to child requirements if all parents are marked to require `manual verification`.
 create table ManualRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains requirements that are neither deprecated nor excluded.
 create table UsableRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains *usable* requirements that are not part of the ManualRequirements table.
 create table UsableNonManualRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains *usable* requirements that are part of the ManualRequirements table.
 create table UsableManualRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains requirements that are satisfied either by a *satisfies* trace mentioning the ID,
 -- or it is verified by a review if the requirement is part of the ManualRequirements table.
 create table DirectlySatisfiedRequirements (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    req_collect_nr integer not null,
     product_id text not null,
-    id text not null,
-    primary key (product_id, id),
-    foreign key (product_id, id) references Requirements(product_id, id) on delete cascade
+    req_id text not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains the line span affected by a trace.
@@ -160,12 +178,12 @@ create table ExcludedCoverageLines (
 -- - manually verified requirement changed since review date
 -- - test run of mapped overrides is marked as (likely) obsolete
 create table LikelyObsoleteReviews (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     review_name text not null,
     review_date text not null,
-    primary key (product_id, review_name, review_date),
-    foreign key (product_id, review_name, review_date) references Reviews(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, review_name, review_date),
+    foreign key (collect_nr, product_id, review_name, review_date) references Reviews(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains test runs that are obsolete and must **not** be used for further analysis.
@@ -177,12 +195,12 @@ create table LikelyObsoleteReviews (
 -- because initial data may have been collected long after the date of a test run,
 -- but data could still have been changed between.
 create table ObsoleteTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains test runs that are likely obsolete, but are still used for further analysis.
@@ -193,17 +211,18 @@ create table ObsoleteTestRuns (
 -- - verified requirement changed since test run date
 -- - file hash for the filepath of the test case location or coverage data changed since test run date
 create table LikelyObsoleteTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains the resolved state of test cases considering potential overrides from reviews.
+-- TODO: check for primary and foreign key
 create table ResolvedTestCaseStates (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -216,7 +235,7 @@ create table ResolvedTestCaseStates (
 
 create view PassedTestCases as
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -226,7 +245,7 @@ where state = 1;
 
 create view SkippedTestCases as
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -236,7 +255,7 @@ where state = 2;
 
 create view FailedTestCases as
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -255,73 +274,73 @@ create table UsableTestCases (
 );
 
 create table TestRunDescendants (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
     descendant_test_run_name text not null,
     descendant_test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date, descendant_test_run_name, descendant_test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade,
-    foreign key (product_id, descendant_test_run_name, descendant_test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date, descendant_test_run_name, descendant_test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (collect_nr, product_id, descendant_test_run_name, descendant_test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table LeafTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table PassedTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table FailedTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table SkippedTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains test tuns that are **not** obsolete and passed.
 create table UsableTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (product_id, test_run_name, test_run_date) references TestRuns(product_id, name, utc_date) on delete cascade
+    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create view TestRunStates as
 with BaseTestRunStates (
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
     state
 ) as (
     select
-        last_collect_nr,
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -329,15 +348,15 @@ with BaseTestRunStates (
     from FailedTestRuns
     union all
     select
-        last_collect_nr,
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
         1 as state
-    from UsableTestRuns
+    from UsableTestRuns -- excludes obsolete test runs
     union all
     select
-        last_collect_nr,
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -345,15 +364,16 @@ with BaseTestRunStates (
     from SkippedTestRuns
 )
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
     state
 from BaseTestRunStates
 union all
+-- to not overwrite failed or skipped obsolete test runs
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -361,7 +381,7 @@ select
 from ObsoleteTestRuns ot
 where not exists (
     select * from BaseTestRunStates bt
-    where ot.last_collect_nr = bt.last_collect_nr
+    where ot.collect_nr = bt.collect_nr
     and ot.product_id = bt.product_id
     and ot.test_run_name = bt.test_run_name
     and ot.test_run_date = bt.test_run_date
@@ -369,7 +389,7 @@ where not exists (
 
 -- Contains line coverage from test runs with optional review overrides applied.
 create table ResolvedTestRunLineCoverage (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -379,6 +399,7 @@ create table ResolvedTestRunLineCoverage (
     state integer not null,
     hits integer,
     primary key (
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -386,12 +407,14 @@ create table ResolvedTestRunLineCoverage (
         cov_line
     ),
     foreign key (
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
         cov_filepath,
         cov_line
     ) references TestRunLineCoverage (
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -402,7 +425,7 @@ create table ResolvedTestRunLineCoverage (
 
 -- Contains line coverage from test cases with optional review overrides applied.
 create table ResolvedTestCaseLineCoverage (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -413,6 +436,7 @@ create table ResolvedTestCaseLineCoverage (
     state integer not null,
     hits integer,
     primary key (
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -421,6 +445,7 @@ create table ResolvedTestCaseLineCoverage (
         cov_line
     ),
     foreign key (
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -428,6 +453,7 @@ create table ResolvedTestCaseLineCoverage (
         cov_filepath,
         cov_line
     ) references TestCaseLineCoverage (
+        collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -438,21 +464,23 @@ create table ResolvedTestCaseLineCoverage (
 );
 
 create table ResolvedLineCoverageStates (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
     state integer not null,
     primary key (
+        collect_nr,
         product_id,
         cov_filepath,
         cov_line
-    )
+    ),
+    foreign key (collect_nr, product_id, cov_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 create table TraceCoveragePerTestRuns (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -461,17 +489,16 @@ create table TraceCoveragePerTestRuns (
     traced_line integer not null,
     cov_line integer not null,
     hits integer not null,
-    primary key (product_id, test_run_name, test_run_date, filepath, file_hash, traced_line, cov_line),
-    foreign key (product_id, test_run_name, test_run_date, filepath, cov_line)
-        references TestRunLineCoverage(product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
+    primary key (collect_nr, product_id, test_run_name, test_run_date, filepath, traced_line, cov_line),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
+        references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Contains traces covered by test runs.
 create view TracesCoveredByTestRuns as
 select distinct
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -481,7 +508,7 @@ select distinct
 from TraceCoveragePerTestRuns;
 
 create table TraceCoveragePerTestCases (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -491,17 +518,16 @@ create table TraceCoveragePerTestCases (
     traced_line integer not null,
     cov_line integer not null,
     hits integer not null,
-    primary key (product_id, test_run_name, test_run_date, test_case_name, filepath, file_hash, traced_line, cov_line),
-    foreign key (product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
-        references TestCaseLineCoverage(product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
-    foreign key (product_id, filepath) references ProductRelatedFiles (product_id, filepath) on delete cascade,
+    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, traced_line, cov_line),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+        references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Contains traces covered by test cases.
 create view TracesCoveredByTestCases as
 select distinct
-    last_collect_nr,
+    collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -514,7 +540,7 @@ from TraceCoveragePerTestCases;
 -- Contains traces covered by tests.
 create view TracesCoveredByTests as
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     filepath,
     file_hash,
@@ -522,7 +548,7 @@ select
 from TracesCoveredByTestCases
 union
 select
-    last_collect_nr,
+    collect_nr,
     product_id,
     filepath,
     file_hash,
@@ -530,15 +556,15 @@ select
 from TracesCoveredByTestRuns;
 
 create view CoverableLinesPerFilepath as
-with CoveredLinesPerFilepath (product_id, filepath, line) as (
-	select product_id, cov_filepath, cov_line
+with CoveredLinesPerFilepath (collect_nr, product_id, filepath, line) as (
+	select collect_nr, product_id, cov_filepath, cov_line
 	from ResolvedTestRunLineCoverage
 
 	union
 
-	select product_id, cov_filepath, cov_line
+	select collect_nr, product_id, cov_filepath, cov_line
 	from ResolvedTestCaseLineCoverage
 )
-select product_id, filepath, count(line) as coverable_lines
+select collect_nr, product_id, filepath, count(line) as coverable_lines
 from CoveredLinesPerFilepath
-group by product_id, filepath;
+group by collect_nr, product_id, filepath;

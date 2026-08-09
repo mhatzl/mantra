@@ -45,7 +45,7 @@ create table Collections (
 create table CollectedFiles (
     collect_nr integer not null references Collections (nr) on delete cascade,
     filepath text not null,
-    file_hash text not null references FileHashes (hash) on delete restrict,
+    file_hash text references FileHashes (hash) on delete restrict,
     -- Optional MIME/media type of the stored content.
     media_type text,
     primary key (collect_nr, filepath)
