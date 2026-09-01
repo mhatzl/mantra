@@ -80,36 +80,38 @@ with the format being automatically detected based on the file extension.
 The following configuration sets up a `mantra-demo` product for the `main` baseline (e.g. branch):
 
 ```json5
-products: [{
-    name: "mantra-demo",
-    base: "main",
-    requirements: [{
-        path: "reqs/",
-        source: "schema",
-    }],
-    annotations: [{
-        path: "./",
-        source: "content",
-        pattern: "*.rs"
-    }],
-    test_runs: [{
-        path: "target/nextest/default",
-        source: {
-            test: {
-                format: "junit",
-                pattern: "*junit.xml",
-            },
-            coverage: {
-                format: "cobertura_loose",
-                pattern: "*cobertura.xml",
+{
+    products: [{
+        name: "mantra-demo",
+        base: "main",
+        requirements: [{
+            path: "reqs/",
+            source: "schema",
+        }],
+        annotations: [{
+            path: "./",
+            source: "content",
+            pattern: "*.rs"
+        }],
+        test_runs: [{
+            path: "target/nextest/default",
+            source: {
+                test: {
+                    format: "junit",
+                    pattern: "*junit.xml",
+                },
+                coverage: {
+                    format: "cobertura_loose",
+                    pattern: "*cobertura.xml",
+                }
             }
-        }
+        }],
+        reviews: [{
+            path: "reviews/",
+            source: "schema",
+        }]
     }],
-    reviews: [{
-        path: "reviews/",
-        source: "schema",
-    }]
-}],
+}
 ```
 
 Based on this configuration, files defining requirements are expected to be located under the `reqs/` folder
@@ -123,9 +125,23 @@ More details related to *mantra*'s configuration file can be found under `/docs/
 
 ### Defining Requirements
 
-Currently, only the `RequirementSchema` is supported as input for requirement definitions.
+Currently, requirements may be defined via JSON5 or TOML files following the `RequirementSchema`,
+or via Markdown files following the *mantra* Markdown syntax.
 
-The following configuration defines three requirements `gs-req-1`, `gs-req-2`, and `gs-req-1.sub-1`:
+#### Requirement Schema
+
+To use the requirement schema as input format, set the requirement `source` to `schema` in the mantra configuration file.
+
+```json5
+{
+    requirements: [{
+        path: "reqs/",
+        source: "schema",
+    }]
+}
+```
+
+The following content defines three requirements `gs-req-1`, `gs-req-2`, and `gs-req-1.sub-1` using the `RequirementSchema`:
 
 ```json5
 {
@@ -164,9 +180,43 @@ Although good practice would be to list `gs-req-1` in the `parents` list again t
 it is not strictly required.
 
 Besides the mandatory fields, `gs-req-2` also sets `manual_verification`,
-which marks the requirement and all its children to require manual verification via at least one review.
+which marks the requirement and its children to require manual verification via at least one review.
 Marking `gs-req-1.sub-1` as `optional` tells *mantra* that parent requirements may be `verified`
 even if `gs-req-1.sub-1` is `unverified` or `skipped`.
+
+#### Markdown Syntax
+
+To use the Markdown syntax as input format, set the requirement `source` to `markup` in the mantra configuration file.
+This will look for Markdown files in the given path.
+
+```json5
+{
+    requirements: [{
+        path: "reqs/",
+        source: "markup",
+    }]
+}
+```
+
+The Markdown syntax is built-up to define multiple requirements per file using a specific headings syntax as new definitions.
+
+```md
+# `req-1`: Requirement Title
+
+- **Parents:** ["req-2"]
+- **Some-Key:** "Some JSON5-like value"
+
+Requirement description...
+
+# `req-2`: Other Requirement
+
+Description for the other requirement...
+```
+
+A requirement heading must start by enclosing the ID in `` ` ``backticks followed by a colon `:` and a heading title.
+If a bullet list is below the heading, it is taken as key-value list for requirement properties.
+Built-in keys such as `Parents`, `Manual`, `Deprecated`, `Exclude`, `Optional`, or `Replaces` are mapped to the related fields of the `RequirementSchema`.
+Content after the heading and optional bullet list is treated as description and is taken until the next mantra heading is detected.
 
 ### Tracing Requirements in Code
 
@@ -216,10 +266,14 @@ Consequently, a `verifies` trace alone is not enough to verify a requirement.
 The benefit is that combining traces with line coverage allows users to choose between manual tracing effort and safety guarantees.
 For example, if a `verifies` trace is set on a test and there is a code part with a `satisfies` trace to the same requirement, *mantra* checks if the test actually passed this code part.
 
-For Rust projects, a convenient way to get test and coverage results that are readable by *mantra*
+For embedded Rust projects, you may want to take a look at [embsinth](https://github.com/ferrocene/embsinth),
+which provides functionality for system and integration testing of embedded devices.
+It offers a CLI cmd to `post-process` captured test results and convert it into the *mantra* `TestRunSchema`.
+
+For standard Rust projects, a convenient way to get test and coverage results that are readable by *mantra*
 is to use [cargo-nextest](https://nexte.st/) with the JUnit feature and [grcov](https://github.com/mozilla/grcov/) with the Cobertura output format.
 See the `testcov` task in the `justfile` of the repository to see how this is set up for *mantra*.
-This convenience layer is internally converted to the `TestRunSchema`, which external tools may target directly. 
+This convenience layer is internally converted to the `TestRunSchema`, which external tools may target directly.
 
 **Note:** Code coverage for Rust projects collected via `-Cinstrument-coverage` is only collected per binary.
 Consequently, it is not possible to get code coverage results per test case, which worsens the safety guarantees

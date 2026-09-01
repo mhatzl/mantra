@@ -43,6 +43,16 @@ trait SomeTrait {
 }
 ```
 
+## Coverage
+
+Each macro may be turned into a `defmt` or `log` message using the respective feature flags to track if a macro was covered during execution.
+This is used for example by the [embsinth](https://github.com/ferrocene/embsinth) crate for embedded testing to detect .
+
+**Note:** For procedural macros, only those placed on functions will set log messages.
+
+The `extract` feature flag provides functionality to recover coverage data from the log messages.
+This may be used to create custom tooling such as [embsinth](https://github.com/ferrocene/embsinth).
+
 # License
 
 MIT
