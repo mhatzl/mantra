@@ -10,6 +10,13 @@
     "origin": {
       "description": "Optional base origin of the requirements in this entry. e.g. specific branch or commit from a git repository"
     },
+    "product_id": {
+      "description": "Optional product ID to specify the product the requirements are part of. If this field is not set, the ID of the product whose configuration included this schema is used.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "properties": {
       "description": "Optional properties related to all requirements in this entry.\n\n**Note:** If a requirement sets a property key directly, the value set at the requirement will be taken.",
       "type": [
@@ -95,6 +102,16 @@
             "null"
           ],
           "additionalProperties": true
+        },
+        "replaces": {
+          "description": "Optional list of requirements that this requirement replaces. Replacing a requirement is only possible inside the same product and marks replaced requirements as *deprecated*.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         },
         "title": {
           "description": "Title of the requirement. [req(\"req.title\")]",

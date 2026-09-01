@@ -1,9 +1,9 @@
 [package]
 name = "schema-gen"
-version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
+version = "0.9.0"
 
 [dependencies]
 mantra-schema = { path = "../schema" }
