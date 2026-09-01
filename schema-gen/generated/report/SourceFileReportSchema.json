@@ -418,6 +418,27 @@
         }
       }
     },
+    "RequirementPk": {
+      "description": "This struct defines the primary key to identify requirements for a product.",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "description": "ID of the parent requirement. [req(\"req.id\")]",
+          "type": "string"
+        },
+        "product_id": {
+          "description": "ID of the product the parent requirement is defined in. If `None`, the parent is assumed to be defined in the same product as the child requirement.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "RequirementReference": {
       "type": "object",
       "required": [
@@ -659,7 +680,7 @@
         "unknown_ids": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/RequirementPk"
           }
         }
       }

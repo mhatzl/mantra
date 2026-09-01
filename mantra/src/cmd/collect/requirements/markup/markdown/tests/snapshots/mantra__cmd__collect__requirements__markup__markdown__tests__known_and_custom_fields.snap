@@ -2,7 +2,7 @@
 source: mantra/src/cmd/collect/requirements/markup/markdown/tests/mod.rs
 ---
 RequirementSchema(
-  schema_version: "0.8.0",
+  schema_version: "0.9.0",
   product_id: Some("product-id"),
   requirements: [
     Requirement(

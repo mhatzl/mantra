@@ -10,6 +10,13 @@
     "origin": {
       "description": "Optional base origin of the reviews in this entry. e.g. specific branch or commit from a git repository"
     },
+    "product_id": {
+      "description": "Optional product ID to specify the product the reviews are part of. If this field is not set, the ID of the product whose configuration included this schema is used.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "properties": {
       "description": "Optional properties related to all reviews in this entry.\n\n**Note:** If a review sets a property key directly, the value set at the review will be taken.",
       "type": [

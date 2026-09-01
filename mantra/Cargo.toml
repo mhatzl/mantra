@@ -6,13 +6,13 @@ readme.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
-version = "0.8.1"
+version = "0.9.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0.8.0" }
-mantra-macros = { path = "../langs/rust/mantra-macros", version = "0.8.0" }
-mantra-schema = { path = "../schema", version = "0.8.0" }
+mantra-lang-tracing = { path = "../langs/mantra-lang-tracing", version = "0.9.0" }
+mantra-macros = { path = "../langs/rust/mantra-macros", version = "0.9.0" }
+mantra-schema = { path = "../schema", version = "0.9.0" }
 regex.workspace = true
 log.workspace = true
 env_logger.workspace = true
@@ -22,7 +22,16 @@ schemars.workspace = true
 anyhow.workspace = true
 urlencoding.workspace = true
 thiserror.workspace = true
-sqlx = { workspace = true, features = ["any", "derive", "macros", "migrate", "sqlite", "json", "runtime-tokio", "time"] }
+sqlx = { workspace = true, features = [
+    "any",
+    "derive",
+    "macros",
+    "migrate",
+    "sqlite",
+    "json",
+    "runtime-tokio",
+    "time",
+] }
 tokio = { version = "1.37.0", features = ["full"] }
 tokio-stream = "0.1.18"
 clap = { version = "4.5.4", features = ["derive", "env"] }

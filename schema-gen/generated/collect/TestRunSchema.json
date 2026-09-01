@@ -10,6 +10,13 @@
     "origin": {
       "description": "Optional base origin of the test runs in this entry. e.g. specific branch or commit from a git repository"
     },
+    "product_id": {
+      "description": "Optional product ID to specify the product the test runs are part of. If this field is not set, the ID of the product whose configuration included this schema is used.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "schema_version": {
       "description": "The schema version. [req(\"exchange.versioned\")]",
       "type": [

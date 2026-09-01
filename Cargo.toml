@@ -5,7 +5,8 @@ members = [
     "langs/mantra-lang-tracing",
     "langs/rust/mantra-procm",
     "langs/rust/mantra-macros",
-    "schema", "schema-gen",
+    "schema",
+    "schema-gen",
 ]
 
 [workspace.dependencies]
@@ -22,7 +23,6 @@ thiserror = "1.0.59"
 insta = { version = "1.48.0", features = ["ron"] }
 
 [workspace.package]
-version = "0.8.0"
 edition = "2024"
 repository = "https://github.com/mhatzl/mantra"
 license = "MIT"
