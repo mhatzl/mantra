@@ -5,7 +5,7 @@
 create table GeneralTexts (
     -- Hash of the content
     hash text not null primary key,
-    -- Content that is either plain text or of unknown format to mantra.
+    -- Content that in general has no structure that is queryable by a regular SQL database.
     content text not null
 );
 
@@ -24,7 +24,10 @@ create table GeneralJson (
 -- [req("changes.track.traces.files")]
 create table FileHashes (
     -- Hash of the file content.
-    hash text not null primary key
+    hash text not null primary key,
+    -- Optional content that resulted in the hash.
+    -- Only optional, because e.g. test runs may return a file hash but no file content.
+    content text
 );
 
 -- Base table used to track changes over multiple `mantra collect` runs.
@@ -45,10 +48,22 @@ create table Collections (
 create table CollectedFiles (
     collect_nr integer not null references Collections (nr) on delete cascade,
     filepath text not null,
+    -- Optional reference to the hash of the file content
     file_hash text references FileHashes (hash) on delete restrict,
     -- Optional MIME/media type of the stored content.
     media_type text,
     primary key (collect_nr, filepath)
+);
+
+-- In case a file was collected with different hash values in one collection.
+-- This may happen if annotations or requirements are collected from a file,
+-- and test runs contain coverage data for the same file but with a different file hash.
+create table ConflictingCollectedFiles (
+    collect_nr integer not null,
+    filepath text not null,
+    file_hash text not null,
+    primary key (collect_nr, filepath, file_hash),
+    foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete cascade
 );
 
 -- Table to store logs that were encountered while executing `mantra collect`.
