@@ -379,15 +379,6 @@ create table TestCaseStateProperties (
         test_run_name,
         test_run_date,
         name
-    ) on delete cascade,
-    foreign key (
-        collect_nr,
-        product_id,
-        cov_filepath
-    ) references ProductRelatedFiles (
-        collect_nr,
-        product_id,
-        filepath
     ) on delete cascade
 );
 

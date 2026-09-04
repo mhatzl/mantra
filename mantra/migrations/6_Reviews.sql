@@ -106,7 +106,7 @@ create table ManuallyVerifiedRequirements (
         review_date
     ),
     foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
-    foreign key (collect_nr, product_id, req_id) references Requirements (product_id, id) on delete cascade
+    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );
 
 -- Table to store test case overrides from reviews.

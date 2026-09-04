@@ -4,7 +4,7 @@
   "describe": {
     "columns": [
       {
-        "name": "last_collect_nr",
+        "name": "collect_nr",
         "ordinal": 0,
         "type_info": "Integer"
       },

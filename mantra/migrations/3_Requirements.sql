@@ -45,7 +45,7 @@ create table Requirements (
     media_type text,
     primary key (collect_nr, id, product_id),
     foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade,
-    foreign key (product_id, data_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    foreign key (collect_nr, product_id, data_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 -- Table to map to properties of requirements.

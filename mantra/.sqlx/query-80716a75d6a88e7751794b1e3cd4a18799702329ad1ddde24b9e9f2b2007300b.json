@@ -40,10 +40,10 @@
     "nullable": [
       true,
       true,
-      false,
-      false,
       true,
-      false
+      true,
+      true,
+      true
     ]
   },
   "hash": "80716a75d6a88e7751794b1e3cd4a18799702329ad1ddde24b9e9f2b2007300b"

@@ -16,7 +16,7 @@
       {
         "name": "state!:i64",
         "ordinal": 2,
-        "type_info": "Null"
+        "type_info": "Integer"
       }
     ],
     "parameters": {
@@ -25,7 +25,7 @@
     "nullable": [
       false,
       false,
-      null
+      false
     ]
   },
   "hash": "05dd10046a123883dd0f31b35838504f3c8b50e3e271e0dba72edc22937db61b"

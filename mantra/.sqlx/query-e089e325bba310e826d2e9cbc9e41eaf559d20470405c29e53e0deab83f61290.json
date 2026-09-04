@@ -23,9 +23,9 @@
       "Right": 3
     },
     "nullable": [
-      false,
-      false,
-      false
+      true,
+      true,
+      true
     ]
   },
   "hash": "e089e325bba310e826d2e9cbc9e41eaf559d20470405c29e53e0deab83f61290"
