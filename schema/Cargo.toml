@@ -2,6 +2,7 @@
 name = "mantra-schema"
 description = "Schemas for *mantra*."
 version.workspace = true
+rust-version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true
@@ -17,3 +18,4 @@ sha2 = "0.10.9"
 base16ct = { version = "1.0.0", features = ["alloc"] }
 relative-path = { version = "2.0.1", features = ["alloc", "serde"] }
 time = { version = "0.3.47", features = ["serde-human-readable", "macros"] }
+mime_guess = "2.0.5"

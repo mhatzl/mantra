@@ -9,10 +9,10 @@ use mantra_schema::{
 };
 use tokio::task::JoinSet;
 
-use crate::cmd::collect::{Collection, walker};
+use crate::cmd::collect::{product_collection::ProductCollection, walker};
 
-pub(super) struct SingleFileCollector<'db, T, C: SingleFileCollectable<'db, T>> {
-    collection: Collection<'db>,
+pub(super) struct SingleFileCollector<'db, 'c, T, C: SingleFileCollectable<'db, 'c, T>> {
+    collection: ProductCollection<'db, 'c>,
     cfgs: PhantomData<C>,
     schema: PhantomData<T>,
 }
@@ -38,7 +38,7 @@ impl<'a> CollectableFile<'a> {
 }
 
 #[allow(clippy::type_complexity)]
-pub(super) trait SingleFileCollectable<'db, T> {
+pub(super) trait SingleFileCollectable<'db, 'c, T> {
     fn path(&self) -> &RelativePath;
     fn pattern(&self) -> Option<&str>;
     fn custom_ignore_filename(&self) -> &'static str;
@@ -47,9 +47,9 @@ pub(super) trait SingleFileCollectable<'db, T> {
         &self,
     ) -> Result<fn(&ProductId, &CollectableFile) -> Result<Option<T>, anyhow::Error>, anyhow::Error>;
     async fn update_db(
-        collection: &mut Collection<'db>,
+        collection: &mut ProductCollection<'db, 'c>,
         filepath: &RelativePath,
-        schema: T,
+        schema: &T,
     ) -> Result<(), anyhow::Error>;
 }
 
@@ -60,10 +60,10 @@ struct SentData<T> {
     content: String,
 }
 
-impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
-    SingleFileCollector<'db, T, C>
+impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + 'static>
+    SingleFileCollector<'db, 'c, T, C>
 {
-    pub fn new(collection: Collection<'db>) -> Self {
+    pub fn new(collection: ProductCollection<'db, 'c>) -> Self {
         Self {
             collection,
             cfgs: PhantomData,
@@ -71,12 +71,15 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
         }
     }
 
-    pub(super) async fn collect(mut self, cfgs: Vec<C>) -> Result<Collection<'db>, anyhow::Error> {
+    pub(super) async fn collect(
+        mut self,
+        cfgs: Vec<C>,
+    ) -> Result<ProductCollection<'db, 'c>, anyhow::Error> {
         if cfgs.is_empty() {
             return Ok(self.collection);
         }
 
-        let product_id = self.collection.product_id();
+        let product_id = self.collection.product_id().clone();
         let abs_cfg_file_dir_path = self.collection.abs_cfg_file_parent_path();
 
         let (schema_tx, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
@@ -152,28 +155,19 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
 
         while let Some(sent_data) = schema_rx.recv().await {
             self.collection
-                .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed inserting the content hash for file '{}'",
-                        sent_data.filepath
-                    )
-                })?;
-            self.collection
-                .insert_file_content(
+                .insert_collected_file(
                     &sent_data.filepath,
                     &sent_data.file_hash,
-                    &sent_data.content,
+                    Some(&sent_data.content),
                 )
                 .await
                 .with_context(|| {
                     format!(
-                        "Failed inserting the content for file '{}'",
+                        "Failed inserting the collected file '{}'",
                         sent_data.filepath
                     )
                 })?;
-            C::update_db(&mut self.collection, &sent_data.filepath, sent_data.schema)
+            C::update_db(&mut self.collection, &sent_data.filepath, &sent_data.schema)
                 .await
                 .with_context(|| {
                     format!(

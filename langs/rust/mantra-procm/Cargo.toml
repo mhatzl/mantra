@@ -2,6 +2,7 @@
 name = "mantra-procm"
 description = "Defines procedural macros used by `mantra-macros`."
 version.workspace = true
+rust-version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

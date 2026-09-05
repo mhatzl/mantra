@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::{Context, bail};
 use mantra_schema::{
     Properties,
+    media_type::MediaType,
     product::{Product, ProductId},
 };
 
@@ -66,6 +67,8 @@ pub struct InheritableProductConfig {
     ///
     /// TODO: map to requirement
     pub description: Option<String>,
+    /// Optional MIME/media type of product related general texts (e.g. description).
+    pub media_type: Option<MediaType>,
     /// Optional properties inheritable for all products.
     ///
     /// TODO: map to requirement
@@ -125,6 +128,24 @@ pub struct ProductConfig {
     pub reviews: Vec<CollectReviewsConfig>,
 }
 
+impl ProductConfig {
+    pub(crate) fn resolve(
+        self,
+        inheritable_cfg: &InheritableProductConfig,
+    ) -> Result<ResolvedProductConfig, anyhow::Error> {
+        let product = self.product.to_product(inheritable_cfg)?;
+
+        Ok(ResolvedProductConfig {
+            product,
+            requirements: self.requirements,
+            annotations: self.annotations,
+            lsif: self.lsif,
+            test_runs: self.test_runs,
+            reviews: self.reviews,
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ProductDataConfig {
@@ -167,6 +188,9 @@ pub struct ProductDataConfig {
     ///
     /// TODO: map to requirement
     pub description: InheritableOption<String>,
+    /// Optional MIME/media type of product related general texts (e.g. description).
+    /// May be inherited by setting "$inherit".
+    pub media_type: InheritableOption<MediaType>,
     /// Optional properties of the product.
     /// May be inherited by setting "$inherit".
     ///
@@ -208,10 +232,22 @@ impl ProductDataConfig {
                 &inheritable_cfg.description,
             )
             .context("Product description could not be resolved")?,
+            media_type: resolve_optional_inheritable(self.media_type, &inheritable_cfg.media_type)
+                .context("Product media_type could not be resolved")?,
             properties: resolve_optional_inheritable(self.properties, &inheritable_cfg.properties)
                 .context("Product properties could not be resolved")?,
         })
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub(crate) struct ResolvedProductConfig {
+    pub product: Product,
+    pub requirements: Vec<CollectRequirementsConfig>,
+    pub annotations: Vec<CollectAnnotationsConfig>,
+    pub lsif: Vec<CollectLsifConfig>,
+    pub test_runs: Vec<CollectTestRunsConfig>,
+    pub reviews: Vec<CollectReviewsConfig>,
 }
 
 const NAME_BASE_DIVIDER: &str = "@";

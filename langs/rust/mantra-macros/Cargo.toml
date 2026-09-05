@@ -2,6 +2,7 @@
 name = "mantra-macros"
 description = "Provides macros to create requirement traces and coverage logs for the `mantra` framework."
 version.workspace = true
+rust-version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

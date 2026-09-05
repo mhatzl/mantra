@@ -1,19 +1,19 @@
 use anyhow::Context;
 use mantra_schema::{FmtHash, product::Product};
 
-use crate::cmd::collect::Collection;
+use crate::cmd::collect::product_collection::ProductCollection;
 
 #[cfg(test)]
 mod tests;
 
-impl<'db> Collection<'db> {
-    pub(super) async fn update_product(&mut self, product: Product) -> Result<(), anyhow::Error> {
+impl<'db, 'c> ProductCollection<'db, 'c> {
+    pub(super) async fn collect_product(&mut self, product: &Product) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = product.id;
+        let product_id = &product.id;
 
         let description_hash = if let Some(description) = &product.description {
             let hash = FmtHash::from(&description);
-            self.insert_general_text(&hash, description.clone(), None)
+            self.insert_general_text(&hash, description.clone())
                 .await
                 .context("Failed to insert the product description")?;
             Some(hash)
@@ -25,7 +25,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into Products (
-                last_collect_nr,
+                collect_nr,
                 id,
                 name,
                 base,
@@ -33,6 +33,7 @@ impl<'db> Collection<'db> {
                 homepage,
                 repository,
                 license,
+                media_type,
                 description_hash
             )
             values (
@@ -44,18 +45,9 @@ impl<'db> Collection<'db> {
                 $6,
                 $7,
                 $8,
-                $9
+                $9,
+                $10
             )
-            on conflict (id)
-            do update set
-                last_collect_nr = excluded.last_collect_nr,
-                name = excluded.name,
-                base = excluded.base,
-                version = excluded.version,
-                homepage = excluded.homepage,
-                repository = excluded.repository,
-                license = excluded.license,
-                description_hash = excluded.description_hash
             ",
             collect_nr,
             product_id,
@@ -65,19 +57,20 @@ impl<'db> Collection<'db> {
             product.homepage,
             product.repository,
             product.license,
+            product.media_type,
             description_hash
         )
         .execute(self.connection_mut())
         .await
         .context("Failed to insert the product base data")?;
 
-        if let Some(properties) = product.properties {
+        if let Some(properties) = &product.properties {
             for property in properties {
                 let key = property.0;
                 let value = property.1;
                 let hash = FmtHash::from(&value);
 
-                self.insert_general_json(&hash, value)
+                self.insert_general_json(&hash, &value)
                     .await
                     .with_context(|| {
                         format!("Failed to insert the content for property '{}'", key)
@@ -86,7 +79,7 @@ impl<'db> Collection<'db> {
                 sqlx::query!(
                     "
                     insert into ProductProperties (
-                        last_collect_nr,
+                        collect_nr,
                         product_id,
                         property_key,
                         value_hash
@@ -97,10 +90,6 @@ impl<'db> Collection<'db> {
                         $3,
                         $4
                     )
-                    on conflict (product_id, property_key)
-                    do update set
-                        last_collect_nr = excluded.last_collect_nr,
-                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     product_id,
@@ -112,37 +101,6 @@ impl<'db> Collection<'db> {
                 .with_context(|| format!("Failed to insert property '{}'", key))?;
             }
         }
-
-        Ok(())
-    }
-
-    pub(crate) async fn delete_outdated_product_info(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
-
-        sqlx::query!(
-            "
-            delete from ProductProperties
-            where product_id = $1 and last_collect_nr < $2
-            ",
-            product_id,
-            collect_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated product properties")?;
-
-        sqlx::query!(
-            "
-                delete from ProductRelatedFiles
-                where product_id = $1 and last_collect_nr < $2
-            ",
-            product_id,
-            collect_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated product related files")?;
 
         Ok(())
     }

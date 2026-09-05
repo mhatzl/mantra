@@ -1,25 +1,64 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use mantra_schema::{
-    Origin, Properties,
-    path::RelativePathBuf,
-    product::{Product, ProductId},
-};
+use anyhow::Context;
+use mantra_schema::{Origin, Properties, path::RelativePathBuf, product::ProductId};
 
+use crate::cfg::{MantraConfigFile, ResolvedProductConfig};
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CollectConfig {
     /// Path to the mantra config file that is used to collect the data.
-    pub cfg_filepath: PathBuf,
-    pub args: CollectArguments,
-    pub envs: CollectEnvironmentVariables,
-    pub product: Product,
-    pub requirements: Vec<CollectRequirementsConfig>,
-    pub annotations: Vec<CollectAnnotationsConfig>,
-    pub test_runs: Vec<CollectTestRunsConfig>,
-    pub reviews: Vec<CollectReviewsConfig>,
-    pub lsif: Vec<CollectLsifConfig>,
+    pub(super) cfg_filepath: PathBuf,
+    pub(super) product_cfgs: Vec<ResolvedProductConfig>,
+    pub(super) args: CollectArguments,
+    pub(super) envs: CollectEnvironmentVariables,
 }
 
-#[derive(Debug, Default, Clone, clap::Args)]
+impl CollectConfig {
+    pub fn new(
+        cfg_filepath: PathBuf,
+        cfg_file: MantraConfigFile,
+        args: CollectArguments,
+        envs: CollectEnvironmentVariables,
+    ) -> Result<Self, anyhow::Error> {
+        let mut product_cfgs = Vec::with_capacity(cfg_file.products.len());
+
+        for product_cfg in cfg_file.products {
+            product_cfgs.push(
+                product_cfg
+                    .resolve(&cfg_file.inheritable_product_cfg)
+                    .context("Failed to resolve a product")?,
+            );
+        }
+
+        Ok(Self {
+            cfg_filepath,
+            product_cfgs,
+            args,
+            envs,
+        })
+    }
+
+    pub fn cfg_filepath(&self) -> &Path {
+        &self.cfg_filepath
+    }
+
+    pub fn product_cfgs(&self) -> &[ResolvedProductConfig] {
+        &self.product_cfgs
+    }
+
+    pub fn args(&self) -> &CollectArguments {
+        &self.args
+    }
+
+    pub fn envs(&self) -> &CollectEnvironmentVariables {
+        &self.envs
+    }
+}
+
+#[derive(
+    Debug, Default, Clone, clap::Args, PartialEq, Eq, serde::Serialize, serde::Deserialize,
+)]
 pub struct CollectArguments {
     /// `true`: tells mantra to replace previously collected content
     /// even if the stored hash is equal to the new one.
@@ -35,6 +74,10 @@ pub struct CollectArguments {
     #[arg(long, requires = "product_id")]
     pub product_version: Option<String>,
 }
+
+#[derive(
+    Debug, Default, Clone, clap::Args, PartialEq, Eq, serde::Serialize, serde::Deserialize,
+)]
 pub struct CollectEnvironmentVariables {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

@@ -2,6 +2,7 @@
 name = "mantra-lang-tracing"
 description = "Contains functionality needed to collect mantra annotations from code or plain text files."
 version.workspace = true
+rust-version.workspace = true
 edition.workspace = true
 repository.workspace = true
 license.workspace = true

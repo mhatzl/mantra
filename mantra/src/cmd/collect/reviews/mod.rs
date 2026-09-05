@@ -5,12 +5,13 @@ use mantra_schema::{path::RelativePath, product::ProductId, reviews::ReviewSchem
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},
     collector::{CollectableFile, SingleFileCollectable},
+    product_collection::ProductCollection,
     walker,
 };
 
 pub mod db;
 
-impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
+impl<'db, 'c> SingleFileCollectable<'db, 'c, ReviewSchema> for CollectReviewsConfig {
     fn path(&self) -> &mantra_schema::path::RelativePath {
         &self.path
     }
@@ -56,9 +57,9 @@ impl<'db> SingleFileCollectable<'db, ReviewSchema> for CollectReviewsConfig {
     }
 
     async fn update_db(
-        collection: &mut super::Collection<'db>,
+        collection: &mut ProductCollection<'db, 'c>,
         filepath: &RelativePath,
-        schema: ReviewSchema,
+        schema: &ReviewSchema,
     ) -> Result<(), anyhow::Error> {
         collection
             .update_per_review_schema(filepath, schema)

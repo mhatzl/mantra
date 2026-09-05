@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use relative_path::RelativePathBuf;
 
-use crate::{IdentError, Properties, encoding::TargetEncoding};
+use crate::{IdentError, Properties, encoding::TargetEncoding, media_type::MediaType};
 
 /// Type for a product ID.
 ///
@@ -114,6 +114,8 @@ pub struct Product {
     ///
     /// TODO: map to requirement
     pub description: Option<String>,
+    /// Optional MIME/media type of product related general texts (e.g. description).
+    pub media_type: Option<MediaType>,
     /// Optional properties of the product.
     ///
     /// TODO: map to requirement

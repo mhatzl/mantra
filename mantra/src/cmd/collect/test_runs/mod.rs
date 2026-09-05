@@ -15,13 +15,13 @@ use mantra_schema::{
 use tokio::task::JoinHandle;
 
 use crate::cmd::collect::{
-    Collection,
     cfg::{
         CollectTestRunsConfig, TestRunSourceVariant, WellKnownCoverage, WellKnownCoverageFormat,
         WellKnownTest, WellKnownTestFormat,
     },
     collector::CollectableFile,
     merge_local_and_base_properties,
+    product_collection::ProductCollection,
     test_runs::convert::{
         ShallowTestRun, WellKnownCoverageConversion, WellKnownCoverageData, WellKnownTestConversion,
     },
@@ -34,8 +34,8 @@ pub mod db;
 #[cfg(test)]
 mod tests;
 
-pub(super) async fn collect<'db>(
-    collection: &mut Collection<'db>,
+pub(super) async fn collect<'db, 'c>(
+    collection: &mut ProductCollection<'db, 'c>,
     cfgs: Vec<CollectTestRunsConfig>,
 ) -> Result<(), anyhow::Error> {
     if cfgs.is_empty() {
@@ -82,8 +82,8 @@ pub(super) async fn collect<'db>(
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn collect_well_known<'db>(
-    collection: &mut Collection<'db>,
+async fn collect_well_known<'db, 'c>(
+    collection: &mut ProductCollection<'db, 'c>,
     path: &RelativePath,
     origin: Option<Origin>,
     test_run_properties: Option<Properties>,
@@ -431,8 +431,8 @@ struct SentSchemaData {
     content: String,
 }
 
-async fn collect_schema<'db>(
-    collection: &mut Collection<'db>,
+async fn collect_schema<'db, 'c>(
+    collection: &mut ProductCollection<'db, 'c>,
     path: &RelativePath,
     base_origin: Option<Origin>,
     base_test_run_properties: Option<Properties>,

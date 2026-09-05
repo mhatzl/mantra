@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     cfg::MantraConfigFile,
     cmd::{
@@ -42,59 +40,18 @@ pub async fn run(cfg: cfg::CliConfig) -> Result<(), MantraError> {
         )
         .await
         .map_err(MantraError::report_error)?,
-        cmd::Cmd::Collect(args) => {
-            let mut product_map = HashSet::new();
-
-            for product_cfg in cfg_file.products {
-                let mut product = product_cfg
-                    .product
-                    .to_product(&cfg_file.inheritable_product_cfg)
-                    .map_err(MantraError::cfg_error)?;
-
-                if !product_map.insert(product.id.clone()) {
-                    log::warn!(
-                        "Product '{}' has more than one product entry that maps to it!",
-                        &product.id
-                    );
-                }
-
-                let collect_data = if let Some(specific_id) = &args.product_id {
-                    if specific_id == &product.id {
-                        if let Some(base) = &args.product_base {
-                            product.base = Some(base.clone());
-                        }
-                        if let Some(version) = &args.product_version {
-                            product.version = Some(version.clone());
-                        }
-
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    true
-                };
-
-                if collect_data {
-                    cmd::collect::collect(
-                        &db,
-                        CollectConfig {
-                            cfg_filepath: cfg.config_filepath.clone(),
-                            args: args.clone(),
-                            envs: CollectEnvironmentVariables {},
-                            product,
-                            requirements: product_cfg.requirements,
-                            annotations: product_cfg.annotations,
-                            test_runs: product_cfg.test_runs,
-                            reviews: product_cfg.reviews,
-                            lsif: product_cfg.lsif,
-                        },
-                    )
-                    .await
-                    .map_err(MantraError::collect_error)?
-                }
-            }
-        }
+        cmd::Cmd::Collect(args) => cmd::collect::collect(
+            &db,
+            CollectConfig::new(
+                cfg.config_filepath,
+                cfg_file,
+                args,
+                CollectEnvironmentVariables {},
+            )
+            .map_err(MantraError::cfg_error)?,
+        )
+        .await
+        .map_err(MantraError::collect_error)?,
         cmd::Cmd::Prune => todo!(),
         cmd::Cmd::Clear => todo!(),
     }

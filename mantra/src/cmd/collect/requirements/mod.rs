@@ -5,6 +5,7 @@ use mantra_schema::{path::RelativePath, product::ProductId, requirements::Requir
 use crate::cmd::collect::{
     cfg::{CollectRequirementsConfig, RequirementSourceVariant},
     collector::{CollectableFile, SingleFileCollectable},
+    product_collection::ProductCollection,
     walker,
 };
 
@@ -14,7 +15,7 @@ pub mod markup;
 #[cfg(test)]
 mod tests;
 
-impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsConfig {
+impl<'db, 'c> SingleFileCollectable<'db, 'c, RequirementSchema> for CollectRequirementsConfig {
     fn path(&self) -> &mantra_schema::path::RelativePath {
         &self.path
     }
@@ -62,9 +63,9 @@ impl<'db> SingleFileCollectable<'db, RequirementSchema> for CollectRequirementsC
     }
 
     async fn update_db(
-        collection: &mut super::Collection<'db>,
+        collection: &mut ProductCollection<'db, 'c>,
         filepath: &RelativePath,
-        schema: RequirementSchema,
+        schema: &RequirementSchema,
     ) -> Result<(), anyhow::Error> {
         collection
             .update_per_req_schema(filepath, schema)

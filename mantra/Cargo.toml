@@ -1,7 +1,7 @@
 [package]
 name = "mantra"
 description = "`mantra` offers a lightweight approach for requirement tracing and coverage."
-rust-version = "1.90"
+rust-version.workspace = true
 readme.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -28,7 +28,6 @@ tokio-stream = "0.1.18"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 toml = { version = "0.8.13", features = ["parse"] }
 ignore = "0.4.25"
-mime_guess = "2.0.5"
 minijinja = "2.19.0"
 encoding_rs_io = "0.1.7"
 covcon = "0.3.0"

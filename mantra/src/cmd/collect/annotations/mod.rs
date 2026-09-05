@@ -9,12 +9,13 @@ use mantra_schema::{
 use crate::cmd::collect::{
     cfg::{AnnotationSourceVariant, CollectAnnotationsConfig},
     collector::{CollectableFile, SingleFileCollectable},
+    product_collection::ProductCollection,
     walker,
 };
 
 pub mod db;
 
-impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsConfig {
+impl<'db, 'c> SingleFileCollectable<'db, 'c, AnnotationSchema> for CollectAnnotationsConfig {
     fn path(&self) -> &mantra_schema::path::RelativePath {
         &self.path
     }
@@ -55,9 +56,9 @@ impl<'db> SingleFileCollectable<'db, AnnotationSchema> for CollectAnnotationsCon
     }
 
     async fn update_db(
-        collection: &mut super::Collection<'db>,
+        collection: &mut ProductCollection<'db, 'c>,
         filepath: &RelativePath,
-        schema: AnnotationSchema,
+        schema: &AnnotationSchema,
     ) -> Result<(), anyhow::Error> {
         collection
             .update_per_annotation_schema(filepath, schema)

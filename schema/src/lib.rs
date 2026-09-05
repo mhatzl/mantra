@@ -3,12 +3,14 @@ use sha2::Digest;
 
 pub mod annotations;
 mod encoding;
+pub mod media_type;
 pub mod product;
 pub mod report;
 pub mod requirements;
 pub mod reviews;
 pub mod test_runs;
 
+pub use mime_guess;
 pub use relative_path as path;
 pub use time;
 
