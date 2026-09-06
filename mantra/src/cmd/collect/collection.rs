@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use mantra_schema::{FmtHash, path::RelativePath, time::OffsetDateTime};
+use mantra_schema::{FmtHash, Origin, path::RelativePath, time::OffsetDateTime};
 
 use crate::{
     cfg::ResolvedProductConfig,
@@ -25,37 +25,22 @@ impl<'db> Collection<'db> {
         let collected_at_utc = OffsetDateTime::now_utc();
         let mut transaction = db.start_transaction().await?;
 
-        let config_value = serde_json::to_value(cfg)?;
-        let config_hash = FmtHash::from(&config_value);
-
-        insert_general_json(
-            &mut transaction,
-            &config_hash,
-            &config_value,
-            cfg.args().replace_hashed,
-        )
-        .await
-        .context("Failed to insert the product configuration used to collect data")?;
-
         // TODO: add args and env data to table
 
         sqlx::query!(
             "
             insert into Collections (
                 collected_at_utc,
-                config_hash,
                 arguments_hash,
                 env_vars_hash
             )
             values (
                 $1,
-                $2,
                 null,
                 null
             )
             ",
-            collected_at_utc,
-            config_hash
+            collected_at_utc
         )
         .execute(&mut *transaction.as_mut())
         .await
@@ -295,6 +280,155 @@ impl<'db> Collection<'db> {
             .await
             .context("Failed to update collected files")?;
         }
+
+        Ok(())
+    }
+
+    pub(super) async fn insert_schema_single_source(
+        &mut self,
+        content_hash: &FmtHash,
+        origin: &Option<Origin>,
+        filepath: &RelativePath,
+    ) -> Result<(), anyhow::Error> {
+        self.insert_schema(content_hash, origin).await?;
+
+        let collect_nr = self.collect_nr();
+        let filepath = filepath.as_str();
+
+        sqlx::query!(
+            "
+            insert or ignore into SchemaSources (
+                collect_nr,
+                schema_hash,
+                filepath
+            )
+            values (
+                $1,
+                $2,
+                $3
+            )
+            ",
+            collect_nr,
+            content_hash,
+            filepath
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update collected schema sources")?;
+
+        Ok(())
+    }
+
+    pub(super) async fn insert_schema_multi_sources(
+        &mut self,
+        content_hash: &FmtHash,
+        origin: &Option<Origin>,
+        filepaths: &[&RelativePath],
+    ) -> Result<(), anyhow::Error> {
+        self.insert_schema(content_hash, origin).await?;
+
+        let collect_nr = self.collect_nr();
+
+        for filepath in filepaths {
+            let filepath = filepath.as_str();
+
+            sqlx::query!(
+                "
+                insert or ignore into SchemaSources (
+                    collect_nr,
+                    schema_hash,
+                    filepath
+                )
+                values (
+                    $1,
+                    $2,
+                    $3
+                )
+                ",
+                collect_nr,
+                content_hash,
+                filepath
+            )
+            .execute(self.connection_mut())
+            .await
+            .context("Failed to update collected schema sources")?;
+        }
+
+        Ok(())
+    }
+
+    pub(super) async fn insert_schema_no_source(
+        &mut self,
+        content_hash: &FmtHash,
+        origin: &Option<Origin>,
+    ) -> Result<(), anyhow::Error> {
+        self.insert_schema(content_hash, origin).await
+    }
+
+    pub(super) async fn insert_schema_source(
+        &mut self,
+        content_hash: &FmtHash,
+        filepath: &RelativePath,
+    ) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let filepath = filepath.as_str();
+
+        sqlx::query!(
+            "
+            insert or ignore into SchemaSources (
+                collect_nr,
+                schema_hash,
+                filepath
+            )
+            values (
+                $1,
+                $2,
+                $3
+            )
+            ",
+            collect_nr,
+            content_hash,
+            filepath
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update collected schema sources")?;
+
+        Ok(())
+    }
+
+    async fn insert_schema(
+        &mut self,
+        content_hash: &FmtHash,
+        origin: &Option<Origin>,
+    ) -> Result<(), anyhow::Error> {
+        let origin_hash = if let Some(origin_value) = &origin {
+            let origin_hash = FmtHash::from(origin_value);
+            self.insert_general_json(&origin_hash, origin_value).await?;
+            Some(origin_hash)
+        } else {
+            None
+        };
+
+        // TODO: flag if potential existing origin differs
+        // Should not happen, since origin is part of the hash, so indicates an hashing error
+        sqlx::query!(
+            "
+            insert or replace into Schemas (
+                content_hash,
+                origin_hash
+            )
+            values (
+                $1,
+                $2
+            )
+            ",
+            content_hash,
+            origin_hash
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update collected schemas")?;
 
         Ok(())
     }
