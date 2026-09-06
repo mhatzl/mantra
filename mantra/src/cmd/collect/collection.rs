@@ -176,6 +176,36 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    pub(super) async fn collect_unhashed_file(
+        &mut self,
+        filepath: &RelativePath,
+    ) -> Result<(), anyhow::Error> {
+        let filepath = filepath.as_str();
+        let collect_nr = self.collect_nr();
+
+        sqlx::query!(
+            "
+            insert into CollectedFiles (
+                collect_nr,
+                filepath,
+                file_hash
+            )
+            values (
+                $1,
+                $2,
+                null
+            )
+            ",
+            collect_nr,
+            filepath
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update collected files")?;
+
+        Ok(())
+    }
+
     pub(super) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
@@ -204,7 +234,7 @@ impl<'db> Collection<'db> {
 
         if sqlx::query!(
             "
-            select filepath, file_hash
+            select file_hash
             from CollectedFiles
             where collect_nr = $1 and filepath = $3 and file_hash != $4
             ",
@@ -215,6 +245,7 @@ impl<'db> Collection<'db> {
         .fetch_optional(self.connection_mut())
         .await
         .context("Failed to get collected files")?
+        .and_then(|r| r.file_hash)
         .is_some()
         {
             log::warn!(

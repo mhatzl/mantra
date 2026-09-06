@@ -6,47 +6,101 @@
       {
         "name": "collect_nr",
         "ordinal": 0,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "collect_nr"
+          }
+        }
       },
       {
         "name": "product_id",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "product_id"
+          }
+        }
       },
       {
         "name": "test_run_name",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_run_name"
+          }
+        }
       },
       {
         "name": "test_run_date",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_run_date"
+          }
+        }
       },
       {
         "name": "test_case_name",
         "ordinal": 4,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_case_name"
+          }
+        }
       },
       {
         "name": "cov_filepath",
         "ordinal": 5,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_filepath"
+          }
+        }
       },
       {
         "name": "cov_file_hash",
         "ordinal": 6,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_file_hash"
+          }
+        }
       },
       {
         "name": "cov_line",
         "ordinal": 7,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_line"
+          }
+        }
       },
       {
         "name": "hits",
         "ordinal": 8,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "hits"
+          }
+        }
       }
     ],
     "parameters": {

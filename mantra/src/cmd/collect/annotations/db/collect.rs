@@ -1,0 +1,680 @@
+use anyhow::Context;
+use mantra_schema::{
+    FmtHash, Properties,
+    annotations::{AnnotationSchema, FileAnnotations},
+    path::RelativePath,
+};
+
+use crate::cmd::collect::product_collection::ProductCollection;
+
+impl<'db, 'c> ProductCollection<'db, 'c> {
+    pub(super) async fn collect_per_annotation_schema(
+        &mut self,
+        filepath: &RelativePath,
+        annotation_schema: &AnnotationSchema,
+    ) -> Result<(), anyhow::Error> {
+        let base_origin_hash = annotation_schema.origin.as_ref().map(FmtHash::from);
+
+        if let Some(hash) = &base_origin_hash
+            && let Some(origin) = &annotation_schema.origin
+        {
+            self.insert_general_json(hash, origin)
+                .await
+                .context("Failed to insert the annotation base origin")?;
+        }
+
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id().clone();
+        let data_filepath = filepath.as_str();
+
+        sqlx::query!(
+            "
+            insert or ignore into AnnotatedDataSources (
+                collect_nr,
+                filepath
+            )
+            values ($1, $3)
+            ",
+            collect_nr,
+            data_filepath
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to store annotation data source")?;
+
+        let opt_existing_base_origin_hash = sqlx::query!(
+            "
+            select origin_hash
+            from AnnotatedBaseOrigins
+            where collect_nr = $1 and product_id = $2
+            and filepath = $3
+            ",
+            collect_nr,
+            product_id,
+            data_filepath
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Failed to lookup existing annotation base origins")?
+        .map(|r| FmtHash::with_inner(r.base_origin_hash));
+
+        if opt_existing_base_origin_hash.is_some()
+            && opt_existing_base_origin_hash != base_origin_hash
+        {
+            log::warn!(
+                "Different base origins have been collected for file: {}",
+                filepath
+            );
+
+            sqlx::query!(
+                "
+                insert or ignore into ConflictingAnnotatedBaseOrigins (
+                    collect_nr,
+                    product_id,
+                    filepath,
+                    origin_hash
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4
+                )
+                ",
+                collect_nr,
+                product_id,
+                data_filepath,
+                base_origin_hash
+            )
+            .execute(self.connection_mut())
+            .await
+            .context("Failed to insert annotation base origins")?;
+        } else if let Some(hash) = base_origin_hash {
+            sqlx::query!(
+                "
+                insert into AnnotatedBaseOrigins (
+                    collect_nr,
+                    product_id,
+                    filepath,
+                    origin_hash
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4
+                )
+                ",
+                collect_nr,
+                product_id,
+                data_filepath,
+                hash
+            )
+            .execute(self.connection_mut())
+            .await
+            .context("Failed to insert annotation base origins")?;
+        }
+
+        if let Some(props) = annotation_schema.trace_properties {
+            for (key, value) in props {
+                let value_hash = FmtHash::from(&value);
+
+                self.insert_general_json(&value_hash, &value)
+                    .await
+                    .context("Failed to insert the annotation base origin")?;
+            }
+        }
+
+        // TODO: do not stop at first collect error
+
+        for file_annotations in &annotation_schema.files {
+            let filepath = file_annotations.filepath.to_string();
+            self.collect_per_annotation_file(file_annotations)
+                .await
+                .with_context(|| {
+                    format!("Failed to update annotations for file: '{}'", filepath)
+                })?;
+        }
+
+        Ok(())
+    }
+
+    async fn collect_per_annotation_file(
+        &mut self,
+        file_annotations: &FileAnnotations,
+    ) -> Result<(), anyhow::Error> {
+        // TODO: don't return on first error
+
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let filepath = file_annotations.filepath.as_str();
+
+        // **Note:** Adding elements first to be able to map traces to elements later
+        for element in file_annotations.annotations.elements {
+            let elm_name = element.name.clone();
+            let def_line = element.definition_line;
+
+            self.update_element(filepath, &file_annotations.file_hash, element)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update the element '{}' defined at line '{}'",
+                        elm_name, def_line
+                    )
+                })?;
+        }
+
+        for trace in file_annotations.annotations.traces {
+            let line = trace.line;
+
+            self.update_trace(
+                filepath,
+                &file_annotations.file_hash,
+                trace,
+                base_trace_props,
+            )
+            .await
+            .with_context(|| format!("Failed to update the trace found at line '{}'", line))?;
+        }
+
+        for coverage_exclude in file_annotations.annotations.coverage_excludes {
+            let line = coverage_exclude.start_line();
+
+            self.update_coverage_exclude(&file_annotations.file_hash, coverage_exclude)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to update the coverage exclusion starting at line '{}'",
+                        line
+                    )
+                })?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_element(
+        &mut self,
+        filepath: &str,
+        file_hash: &FmtHash,
+        element: Element,
+    ) -> Result<(), anyhow::Error> {
+        let kind = element.kind.as_nr();
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+
+        sqlx::query!(
+            "
+            insert into Elements (
+                last_collect_nr,
+                name,
+                file_hash,
+                definition_line,
+                start_line,
+                end_line,
+                kind,
+                content_hash
+            )
+            values (
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8
+            )
+            on conflict (file_hash, definition_line)
+            do update set
+                last_collect_nr = excluded.last_collect_nr,
+                start_line = excluded.start_line,
+                end_line = excluded.end_line,
+                kind = excluded.kind,
+                content_hash = excluded.content_hash
+            ",
+            collect_nr,
+            element.name,
+            file_hash,
+            element.definition_line,
+            element.span.start,
+            element.span.end,
+            kind,
+            element.content_hash
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed inserting element base data")?;
+
+        if let Some(ident) = element.ident {
+            sqlx::query!(
+                "
+                insert into ElementIdents (
+                    last_collect_nr,
+                    product_id,
+                    filepath,
+                    file_hash,
+                    definition_line,
+                    ident
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    $6
+                )
+                on conflict (product_id, filepath, file_hash, definition_line)
+                do update set
+                    ident = excluded.ident
+                ",
+                collect_nr,
+                product_id,
+                filepath,
+                file_hash,
+                element.definition_line,
+                ident
+            )
+            .execute(self.connection_mut())
+            .await
+            .context("Failed inserting the element identifier")?;
+        }
+
+        Ok(())
+    }
+
+    async fn update_trace(
+        &mut self,
+        filepath: &str,
+        file_hash: &FmtHash,
+        trace: Trace,
+        base_trace_props: &Option<Properties>,
+    ) -> Result<(), anyhow::Error> {
+        let kind = trace.kind.as_nr();
+        let collect_nr = self.collect_nr();
+        let product_id = &self.product_id();
+
+        if sqlx::query!(
+            "
+            select line
+            from Traces
+            where last_collect_nr = $1
+            and file_hash = $2 and line = $3
+            ",
+            collect_nr,
+            file_hash,
+            trace.line
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Failed to get collected traces")?
+        .is_some()
+        {
+            // If the trace and filepath have already been collected in this run,
+            // it indicates either that two annotation schemas contain the same filepath
+            // and file hash, or two traces are defined at the same line.
+            // Since collection is skipped for annotations already collected from the same filepaths,
+            // this leaves the case of two traces being defined at the same line.
+            // Two traces must not be defined at the same line, because it interferes
+            // with the mapping to line coverage from test results.
+            // e.g. two traces could be set for different statements or conditions at the same line,
+            // but line coverage would treat both traces as covered.
+            if sqlx::query!(
+                "
+                select filepath
+                from AnnotatedDataSources
+                where last_collect_nr = $1 and product_id = $2
+                and filepath = $3
+                ",
+                collect_nr,
+                product_id,
+                filepath
+            )
+            .fetch_optional(self.connection_mut())
+            .await
+            .context("Failed to get collected annotation data sources")?
+            .is_some()
+            {
+                bail!("Duplicate entry for trace. Only one trace may be set per line.");
+            }
+        }
+
+        sqlx::query!(
+            "
+            insert into Traces (
+                last_collect_nr,
+                file_hash,
+                line,
+                kind
+            )
+            values (
+                $1,
+                $2,
+                $3,
+                $4
+            )
+            on conflict (file_hash, line)
+            do update set
+                last_collect_nr = excluded.last_collect_nr,
+                kind = excluded.kind
+            ",
+            collect_nr,
+            file_hash,
+            trace.line,
+            kind
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to insert trace base data")?;
+
+        if let Some(props) = merge_local_and_base_properties(trace.properties, base_trace_props) {
+            for prop in props {
+                let value_hash = FmtHash::from(&prop.1);
+                self.insert_general_json(&value_hash, prop.1)
+                    .await
+                    .with_context(|| {
+                        format!("Failed to insert trace content for property '{}'", &prop.0)
+                    })?;
+
+                sqlx::query!(
+                    "
+                    insert into TraceProperties (
+                        last_collect_nr,
+                        file_hash,
+                        line,
+                        property_key,
+                        value_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5
+                    )
+                    on conflict (file_hash, line, property_key)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        value_hash = excluded.value_hash
+                    ",
+                    collect_nr,
+                    file_hash,
+                    trace.line,
+                    prop.0,
+                    value_hash
+                )
+                .execute(self.connection_mut())
+                .await
+                .with_context(|| format!("Failed to insert trace property '{}'", prop.0))?;
+            }
+        }
+
+        for traced_req in &trace.ids {
+            let traced_product_id = if let Some(pid) = &traced_req.product_id {
+                pid.to_string()
+            } else {
+                String::new()
+            };
+
+            sqlx::query!(
+                "
+                insert into DetectedReqTraces (
+                    last_collect_nr,
+                    product_id,
+                    req_id,
+                    file_hash,
+                    line
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    $5
+                )
+                on conflict (product_id, req_id, file_hash, line)
+                do update set
+                    last_collect_nr = excluded.last_collect_nr
+                ",
+                collect_nr,
+                traced_product_id,
+                traced_req.id,
+                file_hash,
+                trace.line
+            )
+            .execute(self.connection_mut())
+            .await
+            .with_context(|| format!("Failed to insert trace to req '{}'", traced_req.id))?;
+
+            // If no product ID is set for a requirement trace, the current product collecting data is assumed to be intended.
+            let trace_for_current_product = traced_req
+                .product_id
+                .as_ref()
+                .map(|pid| pid == product_id)
+                .unwrap_or(true);
+
+            if trace_for_current_product {
+                let req_available = sqlx::query!(
+                    "
+                select id from Requirements
+                where id = $1 and product_id = $2
+                ",
+                    traced_req.id,
+                    product_id
+                )
+                .fetch_optional(self.connection_mut())
+                .await
+                .context("Failed to get collected requirements")?
+                .is_some();
+
+                if req_available {
+                    sqlx::query!(
+                        "
+                    insert into DirectProductReqTraces (
+                        last_collect_nr,
+                        product_id,
+                        req_id,
+                        filepath,
+                        file_hash,
+                        line
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6
+                    )
+                    on conflict (product_id, req_id, filepath, file_hash, line)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr
+                    ",
+                        collect_nr,
+                        product_id,
+                        traced_req.id,
+                        filepath,
+                        file_hash,
+                        trace.line
+                    )
+                    .execute(self.connection_mut())
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert product-related trace to req '{}'",
+                            traced_req.id
+                        )
+                    })?;
+                }
+            }
+        }
+
+        if let Some(related_code) = trace.related_code {
+            match related_code {
+                TraceRelatedCodeVariant::CodeBlock(code_block) => {
+                    let kind = code_block.kind.as_nr();
+
+                    sqlx::query!(
+                        "
+                        insert into TracedCodeBlocks (
+                            last_collect_nr,
+                            file_hash,
+                            traced_line,
+                            start_line,
+                            end_line,
+                            kind,
+                            content_hash
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7
+                        )
+                        on conflict (file_hash, traced_line)
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr,
+                            start_line = excluded.start_line,
+                            end_line = excluded.end_line,
+                            kind = excluded.kind,
+                            content_hash = excluded.content_hash
+                        ",
+                        collect_nr,
+                        file_hash,
+                        trace.line,
+                        code_block.span.start,
+                        code_block.span.end,
+                        kind,
+                        code_block.content_hash
+                    )
+                    .execute(self.connection_mut())
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert traced code block starting at line '{}'",
+                            code_block.span.start
+                        )
+                    })?;
+                }
+                TraceRelatedCodeVariant::ElementAtLine(def_line) => {
+                    sqlx::query!(
+                        "
+                        insert into DirectTracedElements (
+                            last_collect_nr,
+                            file_hash,
+                            traced_line,
+                            element_definition_line
+                        )
+                        values (
+                            $1,
+                            $2,
+                            $3,
+                            $4
+                        )
+                        on conflict (file_hash, traced_line, element_definition_line)
+                        do update set
+                            last_collect_nr = excluded.last_collect_nr
+                        ",
+                        collect_nr,
+                        file_hash,
+                        trace.line,
+                        def_line
+                    )
+                    .execute(self.connection_mut())
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to insert trace relation to element defined at line '{}'",
+                            def_line
+                        )
+                    })?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn update_coverage_exclude(
+        &mut self,
+        file_hash: &FmtHash,
+        coverage_exclude: CoverageExclude,
+    ) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let comment_hash = FmtHash::from(&coverage_exclude.comment);
+        self.insert_general_text(&comment_hash, coverage_exclude.comment, None)
+            .await
+            .context("Failed to insert coverage exclusion comment")?;
+
+        match coverage_exclude.kind {
+            CoverageExcludeKind::Block { start, end } => {
+                sqlx::query!(
+                    "
+                    insert into CoverageBlockExcludes (
+                        last_collect_nr,
+                        file_hash,
+                        start_line,
+                        end_line,
+                        comment_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5
+                    )
+                    on conflict (file_hash, start_line)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        end_line = excluded.end_line,
+                        comment_hash = excluded.comment_hash
+                    ",
+                    collect_nr,
+                    file_hash,
+                    start,
+                    end,
+                    comment_hash
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to insert the coverage exclusion block")?;
+            }
+            CoverageExcludeKind::Line(line) => {
+                sqlx::query!(
+                    "
+                    insert into CoverageLineExcludes (
+                        last_collect_nr,
+                        file_hash,
+                        line,
+                        comment_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (file_hash, line)
+                    do update set
+                        last_collect_nr = excluded.last_collect_nr,
+                        comment_hash = excluded.comment_hash
+                    ",
+                    collect_nr,
+                    file_hash,
+                    line,
+                    comment_hash
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to insert the coverage exclusion line")?;
+            }
+        }
+
+        Ok(())
+    }
+}

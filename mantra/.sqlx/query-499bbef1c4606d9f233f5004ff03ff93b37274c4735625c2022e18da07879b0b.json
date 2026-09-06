@@ -6,22 +6,46 @@
       {
         "name": "cov_line",
         "ordinal": 0,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "cov_line"
+          }
+        }
       },
       {
         "name": "new_hits",
         "ordinal": 1,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "hits"
+          }
+        }
       },
       {
         "name": "old_hits",
         "ordinal": 2,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "hits"
+          }
+        }
       },
       {
         "name": "content",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
       }
     ],
     "parameters": {

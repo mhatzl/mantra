@@ -1,4 +1,21 @@
 
+create table SchemaReviewProperties (
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (schema_hash, property_key)
+);
+
+create table ConfigReviewProperties (
+    collect_nr integer not null,
+    product_id text not null,
+    cfg_nr integer not null,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (collect_nr, product_id, cfg_nr, property_key),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+);
+
 -- Table to store reviews.
 -- [req("review", "changes.track")]
 create table Reviews (
@@ -9,9 +26,6 @@ create table Reviews (
     name text not null,
     -- UTC date and time at which the review was held.
     utc_date text not null,
-    -- Optional origin data of the review that was set for multiple reviews.
-    -- [req("review.origin")]
-    base_origin_hash text references GeneralJson (hash) on delete restrict,
     -- The hash of the origin data of the review.
     -- [req("review.origin")]
     origin_hash text references GeneralJson (hash) on delete restrict,
@@ -20,13 +34,12 @@ create table Reviews (
     description_hash text references GeneralTexts (hash) on delete restrict,
     -- The hash of the data the review was collected from to detect changes.
     data_hash text not null,
-    -- Filepath the data was collected from
-    data_filepath text not null,
+    -- Schema the data was collected from
+    schema_hash text not null references Schemas (content_hash) on delete restrict,
     -- Optional MIME/media type of review related general texts (e.g. description).
     media_type text,
     primary key (collect_nr, product_id, name, utc_date),
-    foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade,
-    foreign key (collect_nr, product_id, data_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
 );
 
 -- Table to store authors of a review.

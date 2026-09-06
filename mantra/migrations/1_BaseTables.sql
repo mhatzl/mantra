@@ -35,9 +35,6 @@ create table FileHashes (
 create table Collections (
     nr integer primary key autoincrement,
     collected_at_utc text not null,
-    -- The hash of the configuration content in `mantra.toml` for this collection.
-    -- [req("cli.collect.config")]
-    config_hash text not null references GeneralJson (hash) on delete restrict,
     -- Optional hash of the arguments set when calling `mantra collect`.
     arguments_hash text references GeneralJson (hash) on delete restrict,
     -- Optional hash of the environmental variables set that are relevant for mantra

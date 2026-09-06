@@ -6,17 +6,30 @@
       {
         "name": "child_name",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunHierarchies",
+            "name": "child_name"
+          }
+        }
       },
       {
         "name": "child_date",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunHierarchies",
+            "name": "child_date"
+          }
+        }
       },
       {
         "name": "state!:i64",
         "ordinal": 2,
-        "type_info": "Null"
+        "type_info": "Integer",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -25,7 +38,7 @@
     "nullable": [
       false,
       false,
-      null
+      true
     ]
   },
   "hash": "cb1f8e892b2b19da26f996768473d1edc06e06f7cb8f8ee2b854728c8f380399"

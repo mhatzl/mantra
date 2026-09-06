@@ -6,22 +6,46 @@
       {
         "name": "filepath",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestRuns",
+            "name": "filepath"
+          }
+        }
       },
       {
         "name": "file_hash",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestRuns",
+            "name": "file_hash"
+          }
+        }
       },
       {
         "name": "traced_line",
         "ordinal": 2,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestRuns",
+            "name": "traced_line"
+          }
+        }
       },
       {
         "name": "kind",
         "ordinal": 3,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "Traces",
+            "name": "kind"
+          }
+        }
       }
     ],
     "parameters": {
@@ -30,7 +54,7 @@
     "nullable": [
       false,
       false,
-      false,
+      null,
       false
     ]
   },

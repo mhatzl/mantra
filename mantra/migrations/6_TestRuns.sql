@@ -1,4 +1,37 @@
 
+create table SchemaTestRunProperties (
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (schema_hash, property_key)
+);
+
+create table ConfigTestRunProperties (
+    collect_nr integer not null,
+    product_id text not null,
+    cfg_nr integer not null,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (collect_nr, product_id, cfg_nr, property_key),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+);
+
+create table SchemaTestCaseProperties (
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (schema_hash, property_key)
+);
+
+create table ConfigTestCaseProperties (
+    collect_nr integer not null,
+    product_id text not null,
+    cfg_nr integer not null,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (collect_nr, product_id, cfg_nr, property_key),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+);
 
 -- Base table for test runs.
 -- [req("testcov.test_run")]
@@ -17,9 +50,6 @@ create table TestRuns (
     -- Meaning, if there are fewer associated test cases in the `TestCases` table,
     -- not all test cases were executed.
     nr_of_test_cases integer not null,
-    -- Optional origin data of the test run that was set for multiple test runs.
-    -- [req("testcov.test_run.origin")]
-    base_origin_hash text references GeneralJson (hash) on delete restrict,
     -- Optional hash of the origin data of the test run.
     -- [req("testcov.test_run.origin")]
     origin_hash text references GeneralJson (hash) on delete restrict,
@@ -27,28 +57,12 @@ create table TestRuns (
     --
     -- **Note:** This may differ from the related file content hash if the file defined more than one test run.
     data_hash text not null,
+    -- Schema the data was collected from
+    schema_hash text not null references Schemas (content_hash) on delete restrict,
     -- Optional MIME/media type of test run related general texts (e.g. description).
     media_type text,
     primary key (collect_nr, product_id, name, utc_date),
     foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
-);
-
--- Table to store filepaths from which test run data was collected.
--- Due to test runs potentially being created from multiple well-known formats
--- such as JUnit and Cobertura, multiple filepaths may be set per test run.
---
--- Note: Test runs created internally to map covered files to test runs do not have source filepaths.
-create table TestRunDataFilepaths (
-    collect_nr integer not null,
-    product_id text not null,
-    test_run_name text not null,
-    test_run_date text not null,
-    -- Filepath the data was collected from
-    filepath text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, filepath),
-    -- Note: may be inserted while collecting well-known data before test run is inserted => defer foreign key check
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade deferrable initially deferred,
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 -- Table to store optional metadata of a test run.

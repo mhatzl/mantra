@@ -1,21 +1,27 @@
 
--- Table to store the filepaths of files that contained annotations.
--- The related file hash is stored in the CollectedFiles table.
-create table AnnotatedDataSources (
+create table SchemaAnnotationSources (
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
     collect_nr integer not null,
     filepath text not null,
-    primary key (collect_nr, filepath),
-    foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete restrict
+    primary key (schema_hash, collect_nr, filepath),
+    foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete cascade
 );
 
-create table AnnotatedFileOrigins (
+create table SchemaTraceProperties (
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (schema_hash, property_key)
+);
+
+create table ConfigTraceProperties (
     collect_nr integer not null,
     product_id text not null,
-    filepath text not null,
-    base_origin_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, filepath),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
-    foreign key (collect_nr, filepath) references AnnotatedDataSources (collect_nr, filepath) on delete restrict
+    cfg_nr integer not null,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (collect_nr, product_id, cfg_nr, property_key),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
 );
 
 -- Table to store all traces.

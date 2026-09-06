@@ -6,38 +6,68 @@
       {
         "name": "product_id",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestCases",
+            "name": "product_id"
+          }
+        }
       },
       {
         "name": "test_run_name",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestCases",
+            "name": "test_run_name"
+          }
+        }
       },
       {
         "name": "test_run_date",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestCases",
+            "name": "test_run_date"
+          }
+        }
       },
       {
         "name": "test_case_name",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TraceCoveragePerTestCases",
+            "name": "test_case_name"
+          }
+        }
       },
       {
         "name": "state!:i64",
         "ordinal": 4,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ResolvedTestCaseStates",
+            "name": "state"
+          }
+        }
       }
     ],
     "parameters": {
       "Right": 2
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
-      false
+      true,
+      true,
+      true,
+      true,
+      true
     ]
   },
   "hash": "6a923b05f0b78a73f1e3b06f6420ca53ad2ec0bbcf9d090f1a937cbad79f95ba"

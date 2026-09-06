@@ -6,32 +6,68 @@
       {
         "name": "utc_date",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "utc_date"
+          }
+        }
       },
       {
         "name": "duration_sec",
         "ordinal": 1,
-        "type_info": "Float"
+        "type_info": "Float",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "duration_sec"
+          }
+        }
       },
       {
         "name": "description?",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
       },
       {
         "name": "location_filepath?",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLocations",
+            "name": "filepath"
+          }
+        }
       },
       {
         "name": "location_file_hash?",
         "ordinal": 4,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLocations",
+            "name": "file_hash"
+          }
+        }
       },
       {
         "name": "location_line?",
         "ordinal": 5,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLocations",
+            "name": "line"
+          }
+        }
       }
     ],
     "parameters": {

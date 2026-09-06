@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Products (\n                collect_nr,\n                id,\n                name,\n                base,\n                version,\n                homepage,\n                repository,\n                license,\n                media_type,\n                description_hash\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "bdb2a61b6e719ed2ab28c407ab22a57e4d3f2cda851a7b25e6952c0a09a11d90"
+}

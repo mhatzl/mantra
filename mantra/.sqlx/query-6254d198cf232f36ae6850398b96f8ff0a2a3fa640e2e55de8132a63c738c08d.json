@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into ProductRelatedFiles (\n                collect_nr,\n                product_id,\n                filepath\n            )\n            values (\n                $1,\n                $2,\n                $3\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "6254d198cf232f36ae6850398b96f8ff0a2a3fa640e2e55de8132a63c738c08d"
+}

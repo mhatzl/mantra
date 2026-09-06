@@ -6,12 +6,24 @@
       {
         "name": "test_run_name",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseOverrides",
+            "name": "test_run_name"
+          }
+        }
       },
       {
         "name": "test_run_date",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseOverrides",
+            "name": "test_run_date"
+          }
+        }
       }
     ],
     "parameters": {

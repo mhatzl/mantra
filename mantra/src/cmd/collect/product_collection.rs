@@ -59,6 +59,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         self.collection.insert_general_text(hash, content).await
     }
 
+    pub(super) async fn collect_unhashed_file(
+        &mut self,
+        filepath: &RelativePath,
+    ) -> Result<(), anyhow::Error> {
+        self.collection.collect_unhashed_file(filepath).await
+    }
+
     pub(super) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
@@ -67,7 +74,34 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     ) -> Result<(), anyhow::Error> {
         self.collection
             .insert_collected_file(filepath, file_hash, content)
-            .await
+            .await?;
+
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id();
+        let filepath = filepath.as_str();
+
+        sqlx::query!(
+            "
+            insert or ignore into ProductRelatedFiles (
+                collect_nr,
+                product_id,
+                filepath
+            )
+            values (
+                $1,
+                $2,
+                $3
+            )
+            ",
+            collect_nr,
+            product_id,
+            filepath
+        )
+        .execute(self.connection_mut())
+        .await
+        .with_context(|| format!("Failed inserting product related file: {}", filepath))?;
+
+        Ok(())
     }
 
     /// Returns the absolute path to the directory the used mantra config file is located in.

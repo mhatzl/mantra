@@ -6,17 +6,35 @@
       {
         "name": "product_id",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Reviews",
+            "name": "product_id"
+          }
+        }
       },
       {
         "name": "name",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Reviews",
+            "name": "name"
+          }
+        }
       },
       {
         "name": "utc_date",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Reviews",
+            "name": "utc_date"
+          }
+        }
       }
     ],
     "parameters": {

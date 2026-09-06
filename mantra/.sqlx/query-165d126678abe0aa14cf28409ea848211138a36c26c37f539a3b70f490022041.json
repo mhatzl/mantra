@@ -6,42 +6,90 @@
       {
         "name": "collect_nr",
         "ordinal": 0,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "collect_nr"
+          }
+        }
       },
       {
         "name": "product_id",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "product_id"
+          }
+        }
       },
       {
         "name": "test_run_name",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "test_run_name"
+          }
+        }
       },
       {
         "name": "test_run_date",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "test_run_date"
+          }
+        }
       },
       {
         "name": "cov_filepath",
         "ordinal": 4,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "cov_filepath"
+          }
+        }
       },
       {
         "name": "cov_file_hash",
         "ordinal": 5,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "cov_file_hash"
+          }
+        }
       },
       {
         "name": "cov_line",
         "ordinal": 6,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "cov_line"
+          }
+        }
       },
       {
         "name": "hits",
         "ordinal": 7,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "hits"
+          }
+        }
       }
     ],
     "parameters": {

@@ -1,4 +1,21 @@
 
+create table SchemaRequirementProperties (
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (schema_hash, property_key)
+);
+
+create table ConfigRequirementProperties (
+    collect_nr integer not null,
+    product_id text not null,
+    cfg_nr integer not null,
+    property_key text not null,
+    value_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (collect_nr, product_id, cfg_nr, property_key),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+);
+
 -- Table containing all requirement IDs collected by mantra.
 -- [req("req.id", "changes.track.reqs.id")]
 create table Requirements (
@@ -26,9 +43,6 @@ create table Requirements (
     -- The title of the requirement.
     -- [req("req.title")]
     title text not null,
-    -- Optional origin data of the requirement that was set for multiple requirements.
-    -- [req("req.origin")]
-    base_origin_hash text references GeneralJson (hash) on delete restrict,
     -- The origin data of the requirement.
     -- [req("req.origin")]
     origin_hash text not null references GeneralJson (hash) on delete restrict,
@@ -39,13 +53,12 @@ create table Requirements (
     --
     -- **Note:** This may differ from the related file content hash if the file defined more than one requirement.
     data_hash text not null,
-    -- Filepath the data was collected from
-    data_filepath text not null,
+    -- Schema the data was collected from
+    schema_hash text not null references Schemas (content_hash) on delete restrict,
     -- Optional MIME/media type of requirement related general texts (e.g. title and description).
     media_type text,
     primary key (collect_nr, id, product_id),
-    foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade,
-    foreign key (collect_nr, product_id, data_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
 );
 
 -- Table to map to properties of requirements.
@@ -58,7 +71,7 @@ create table RequirementProperties (
     property_key text not null,
     -- Hash of a custom property of the requirement.
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (req_id, product_id, property_key),
+    primary key (collect_nr, req_id, product_id, property_key),
     foreign key (collect_nr, req_id, product_id) references Requirements (collect_nr, id, product_id) on delete cascade
 );
 

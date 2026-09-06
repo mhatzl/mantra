@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into CollectedFiles (\n                    collect_nr,\n                    filepath,\n                    file_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "3ce3da39870decc1beda8bc7089474f249f16e2085f0bab9e6e314f1ea95402d"
+}

@@ -13,7 +13,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         let description_hash = if let Some(description) = &product.description {
             let hash = FmtHash::from(&description);
-            self.insert_general_text(&hash, description.clone())
+            self.insert_general_text(&hash, description)
                 .await
                 .context("Failed to insert the product description")?;
             Some(hash)

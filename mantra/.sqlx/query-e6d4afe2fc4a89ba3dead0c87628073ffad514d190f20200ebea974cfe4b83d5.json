@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select file_hash\n            from CollectedFiles\n            where collect_nr = $1 and filepath = $3 and file_hash != $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "file_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "CollectedFiles",
+            "name": "file_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "e6d4afe2fc4a89ba3dead0c87628073ffad514d190f20200ebea974cfe4b83d5"
+}

@@ -6,7 +6,13 @@
       {
         "name": "cov_filepath",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "cov_filepath"
+          }
+        }
       }
     ],
     "parameters": {

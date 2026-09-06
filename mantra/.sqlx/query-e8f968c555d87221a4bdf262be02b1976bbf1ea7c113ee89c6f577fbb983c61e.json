@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ProductProperties (\n                        collect_nr,\n                        product_id,\n                        property_key,\n                        value_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "e8f968c555d87221a4bdf262be02b1976bbf1ea7c113ee89c6f577fbb983c61e"
+}

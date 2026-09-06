@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into FileHashes (\n                hash,\n                content\n            )\n            values (\n                $1,\n                $2\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a1f7cb873564e2644a16314758a7eaa8a781c61dc0af13ad5652897c8bf640d9"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ConflictingCollectedFiles (\n                    collect_nr,\n                    filepath,\n                    file_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a27d06c67c01f254de4871eedf78ae67d907ba7a77f809b44c9fb69a05c8acc9"
+}
