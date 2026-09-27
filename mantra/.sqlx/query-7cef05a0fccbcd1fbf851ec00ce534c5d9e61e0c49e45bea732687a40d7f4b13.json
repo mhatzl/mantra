@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert or ignore into SchemaSources (\n                    collect_nr,\n                    schema_hash,\n                    filepath\n                )\n                values (\n                    $1,\n                    $2,\n                    $3\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "7cef05a0fccbcd1fbf851ec00ce534c5d9e61e0c49e45bea732687a40d7f4b13"
+}

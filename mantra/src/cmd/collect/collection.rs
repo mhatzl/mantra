@@ -66,17 +66,13 @@ impl<'db> Collection<'db> {
         &mut self,
         product_cfg: ResolvedProductConfig,
     ) -> Result<(), anyhow::Error> {
-        let product_collection = ProductCollection::new(self, &product_cfg.product).await?;
+        let mut product_collection = ProductCollection::new(self, &product_cfg.product).await?;
 
-        let req_collector = SingleFileCollector::new(product_collection);
-        let mut product_collection = req_collector
-            .collect(product_cfg.requirements)
+        SingleFileCollector::collect(&mut product_collection, product_cfg.requirements)
             .await
             .context("Failed to collect requirements")?;
 
-        let annotation_collector = SingleFileCollector::new(product_collection);
-        let mut product_collection = annotation_collector
-            .collect(product_cfg.annotations)
+        SingleFileCollector::collect(&mut product_collection, product_cfg.annotations)
             .await
             .context("Failed to collect annotations")?;
         product_collection
@@ -88,9 +84,7 @@ impl<'db> Collection<'db> {
             .await
             .context("Failed to collect test runs")?;
 
-        let review_collector = SingleFileCollector::new(product_collection);
-        let mut product_collection = review_collector
-            .collect(product_cfg.reviews)
+        SingleFileCollector::collect(&mut product_collection, product_cfg.reviews)
             .await
             .context("Failed to collect reviews")?;
 

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into Schemas (\n                content_hash,\n                origin_hash\n            )\n            values (\n                $1,\n                $2\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "cfcdf8f8cef69ed52aea6d2cf9571eb6987d11f12e528001bfccc82b64f78fc7"
+}

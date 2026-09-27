@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into ConfigCollectedSchemas (\n                collect_nr,\n                product_id,\n                schema_hash,\n                cfg_nr\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "e2f344f9373eec9ff0d84f9a2d917ee8f320487e9b6048cca0bb997a3559d34a"
+}

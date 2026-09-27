@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into RequirementReplacements (\n                        collect_nr,\n                        product_id,\n                        req_id,\n                        replaced_req_id\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "6aee1d6781c578a663956ec6250433e51f6d9964ad2a0300a902ea0abdaf9079"
+}

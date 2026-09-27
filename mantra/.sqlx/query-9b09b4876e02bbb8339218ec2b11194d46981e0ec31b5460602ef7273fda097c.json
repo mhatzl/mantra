@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select count(*) as nr\n            from CollectConfigs\n            where collect_nr = $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "nr",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9b09b4876e02bbb8339218ec2b11194d46981e0ec31b5460602ef7273fda097c"
+}

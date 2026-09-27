@@ -9,9 +9,9 @@ use mantra_schema::{
 };
 
 use crate::cmd::collect::Collection;
-use crate::cmd::collect::merge_local_and_base_properties;
 
 pub mod aggregate;
+pub mod collect;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn update_per_req_schema(

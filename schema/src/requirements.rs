@@ -1,4 +1,4 @@
-use crate::{IdentError, Origin, Properties, product::ProductId};
+use crate::{IdentError, Origin, Properties, media_type::MediaType, product::ProductId};
 
 /// Defines the schema to exchange requirements related information.
 /// [req("exchange.requirements.schema")]
@@ -92,6 +92,9 @@ pub struct Requirement {
     /// Optional list of parent requirement IDs.
     /// [req("req.hierarchy.mult_parents")]
     pub parents: Option<Vec<RequirementPk>>,
+    /// Optional list of child requirement IDs.
+    /// [req("req.hierarchy.explicit_children")]
+    pub children: Option<Vec<RequirementPk>>,
     /// Title of the requirement.
     /// [req("req.title")]
     pub title: String,
@@ -132,6 +135,7 @@ pub struct Requirement {
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,
+    pub media_type: Option<MediaType>,
 }
 
 impl Requirement {
@@ -139,6 +143,7 @@ impl Requirement {
         Self {
             id,
             parents: None,
+            children: None,
             title,
             description: None,
             origin,
@@ -148,6 +153,7 @@ impl Requirement {
             optional: false,
             replaces: None,
             properties: None,
+            media_type: None,
         }
     }
 }

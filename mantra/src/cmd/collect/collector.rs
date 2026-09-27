@@ -63,24 +63,16 @@ struct SentData<T> {
 impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + 'static>
     SingleFileCollector<'db, 'c, T, C>
 {
-    pub fn new(collection: ProductCollection<'db, 'c>) -> Self {
-        Self {
-            collection,
-            cfgs: PhantomData,
-            schema: PhantomData,
-        }
-    }
-
     pub(super) async fn collect(
-        mut self,
+        collection: &mut ProductCollection<'db, 'c>,
         cfgs: Vec<C>,
-    ) -> Result<ProductCollection<'db, 'c>, anyhow::Error> {
+    ) -> Result<(), anyhow::Error> {
         if cfgs.is_empty() {
-            return Ok(self.collection);
+            return Ok(());
         }
 
-        let product_id = self.collection.product_id().clone();
-        let abs_cfg_file_dir_path = self.collection.abs_cfg_file_parent_path();
+        let product_id = collection.product_id().clone();
+        let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
 
         let (schema_tx, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
         let root = abs_cfg_file_dir_path.clone();
@@ -154,7 +146,7 @@ impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + '
         });
 
         while let Some(sent_data) = schema_rx.recv().await {
-            self.collection
+            collection
                 .insert_collected_file(
                     &sent_data.filepath,
                     &sent_data.file_hash,
@@ -167,7 +159,7 @@ impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + '
                         sent_data.filepath
                     )
                 })?;
-            C::update_db(&mut self.collection, &sent_data.filepath, &sent_data.schema)
+            C::update_db(collection, &sent_data.filepath, &sent_data.schema)
                 .await
                 .with_context(|| {
                     format!(
@@ -181,6 +173,6 @@ impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + '
             .await
             .context("Failed collecting schema data")?;
 
-        Ok(self.collection)
+        Ok(())
     }
 }

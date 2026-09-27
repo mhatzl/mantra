@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Requirements (\n                collect_nr,\n                id,\n                product_id,\n                manual_verification,\n                deprecated,\n                exclude,\n                optional,\n                title,\n                origin_hash,\n                description_hash,\n                data_hash,\n                schema_hash,\n                media_type\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                $11,\n                $12,\n                $13\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "65356b59be69e17f739206360176056e6a22a0475ea33c19e9bfe5b87aedb46f"
+}

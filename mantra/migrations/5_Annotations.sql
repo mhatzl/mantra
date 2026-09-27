@@ -56,15 +56,31 @@ create table TraceProperties (
 );
 
 -- Table to store requirement IDs linked to traces that were detected in the content mapping to the file hash.
+-- Entries in this table had no product ID set.
 --
 -- **Note:** Actual mapping to the Requirements table is done in ProductRelatedFiles.
 -- [req("trace.id", "trace.mult_reqs")]
 create table DetectedReqTraces (
     -- Used to detect duplicate requirement entries in one collection for the same trace
     last_collect_nr integer not null references Collections (nr) on delete restrict,
-    -- Product ID that may be set directly for the requirement trace.
-    -- If this is an empty string, then only the requirement ID was set.
-    -- Since it is part of the primary key it cannot be null and an empty string is an invalid product ID.
+    -- Requirement ID that is directly set on the trace.
+    req_id text not null,
+    -- Hash of the file content.
+    file_hash text not null,
+    -- Line the trace was detected at.
+    line integer not null,
+    primary key (req_id, file_hash, line),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
+);
+
+-- Table to store requirements traced by explicitly specifying the product ID.
+--
+-- **Note:** Actual mapping to the Requirements table is done in ProductRelatedFiles.
+-- [req("trace.id", "trace.mult_reqs")]
+create table DetectedProductReqTraces (
+    -- Used to detect duplicate requirement entries in one collection for the same trace
+    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    -- Product ID set explicitly for the requirement trace.
     --
     -- **Note:** Not referencing the Products table, because the set product might not be collected.
     product_id text not null,
@@ -80,7 +96,9 @@ create table DetectedReqTraces (
 
 -- Table to map requirement traces to products.
 --
--- **Note:** No reference to DirectReqTraces, because an empty product ID in DirectReqTraces would match for all products.
+-- **Note:** Requirement trace could either be in DetectedReqTraces or DetectedProductReqTraces,
+-- because requirement traces without an explicit product ID are mapped to any product that
+-- collects content the trace is located in.
 -- [req("trace.id", "trace.mult_reqs")]
 create table DirectProductReqTraces (
     collect_nr integer not null,

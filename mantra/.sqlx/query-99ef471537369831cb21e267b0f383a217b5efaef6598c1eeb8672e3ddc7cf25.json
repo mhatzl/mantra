@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select r.id, gj.content\n                from Requirements r, GeneralJson gj\n                where r.collect_nr = $1 and r.product_id = $2\n                and r.id = $3 and r.origin_hash = gj.hash\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "99ef471537369831cb21e267b0f383a217b5efaef6598c1eeb8672e3ddc7cf25"
+}
