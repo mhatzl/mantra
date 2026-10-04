@@ -197,30 +197,7 @@ create table LikelyObsoleteReviews (
 );
 
 -- Contains test runs that are obsolete and must **not** be used for further analysis.
--- Reasons why a test run may be obsolete:
--- - test case location contains file hash for filepath that differs to the hash collected in the latest run
--- - coverage data contains file hash for filepath that differs to the hash collected in the latest run
---
--- **Note:** Cannot use historic data for this prediction,
--- because initial data may have been collected long after the date of a test run,
--- but data could still have been changed between.
 create table ObsoleteTestRuns (
-    collect_nr integer not null,
-    product_id text not null,
-    test_run_name text not null,
-    test_run_date text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
-);
-
--- Contains test runs that are likely obsolete, but are still used for further analysis.
--- This uses available historic data to flag test runs as likely obsolete.
--- It is then up to the user to decide what to do.
---
--- Likely reasons:
--- - verified requirement changed since test run date
--- - file hash for the filepath of the test case location or coverage data changed since test run date
-create table LikelyObsoleteTestRuns (
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
@@ -242,7 +219,7 @@ create table ResolvedTestCaseStates (
     state integer not null,
     primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name),
     foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
-        references TestCases (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
+        references TestCases (collect_nr, product_id, test_run_name, test_run_date, name)
 );
 
 create view PassedTestCases as
@@ -278,7 +255,7 @@ where state != 1 and state != 2;
 
 -- Contains test cases that passed and are **not** part of an obsolete test run.
 create table UsableTestCases (
-    last_collect_nr bigint not null references Collections (nr) on delete restrict,
+    collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,

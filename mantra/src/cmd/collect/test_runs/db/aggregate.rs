@@ -46,10 +46,12 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_test_run_descendants(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
         sqlx::query!(
             "
             with recursive TransitiveChildren(
-                last_collect_nr,
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
@@ -58,32 +60,37 @@ impl<'db> Collection<'db> {
             ) as
             (
                 select
-                    last_collect_nr,
+                    collect_nr,
                     product_id,
                     parent_name,
                     parent_date,
                     child_name,
                     child_date
                 from TestRunHierarchies
+                where collect_nr = $1
+
                 union all
+
                 select
-                    th.last_collect_nr,
+                    th.collect_nr,
                     tc.product_id,
                     tc.test_run_name,
                     tc.test_run_date,
                     th.child_name,
                     th.child_date
                 from TestRunHierarchies th, TransitiveChildren tc
-                where tc.product_id = th.product_id and tc.descendant_test_run_name = th.parent_name
+                where tc.collect_nr = th.collect_nr and tc.product_id = th.product_id
+                and tc.descendant_test_run_name = th.parent_name
                 and tc.descendant_test_run_date = th.parent_date
                 -- prevents endless recursion in case of test run cycles
                 -- but includes self-references to detect a cycle
-                and (tc.test_run_name != th.parent_name or tc.test_run_date != th.parent_date)
+                and (
+                    tc.test_run_name != th.parent_name
+                    or tc.test_run_date != th.parent_date
+                )
             )
-            -- replacing, because 'on conflict' seems to break with select instead of value
-            -- and the important info is insert and delete for such aggregated tables anyway
-            insert or replace into TestRunDescendants (
-                last_collect_nr,
+            insert or ignore into TestRunDescendants (
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
@@ -91,14 +98,15 @@ impl<'db> Collection<'db> {
                 descendant_test_run_date
             )
             select
-                last_collect_nr,
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
                 descendant_test_run_name,
                 descendant_test_run_date
             from TransitiveChildren
-            "
+            ",
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -130,81 +138,86 @@ impl<'db> Collection<'db> {
             anyhow::bail!("Test run cycle detected!");
         }
 
-        let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
-
-        sqlx::query!(
-            "
-            delete from TestRunDescendants
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_leaf_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into LeafTestRuns (
-                last_collect_nr,
+            insert or ignore into LeafTestRuns (
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
             )
-            select last_collect_nr, product_id, name, utc_date
+            select collect_nr, product_id, name, utc_date
             from TestRuns
-            where last_collect_nr = $1 and product_id = $2
+            where collect_nr = $1
+
             except
-            select last_collect_nr, product_id, parent_name, parent_date
+
+            select collect_nr, product_id, parent_name, parent_date
             from TestRunHierarchies
-            where last_collect_nr = $1 and product_id = $2
+            where collect_nr = $1
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from LeafTestRuns
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn update_obsolete_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        // TODO: update obsolete test run table
+        // TODO: Adapt collect cmd to collect reqs, annotations, tests, and reviews separately.
+        // If reqs and annotations for the same product are collected in a later collection,
+        // tests are marked as obsolete (same for reviews).
+        // Would need to add additional collection numbers for tables that connect reqs, annotations, tests, reviews
+        // e.g. DirectProductReqTraces or TestCaseOverrides
+        //
+        // Until then, all tests of older collections than the latest product collection are obsolete
+
+        sqlx::query!(
+            "
+            insert or ignore into ObsoleteTestRuns (
+                collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            )
+            select collect_nr, product_id, name, utc_date
+            from TestRuns tr
+            where
+            -- requirements collected since test was added
+            tr.collect_nr < (
+                select max(r.collect_nr)
+                from Requirements r
+                where r.product_id = tr.product_id
+            )
+            -- annotations collected since test was added
+            or tr.collect_nr < (
+                select max(a.collect_nr)
+                from ProductAnnotationSources a
+                where a.product_id = tr.product_id
+            )
+            -- TODO: check test location and file hash changes
+            "
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         Ok(())
     }
 
     async fn resolve_test_case_states(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into ResolvedTestCaseStates (
-                last_collect_nr,
+            insert or ignore into ResolvedTestCaseStates (
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
@@ -212,120 +225,93 @@ impl<'db> Collection<'db> {
                 state
             )
             select
-                last_collect_nr,
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
                 test_case_name,
                 state
             from TestCaseOverrides
-            where last_collect_nr = $1 and product_id = $2
+            where collect_nr = $1
+
             union all
+
             select
-                t.last_collect_nr,
+                t.collect_nr,
                 t.product_id,
                 t.test_run_name,
                 t.test_run_date,
                 t.name as test_case_name,
                 t.state
             from TestCases t
-            where not exists (
+            where
+            t.collect_nr = $1
+            and not exists (
                 select
-                    o.last_collect_nr,
+                    o.collect_nr,
                     o.product_id,
                     o.test_run_name,
                     o.test_run_date,
                     o.test_case_name
                 from TestCaseOverrides o
-                where t.last_collect_nr = $1 and t.product_id = $2
-                and t.last_collect_nr = o.last_collect_nr
+                where t.collect_nr = o.collect_nr
                 and t.product_id = o.product_id
                 and t.test_run_name = o.test_run_name
                 and t.test_run_date = o.test_run_date
                 and t.name = o.test_case_name
             )
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from ResolvedTestCaseStates
-            where last_collect_nr != $1
-                and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn update_usable_test_cases(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into UsableTestCases (
-                last_collect_nr,
+            insert or ignore into UsableTestCases (
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
                 test_case_name
             )
             select
-                last_collect_nr,
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
                 test_case_name
             from PassedTestCases pc
-            where last_collect_nr = $1 and product_id = $2
+            where collect_nr = $1
             and not exists (
                 select
-                    last_collect_nr,
+                    collect_nr,
                     product_id,
                     test_run_name,
                     test_run_date
                 from ObsoleteTestRuns o
-                where pc.last_collect_nr =  o.last_collect_nr
+                where pc.collect_nr =  o.collect_nr
                 and pc.product_id = o.product_id
                 and pc.test_run_name = o.test_run_name
                 and pc.test_run_date = o.test_run_date
             )
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from UsableTestCases
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn resolve_line_coverage(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         let covered_state = ResolvedLineCoverageState::Covered.as_nr();
         let excluded_state = ResolvedLineCoverageState::Excluded.as_nr();
@@ -336,7 +322,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or replace into ResolvedTestRunLineCoverage (
-                last_collect_nr,
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
@@ -347,7 +333,7 @@ impl<'db> Collection<'db> {
                 hits
             )
             select
-                tro.last_collect_nr,
+                tro.collect_nr,
                 tro.product_id,
                 tro.test_run_name,
                 tro.test_run_date,
@@ -355,21 +341,21 @@ impl<'db> Collection<'db> {
                 pf.file_hash as cov_file_hash,
                 tro.cov_line,
                 case
-                    when tro.hits is not null and tro.hits > 0 then $5
-                    else $6
+                    when tro.hits is not null and tro.hits > 0 then $4
+                    else $5
                 end as state,
                 tro.hits
             from TestRunLineCoverageOverrides tro
                 left join ProductRelatedFiles pf on
-                    tro.last_collect_nr = pf.last_collect_nr
+                    tro.collect_nr = pf.collect_nr
                     and tro.product_id = pf.product_id
                     and tro.cov_filepath = pf.filepath
-            where tro.last_collect_nr = $1 and tro.product_id = $2
+            where tro.collect_nr = $1
 
             union all
 
             select
-                t.last_collect_nr,
+                t.collect_nr,
                 t.product_id,
                 t.test_run_name,
                 t.test_run_date,
@@ -380,26 +366,26 @@ impl<'db> Collection<'db> {
                     when exists (
                         select er.filepath, er.start_line, er.end_line
                         from ExcludedLineRanges er
-                        where er.last_collect_nr = $1 and er.product_id = $2
+                        where er.collect_nr = $1 and er.product_id = t.product_id
                         and t.cov_filepath = er.filepath
                         and t.cov_line >= er.start_line and t.cov_line <= er.end_line
-                    ) then $4
-                    when t.hits is not null and t.hits > 0 then $3
-                    else $7
+                    ) then $3
+                    when t.hits is not null and t.hits > 0 then $2
+                    else $6
                 end as state,
                 t.hits
             from TestRunLineCoverage t
             where not exists (
                 select
-                    last_collect_nr,
+                    collect_nr,
                     product_id,
                     test_run_name,
                     test_run_date,
                     cov_filepath,
                     cov_line
                 from TestRunLineCoverageOverrides o
-                where t.last_collect_nr = $1 and t.product_id = $2
-                and t.last_collect_nr = o.last_collect_nr
+                where t.collect_nr = $1
+                and t.collect_nr = o.collect_nr
                 and t.product_id = o.product_id
                 and t.test_run_name = o.test_run_name
                 and t.test_run_date = o.test_run_date
@@ -408,7 +394,6 @@ impl<'db> Collection<'db> {
             )
             ",
             collect_nr,
-            product_id,
             covered_state,
             excluded_state,
             overridden_covered_state,
@@ -421,21 +406,8 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from ResolvedTestRunLineCoverage
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated ResolvedTestRunLineCoverage entries")?;
-
-        sqlx::query!(
-            "
             insert or replace into ResolvedTestCaseLineCoverage (
-                last_collect_nr,
+                collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
@@ -447,7 +419,7 @@ impl<'db> Collection<'db> {
                 hits
             )
             select
-                tco.last_collect_nr,
+                tco.collect_nr,
                 tco.product_id,
                 tco.test_run_name,
                 tco.test_run_date,
@@ -456,21 +428,21 @@ impl<'db> Collection<'db> {
                 pf.file_hash as cov_file_hash,
                 tco.cov_line,
                 case
-                    when tco.hits is not null and tco.hits > 0 then $5
-                    else $6
+                    when tco.hits is not null and tco.hits > 0 then $4
+                    else $5
                 end as state,
                 tco.hits
             from TestCaseLineCoverageOverrides tco
                 left join ProductRelatedFiles pf on
-                    tco.last_collect_nr = pf.last_collect_nr
+                    tco.collect_nr = pf.collect_nr
                     and tco.product_id = pf.product_id
                     and tco.cov_filepath = pf.filepath
-            where tco.last_collect_nr = $1 and tco.product_id = $2
+            where tco.collect_nr = $1
 
             union all
 
             select
-                t.last_collect_nr,
+                t.collect_nr,
                 t.product_id,
                 t.test_run_name,
                 t.test_run_date,
@@ -482,18 +454,18 @@ impl<'db> Collection<'db> {
                     when exists (
                         select er.filepath, er.start_line, er.end_line
                         from ExcludedLineRanges er
-                        where er.last_collect_nr = $1 and er.product_id = $2
+                        where er.collect_nr = $1 and er.product_id = t.product_id
                         and t.cov_filepath = er.filepath
                         and t.cov_line >= er.start_line and t.cov_line <= er.end_line
-                    ) then $4
-                    when t.hits is not null and t.hits > 0 then $3
-                    else $7
+                    ) then $3
+                    when t.hits is not null and t.hits > 0 then $2
+                    else $6
                 end as state,
                 t.hits
             from TestCaseLineCoverage t
             where not exists (
                 select
-                    last_collect_nr,
+                    collect_nr,
                     product_id,
                     test_run_name,
                     test_run_date,
@@ -501,8 +473,8 @@ impl<'db> Collection<'db> {
                     cov_filepath,
                     cov_line
                 from TestCaseLineCoverageOverrides o
-                where t.last_collect_nr = $1 and t.product_id = $2
-                and t.last_collect_nr = o.last_collect_nr
+                where t.collect_nr = $1
+                and t.collect_nr = o.collect_nr
                 and t.product_id = o.product_id
                 and t.test_run_name = o.test_run_name
                 and t.test_run_date = o.test_run_date
@@ -512,7 +484,6 @@ impl<'db> Collection<'db> {
             )
             ",
             collect_nr,
-            product_id,
             covered_state,
             excluded_state,
             overridden_covered_state,
@@ -522,19 +493,6 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Failed to update ResolvedTestCaseLineCoverage")?;
-
-        sqlx::query!(
-            "
-            delete from ResolvedTestCaseLineCoverage
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated ResolvedTestCaseLineCoverage entries")?;
 
         sqlx::query!(
             "
@@ -607,14 +565,13 @@ impl<'db> Collection<'db> {
                     where er.last_collect_nr = $1 and er.product_id = $2
                     and lh.cov_filepath = er.filepath
                     and lh.cov_line >= er.start_line and lh.cov_line <= er.end_line
-                ) then $4
-                when lh.hits is not null and lh.hits > 0 then $3
-                else $7
+                ) then $3
+                when lh.hits is not null and lh.hits > 0 then $2
+                else $6
                 end as state
             from ResolvedCoveredLineHits lh
             ",
             collect_nr,
-            product_id,
             covered_state,
             excluded_state,
             overridden_covered_state,
@@ -624,19 +581,6 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Failed to update ResolvedLineCoverageStates")?;
-
-        sqlx::query!(
-            "
-            delete from ResolvedLineCoverageStates
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated ResolvedLineCoverageStates entries")?;
 
         Ok(())
     }

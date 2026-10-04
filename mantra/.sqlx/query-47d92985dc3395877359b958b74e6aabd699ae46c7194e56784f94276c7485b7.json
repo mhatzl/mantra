@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with recursive TransitiveChildren(\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                descendant_test_run_name,\n                descendant_test_run_date\n            ) as\n            (\n                select\n                    collect_nr,\n                    product_id,\n                    parent_name,\n                    parent_date,\n                    child_name,\n                    child_date\n                from TestRunHierarchies\n                where collect_nr = $1\n\n                union all\n\n                select\n                    th.collect_nr,\n                    tc.product_id,\n                    tc.test_run_name,\n                    tc.test_run_date,\n                    th.child_name,\n                    th.child_date\n                from TestRunHierarchies th, TransitiveChildren tc\n                where tc.collect_nr = th.collect_nr and tc.product_id = th.product_id\n                and tc.descendant_test_run_name = th.parent_name\n                and tc.descendant_test_run_date = th.parent_date\n                -- prevents endless recursion in case of test run cycles\n                -- but includes self-references to detect a cycle\n                and (\n                    tc.test_run_name != th.parent_name\n                    or tc.test_run_date != th.parent_date\n                )\n            )\n            insert or ignore into TestRunDescendants (\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                descendant_test_run_name,\n                descendant_test_run_date\n            )\n            select\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                descendant_test_run_name,\n                descendant_test_run_date\n            from TransitiveChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "47d92985dc3395877359b958b74e6aabd699ae46c7194e56784f94276c7485b7"
+}

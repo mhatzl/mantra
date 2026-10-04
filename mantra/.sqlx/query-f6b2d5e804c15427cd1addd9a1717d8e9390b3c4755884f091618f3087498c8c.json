@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into ObsoleteTestRuns (\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            select collect_nr, product_id, name, utc_date\n            from TestRuns tr\n            where\n            -- requirements collected since test was added\n            tr.collect_nr < (\n                select max(r.collect_nr)\n                from Requirements r\n                where r.product_id = tr.product_id\n            )\n            -- annotations collected since test was added\n            or tr.collect_nr < (\n                select max(a.collect_nr)\n                from ProductAnnotationSources a\n                where a.product_id = tr.product_id\n            )\n            -- TODO: check test location and file hash changes\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "f6b2d5e804c15427cd1addd9a1717d8e9390b3c4755884f091618f3087498c8c"
+}

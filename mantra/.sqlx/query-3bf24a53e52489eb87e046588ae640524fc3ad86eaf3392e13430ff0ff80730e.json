@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into LeafTestRuns (\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            select collect_nr, product_id, name, utc_date\n            from TestRuns\n            where collect_nr = $1\n\n            except\n\n            select collect_nr, product_id, parent_name, parent_date\n            from TestRunHierarchies\n            where collect_nr = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "3bf24a53e52489eb87e046588ae640524fc3ad86eaf3392e13430ff0ff80730e"
+}

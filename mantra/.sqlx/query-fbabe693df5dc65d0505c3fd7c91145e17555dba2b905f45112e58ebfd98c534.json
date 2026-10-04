@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into ResolvedTestCaseStates (\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                state\n            )\n            select\n                collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                state\n            from TestCaseOverrides\n            where collect_nr = $1\n\n            union all\n\n            select\n                t.collect_nr,\n                t.product_id,\n                t.test_run_name,\n                t.test_run_date,\n                t.name as test_case_name,\n                t.state\n            from TestCases t\n            where\n            t.collect_nr = $1\n            and not exists (\n                select\n                    o.collect_nr,\n                    o.product_id,\n                    o.test_run_name,\n                    o.test_run_date,\n                    o.test_case_name\n                from TestCaseOverrides o\n                where t.collect_nr = o.collect_nr\n                and t.product_id = o.product_id\n                and t.test_run_name = o.test_run_name\n                and t.test_run_date = o.test_run_date\n                and t.name = o.test_case_name\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "fbabe693df5dc65d0505c3fd7c91145e17555dba2b905f45112e58ebfd98c534"
+}
