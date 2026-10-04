@@ -1,4 +1,4 @@
-use mantra_schema::{product::ProductId, requirements::RequirementSchema};
+use mantra_schema::{mime_guess, product::ProductId, requirements::RequirementSchema};
 
 use crate::cmd::collect::collector::CollectableFile;
 

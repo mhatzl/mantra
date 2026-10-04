@@ -1,6 +1,6 @@
 use anyhow::Context;
 use ignore::types::TypesBuilder;
-use mantra_schema::{path::RelativePath, product::ProductId, reviews::ReviewSchema};
+use mantra_schema::{FmtHash, path::RelativePath, product::ProductId, reviews::ReviewSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},
@@ -58,12 +58,12 @@ impl<'db, 'c> SingleFileCollectable<'db, 'c, ReviewSchema> for CollectReviewsCon
 
     async fn update_db(
         collection: &mut ProductCollection<'db, 'c>,
-        filepath: &RelativePath,
         schema: &ReviewSchema,
+        schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
         collection
-            .update_per_review_schema(filepath, schema)
+            .update_per_review_schema(schema, schema_hash)
             .await
-            .with_context(|| format!("Failed updating reviews collected from file '{}'", filepath))
+            .context("Inserting collected review schema")
     }
 }

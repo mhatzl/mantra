@@ -15,18 +15,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         annotation_schema: &AnnotationSchema,
         schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
-        let schema_collected = sqlx::query!(
-            "
-            select *
-            from Schemas
-            where content_hash = $1
-            ",
-            schema_hash
-        )
-        .fetch_optional(self.connection_mut())
-        .await
-        .context("Failed to get collected schemas")?
-        .is_some();
+        let schema_collected = self.schema_collected(schema_hash).await?;
 
         if !schema_collected && let Some(props) = &annotation_schema.trace_properties {
             for (key, value) in props {

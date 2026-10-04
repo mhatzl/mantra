@@ -164,6 +164,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         self.insert_cfg_collected_schema(cfg_nr, schema_hash).await
     }
 
+    pub(super) async fn schema_collected(
+        &mut self,
+        schema_hash: &FmtHash,
+    ) -> Result<bool, anyhow::Error> {
+        self.collection.schema_collected(schema_hash).await
+    }
+
     pub(super) async fn new_collect_cfg(&mut self) -> Result<i64, anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();

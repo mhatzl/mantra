@@ -1,4 +1,4 @@
-use mantra_schema::{path::RelativePathBuf, product::ProductId};
+use mantra_schema::{mime_guess, path::RelativePathBuf, product::ProductId};
 
 use crate::cmd::collect::requirements::markup::markdown;
 

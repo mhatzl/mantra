@@ -411,6 +411,24 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
+    pub(super) async fn schema_collected(
+        &mut self,
+        schema_hash: &FmtHash,
+    ) -> Result<bool, anyhow::Error> {
+        Ok(sqlx::query!(
+            "
+            select *
+            from Schemas
+            where content_hash = $1
+            ",
+            schema_hash
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Failed to get collected schemas")?
+        .is_some())
+    }
+
     async fn insert_schema<S: Schema>(&mut self, schema: &S) -> Result<FmtHash, anyhow::Error> {
         let schema_hash = FmtHash::from(schema);
 

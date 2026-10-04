@@ -3,7 +3,10 @@ use std::ops::Deref;
 use relative_path::RelativePathBuf;
 use time::OffsetDateTime;
 
-use crate::{Line, Origin, Properties, Revision, product::ProductId, test_runs::TestCaseState};
+use crate::{
+    Line, Origin, Properties, Revision, media_type::MediaType, product::ProductId,
+    test_runs::TestCaseState,
+};
 
 use super::requirements::ReqId;
 
@@ -108,6 +111,7 @@ pub struct Review {
     /// [req("review.test_case_state", "review.coverage")]
     #[serde(alias = "override", default)]
     pub test_run_overrides: Vec<OverrideTestRun>,
+    pub media_type: Option<MediaType>,
 }
 
 /// Represents a verification entry affecting one or more requirements.
