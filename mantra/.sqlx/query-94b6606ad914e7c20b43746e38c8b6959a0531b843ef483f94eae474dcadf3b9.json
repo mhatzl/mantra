@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ReviewCollectConfigs (\n                collect_nr,\n                product_id,\n                cfg_nr,\n                path,\n                source_hash,\n                origin_hash,\n                pattern\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "94b6606ad914e7c20b43746e38c8b6959a0531b843ef483f94eae474dcadf3b9"
+}

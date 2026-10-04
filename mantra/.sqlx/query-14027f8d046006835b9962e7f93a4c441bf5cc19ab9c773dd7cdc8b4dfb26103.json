@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select product_id, filepath\n            from ProductAnnotationSources\n            where collect_nr = $1 and file_hash = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ProductAnnotationSources",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "filepath",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ProductAnnotationSources",
+            "name": "filepath"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "14027f8d046006835b9962e7f93a4c441bf5cc19ab9c773dd7cdc8b4dfb26103"
+}

@@ -10,7 +10,6 @@ use mantra_schema::{
     path::RelativePath,
 };
 
-use crate::cmd::collect::{Collection, merge_local_and_base_properties};
-
 pub mod aggregate;
+pub mod cfg;
 pub mod collect;

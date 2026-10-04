@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into SchemaTraceProperties (\n                        schema_hash,\n                        property_key,\n                        value_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a2a3f1a6217f19b2b04cee8dafcb98ae9d2e0a5ed4ece1b50502081a4f060b9b"
+}

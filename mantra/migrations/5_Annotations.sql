@@ -1,10 +1,12 @@
 
-create table SchemaAnnotationSources (
-    schema_hash text not null references Schemas (content_hash) on delete cascade,
+create table ProductAnnotationSources (
     collect_nr integer not null,
+    product_id text not null,
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
     filepath text not null,
-    primary key (schema_hash, collect_nr, filepath),
-    foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete cascade
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    primary key (collect_nr, product_id, schema_hash, filepath),
+    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 create table SchemaTraceProperties (
@@ -12,6 +14,18 @@ create table SchemaTraceProperties (
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (schema_hash, property_key)
+);
+
+create table AnnotationCollectConfigs (
+    collect_nr integer not null,
+    product_id text not null,
+    cfg_nr integer not null,
+    path text not null,
+    source_hash text not null references GeneralJson (hash) on delete restrict,
+    origin_hash text references GeneralJson (hash) on delete restrict,
+    pattern text,
+    primary key (collect_nr, product_id, cfg_nr),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
 );
 
 create table ConfigTraceProperties (
@@ -155,7 +169,10 @@ create table ElementIdents (
     -- Line the element is defined at.
     definition_line integer not null,
     ident text not null,
-    primary key (collect_nr, product_id, filepath, file_hash, definition_line),
+    -- Source for the ident name
+    -- e.g. directly in schema or language server index format
+    source_hash text not null references GeneralJson (hash) on delete restrict,
+    primary key (collect_nr, product_id, filepath, file_hash, definition_line, source_hash),
     foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, definition_line) references Elements (file_hash, definition_line) on delete cascade
 );

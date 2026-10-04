@@ -49,6 +49,24 @@ pub struct ReviewSchema {
     pub origin: Option<Origin>,
 }
 
+impl crate::Schema for ReviewSchema {
+    fn version(&self) -> &str {
+        if let Some(version) = &self.schema_version {
+            version
+        } else {
+            crate::SCHEMA_VERSION
+        }
+    }
+
+    fn product_id(&self) -> &Option<ProductId> {
+        &self.product_id
+    }
+
+    fn origin(&self) -> &Option<Origin> {
+        &self.origin
+    }
+}
+
 /// Defines the fields for a review.
 /// [req("exchange.review")]
 #[derive(

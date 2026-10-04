@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use anyhow::Context;
 use ignore::{WalkBuilder, WalkState};
 use mantra_schema::{
-    FmtHash,
+    FmtHash, Schema,
     path::{PathExt, RelativePath, RelativePathBuf},
     product::ProductId,
 };
@@ -48,24 +48,25 @@ pub(super) trait SingleFileCollectable<'db, 'c, T> {
     ) -> Result<fn(&ProductId, &CollectableFile) -> Result<Option<T>, anyhow::Error>, anyhow::Error>;
     async fn update_db(
         collection: &mut ProductCollection<'db, 'c>,
-        filepath: &RelativePath,
         schema: &T,
+        schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error>;
 }
 
-struct SentData<T> {
+struct SentData<T: Schema> {
     schema: T,
+    cfg_nr: i64,
     filepath: RelativePathBuf,
     file_hash: FmtHash,
     content: String,
 }
 
-impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + 'static>
+impl<'db, 'c, T: Schema + Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + 'static>
     SingleFileCollector<'db, 'c, T, C>
 {
     pub(super) async fn collect(
         collection: &mut ProductCollection<'db, 'c>,
-        cfgs: Vec<C>,
+        cfgs: Vec<(i64, C)>,
     ) -> Result<(), anyhow::Error> {
         if cfgs.is_empty() {
             return Ok(());
@@ -78,7 +79,7 @@ impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + '
         let root = abs_cfg_file_dir_path.clone();
         let schema_collection = tokio::spawn(async move {
             let mut task_set: JoinSet<Result<(), anyhow::Error>> = JoinSet::new();
-            for cfg in cfgs {
+            for (cfg_nr, cfg) in cfgs {
                 let schema_sender = schema_tx.clone();
                 let root_path = root.clone();
                 let start_path = cfg.path().to_logical_path(&root);
@@ -114,6 +115,7 @@ impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + '
                                         Ok(Some(schema)) => {
                                             let data = SentData {
                                                 schema,
+                                                cfg_nr,
                                                 filepath: rel_filepath,
                                                 file_hash,
                                                 content,
@@ -159,7 +161,16 @@ impl<'db, 'c, T: Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + '
                         sent_data.filepath
                     )
                 })?;
-            C::update_db(collection, &sent_data.filepath, &sent_data.schema)
+
+            let schema_hash = collection
+                .insert_schema_single_sources(
+                    &sent_data.schema,
+                    &sent_data.filepath,
+                    sent_data.cfg_nr,
+                )
+                .await?;
+
+            C::update_db(collection, &sent_data.schema, &schema_hash)
                 .await
                 .with_context(|| {
                     format!(

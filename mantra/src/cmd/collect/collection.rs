@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use mantra_schema::{FmtHash, Origin, path::RelativePath, time::OffsetDateTime};
+use mantra_schema::{FmtHash, Schema, path::RelativePath, time::OffsetDateTime};
 
 use crate::{
     cfg::ResolvedProductConfig,
@@ -66,25 +66,48 @@ impl<'db> Collection<'db> {
         &mut self,
         product_cfg: ResolvedProductConfig,
     ) -> Result<(), anyhow::Error> {
-        let mut product_collection = ProductCollection::new(self, &product_cfg.product).await?;
+        let mut product_collection = ProductCollection::new(self, &product_cfg.product)
+            .await
+            .context("Creating product collection")?;
 
-        SingleFileCollector::collect(&mut product_collection, product_cfg.requirements)
+        let collected_req_cfgs = product_collection
+            .insert_requirement_collect_cfgs(product_cfg.requirements)
+            .await
+            .context("Inserting requirement collection configs")?;
+        SingleFileCollector::collect(&mut product_collection, collected_req_cfgs)
             .await
             .context("Failed to collect requirements")?;
+        product_collection
+            .update_req_dot_parent()
+            .await
+            .context("Updating requirement dot-hierarchy")?;
 
-        SingleFileCollector::collect(&mut product_collection, product_cfg.annotations)
+        let collected_annotation_cfgs = product_collection
+            .insert_annotation_collect_cfgs(product_cfg.annotations)
+            .await
+            .context("Inserting annotation collection config")?;
+        SingleFileCollector::collect(&mut product_collection, collected_annotation_cfgs)
             .await
             .context("Failed to collect annotations")?;
-        product_collection
-            .resolve_element_identifier(product_cfg.lsif)
-            .await
-            .context("Failed to resolve element identifiers")?;
+        // TODO
+        // product_collection
+        //     .resolve_element_identifier(product_cfg.lsif)
+        //     .await
+        //     .context("Failed to resolve element identifiers")?;
 
-        super::test_runs::collect(&mut product_collection, product_cfg.test_runs)
+        let test_run_cfgs = product_collection
+            .insert_test_run_collect_cfgs(product_cfg.test_runs)
+            .await
+            .context("Inserting test run collection configs")?;
+        super::test_runs::collect(&mut product_collection, test_run_cfgs)
             .await
             .context("Failed to collect test runs")?;
 
-        SingleFileCollector::collect(&mut product_collection, product_cfg.reviews)
+        let review_cfgs = product_collection
+            .insert_review_collect_cfgs(product_cfg.reviews)
+            .await
+            .context("Inserting review collection config")?;
+        SingleFileCollector::collect(&mut product_collection, review_cfgs)
             .await
             .context("Failed to collect reviews")?;
 
@@ -278,13 +301,12 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    pub(super) async fn insert_schema_single_source(
+    pub(super) async fn insert_schema_single_source<S: Schema>(
         &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
+        schema: &S,
         filepath: &RelativePath,
-    ) -> Result<(), anyhow::Error> {
-        self.insert_schema(content_hash, origin).await?;
+    ) -> Result<FmtHash, anyhow::Error> {
+        let schema_hash = self.insert_schema(schema).await?;
 
         let collect_nr = self.collect_nr();
         let filepath = filepath.as_str();
@@ -303,23 +325,22 @@ impl<'db> Collection<'db> {
             )
             ",
             collect_nr,
-            content_hash,
+            schema_hash,
             filepath
         )
         .execute(self.connection_mut())
         .await
         .context("Failed to update collected schema sources")?;
 
-        Ok(())
+        Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_multi_sources(
+    pub(super) async fn insert_schema_multi_sources<S: Schema>(
         &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
+        schema: &S,
         filepaths: &[&RelativePath],
-    ) -> Result<(), anyhow::Error> {
-        self.insert_schema(content_hash, origin).await?;
+    ) -> Result<FmtHash, anyhow::Error> {
+        let schema_hash = self.insert_schema(schema).await?;
 
         let collect_nr = self.collect_nr();
 
@@ -340,7 +361,7 @@ impl<'db> Collection<'db> {
                 )
                 ",
                 collect_nr,
-                content_hash,
+                schema_hash,
                 filepath
             )
             .execute(self.connection_mut())
@@ -348,20 +369,19 @@ impl<'db> Collection<'db> {
             .context("Failed to update collected schema sources")?;
         }
 
-        Ok(())
+        Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_no_source(
+    pub(super) async fn insert_schema_no_source<S: Schema>(
         &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
-    ) -> Result<(), anyhow::Error> {
-        self.insert_schema(content_hash, origin).await
+        schema: &S,
+    ) -> Result<FmtHash, anyhow::Error> {
+        self.insert_schema(schema).await
     }
 
     pub(super) async fn insert_schema_source(
         &mut self,
-        content_hash: &FmtHash,
+        schema_hash: &FmtHash,
         filepath: &RelativePath,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -381,7 +401,7 @@ impl<'db> Collection<'db> {
             )
             ",
             collect_nr,
-            content_hash,
+            schema_hash,
             filepath
         )
         .execute(self.connection_mut())
@@ -391,12 +411,10 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn insert_schema(
-        &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
-    ) -> Result<(), anyhow::Error> {
-        let origin_hash = if let Some(origin_value) = &origin {
+    async fn insert_schema<S: Schema>(&mut self, schema: &S) -> Result<FmtHash, anyhow::Error> {
+        let schema_hash = FmtHash::from(schema);
+
+        let origin_hash = if let Some(origin_value) = schema.origin() {
             let origin_hash = FmtHash::from(origin_value);
             self.insert_general_json(&origin_hash, origin_value).await?;
             Some(origin_hash)
@@ -405,7 +423,7 @@ impl<'db> Collection<'db> {
         };
 
         // TODO: flag if potential existing origin differs
-        // Should not happen, since origin is part of the hash, so indicates an hashing error
+        // Should not happen, since origin is part of the hash, so indicates a hashing error
         sqlx::query!(
             "
             insert or replace into Schemas (
@@ -417,14 +435,14 @@ impl<'db> Collection<'db> {
                 $2
             )
             ",
-            content_hash,
+            schema_hash,
             origin_hash
         )
         .execute(self.connection_mut())
         .await
         .context("Failed to update collected schemas")?;
 
-        Ok(())
+        Ok(schema_hash)
     }
 
     /// Returns the absolute path to the directory the used mantra config file is located in.

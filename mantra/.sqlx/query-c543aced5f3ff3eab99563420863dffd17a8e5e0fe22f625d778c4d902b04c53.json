@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into CollectConfigs (\n                collect_nr,\n                product_id,\n                nr\n            )\n            values (\n                $1,\n                $2,\n                $3\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "c543aced5f3ff3eab99563420863dffd17a8e5e0fe22f625d778c4d902b04c53"
+}

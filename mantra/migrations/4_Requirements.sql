@@ -6,6 +6,18 @@ create table SchemaRequirementProperties (
     primary key (schema_hash, property_key)
 );
 
+create table RequirementCollectConfigs (
+    collect_nr integer not null,
+    product_id text not null,
+    cfg_nr integer not null,
+    path text not null,
+    source_hash text not null references GeneralJson (hash) on delete restrict,
+    origin_hash text references GeneralJson (hash) on delete restrict,
+    pattern text,
+    primary key (collect_nr, product_id, cfg_nr),
+    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+);
+
 create table ConfigRequirementProperties (
     collect_nr integer not null,
     product_id text not null,

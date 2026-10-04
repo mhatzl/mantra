@@ -1,6 +1,6 @@
 use anyhow::Context;
 use ignore::types::TypesBuilder;
-use mantra_schema::{path::RelativePath, product::ProductId, requirements::RequirementSchema};
+use mantra_schema::{FmtHash, product::ProductId, requirements::RequirementSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectRequirementsConfig, RequirementSourceVariant},
@@ -64,17 +64,12 @@ impl<'db, 'c> SingleFileCollectable<'db, 'c, RequirementSchema> for CollectRequi
 
     async fn update_db(
         collection: &mut ProductCollection<'db, 'c>,
-        filepath: &RelativePath,
         schema: &RequirementSchema,
+        schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
         collection
-            .update_per_req_schema(filepath, schema)
+            .update_per_req_schema(schema, schema_hash)
             .await
-            .with_context(|| {
-                format!(
-                    "Failed updating requirements collected from file '{}'",
-                    filepath
-                )
-            })
+            .context("Failed updating requirements")
     }
 }

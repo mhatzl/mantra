@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ConfigReviewProperties (\n                        collect_nr,\n                        product_id,\n                        cfg_nr,\n                        property_key,\n                        value_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "8b90cada25f0a98fcc7a7f7f1f3a738917b627c5832e10678a50efd1623938be"
+}

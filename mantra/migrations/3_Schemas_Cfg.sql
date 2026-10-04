@@ -18,7 +18,6 @@ create table CollectConfigs (
     -- The number that gets incremented for every new config of a product collection.
     -- Not auto incremented, because the number must only be unique per product in one collection.
     nr integer not null,
-    origin_hash text references GeneralJson (hash) on delete restrict,
     primary key (collect_nr, product_id, nr),
     foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
 );

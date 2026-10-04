@@ -14,6 +14,8 @@ pub use mime_guess;
 pub use relative_path as path;
 pub use time;
 
+use crate::product::ProductId;
+
 /// The version of the schema that is defined in this crate.
 /// [req("exchange.versioned")]
 pub const SCHEMA_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -52,6 +54,12 @@ where
     S: Serializer,
 {
     ser.serialize_str(SCHEMA_VERSION)
+}
+
+pub trait Schema: serde::Serialize {
+    fn version(&self) -> &str;
+    fn product_id(&self) -> &Option<ProductId>;
+    fn origin(&self) -> &Option<Origin>;
 }
 
 #[derive(

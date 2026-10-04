@@ -20,7 +20,6 @@ use crate::cmd::collect::{
         WellKnownTest, WellKnownTestFormat,
     },
     collector::CollectableFile,
-    merge_local_and_base_properties,
     product_collection::ProductCollection,
     test_runs::convert::{
         ShallowTestRun, WellKnownCoverageConversion, WellKnownCoverageData, WellKnownTestConversion,
@@ -36,16 +35,17 @@ mod tests;
 
 pub(super) async fn collect<'db, 'c>(
     collection: &mut ProductCollection<'db, 'c>,
-    cfgs: Vec<CollectTestRunsConfig>,
+    cfgs: Vec<(i64, CollectTestRunsConfig)>,
 ) -> Result<(), anyhow::Error> {
     if cfgs.is_empty() {
         return Ok(());
     }
 
-    for cfg in cfgs {
+    for (cfg_nr, cfg) in cfgs {
         match cfg.source {
             TestRunSourceVariant::WellKnown { test, coverage } => collect_well_known(
                 collection,
+                cfg_nr,
                 &cfg.path,
                 cfg.origin,
                 cfg.test_run_properties,
@@ -61,6 +61,7 @@ pub(super) async fn collect<'db, 'c>(
             TestRunSourceVariant::Schema => {
                 collect_schema(
                     collection,
+                    cfg_nr,
                     &cfg.path,
                     cfg.origin,
                     cfg.test_run_properties,
@@ -84,6 +85,7 @@ pub(super) async fn collect<'db, 'c>(
 #[allow(clippy::too_many_arguments)]
 async fn collect_well_known<'db, 'c>(
     collection: &mut ProductCollection<'db, 'c>,
+    cfg_nr: i64,
     path: &RelativePath,
     origin: Option<Origin>,
     test_run_properties: Option<Properties>,
@@ -433,6 +435,7 @@ struct SentSchemaData {
 
 async fn collect_schema<'db, 'c>(
     collection: &mut ProductCollection<'db, 'c>,
+    cfg_nr: i64,
     path: &RelativePath,
     base_origin: Option<Origin>,
     base_test_run_properties: Option<Properties>,

@@ -45,6 +45,24 @@ pub struct TestRunSchema {
     pub origin: Option<Origin>,
 }
 
+impl crate::Schema for TestRunSchema {
+    fn version(&self) -> &str {
+        if let Some(version) = &self.schema_version {
+            version
+        } else {
+            crate::SCHEMA_VERSION
+        }
+    }
+
+    fn product_id(&self) -> &Option<ProductId> {
+        &self.product_id
+    }
+
+    fn origin(&self) -> &Option<Origin> {
+        &self.origin
+    }
+}
+
 /// Represents a test run in *mantra*.
 /// [req("testcov.test_run")]
 #[derive(

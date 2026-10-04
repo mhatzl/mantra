@@ -12,8 +12,9 @@ use mantra_schema::test_runs::TestCaseState;
 use mantra_schema::time::OffsetDateTime;
 
 use crate::cmd::collect::Collection;
-use crate::cmd::collect::merge_local_and_base_properties;
 use crate::db::FilepathExt;
+
+pub mod cfg;
 
 impl<'db> Collection<'db> {
     pub(super) async fn update_per_review_schema(

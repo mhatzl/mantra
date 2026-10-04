@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TestRunCollectConfigs (\n                collect_nr,\n                product_id,\n                cfg_nr,\n                path,\n                source_hash,\n                origin_hash,\n                pattern\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "d19b0b4ab9e1eb88d650d22e17efc9f45e2af93690a0d50669f907101cb31b2c"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ProductAnnotationSources (\n                        collect_nr,\n                        product_id,\n                        schema_hash,\n                        filepath,\n                        file_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "1f099e8d8a49a744c0ac3a08b66684fbdd9c2a888268bd8d42d8f41395067b8c"
+}

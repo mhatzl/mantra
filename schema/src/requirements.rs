@@ -26,6 +26,24 @@ pub struct RequirementSchema {
     pub origin: Option<Origin>,
 }
 
+impl crate::Schema for RequirementSchema {
+    fn version(&self) -> &str {
+        if let Some(version) = &self.schema_version {
+            version
+        } else {
+            crate::SCHEMA_VERSION
+        }
+    }
+
+    fn product_id(&self) -> &Option<ProductId> {
+        &self.product_id
+    }
+
+    fn origin(&self) -> &Option<Origin> {
+        &self.origin
+    }
+}
+
 /// Type for a requirement ID.
 /// [req("req.id")]
 #[derive(

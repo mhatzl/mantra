@@ -6,12 +6,10 @@ use mantra_schema::{
     time::OffsetDateTime,
 };
 
-use crate::{
-    cmd::collect::{Collection, merge_local_and_base_properties},
-    db::FilepathExt,
-};
+use crate::{cmd::collect::Collection, db::FilepathExt};
 
 pub mod aggregate;
+pub mod cfg;
 
 impl<'db> Collection<'db> {
     pub(super) async fn update_per_test_run_schema(

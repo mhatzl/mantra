@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into AnnotationCollectConfigs (\n                collect_nr,\n                product_id,\n                cfg_nr,\n                path,\n                source_hash,\n                origin_hash,\n                pattern\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "dc0e675ba8b0abdb0f40b2a72ddbffddd4c21354d2ce9459d9fd03aa41f5e7b2"
+}

@@ -3,7 +3,6 @@ use std::str::FromStr;
 use anyhow::Context;
 use mantra_schema::{
     FmtHash,
-    path::RelativePath,
     product::ProductId,
     requirements::{ReqId, Requirement, RequirementSchema},
 };
@@ -13,20 +12,60 @@ use crate::cmd::collect::product_collection::ProductCollection;
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn update_per_req_schema(
         &mut self,
-        filepath: &RelativePath,
         req_schema: &RequirementSchema,
+        schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
-        let schema_hash = FmtHash::from(req_schema);
+        let schema_collected = sqlx::query!(
+            "
+            select *
+            from Schemas
+            where content_hash = $1
+            ",
+            schema_hash
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Failed to get collected schemas")?
+        .is_some();
 
-        // TODO: mapp collect cfg and schema
-        self.insert_schema_single_sources(&schema_hash, &req_schema.origin, filepath)
-            .await?;
+        if !schema_collected && let Some(props) = &req_schema.properties {
+            for (key, value) in props {
+                let value_hash = FmtHash::from(&value);
+
+                self.insert_general_json(&value_hash, &value)
+                    .await
+                    .with_context(|| {
+                        format!("Inserting value for requirement schema property '{key}'")
+                    })?;
+
+                sqlx::query!(
+                    "
+                    insert into SchemaRequirementProperties (
+                        schema_hash,
+                        property_key,
+                        value_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3
+                    )
+                    ",
+                    schema_hash,
+                    key,
+                    value_hash
+                )
+                .execute(self.connection_mut())
+                .await
+                .with_context(|| format!("Inserting requirement schema property '{key}'"))?;
+            }
+        }
 
         // TODO: do not stop at first collect error
 
         for req in &req_schema.requirements {
             let req_id = req.id.clone();
-            self.update_requirement(filepath, &schema_hash, req)
+            self.update_requirement(&schema_hash, req)
                 .await
                 .with_context(|| format!("Failed to update requirement '{}'", req_id))?;
         }
@@ -115,7 +154,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
     async fn update_requirement(
         &mut self,
-        filepath: &RelativePath,
         schema_hash: &FmtHash,
         req: &Requirement,
     ) -> Result<(), anyhow::Error> {
@@ -138,9 +176,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .context("Failed to check for duplicate requirement entries")?
         {
             anyhow::bail!(
-                "Duplicate requirement ID '{}' found in the same collection! Duplicate definition in '{}'; Previous origin: {}",
+                "Duplicate requirement ID '{}' found in the same collection! Previous origin: {}",
                 req.id,
-                filepath,
                 dupl_req.content // origin JSON
             );
         }

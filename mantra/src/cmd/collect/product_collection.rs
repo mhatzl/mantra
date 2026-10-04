@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use mantra_schema::{
-    FmtHash, Origin,
+    FmtHash, Schema,
     path::RelativePath,
     product::{Product, ProductId},
 };
@@ -104,65 +104,67 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(())
     }
 
-    pub(super) async fn insert_schema_single_sources(
+    pub(super) async fn insert_schema_single_sources<S: Schema>(
         &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
+        schema: &S,
         filepath: &RelativePath,
-    ) -> Result<(), anyhow::Error> {
-        self.collection
-            .insert_schema_single_source(content_hash, origin, filepath)
-            .await
+        cfg_nr: i64,
+    ) -> Result<FmtHash, anyhow::Error> {
+        let schema_hash = self
+            .collection
+            .insert_schema_single_source(schema, filepath)
+            .await?;
+
+        self.insert_cfg_collected_schema(cfg_nr, &schema_hash)
+            .await?;
+
+        Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_multi_sources(
+    pub(super) async fn insert_schema_multi_sources<S: Schema>(
         &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
+        schema: &S,
         filepaths: &[&RelativePath],
-    ) -> Result<(), anyhow::Error> {
-        self.collection
-            .insert_schema_multi_sources(content_hash, origin, filepaths)
-            .await
+        cfg_nr: i64,
+    ) -> Result<FmtHash, anyhow::Error> {
+        let schema_hash = self
+            .collection
+            .insert_schema_multi_sources(schema, filepaths)
+            .await?;
+
+        self.insert_cfg_collected_schema(cfg_nr, &schema_hash)
+            .await?;
+
+        Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_no_source(
+    pub(super) async fn insert_schema_no_source<S: Schema>(
         &mut self,
-        content_hash: &FmtHash,
-        origin: &Option<Origin>,
-    ) -> Result<(), anyhow::Error> {
-        self.collection
-            .insert_schema_no_source(content_hash, origin)
-            .await
+        schema: &S,
+        cfg_nr: i64,
+    ) -> Result<FmtHash, anyhow::Error> {
+        let schema_hash = self.collection.insert_schema_no_source(schema).await?;
+
+        self.insert_cfg_collected_schema(cfg_nr, &schema_hash)
+            .await?;
+
+        Ok(schema_hash)
     }
 
     pub(super) async fn insert_schema_source(
         &mut self,
-        content_hash: &FmtHash,
+        schema_hash: &FmtHash,
         filepath: &RelativePath,
+        cfg_nr: i64,
     ) -> Result<(), anyhow::Error> {
         self.collection
-            .insert_schema_source(content_hash, filepath)
-            .await
-    }
-
-    pub(super) async fn insert_collect_cfg<C: serde::Serialize>(
-        &mut self,
-        cfg: &C,
-        origin: &Option<Origin>,
-    ) -> Result<i64, anyhow::Error> {
-        let cfg_hash = FmtHash::from(cfg);
-        self.insert_general_json(&cfg_hash, &serde_json::to_value(cfg)?)
+            .insert_schema_source(schema_hash, filepath)
             .await?;
 
-        let origin_hash = if let Some(origin_value) = &origin {
-            let origin_hash = FmtHash::from(origin_value);
-            self.insert_general_json(&origin_hash, origin_value).await?;
-            Some(origin_hash)
-        } else {
-            None
-        };
+        self.insert_cfg_collected_schema(cfg_nr, schema_hash).await
+    }
 
+    pub(super) async fn new_collect_cfg(&mut self) -> Result<i64, anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
@@ -184,26 +186,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert or replace into CollectConfigs (
+            insert into CollectConfigs (
                 collect_nr,
                 product_id,
-                nr,
-                cfg_hash,
-                origin_hash
+                nr
             )
             values (
                 $1,
                 $2,
-                $3,
-                $4,
-                $5
+                $3
             )
             ",
             collect_nr,
             product_id,
-            cfg_nr,
-            cfg_hash,
-            origin_hash
+            cfg_nr
         )
         .execute(self.connection_mut())
         .await
@@ -212,7 +208,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(cfg_nr)
     }
 
-    pub(super) async fn insert_cfg_collected_schema(
+    async fn insert_cfg_collected_schema(
         &mut self,
         cfg_nr: i64,
         schema_hash: &FmtHash,

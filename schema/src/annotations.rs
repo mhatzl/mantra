@@ -30,6 +30,24 @@ pub struct AnnotationSchema {
     pub origin: Option<Origin>,
 }
 
+impl crate::Schema for AnnotationSchema {
+    fn version(&self) -> &str {
+        if let Some(version) = &self.schema_version {
+            version
+        } else {
+            crate::SCHEMA_VERSION
+        }
+    }
+
+    fn product_id(&self) -> &Option<ProductId> {
+        &self.product_id
+    }
+
+    fn origin(&self) -> &Option<Origin> {
+        &self.origin
+    }
+}
+
 /// The annotation information per file.
 /// [req("changes.track.traces.files")]
 #[derive(
@@ -410,4 +428,21 @@ impl TryFrom<i64> for ElementKind {
             _ => Err(ConversionError::UnknownKind),
         }
     }
+}
+
+/// The source of an element identifier.
+///
+/// Since different configurations may result in different identifiers for the same element,
+/// the source is used to store this configuration info.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ElementIdentSource {
+    /// Identifier was defined in the schema that defined the element.
+    /// Value is the schema hash.
+    Schema(FmtHash),
+    /// Identifier was defined in a language server index format (LSIF) file.
+    /// Value is a generic JSON value to store language and tooling specific data
+    /// that was set when generating the LSIF content.
+    Lsif(serde_json::Value),
+    Other(serde_json::Value),
 }

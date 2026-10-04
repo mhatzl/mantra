@@ -1,6 +1,7 @@
 use anyhow::Context;
 use mantra_lang_tracing::collect::collector::AnnotationCollector;
 use mantra_schema::{
+    FmtHash,
     annotations::{AnnotationSchema, FileAnnotations},
     path::RelativePath,
     product::ProductId,
@@ -57,18 +58,12 @@ impl<'db, 'c> SingleFileCollectable<'db, 'c, AnnotationSchema> for CollectAnnota
 
     async fn update_db(
         collection: &mut ProductCollection<'db, 'c>,
-        filepath: &RelativePath,
         schema: &AnnotationSchema,
+        schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
         collection
-            .update_per_annotation_schema(filepath, schema)
+            .collect_per_annotation_schema(schema, schema_hash)
             .await
-            .with_context(|| {
-                format!(
-                    "Failed updating annotations collected from file '{}'",
-                    filepath
-                )
-            })
     }
 }
 
