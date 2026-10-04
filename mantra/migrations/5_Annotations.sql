@@ -117,13 +117,14 @@ create table DetectedProductReqTraces (
 create table DirectProductReqTraces (
     collect_nr integer not null,
     product_id text not null,
+    req_collect_nr text not null,
     req_id text not null,
     filepath text not null,
     file_hash text not null,
     line integer not null,
-    primary key (collect_nr, product_id, req_id, filepath, file_hash, line),
+    primary key (collect_nr, product_id, req_collect_nr, req_id, filepath, file_hash, line),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
-    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
+    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
     foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 

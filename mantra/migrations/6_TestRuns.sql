@@ -217,7 +217,16 @@ create table TestRunLineCoverage (
         product_id,
         test_run_name,
         test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (
+        collect_nr,
+        product_id,
+        cov_filepath
+    ) references ProductRelatedFiles (
+        collect_nr,
+        product_id,
+        filepath
+    ) on delete cascade
 );
 
 -- Table to store test case results.
@@ -266,9 +275,10 @@ create table TestCaseVerifiedRequirements (
     test_run_name text not null,
     test_run_date text not null,
     test_case_name text not null,
+    req_collect_nr text not null,
     req_id text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, req_id),
-    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
+    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, req_collect_nr, req_id),
+    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
     foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name) references TestCases (collect_nr, product_id, test_run_name, test_run_date, name) on delete cascade
 );
 
@@ -366,6 +376,15 @@ create table TestCaseLocations (
         test_run_name,
         test_run_date,
         name
+    ) on delete cascade,
+    foreign key (
+        collect_nr,
+        product_id,
+        filepath
+    ) references ProductRelatedFiles (
+        collect_nr,
+        product_id,
+        filepath
     ) on delete cascade
 );
 

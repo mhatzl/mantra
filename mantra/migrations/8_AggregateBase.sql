@@ -180,14 +180,8 @@ create table ExcludedCoverageLines (
     primary key (file_hash, line)
 );
 
--- Contains reviews that are likely obsolete, but are still used for further analysis.
--- This uses available historic data to flag reviews as likely obsolete.
--- It is then up to the user to decide what to do.
---
--- Likely reasons:
--- - manually verified requirement changed since review date
--- - test run of mapped overrides is marked as (likely) obsolete
-create table LikelyObsoleteReviews (
+-- Contains reviews that are obsolete and must **not** be used for further analysis.
+create table ObsoleteReviews (
     collect_nr integer not null,
     product_id text not null,
     review_name text not null,
@@ -208,6 +202,7 @@ create table ObsoleteTestRuns (
 
 -- Contains the resolved state of test cases considering potential overrides from reviews.
 create table ResolvedTestCaseStates (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
@@ -217,13 +212,14 @@ create table ResolvedTestCaseStates (
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed; 4=obsolete
     -- [req("testcov.test_case.state")]
     state integer not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name),
+    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, test_case_name),
     foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
         references TestCases (collect_nr, product_id, test_run_name, test_run_date, name)
 );
 
 create view PassedTestCases as
 select
+    agg_collect_nr,
     collect_nr,
     product_id,
     test_run_name,
@@ -234,6 +230,7 @@ where state = 1;
 
 create view SkippedTestCases as
 select
+    agg_collect_nr,
     collect_nr,
     product_id,
     test_run_name,
@@ -244,6 +241,7 @@ where state = 2;
 
 create view FailedTestCases as
 select
+    agg_collect_nr,
     collect_nr,
     product_id,
     test_run_name,
@@ -255,11 +253,15 @@ where state != 1 and state != 2;
 
 -- Contains test cases that passed and are **not** part of an obsolete test run.
 create table UsableTestCases (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr bigint not null references Collections (nr) on delete restrict,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    test_case_name text not null
+    test_case_name text not null,
+    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, test_case_name),
+    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
+        references TestCases (collect_nr, product_id, test_run_name, test_run_date, name)
 );
 
 create table TestRunDescendants (
@@ -284,44 +286,49 @@ create table LeafTestRuns (
 );
 
 create table PassedTestRuns (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
     foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table FailedTestRuns (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
     foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table SkippedTestRuns (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
     foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains test tuns that are **not** obsolete and passed.
 create table UsableTestRuns (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date),
+    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
     foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create view TestRunStates as
 with BaseTestRunStates (
+    agg_collect_nr,
     collect_nr,
     product_id,
     test_run_name,
@@ -329,6 +336,7 @@ with BaseTestRunStates (
     state
 ) as (
     select
+        agg_collect_nr,
         collect_nr,
         product_id,
         test_run_name,
@@ -337,6 +345,7 @@ with BaseTestRunStates (
     from FailedTestRuns
     union all
     select
+        agg_collect_nr,
         collect_nr,
         product_id,
         test_run_name,
@@ -345,6 +354,7 @@ with BaseTestRunStates (
     from UsableTestRuns -- excludes obsolete test runs
     union all
     select
+        agg_collect_nr,
         collect_nr,
         product_id,
         test_run_name,
@@ -353,6 +363,7 @@ with BaseTestRunStates (
     from SkippedTestRuns
 )
 select
+    agg_collect_nr,
     collect_nr,
     product_id,
     test_run_name,
@@ -362,6 +373,7 @@ from BaseTestRunStates
 union all
 -- to not overwrite failed or skipped obsolete test runs
 select
+    agg_collect_nr,
     collect_nr,
     product_id,
     test_run_name,
@@ -370,7 +382,8 @@ select
 from ObsoleteTestRuns ot
 where not exists (
     select * from BaseTestRunStates bt
-    where ot.collect_nr = bt.collect_nr
+    where ot.agg_collect_nr = bt.agg_collect_nr
+    and ot.collect_nr = bt.collect_nr
     and ot.product_id = bt.product_id
     and ot.test_run_name = bt.test_run_name
     and ot.test_run_date = bt.test_run_date
@@ -378,6 +391,7 @@ where not exists (
 
 -- Contains line coverage from test runs with optional review overrides applied.
 create table ResolvedTestRunLineCoverage (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
@@ -388,6 +402,7 @@ create table ResolvedTestRunLineCoverage (
     state integer not null,
     hits integer,
     primary key (
+        agg_collect_nr,
         collect_nr,
         product_id,
         test_run_name,
@@ -414,6 +429,7 @@ create table ResolvedTestRunLineCoverage (
 
 -- Contains line coverage from test cases with optional review overrides applied.
 create table ResolvedTestCaseLineCoverage (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
@@ -425,6 +441,7 @@ create table ResolvedTestCaseLineCoverage (
     state integer not null,
     hits integer,
     primary key (
+        agg_collect_nr,
         collect_nr,
         product_id,
         test_run_name,
@@ -453,6 +470,7 @@ create table ResolvedTestCaseLineCoverage (
 );
 
 create table ResolvedLineCoverageStates (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     collect_nr integer not null,
     product_id text not null,
     cov_filepath text not null,
@@ -460,6 +478,7 @@ create table ResolvedLineCoverageStates (
     cov_line integer not null,
     state integer not null,
     primary key (
+        agg_collect_nr,
         collect_nr,
         product_id,
         cov_filepath,
@@ -545,15 +564,15 @@ select
 from TracesCoveredByTestRuns;
 
 create view CoverableLinesPerFilepath as
-with CoveredLinesPerFilepath (collect_nr, product_id, filepath, line) as (
-	select collect_nr, product_id, cov_filepath, cov_line
+with CoveredLinesPerFilepath (agg_collect_nr, collect_nr, product_id, filepath, line) as (
+	select agg_collect_nr, collect_nr, product_id, cov_filepath, cov_line
 	from ResolvedTestRunLineCoverage
 
 	union
 
-	select collect_nr, product_id, cov_filepath, cov_line
+	select agg_collect_nr, collect_nr, product_id, cov_filepath, cov_line
 	from ResolvedTestCaseLineCoverage
 )
-select collect_nr, product_id, filepath, count(line) as coverable_lines
+select agg_collect_nr, collect_nr, product_id, filepath, count(line) as coverable_lines
 from CoveredLinesPerFilepath
-group by collect_nr, product_id, filepath;
+group by agg_collect_nr, collect_nr, product_id, filepath;

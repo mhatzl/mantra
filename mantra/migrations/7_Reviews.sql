@@ -113,25 +113,27 @@ create table ReviewRevisionAuthors (
 -- [req("review.verify_req")]
 create table ManuallyVerifiedRequirements (
     collect_nr integer not null,
-   -- ID of the requirement that is manually verified.
-    req_id text not null,
     -- Product ID that maps to the product that got reviewed.
     product_id text not null,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
     review_date text not null,
+    req_collect_nr integer not null,
+   -- ID of the requirement that is manually verified.
+    req_id text not null,
     -- Hash of the comment for the manual verification.
     comment_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
         collect_nr,
         product_id,
-        req_id,
         review_name,
-        review_date
+        review_date,
+        req_collect_nr,
+        req_id
     ),
     foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
-    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
+    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );
 
 -- Table to store test case overrides from reviews.
@@ -140,16 +142,17 @@ create table TestCaseOverrides (
     collect_nr integer not null,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
+    -- Name of the review.
+    review_name text not null,
+    -- UTC date and time at which the review was held.
+    review_date text not null,
+    test_collect_nr text not null,
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
     test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
-    -- Name of the review.
-    review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_date text not null,
     -- State that must be used instead of the one stored in the TestCase table.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
@@ -158,15 +161,16 @@ create table TestCaseOverrides (
     primary key (
         collect_nr,
         product_id,
+        review_name,
+        review_date,
+        test_collect_nr,
         test_run_name,
         test_run_date,
-        test_case_name,
-        review_name,
-        review_date
+        test_case_name
     ),
     foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
     foreign key (
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -191,14 +195,15 @@ create table TestRunLineCoverageOverrides (
     collect_nr integer not null,
     -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
-    -- Name of the test run.
-    test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the review.
     review_name text not null,
     -- UTC date and time at which the review was held.
     review_date text not null,
+    test_collect_nr integer not null,
+    -- Name of the test run.
+    test_run_name text not null,
+    -- UTC date and time of the test run.
+    test_run_date text not null,
     -- File that was covered.
     cov_filepath text not null,
     -- Line that was covered.
@@ -211,16 +216,17 @@ create table TestRunLineCoverageOverrides (
     primary key (
         collect_nr,
         product_id,
-        test_run_name,
-        test_run_date,
         review_name,
         review_date,
+        test_collect_nr,
+        test_run_name,
+        test_run_date,
         cov_filepath,
         cov_line
     ),
     foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
     foreign key (
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -247,16 +253,17 @@ create table TestCaseLineCoverageOverrides (
     collect_nr integer not null,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
+    -- Name of the review.
+    review_name text not null,
+    -- UTC date and time at which the review was held.
+    review_date text not null,
+    test_collect_nr text not null,
     -- Name of the test run.
     test_run_name text not null,
     -- UTC date and time of the test run.
     test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
-    -- Name of the review.
-    review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_date text not null,
     -- File that was covered.
     cov_filepath text not null,
     -- Line that was covered.
@@ -269,17 +276,18 @@ create table TestCaseLineCoverageOverrides (
     primary key (
         collect_nr,
         product_id,
+        review_name,
+        review_date,
+        test_collect_nr,
         test_run_name,
         test_run_date,
         test_case_name,
-        review_name,
-        review_date,
         cov_filepath,
         cov_line
     ),
     foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
     foreign key (
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
