@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ElementIdents (\n                        collect_nr,\n                        product_id,\n                        filepath,\n                        file_hash,\n                        definition_line,\n                        ident,\n                        source_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6,\n                        $7\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "7feb21a36c6b16891858fe8d9feab7bf61b72e62e62d128a62ad7e56521d9daa"
+}

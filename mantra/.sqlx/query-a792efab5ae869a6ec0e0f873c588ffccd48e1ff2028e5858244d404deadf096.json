@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into TestCaseLocations (\n                        collect_nr,\n                        product_id,\n                        test_run_name,\n                        test_run_date,\n                        test_case_name,\n                        filepath,\n                        file_hash,\n                        line\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6,\n                        $7,\n                        $8\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "a792efab5ae869a6ec0e0f873c588ffccd48e1ff2028e5858244d404deadf096"
+}

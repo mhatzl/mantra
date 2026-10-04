@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into SchemaTestRunProperties (\n                            schema_hash,\n                            property_key,\n                            value_hash\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3\n                        )\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "c081674fcec7667e20ba24796ece5cfab7019eb4510e6aa84eb521dc4c3fbd90"
+}

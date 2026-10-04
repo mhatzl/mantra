@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ManuallyVerifiedRequirements (\n                collect_nr,\n                req_id,\n                product_id,\n                review_name,\n                review_date,\n                comment_hash\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "4f30c63677e4f771628d4c4fc51af1804e4c6a7fbe1a750f4707cc4ce5d21b04"
+}

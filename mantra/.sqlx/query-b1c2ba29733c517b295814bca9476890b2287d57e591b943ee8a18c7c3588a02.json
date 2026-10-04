@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into TestCases (\n                    collect_nr,\n                    product_id,\n                    test_run_name,\n                    test_run_date,\n                    name,\n                    state,\n                    description_hash,\n                    utc_date,\n                    duration_sec\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6,\n                    $7,\n                    $8,\n                    $9\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "b1c2ba29733c517b295814bca9476890b2287d57e591b943ee8a18c7c3588a02"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TestRuns (\n                collect_nr,\n                product_id,\n                name,\n                utc_date,\n                description_hash,\n                duration_sec,\n                nr_of_test_cases,\n                origin_hash,\n                data_hash,\n                schema_hash,\n                media_type\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                $11\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "026ab666156fcbc86ae105abcd7d211a89bb9bacf9cfa2ea7c561af3c214469f"
+}

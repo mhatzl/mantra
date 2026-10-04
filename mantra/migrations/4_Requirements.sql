@@ -37,21 +37,21 @@ create table Requirements (
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
     -- [req("req.manual")]
-    manual_verification bool not null,
+    manual_verification bool,
     -- Flag indicating whether the requirement is deprecated.
     -- `true`: The requirement is deprecated.
     -- [req("req.deprecated")]
-    deprecated bool not null,
+    deprecated bool,
     -- Flag indicating whether the requirement should be excluded for this product.
     -- `true`: The requirement must be excluded.
     -- [req("req.exclude")]
-    exclude bool not null,
+    exclude bool,
     -- Flag indicating whether the requirement is optional to be verified.
     -- Verification state of optional requirements does **not** affect the state of parents.
     -- All children of an optional requirement are also optional.
     -- `true`: The requirement is optional.
     -- [req("req.optional")]
-    optional bool not null,
+    optional bool,
     -- The title of the requirement.
     -- [req("req.title")]
     title text not null,

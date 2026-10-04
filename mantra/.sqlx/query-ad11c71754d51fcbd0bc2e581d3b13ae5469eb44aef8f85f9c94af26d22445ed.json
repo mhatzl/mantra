@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select rp.product_id, rp.req_id, rp.parent_product_id, rp.parent_req_id\n            from RequirementParents rp\n            where rp.collect_nr = $1 and not exists (\n                select rh.parent_req_id\n                from RequirementHierarchies rh\n                where rh.child_collect_nr = $1\n                and rp.product_id = rh.child_product_id\n                and rp.req_id = rh.child_req_id\n            )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "req_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "req_id"
+          }
+        }
+      },
+      {
+        "name": "parent_product_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "parent_product_id"
+          }
+        }
+      },
+      {
+        "name": "parent_req_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "parent_req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ad11c71754d51fcbd0bc2e581d3b13ae5469eb44aef8f85f9c94af26d22445ed"
+}

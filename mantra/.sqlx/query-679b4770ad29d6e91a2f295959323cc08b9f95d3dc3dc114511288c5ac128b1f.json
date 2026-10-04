@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into UsableManualRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            select $1 as agg_collect_nr, ur.req_collect_nr, ur.product_id, ur.req_id\n            from UsableRequirements ur, ManualRequirements mr\n            where ur.agg_collect_nr = $1 and mr.agg_collect_nr = $1\n            and ur.req_collect_nr = mr.req_collect_nr\n            and ur.product_id = mr.product_id\n            and ur.req_id = mr.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "679b4770ad29d6e91a2f295959323cc08b9f95d3dc3dc114511288c5ac128b1f"
+}

@@ -15,8 +15,8 @@ create table RequirementHierarchies (
     -- 'true' makes the child requirement optional for the parent requirement.
     optional bool not null,
     primary key (child_collect_nr, child_product_id, child_req_id, parent_collect_nr, parent_product_id, parent_req_id),
-    foreign key (child_collect_nr, child_product_id, child_req_id) references Requirements (collect_nr, product_id, id) on delete cascade deferrable initially deferred,
-    foreign key (parent_collect_nr, parent_product_id, parent_req_id) references Requirements (collect_nr, product_id, id) on delete cascade deferrable initially deferred
+    foreign key (child_collect_nr, child_product_id, child_req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
+    foreign key (parent_collect_nr, parent_product_id, parent_req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );
 
 -- Contains tables used as base for many follow up analysis steps.
@@ -37,19 +37,19 @@ create table RootRequirements (
 
 -- Contains descendants per requirements.
 create table RequirementDescendants (
-    -- the collection in which the entry was added
-    -- must either match with req_collect_nr or descendant_collect_nr
+    -- the collection in which the entry was aggregated
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,
     req_id text not null,
     descendant_collect_nr integer not null,
     descendant_product_id text not null,
-    descendant_id text not null,
-    primary key (agg_collect_nr, req_collect_nr, product_id, req_id, descendant_collect_nr, descendant_product_id, descendant_id),
+    descendant_req_id text not null,
+    optional bool not null,
+    primary key (agg_collect_nr, req_collect_nr, product_id, req_id, descendant_collect_nr, descendant_product_id, descendant_req_id),
     foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
-    foreign key (descendant_collect_nr, descendant_product_id, descendant_id) references Requirements(collect_nr, product_id, id) on delete cascade,
-    constraint related_collection check (agg_collect_nr = req_collect_nr or agg_collect_nr = descendant_collect_nr)
+    foreign key (descendant_collect_nr, descendant_product_id, descendant_req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
+    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
 -- Contains requirements that have no child requirements.

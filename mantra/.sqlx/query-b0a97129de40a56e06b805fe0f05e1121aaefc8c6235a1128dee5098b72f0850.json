@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TestCaseStateProperties (\n                            collect_nr,\n                            product_id,\n                            test_run_name,\n                            test_run_date,\n                            test_case_name,\n                            property_key,\n                            value_hash\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5,\n                            $6,\n                            $7\n                        )\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "b0a97129de40a56e06b805fe0f05e1121aaefc8c6235a1128dee5098b72f0850"
+}

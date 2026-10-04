@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into IgnoredReviewEntries (\n                collect_nr,\n                product_id,\n                review_name,\n                review_date,\n                entry_hash\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5\n            )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "3455f3803a7db74b1a78c5b0e32097c29742cbb8f9f7b3833784751739e95fc6"
+}

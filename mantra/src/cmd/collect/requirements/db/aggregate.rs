@@ -5,7 +5,10 @@ use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_requirements_data(&mut self) -> Result<(), anyhow::Error> {
-        // Note: order is important, because later queries build on updated tables
+        // Note: order is nmportant, because later queries build on updated tables
+        self.update_requirement_hierarchies()
+            .await
+            .context("Updating requirement hierarchies")?;
         self.update_root_requirements()
             .await
             .context("Failed to update root requirements")?;
@@ -48,100 +51,161 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_root_requirements(&mut self) -> Result<(), anyhow::Error> {
+    async fn update_requirement_hierarchies(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into RootRequirements (
-                last_collect_nr,
-                product_id,
-                id
+            insert into RequirementHierarchies (
+                child_collect_nr,
+                child_product_id,
+                child_req_id,
+                parent_collect_nr,
+                parent_product_id,
+                parent_req_id,
+                optional
             )
-            select $1 as last_collect_nr, product_id, id
+            select
+                $1 as child_collect_nr,
+                rp.product_id as child_product_id,
+                rp.req_id as child_req_id,
+                r.collect_nr as parent_collect_nr,
+                rp.parent_product_id,
+                rp.parent_req_id,
+                rp.optional
+            from Requirements r, RequirementParents rp
+            where rp.collect_nr = $1 and r.product_id = rp.parent_product_id
+            and r.id = rp.parent_req_id and r.collect_nr = (
+                select max(p.collect_nr)
+                from Products p
+                where p.id = r.product_id
+            )
+
+            union
+
+            select
+                r.collect_nr as child_collect_nr,
+                rc.child_product_id,
+                rc.child_req_id,
+                $1 as parent_collect_nr,
+                rc.product_id as parent_product_id,
+                rc.req_id as parent_req_id,
+                rc.optional
+            from Requirements r, RequirementChildren rc
+            where rc.collect_nr = $1 and r.product_id = rc.child_product_id
+            and r.id = rc.child_req_id and r.collect_nr = (
+                select max(p.collect_nr)
+                from Products p
+                where p.id = r.product_id
+            )
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        let missing_parents = sqlx::query!(
+            "
+            select rp.product_id, rp.req_id, rp.parent_product_id, rp.parent_req_id
+            from RequirementParents rp
+            where rp.collect_nr = $1 and not exists (
+                select rh.parent_req_id
+                from RequirementHierarchies rh
+                where rh.child_collect_nr = $1
+                and rp.product_id = rh.child_product_id
+                and rp.req_id = rh.child_req_id
+            )
+            ",
+            collect_nr
+        )
+        .fetch_all(self.connection_mut())
+        .await
+        .context("Querying for missing requirement parents")?;
+
+        // TODO: do not fail on first error
+        for missing_parent in missing_parents {
+            anyhow::bail!(
+                "Missing requirement parent product-id='{}' req-id='{}' for child product-id='{}' req-id='{}'",
+                missing_parent.parent_product_id,
+                missing_parent.parent_req_id,
+                missing_parent.product_id,
+                missing_parent.req_id
+            )
+        }
+
+        let missing_children = sqlx::query!(
+            "
+            select rc.product_id, rc.req_id, rc.child_product_id, rc.child_req_id
+            from RequirementChildren rc
+            where rc.collect_nr = $1 and not exists (
+                select rh.child_req_id
+                from RequirementHierarchies rh
+                where rh.parent_collect_nr = $1
+                and rc.product_id = rh.parent_product_id
+                and rc.req_id = rh.parent_req_id
+            )
+            ",
+            collect_nr
+        )
+        .fetch_all(self.connection_mut())
+        .await
+        .context("Querying for missing requirement children")?;
+
+        // TODO: do not fail on first error
+        for missing_child in missing_children {
+            anyhow::bail!(
+                "Missing requirement child product-id='{}' req-id='{}' for parent product-id='{}' req-id='{}'",
+                missing_child.child_product_id,
+                missing_child.child_req_id,
+                missing_child.product_id,
+                missing_child.req_id
+            )
+        }
+
+        Ok(())
+    }
+
+    async fn update_root_requirements(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
+        // We have to consider all requirements, also those not collected in this collection,
+        // so we check that we only consider requirements that were last collected for their product.
+        sqlx::query!(
+            "
+            insert or ignore into RootRequirements (
+                agg_collect_nr,
+                req_collect_nr,
+                product_id,
+                req_id
+            )
+            select $1 as agg_collect_nr, r.collect_nr, r.product_id, r.id
             from Requirements r
-            where r.last_collect_nr = $1 and r.product_id = $2
+            where r.collect_nr = (
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
+            )
             and not exists (
                 select *
                 from RequirementHierarchies rh
                 where rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
+                and rh.child_collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = rh.child_product_id
+                )
+                and rh.parent_collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = rh.parent_product_id
+                )
             )
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from RootRequirements
-            where last_collect_nr != $1 and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
-        Ok(())
-    }
-
-    async fn update_directly_satisfied_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
-        let satisfies_kind = TraceKind::Satisfies.as_nr();
-
-        sqlx::query!(
-            "
-            insert or replace into DirectlySatisfiedRequirements (
-                last_collect_nr,
-                product_id,
-                id
-            )
-            with NonManualSatisfyTraced (product_id, id) as (
-                select ur.product_id, ur.id
-                from UsableNonManualRequirements ur, DirectProductReqTraces dt, Traces t
-                where ur.last_collect_nr = $1 and ur.product_id = $2
-                and dt.last_collect_nr = $1 and dt.product_id = $2
-                and ur.id = dt.req_id and dt.file_hash = t.file_hash
-                and dt.line = t.line
-                and t.kind = $3
-            ),
-            ManualReviewed (product_id, id) as (
-                select mr.product_id, mr.id
-                from UsableManualRequirements mr, ManuallyVerifiedRequirements vr
-                where mr.last_collect_nr = $1 and vr.last_collect_nr = $1
-                and mr.product_id = $2 and vr.product_id = $2
-                and mr.id = vr.req_id
-            )
-            select $1 as last_collect_nr, product_id, id
-            from NonManualSatisfyTraced
-            union
-            select $1 as last_collect_nr, product_id, id
-            from ManualReviewed
-            ",
-            collect_nr,
-            product_id,
-            satisfies_kind
-        )
-        .execute(self.connection_mut())
-        .await?;
-
-        sqlx::query!(
-            "
-            delete from DirectlySatisfiedRequirements
-            where last_collect_nr != $1 and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
@@ -149,47 +213,109 @@ impl<'db> Collection<'db> {
     async fn update_requirement_descendants(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
 
+        // We have to consider all requirements, also those not collected in this collection,
+        // so we check that we only consider requirements that were last collected for their product.
+        //
+        // Optional relations are propagated to descendants.
         sqlx::query!(
             "
-            with recursive TransitiveChildren(last_collect_nr, product_id, id, descendant_product_id, descendant_id) as
+            with recursive TransitiveChildren(
+                collect_nr,
+                product_id,
+                req_id,
+                descendant_collect_nr,
+                descendant_product_id,
+                descendant_req_id,
+                optional
+            ) as
             (
                 select
-                    $1,
-                    parent_product_id, parent_req_id,
-                    child_product_id, child_req_id
-                from RequirementHierarchies
+                    parent_collect_nr as collect_nr,
+                    parent_product_id as product_id,
+                    parent_req_id as req_id,
+                    child_collect_nr as descendant_collect_nr,
+                    child_product_id as descendant_product_id,
+                    child_req_id as descendant_req_id,
+                    optional
+                from RequirementHierarchies rh
+                where rh.child_collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = rh.child_product_id
+                )
+                and rh.parent_collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = rh.parent_product_id
+                )
+
                 union all
-                select $1, tc.product_id, tc.id, rh.child_product_id, rh.child_req_id
+
+                select
+                    tc.collect_nr,
+                    tc.product_id,
+                    tc.req_id,
+                    rh.child_collect_nr as descendant_collect_nr,
+                    rh.child_product_id as descendant_product_id,
+                    rh.child_req_id as descendant_req_id,
+                    rh.optional or tc.optional
                 from RequirementHierarchies rh, TransitiveChildren tc
-                where tc.descendant_product_id = rh.parent_product_id and tc.descendant_id = rh.parent_req_id
+                where tc.descendant_collect_nr = rh.parent_collect_nr
+                and tc.descendant_product_id = rh.parent_product_id
+                and tc.descendant_req_id = rh.parent_req_id
+                and rh.child_collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = rh.child_product_id
+                )
                 -- prevents endless recursion in case of requirement cycles
                 -- match on parent to have the cycle entry in the descendants,
                 -- which is then detected in a separate query.
-                and (tc.id != rh.parent_req_id or tc.product_id != rh.parent_product_id)
+                and (
+                    tc.collect_nr != rh.parent_collect_nr
+                    or tc.product_id != rh.parent_product_id
+                    or tc.req_id != rh.parent_req_id
+                )
             )
-            -- replacing, because 'on conflict' seems to break with select instead of value
-            -- and the important info is insert and delete for such aggregated tables anyway
-            insert or replace into RequirementDescendants (
-                last_collect_nr,
+            insert into RequirementDescendants (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id,
+                req_id,
+                descendant_collect_nr,
                 descendant_product_id,
-                descendant_id
+                descendant_req_id,
+                optional
             )
-            select last_collect_nr, product_id, id, descendant_product_id, descendant_id
+            select
+                $1 as agg_collect_nr,
+                collect_nr,
+                product_id,
+                req_id,
+                descendant_collect_nr,
+                descendant_product_id,
+                descendant_req_id,
+                optional
             from TransitiveChildren
             ",
             collect_nr
-        ).execute(self.connection_mut()).await?;
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         let req_cycle_exists = sqlx::query!(
             "
             select
                 rd.product_id,
-                rd.id as req_id
+                rd.req_id
             from RequirementDescendants rd
-            where rd.product_id = rd.descendant_product_id and rd.id = rd.descendant_id
-            "
+            where
+                rd.agg_collect_nr = $1
+                and rd.req_collect_nr = rd.descendant_collect_nr
+                and rd.product_id = rd.descendant_product_id
+                and rd.req_id = rd.descendant_req_id
+            ",
+            collect_nr
         )
         .fetch_all(self.connection_mut())
         .await
@@ -206,50 +332,34 @@ impl<'db> Collection<'db> {
             anyhow::bail!("Requirement cycle detected!");
         }
 
-        let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
-
-        sqlx::query!(
-            "
-            delete from RequirementDescendants
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn check_replacing_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         let bad_replacements = sqlx::query!(
             "
-            select rr.req_id, rr.replaced_req_id
+            select rr.product_id, rr.req_id, rr.replaced_req_id
             from RequirementReplacements rr, RequirementDescendants rd
-            where rr.last_collect_nr = $1 and rr.product_id = $2
-            and rr.last_collect_nr = rd.last_collect_nr
-            and rr.product_id = rd.product_id
-            and rr.product_id = rd.descendant_product_id
-            and rr.replaced_req_id = rd.id
-            and rr.req_id = rd.descendant_id
+            where rd.agg_collect_nr = $1
+                and rr.collect_nr = rd.req_collect_nr
+                and rr.collect_nr = rd.descendant_collect_nr
+                and rr.product_id = rd.product_id
+                and rr.product_id = rd.descendant_product_id
+                and rr.replaced_req_id = rd.req_id
+                and rr.req_id = rd.descendant_req_id
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .fetch_all(self.connection_mut())
         .await?;
 
         for bad_record in &bad_replacements {
             log::error!(
-                "Requirement '{}' cannot replace its ancestor '{}'",
+                "Requirement '{}' in product '{}' cannot replace its ancestor '{}'",
                 bad_record.req_id,
+                bad_record.product_id,
                 bad_record.replaced_req_id
             );
         }
@@ -263,145 +373,195 @@ impl<'db> Collection<'db> {
 
     async fn update_leaf_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into LeafRequirements (
-                last_collect_nr,
+            insert or ignore into LeafRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            select last_collect_nr, product_id, id
-            from Requirements
-            where last_collect_nr = $1 and product_id = $2
-            and id not in (
-                select parent_req_id
-                from RequirementHierarchies
-                where parent_product_id = $2
+            select $1 as agg_collect_nr, collect_nr, product_id, id
+            from Requirements r
+            where r.collect_nr = (
+                select max(p.collect_nr)
+                from Products p
+                where p.id = r.product_id
+            )
+            and not exists (
+                select *
+                from RequirementHierarchies rh
+                where r.collect_nr = rh.parent_collect_nr
+                and r.product_id = rh.parent_product_id
+                and r.id = rh.parent_req_id
+                and rh.child_collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = rh.child_product_id
+                )
             )
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from LeafRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn update_deprecated_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into DeprecatedRequirements (
-                last_collect_nr,
+            insert or ignore into DeprecatedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            with MarkedDeprecated(product_id, id) as (
-                select product_id, id
-                from Requirements
-                where deprecated = true
-                and last_collect_nr = $1
-                and product_id = $2
+            with recursive IsIncluded(collect_nr, product_id, id) as (
+                select r.collect_nr, r.product_id, r.id
+                from (
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r, RootRequirements rr
+                    where rr.agg_collect_nr = $1
+                    -- no need to check that requirement is from latest product collection,
+                    -- because otherwise it would not be listed as latest aggregated root requirement
+                    and r.collect_nr = rr.req_collect_nr
+                    and r.product_id = rr.product_id
+                    and r.id = rr.req_id
+                    -- means not explicitly deprecated
+                    and (r.deprecated is null or r.deprecated = false)
 
-                union
+                    union all
 
-                select product_id, replaced_req_id
-                from RequirementReplacements
-                where last_collect_nr = $1 and product_id = $2
+                    -- include reqs explicitly set to 'deprecated = false' in case related root is deprecated
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r
+                    where r.collect_nr = (
+                        select max(p.collect_nr)
+                        from Products p
+                        where p.id = r.product_id
+                    ) and r.deprecated is not null and r.deprecated = false
+                )
+
+                union all
+
+                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                from IsIncluded nm, RequirementHierarchies rh, Requirements r
+                where nm.collect_nr = rh.parent_collect_nr
+                and nm.product_id = rh.parent_product_id
+                and nm.id = rh.parent_req_id
+                and r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and rh.child_collect_nr = r.collect_nr
+                and rh.child_product_id = r.product_id
+                and rh.child_req_id = r.id
+                and (r.deprecated is null or r.deprecated = false)
             ),
-            ParentMarkedDeprecated(product_id, id) as (
-                select rd.descendant_product_id, rd.descendant_id
-                from RequirementDescendants rd, MarkedDeprecated md
-                where rd.product_id = md.product_id and rd.id = md.id
+            IsDeprecated(collect_nr, product_id, id) as (
+                select collect_nr, product_id, id
+                from Requirements r
+                where r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and not exists (
+                    select *
+                    from IsIncluded nm
+                    where nm.collect_nr = r.collect_nr
+                    and nm.product_id = r.product_id
+                    and nm.id = r.id
+                )
             )
-            select $1 as last_collect_nr, product_id, id
-            from MarkedDeprecated
-            union all
-            select $1 as last_collect_nr, product_id, id
-            from ParentMarkedDeprecated
+            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
+            from IsDeprecated
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from DeprecatedRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn update_excluded_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into ExcludedRequirements (
-                last_collect_nr,
+            insert or ignore into ExcludedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            with recursive IsIncluded(last_collect_nr, product_id, id) as (
-                select r.last_collect_nr, r.product_id, r.id
-                from Requirements r, RootRequirements rr
-                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
-                and r.product_id = rr.product_id
-                and r.id = rr.id
-                and r.exclude = false
+            with recursive IsIncluded(collect_nr, product_id, id) as (
+                select r.collect_nr, r.product_id, r.id
+                from (
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r, RootRequirements rr
+                    where rr.agg_collect_nr = $1
+                    -- no need to check that requirement is from latest product collection,
+                    -- because otherwise it would not be listed as latest aggregated root requirement
+                    and r.collect_nr = rr.req_collect_nr
+                    and r.product_id = rr.product_id
+                    and r.id = rr.req_id
+                    -- means not explicitly excluded
+                    and (r.exclude is null or r.exclude = false)
+
+                    union all
+
+                    -- include reqs explicitly set to 'exclude = false' in case related root is excluded
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r
+                    where r.collect_nr = (
+                        select max(p.collect_nr)
+                        from Products p
+                        where p.id = r.product_id
+                    ) and r.exclude is not null and r.exclude = false
+                )
 
                 union all
 
-                -- TODO: fix last_collect_nr check for rh
-                select ii.last_collect_nr, rh.child_product_id, rh.child_req_id
-                from IsIncluded ii, RequirementHierarchies rh, Requirements r
-                where ii.product_id = rh.parent_product_id
-                and ii.id = rh.parent_req_id
-                and ii.last_collect_nr = r.last_collect_nr
-                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
-                and r.exclude = false
+                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                from IsIncluded nm, RequirementHierarchies rh, Requirements r
+                where nm.collect_nr = rh.parent_collect_nr
+                and nm.product_id = rh.parent_product_id
+                and nm.id = rh.parent_req_id
+                and r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and rh.child_collect_nr = r.collect_nr
+                and rh.child_product_id = r.product_id
+                and rh.child_req_id = r.id
+                and (r.exclude is null or r.exclude = false)
             ),
-            IsExcluded(last_collect_nr, product_id, id) as (
-                select last_collect_nr, product_id, id
+            IsExcluded(collect_nr, product_id, id) as (
+                select collect_nr, product_id, id
                 from Requirements r
-                where not exists (
+                where r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and not exists (
                     select *
-                    from IsIncluded ii
-                    where ii.last_collect_nr = r.last_collect_nr
-                    and ii.product_id = r.product_id
-                    and ii.id = r.id
+                    from IsIncluded nm
+                    where nm.collect_nr = r.collect_nr
+                    and nm.product_id = r.product_id
+                    and nm.id = r.id
                 )
             )
-            select distinct $1 as last_collect_nr, product_id, id
+            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
             from IsExcluded
             ",
             collect_nr
@@ -409,64 +569,80 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-            delete from ExcludedRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_optional_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into OptionalRequirements (
-                last_collect_nr,
+            insert or ignore into OptionalRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            with recursive IsMandatory(last_collect_nr, product_id, id) as (
-                select r.last_collect_nr, r.product_id, r.id
-                from Requirements r, RootRequirements rr
-                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
-                and r.product_id = rr.product_id
-                and r.id = rr.id
-                and r.optional = false
+            with recursive IsMandatory(collect_nr, product_id, id) as (
+                select r.collect_nr, r.product_id, r.id
+                from (
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r, RootRequirements rr
+                    where rr.agg_collect_nr = $1
+                    -- no need to check that requirement is from latest product collection,
+                    -- because otherwise it would not be listed as latest aggregated root requirement
+                    and r.collect_nr = rr.req_collect_nr
+                    and r.product_id = rr.product_id
+                    and r.id = rr.req_id
+                    -- means not explicitly optional
+                    and (r.optional is null or r.optional = false)
+
+                    union all
+
+                    -- include reqs explicitly set to 'optional = false' in case related root is optional
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r
+                    where r.collect_nr = (
+                        select max(p.collect_nr)
+                        from Products p
+                        where p.id = r.product_id
+                    ) and r.optional is not null and r.optional = false
+                )
 
                 union all
 
-                -- TODO: fix last_collect_nr check for rh
-                select im.last_collect_nr, rh.child_product_id, rh.child_req_id
-                from IsMandatory im, RequirementHierarchies rh, Requirements r
-                where im.product_id = rh.parent_product_id
-                and im.id = rh.parent_req_id
-                and im.last_collect_nr = r.last_collect_nr
-                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
-                and r.optional = false
+                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                from IsMandatory nm, RequirementHierarchies rh, Requirements r
+                where nm.collect_nr = rh.parent_collect_nr
+                and nm.product_id = rh.parent_product_id
+                and nm.id = rh.parent_req_id
+                and r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and rh.child_collect_nr = r.collect_nr
+                and rh.child_product_id = r.product_id
+                and rh.child_req_id = r.id
+                and (r.optional is null or r.optional = false)
             ),
-            IsOptional(last_collect_nr, product_id, id) as (
-                select last_collect_nr, product_id, id
+            IsOptional(collect_nr, product_id, id) as (
+                select collect_nr, product_id, id
                 from Requirements r
-                where not exists (
+                where r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and not exists (
                     select *
-                    from IsMandatory im
-                    where im.last_collect_nr = r.last_collect_nr
-                    and im.product_id = r.product_id
-                    and im.id = r.id
+                    from IsMandatory nm
+                    where nm.collect_nr = r.collect_nr
+                    and nm.product_id = r.product_id
+                    and nm.id = r.id
                 )
             )
-            select distinct $1 as last_collect_nr, product_id, id
+            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
             from IsOptional
             ",
             collect_nr
@@ -474,64 +650,80 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-            delete from OptionalRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_manual_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into ManualRequirements (
-                last_collect_nr,
+            insert or ignore into ManualRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            with recursive NonManual(last_collect_nr, product_id, id) as (
-                select r.last_collect_nr, r.product_id, r.id
-                from Requirements r, RootRequirements rr
-                where r.last_collect_nr = $1 and r.last_collect_nr = rr.last_collect_nr
-                and r.product_id = rr.product_id
-                and r.id = rr.id
-                and r.manual_verification = false
+            with recursive NonManual(collect_nr, product_id, id) as (
+                select r.collect_nr, r.product_id, r.id
+                from (
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r, RootRequirements rr
+                    where rr.agg_collect_nr = $1
+                    -- no need to check that requirement is from latest product collection,
+                    -- because otherwise it would not be listed as latest aggregated root requirement
+                    and r.collect_nr = rr.req_collect_nr
+                    and r.product_id = rr.product_id
+                    and r.id = rr.req_id
+                    -- means not explicitly requires manual verification
+                    and (r.manual_verification is null or r.manual_verification = false)
+
+                    union all
+
+                    -- include reqs explicitly set to 'manual_verification = false' in case related root requires manual verification
+                    select r.collect_nr, r.product_id, r.id
+                    from Requirements r
+                    where r.collect_nr = (
+                        select max(p.collect_nr)
+                        from Products p
+                        where p.id = r.product_id
+                    ) and r.manual_verification is not null and r.manual_verification = false
+                )
 
                 union all
 
-                -- TODO: fix last_collect_nr check for rh
-                select nm.last_collect_nr, rh.child_product_id, rh.child_req_id
+                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
                 from NonManual nm, RequirementHierarchies rh, Requirements r
-                where nm.product_id = rh.parent_product_id
+                where nm.collect_nr = rh.parent_collect_nr
+                and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
-                and nm.last_collect_nr = r.last_collect_nr
-                and rh.child_product_id = r.product_id and rh.child_req_id = r.id
-                and r.manual_verification = false
+                and r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and rh.child_collect_nr = r.collect_nr
+                and rh.child_product_id = r.product_id
+                and rh.child_req_id = r.id
+                and (r.manual_verification is null or r.manual_verification = false)
             ),
-            IsManual(last_collect_nr, product_id, id) as (
-                select last_collect_nr, product_id, id
+            IsManual(collect_nr, product_id, id) as (
+                select collect_nr, product_id, id
                 from Requirements r
-                where not exists (
+                where r.collect_nr = (
+                    select max(p.collect_nr)
+                    from Products p
+                    where p.id = r.product_id
+                )
+                and not exists (
                     select *
                     from NonManual nm
-                    where nm.last_collect_nr = r.last_collect_nr
+                    where nm.collect_nr = r.collect_nr
                     and nm.product_id = r.product_id
                     and nm.id = r.id
                 )
             )
-            select distinct $1 as last_collect_nr, product_id, id
+            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
             from IsManual
             ",
             collect_nr
@@ -539,147 +731,158 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-            delete from ManualRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_usable_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into UsableRequirements (
-                last_collect_nr,
+            insert or ignore into UsableRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            select last_collect_nr, product_id, id
-            from Requirements
-            where last_collect_nr = $1 and product_id = $2
+            select $1 as agg_collect_nr, collect_nr, product_id, id
+            from Requirements r
+            where r.collect_nr = (
+                select max(p.collect_nr)
+                from Products p
+                where p.id = r.product_id
+            )
+
             except
-            select last_collect_nr, product_id, id
+
+            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
             from
             (
-                select last_collect_nr, product_id, id
+                select req_collect_nr, product_id, req_id
                 from DeprecatedRequirements
-                where last_collect_nr = $1 and product_id = $2
+                where agg_collect_nr = $1
+
                 union all
-                select last_collect_nr, product_id, id
+
+                select req_collect_nr, product_id, req_id
                 from ExcludedRequirements
-                where last_collect_nr = $1 and product_id = $2
+                where agg_collect_nr = $1
             )
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from UsableRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn update_usable_non_manual_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into UsableNonManualRequirements (
-                last_collect_nr,
+            insert or ignore into UsableNonManualRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            select last_collect_nr, product_id, id
+            select agg_collect_nr, req_collect_nr, product_id, req_id
             from UsableRequirements
-            where last_collect_nr = $1 and product_id = $2
+            where agg_collect_nr = $1
+
             except
-            select last_collect_nr, product_id, id
+
+            select agg_collect_nr, req_collect_nr, product_id, req_id
             from ManualRequirements
-            where last_collect_nr = $1 and product_id = $2
+            where agg_collect_nr = $1
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-            delete from UsableNonManualRequirements
-            where last_collect_nr != $1
-            and product_id = $2
-            ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }
 
     async fn update_usable_manual_requirements(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
-            insert or replace into UsableManualRequirements (
-                last_collect_nr,
+            insert or ignore into UsableManualRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
-            select ur.last_collect_nr, ur.product_id, ur.id
+            select $1 as agg_collect_nr, ur.req_collect_nr, ur.product_id, ur.req_id
             from UsableRequirements ur, ManualRequirements mr
-            where ur.last_collect_nr = $1 and ur.product_id = $2
-            and mr.last_collect_nr = $1 and mr.product_id = $2
-            and ur.id = mr.id
+            where ur.agg_collect_nr = $1 and mr.agg_collect_nr = $1
+            and ur.req_collect_nr = mr.req_collect_nr
+            and ur.product_id = mr.product_id
+            and ur.req_id = mr.req_id
             ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
 
+        Ok(())
+    }
+
+    async fn update_directly_satisfied_requirements(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let satisfies_kind = TraceKind::Satisfies.as_nr();
+
         sqlx::query!(
             "
-            delete from UsableManualRequirements
-            where last_collect_nr != $1
-            and product_id = $2
+            insert or ignore into DirectlySatisfiedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
+                product_id,
+                req_id
+            )
+            with NonManualSatisfyTraced (req_collect_nr, product_id, req_id) as (
+                select ur.req_collect_nr, ur.product_id, ur.req_id
+                from UsableNonManualRequirements ur, DirectProductReqTraces dt, Traces t
+                where ur.agg_collect_nr = $1 and dt.collect_nr = (
+                    select max(collect_nr)
+                    from Products p
+                    where p.id = dt.product_id
+                )
+                and ur.req_collect_nr = dt.collect_nr
+                and ur.product_id = dt.product_id
+                and ur.req_id = dt.req_id and dt.file_hash = t.file_hash
+                and dt.line = t.line
+                and t.kind = $2
+            ),
+            ManualReviewed (req_collect_nr, product_id, req_id) as (
+                select mr.req_collect_nr, mr.product_id, mr.req_id
+                from UsableManualRequirements mr, ManuallyVerifiedRequirements vr
+                where mr.agg_collect_nr = $1 and vr.collect_nr = (
+                    select max(collect_nr)
+                    from Products p
+                    where p.id = vr.product_id
+                ) and mr.req_collect_nr = vr.collect_nr
+                and mr.product_id = vr.product_id
+                and mr.req_id = vr.req_id
+            )
+
+            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
+            from NonManualSatisfyTraced
+
+            union
+
+            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
+            from ManualReviewed
             ",
             collect_nr,
-            product_id
+            satisfies_kind
         )
         .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
+        .await?;
 
         Ok(())
     }

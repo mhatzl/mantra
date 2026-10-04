@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into DirectlySatisfiedRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            with NonManualSatisfyTraced (req_collect_nr, product_id, req_id) as (\n                select ur.req_collect_nr, ur.product_id, ur.req_id\n                from UsableNonManualRequirements ur, DirectProductReqTraces dt, Traces t\n                where ur.agg_collect_nr = $1 and dt.collect_nr = (\n                    select max(collect_nr)\n                    from Products p\n                    where p.id = dt.product_id\n                )\n                and ur.req_collect_nr = dt.collect_nr\n                and ur.product_id = dt.product_id\n                and ur.req_id = dt.req_id and dt.file_hash = t.file_hash\n                and dt.line = t.line\n                and t.kind = $2\n            ),\n            ManualReviewed (req_collect_nr, product_id, req_id) as (\n                select mr.req_collect_nr, mr.product_id, mr.req_id\n                from UsableManualRequirements mr, ManuallyVerifiedRequirements vr\n                where mr.agg_collect_nr = $1 and vr.collect_nr = (\n                    select max(collect_nr)\n                    from Products p\n                    where p.id = vr.product_id\n                ) and mr.req_collect_nr = vr.collect_nr\n                and mr.product_id = vr.product_id\n                and mr.req_id = vr.req_id\n            )\n\n            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id\n            from NonManualSatisfyTraced\n\n            union\n\n            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id\n            from ManualReviewed\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "39dd6d62734429f61d2eedf7dc95efd86f87e4dc16175b6204b8a0c118080ca5"
+}

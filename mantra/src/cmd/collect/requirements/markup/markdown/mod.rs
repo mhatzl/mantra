@@ -269,10 +269,10 @@ fn fill_req_body(
         let req_fields: ReqFields = extract_req_fields(children)
             .context("Failed to extract requirement fields from the bullet list")?;
 
-        requirement.deprecated = req_fields.deprecated.unwrap_or_default();
-        requirement.exclude = req_fields.exclude.unwrap_or_default();
-        requirement.manual_verification = req_fields.manual_verification.unwrap_or_default();
-        requirement.optional = req_fields.optional.unwrap_or_default();
+        requirement.deprecated = req_fields.deprecated;
+        requirement.exclude = req_fields.exclude;
+        requirement.manual_verification = req_fields.manual_verification;
+        requirement.optional = req_fields.optional;
         requirement.parents = req_fields.parents;
         requirement.properties = req_fields.properties;
         requirement.replaces = req_fields.replaces;

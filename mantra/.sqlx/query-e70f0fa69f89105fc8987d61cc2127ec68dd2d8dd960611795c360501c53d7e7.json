@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into TestRunHierarchies (\n                    collect_nr,\n                    product_id,\n                    parent_name,\n                    parent_date,\n                    child_name,\n                    child_date\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "e70f0fa69f89105fc8987d61cc2127ec68dd2d8dd960611795c360501c53d7e7"
+}

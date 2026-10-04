@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into RequirementHierarchies (\n                child_collect_nr,\n                child_product_id,\n                child_req_id,\n                parent_collect_nr,\n                parent_product_id,\n                parent_req_id,\n                optional\n            )\n            select\n                $1 as child_collect_nr,\n                rp.product_id as child_product_id,\n                rp.req_id as child_req_id,\n                r.collect_nr as parent_collect_nr,\n                rp.parent_product_id,\n                rp.parent_req_id,\n                rp.optional\n            from Requirements r, RequirementParents rp\n            where rp.collect_nr = $1 and r.product_id = rp.parent_product_id\n            and r.id = rp.parent_req_id and r.collect_nr = (\n                select max(p.collect_nr)\n                from Products p\n                where p.id = r.product_id\n            )\n\n            union\n\n            select\n                r.collect_nr as child_collect_nr,\n                rc.child_product_id,\n                rc.child_req_id,\n                $1 as parent_collect_nr,\n                rc.product_id as parent_product_id,\n                rc.req_id as parent_req_id,\n                rc.optional\n            from Requirements r, RequirementChildren rc\n            where rc.collect_nr = $1 and r.product_id = rc.child_product_id\n            and r.id = rc.child_req_id and r.collect_nr = (\n                select max(p.collect_nr)\n                from Products p\n                where p.id = r.product_id\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "de1b832cc4c642d5b05b2ee845dd75e6c4e79d8752f2204b993cacce17101674"
+}

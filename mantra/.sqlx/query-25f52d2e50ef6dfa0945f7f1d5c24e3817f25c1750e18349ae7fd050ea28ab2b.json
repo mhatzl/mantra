@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into DirectProductReqTraces (\n                collect_nr,\n                product_id,\n                req_id,\n                filepath,\n                file_hash,\n                line\n            )\n            select rt.last_collect_nr, $2 as product_id, rt.req_id, $3 as filepath, rt.file_hash, rt.line\n            from DetectedReqTraces rt, Requirements r\n            where rt.last_collect_nr = $1\n            and rt.file_hash = $4\n            and r.collect_nr = $1 and r.product_id = $2\n            and r.id = rt.req_id\n\n            union\n\n            select rt.last_collect_nr, rt.product_id, rt.req_id, $3 as filepath, rt.file_hash, rt.line\n            from DetectedProductReqTraces rt, Requirements r\n            where rt.last_collect_nr = $1\n            and rt.product_id = $2\n            and rt.file_hash = $4\n            and r.collect_nr = $1 and r.product_id = $2\n            and r.id = rt.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "25f52d2e50ef6dfa0945f7f1d5c24e3817f25c1750e18349ae7fd050ea28ab2b"
+}

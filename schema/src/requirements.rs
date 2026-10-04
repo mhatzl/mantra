@@ -127,26 +127,22 @@ pub struct Requirement {
     /// **Note:** All potential children of such a requirement are also marked
     /// to require manual verification.
     /// [req("req.manual")]
-    #[serde(default)]
-    pub manual_verification: bool,
+    pub manual_verification: Option<bool>,
     /// true: Marks the requirement to be deprecated.
     ///
     /// **Note:** All potential children of such a requirement are also marked as deprecated.
     /// [req("req.deprecated")]
-    #[serde(default)]
-    pub deprecated: bool,
+    pub deprecated: Option<bool>,
     /// true: Instructs mantra to exclude the requirement for the product it is mapped to.
     ///
     /// **Note:** All potential children of such a requirement will also be excluded.
     /// [req("req.exclude")]
-    #[serde(default)]
-    pub exclude: bool,
+    pub exclude: Option<bool>,
     /// true: Instructs mantra to treat the requirement for the product as optional.
     ///
     /// **Note:** All potential children of such a requirement are also marked as optional.
     /// [req("req.optional")]
-    #[serde(default)]
-    pub optional: bool,
+    pub optional: Option<bool>,
     /// Optional list of requirements that this requirement replaces.
     /// Replacing a requirement is only possible inside the same product and marks replaced requirements as *deprecated*.
     pub replaces: Option<Vec<ReqId>>,
@@ -165,10 +161,10 @@ impl Requirement {
             title,
             description: None,
             origin,
-            manual_verification: false,
-            deprecated: false,
-            exclude: false,
-            optional: false,
+            manual_verification: None,
+            deprecated: None,
+            exclude: None,
+            optional: None,
             replaces: None,
             properties: None,
             media_type: None,

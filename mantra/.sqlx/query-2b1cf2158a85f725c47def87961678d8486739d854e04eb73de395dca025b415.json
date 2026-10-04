@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select data_hash\n            from TestRuns\n            where collect_nr = $1 and product_id = $2\n            and name = $3 and utc_date = $4\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "data_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRuns",
+            "name": "data_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2b1cf2158a85f725c47def87961678d8486739d854e04eb73de395dca025b415"
+}

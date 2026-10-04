@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into LeafRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            select $1 as agg_collect_nr, collect_nr, product_id, id\n            from Requirements r\n            where r.collect_nr = (\n                select max(p.collect_nr)\n                from Products p\n                where p.id = r.product_id\n            )\n            and not exists (\n                select *\n                from RequirementHierarchies rh\n                where r.collect_nr = rh.parent_collect_nr\n                and r.product_id = rh.parent_product_id\n                and r.id = rh.parent_req_id\n                and rh.child_collect_nr = (\n                    select max(p.collect_nr)\n                    from Products p\n                    where p.id = rh.child_product_id\n                )\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "7e1e84c95a37265cf61d9677d96a99e54c78652735dafe6307462339d10f938b"
+}

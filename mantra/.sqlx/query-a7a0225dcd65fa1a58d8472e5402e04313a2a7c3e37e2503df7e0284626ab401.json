@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select rr.product_id, rr.req_id, rr.replaced_req_id\n            from RequirementReplacements rr, RequirementDescendants rd\n            where rd.agg_collect_nr = $1\n                and rr.collect_nr = rd.req_collect_nr\n                and rr.collect_nr = rd.descendant_collect_nr\n                and rr.product_id = rd.product_id\n                and rr.product_id = rd.descendant_product_id\n                and rr.replaced_req_id = rd.req_id\n                and rr.req_id = rd.descendant_req_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementReplacements",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "req_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementReplacements",
+            "name": "req_id"
+          }
+        }
+      },
+      {
+        "name": "replaced_req_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementReplacements",
+            "name": "replaced_req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a7a0225dcd65fa1a58d8472e5402e04313a2a7c3e37e2503df7e0284626ab401"
+}

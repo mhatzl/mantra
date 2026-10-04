@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            insert into TestRunLineCoverageOverrides (\n                                collect_nr,\n                                product_id,\n                                test_run_name,\n                                test_run_date,\n                                review_name,\n                                review_date,\n                                cov_filepath,\n                                cov_line,\n                                hits,\n                                comment_hash\n                            )\n                            values (\n                                $1,\n                                $2,\n                                $3,\n                                $4,\n                                $5,\n                                $6,\n                                $7,\n                                $8,\n                                $9,\n                                $10\n                            )\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "9a8c648e31d5cd3249b9b4b57d70d03d75bbc1f05e6d6234e70fc45b7c8daa87"
+}

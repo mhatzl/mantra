@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ReviewAuthors (\n                    collect_nr,\n                    product_id,\n                    review_name,\n                    review_date,\n                    author\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "afca2359064f806cdd012fe770c91d2e54c894ba86ba61b4bedb90742edccd1c"
+}

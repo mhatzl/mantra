@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into UsableRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            select $1 as agg_collect_nr, collect_nr, product_id, id\n            from Requirements r\n            where r.collect_nr = (\n                select max(p.collect_nr)\n                from Products p\n                where p.id = r.product_id\n            )\n\n            except\n\n            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id\n            from\n            (\n                select req_collect_nr, product_id, req_id\n                from DeprecatedRequirements\n                where agg_collect_nr = $1\n\n                union all\n\n                select req_collect_nr, product_id, req_id\n                from ExcludedRequirements\n                where agg_collect_nr = $1\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "fbcb68b4a60884ecc7d2cc046219d0bc2ec03eb3a39b99027d07d6fceb66f2a4"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into SchemaRequirementProperties (\n                        schema_hash,\n                        property_key,\n                        value_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a1436114ff09f775e052e65fe29953a2a0d8873375be8619d73bfddb14921401"
+}

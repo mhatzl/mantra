@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                                select * from TestCaseLineCoverage\n                                where\n                                    product_id = $1 and test_run_name = $2\n                                    and test_run_date = $3 and test_case_name = $4\n                                    and cov_filepath = $5 and cov_line = $6\n                                ",
+  "query": "\n                                select * from TestCaseLineCoverage\n                                where\n                                    collect_nr = $1 and product_id = $2\n                                    and test_run_name = $3\n                                    and test_run_date = $4 and test_case_name = $5\n                                    and cov_filepath = $6 and cov_line = $7\n                                ",
   "describe": {
     "columns": [
       {
@@ -104,7 +104,7 @@
       }
     ],
     "parameters": {
-      "Right": 6
+      "Right": 7
     },
     "nullable": [
       false,
@@ -118,5 +118,5 @@
       true
     ]
   },
-  "hash": "ad9c0710bed0ee0b539b5459f46710a96afd424e43512ebe30f69f0fb7025cd7"
+  "hash": "20a7719cf78990672a080795da6a67326badb6e2396b35823d6f288d657220e2"
 }

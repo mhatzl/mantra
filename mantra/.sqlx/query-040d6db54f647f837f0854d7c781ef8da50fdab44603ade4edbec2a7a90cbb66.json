@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into RootRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            select $1 as agg_collect_nr, r.collect_nr, r.product_id, r.id\n            from Requirements r\n            where r.collect_nr = (\n                select max(cr.collect_nr)\n                from Requirements cr\n                where cr.product_id = r.product_id\n            )\n            and not exists (\n                select *\n                from RequirementHierarchies rh\n                where rh.child_product_id = r.product_id\n                and rh.child_req_id = r.id\n                and rh.child_collect_nr = (\n                    select max(p.collect_nr)\n                    from Products p\n                    where p.id = rh.child_product_id\n                )\n                and rh.parent_collect_nr = (\n                    select max(p.collect_nr)\n                    from Products p\n                    where p.id = rh.parent_product_id\n                )\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "040d6db54f647f837f0854d7c781ef8da50fdab44603ade4edbec2a7a90cbb66"
+}

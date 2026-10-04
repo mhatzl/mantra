@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into DetectedReqTraces (\n                        last_collect_nr,\n                        req_id,\n                        file_hash,\n                        line\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    on conflict (req_id, file_hash, line)\n                    do update set\n                        last_collect_nr = excluded.last_collect_nr\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "0f0fad2c49ac81894f7015af3280246c2b3832cdaece294268ae22b18b6a9016"
+}

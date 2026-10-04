@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TestRunRevisionAuthors (\n                            collect_nr,\n                            product_id,\n                            test_run_name,\n                            test_run_date,\n                            revision,\n                            author\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5,\n                            $6\n                        )\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "7e9e40e5fdc175f9e1a92d1970202f4de7909645dd4e16a3e8c1d1d1e553b43f"
+}

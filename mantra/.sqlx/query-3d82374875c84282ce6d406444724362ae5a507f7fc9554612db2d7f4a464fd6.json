@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TestCaseOverrides (\n                            collect_nr,\n                            product_id,\n                            test_run_name,\n                            test_run_date,\n                            test_case_name,\n                            review_name,\n                            review_date,\n                            state,\n                            comment_hash\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5,\n                            $6,\n                            $7,\n                            $8,\n                            $9\n                        )\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "3d82374875c84282ce6d406444724362ae5a507f7fc9554612db2d7f4a464fd6"
+}

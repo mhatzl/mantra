@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into TestCaseLineCoverage (\n                        collect_nr,\n                        product_id,\n                        test_run_name,\n                        test_run_date,\n                        test_case_name,\n                        cov_filepath,\n                        cov_file_hash,\n                        cov_line,\n                        hits\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6,\n                        $7,\n                        $8,\n                        $9\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "4350d95f746db7367bc2c522ebc7be41832558de22542d78d581e58dbdf1095e"
+}
