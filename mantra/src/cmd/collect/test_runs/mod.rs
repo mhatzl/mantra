@@ -7,7 +7,7 @@ use ignore::{
     types::{Types, TypesBuilder},
 };
 use mantra_schema::{
-    FmtHash, Origin, Properties,
+    FmtHash,
     path::{PathExt, RelativePath, RelativePathBuf},
     test_runs::{CoveredFile, TestRun, TestRunSchema},
     time::OffsetDateTime,
@@ -47,9 +47,6 @@ pub(super) async fn collect<'db, 'c>(
                 collection,
                 cfg_nr,
                 &cfg.path,
-                cfg.origin,
-                cfg.test_run_properties,
-                cfg.test_case_properties,
                 cfg.pattern.as_deref(),
                 test,
                 coverage,
@@ -59,22 +56,14 @@ pub(super) async fn collect<'db, 'c>(
                 format!("Failed collecting well-known test data from '{}'", cfg.path)
             })?,
             TestRunSourceVariant::Schema => {
-                collect_schema(
-                    collection,
-                    cfg_nr,
-                    &cfg.path,
-                    cfg.origin,
-                    cfg.test_run_properties,
-                    cfg.test_case_properties,
-                    cfg.pattern.as_deref(),
-                )
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed collecting schema-based test data from '{}'",
-                        cfg.path
-                    )
-                })?;
+                collect_schema(collection, cfg_nr, &cfg.path, cfg.pattern.as_deref())
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed collecting schema-based test data from '{}'",
+                            cfg.path
+                        )
+                    })?;
             }
         }
     }
@@ -87,9 +76,6 @@ async fn collect_well_known<'db, 'c>(
     collection: &mut ProductCollection<'db, 'c>,
     cfg_nr: i64,
     path: &RelativePath,
-    origin: Option<Origin>,
-    test_run_properties: Option<Properties>,
-    test_case_properties: Option<Properties>,
     pattern: Option<&str>,
     test: WellKnownTest,
     coverage: WellKnownCoverage,
@@ -177,37 +163,30 @@ async fn collect_well_known<'db, 'c>(
         Ok(())
     });
 
+    let mut schema_sources = Vec::new();
+
     while let Some(sent_data) = well_known_rx.recv().await {
         collection
-            .insert_file_hash(&sent_data.filepath, &sent_data.file_hash)
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed inserting content hash for file '{}'",
-                    sent_data.filepath
-                )
-            })?;
-        collection
-            .insert_file_content(
+            .insert_collected_file(
                 &sent_data.filepath,
                 &sent_data.file_hash,
-                &sent_data.content,
+                Some(&sent_data.content),
             )
             .await
             .with_context(|| {
-                format!("Failed inserting content for file '{}'", sent_data.filepath)
+                format!(
+                    "Failed inserting the collected file '{}'",
+                    sent_data.filepath
+                )
             })?;
+        schema_sources.push(sent_data.filepath);
 
         match sent_data.data {
             CollectedWellKnown::Test(shallow_test_run) => {
-                shallow_test_run_data.push((sent_data.filepath, shallow_test_run));
+                shallow_test_run_data.push(shallow_test_run);
             }
             CollectedWellKnown::Coverage(well_known_coverage_data) => {
-                coverage_data.push((
-                    sent_data.filepath,
-                    sent_data.file_hash,
-                    well_known_coverage_data,
-                ));
+                coverage_data.push(well_known_coverage_data);
             }
         }
     }
@@ -222,8 +201,7 @@ async fn collect_well_known<'db, 'c>(
         return Ok(());
     }
 
-    let (coverage_source_files, covered_files, coverage_timestamp) =
-        merge_well_known_coverage_data(coverage_data);
+    let (covered_files, coverage_timestamp) = merge_well_known_coverage_data(coverage_data);
 
     let test_run = if shallow_test_run_data.len() == 1 {
         // only one test run => place all coverage data into it
@@ -231,38 +209,13 @@ async fn collect_well_known<'db, 'c>(
             .into_iter()
             .next()
             .expect("Checked above that one test run was collected");
-        let test_run = shallow_data
-            .1
-            .into_test_run(covered_files, coverage_timestamp);
-        collection
-            .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &shallow_data.0)
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed inserting test data source '{}' for test run '{}'",
-                    shallow_data.0, test_run.name
-                )
-            })?;
+        let test_run = shallow_data.into_test_run(covered_files, coverage_timestamp);
 
         test_run
     } else {
         // unclear which test run maps to which coverage data => create new test run whith the collected ones as children
-        let (name, utc_date, nr_test_cases, test_run_data) =
+        let (name, utc_date, nr_test_cases, test_runs) =
             to_sub_test_runs(shallow_test_run_data, coverage_timestamp);
-
-        let mut test_runs = Vec::with_capacity(test_run_data.len());
-        for data in test_run_data {
-            collection
-                .insert_test_run_data_filepaths(&data.1.name, &data.1.utc_date, &data.0)
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed inserting test data source '{}' for test run '{}'",
-                        data.0, data.1.name
-                    )
-                })?;
-            test_runs.push(data.1);
-        }
 
         TestRun {
             name,
@@ -277,33 +230,25 @@ async fn collect_well_known<'db, 'c>(
             test_cases: vec![],
             covered_files,
             test_runs,
+            media_type: None,
         }
     };
-
-    for source_file in coverage_source_files {
-        collection
-            .insert_test_run_data_filepaths(&test_run.name, &test_run.utc_date, &source_file.0)
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed inserting coverage data source '{}' for test run '{}'",
-                    source_file.0, test_run.name
-                )
-            })?;
-    }
 
     let test_run_schema = TestRunSchema {
         schema_version: None,
         product_id: None,
         test_runs: vec![test_run],
-        test_run_properties,
-        test_case_properties,
-        origin,
+        test_run_properties: None,
+        test_case_properties: None,
+        origin: None,
     };
 
-    // Note: filepaths for collected well-known data has been inserted above
+    let schema_hash = collection
+        .insert_schema_multi_sources(&test_run_schema, &schema_sources, cfg_nr)
+        .await?;
+
     collection
-        .update_per_test_run_schema(None, test_run_schema)
+        .collect_test_run_schema(&test_run_schema, &schema_hash)
         .await
         .context("Failed updating test run data collected from well-known formats")?;
 
@@ -311,9 +256,9 @@ async fn collect_well_known<'db, 'c>(
 }
 
 fn to_sub_test_runs(
-    shallow_test_run_data: Vec<(RelativePathBuf, Box<ShallowTestRun>)>,
+    shallow_test_run_data: Vec<Box<ShallowTestRun>>,
     coverage_timestamp: Option<OffsetDateTime>,
-) -> (String, OffsetDateTime, u32, Vec<(RelativePathBuf, TestRun)>) {
+) -> (String, OffsetDateTime, u32, Vec<TestRun>) {
     let mut test_run_names = Vec::new();
     let mut earliest_utc_date = None;
     let mut nr_test_cases = 0;
@@ -321,16 +266,16 @@ fn to_sub_test_runs(
     let test_run_data = shallow_test_run_data
         .into_iter()
         .map(|s| {
-            test_run_names.push(s.1.name.clone());
-            nr_test_cases += s.1.nr_of_test_cases;
+            test_run_names.push(s.name.clone());
+            nr_test_cases += s.nr_of_test_cases;
 
-            if s.1.utc_date.is_some()
-                && (earliest_utc_date.is_none() || earliest_utc_date > s.1.utc_date)
+            if s.utc_date.is_some()
+                && (earliest_utc_date.is_none() || earliest_utc_date > s.utc_date)
             {
-                earliest_utc_date = s.1.utc_date;
+                earliest_utc_date = s.utc_date;
             }
 
-            (s.0, s.1.into_test_run(vec![], coverage_timestamp))
+            s.into_test_run(vec![], coverage_timestamp)
         })
         .collect();
 
@@ -349,41 +294,31 @@ fn to_sub_test_runs(
 }
 
 fn merge_well_known_coverage_data(
-    coverage_data: Vec<(RelativePathBuf, FmtHash, WellKnownCoverageData)>,
-) -> (
-    Vec<(RelativePathBuf, FmtHash)>,
-    Vec<CoveredFile>,
-    Option<OffsetDateTime>,
-) {
+    coverage_data: Vec<WellKnownCoverageData>,
+) -> (Vec<CoveredFile>, Option<OffsetDateTime>) {
     if coverage_data.is_empty() {
-        (vec![], vec![], None)
+        (vec![], None)
     } else if coverage_data.len() == 1 {
         let coverage = coverage_data
             .into_iter()
             .next()
             .expect("Checked above that one coverage element was collected");
-        (
-            vec![(coverage.0, coverage.1)],
-            coverage.2.covered_files,
-            coverage.2.timestamp,
-        )
+        (coverage.covered_files, coverage.timestamp)
     } else {
-        let mut source_files = Vec::with_capacity(coverage_data.len());
         let mut covered_files = Vec::new();
         let mut timestamp = None;
 
         for coverage in coverage_data {
-            source_files.push((coverage.0, coverage.1));
-            covered_files.extend(coverage.2.covered_files);
+            covered_files.extend(coverage.covered_files);
 
             if timestamp.is_none()
-                && let Some(coverage_timestamp) = coverage.2.timestamp
+                && let Some(coverage_timestamp) = coverage.timestamp
             {
                 timestamp = Some(coverage_timestamp);
             }
         }
 
-        (source_files, covered_files, timestamp)
+        (covered_files, timestamp)
     }
 }
 
@@ -437,12 +372,9 @@ async fn collect_schema<'db, 'c>(
     collection: &mut ProductCollection<'db, 'c>,
     cfg_nr: i64,
     path: &RelativePath,
-    base_origin: Option<Origin>,
-    base_test_run_properties: Option<Properties>,
-    base_test_case_properties: Option<Properties>,
     pattern: Option<&str>,
 ) -> Result<(), anyhow::Error> {
-    let product_id = collection.product_id();
+    let product_id = collection.product_id().clone();
     let abs_cfg_file_dir_path = collection.abs_cfg_file_parent_path();
 
     let (schema_sender, mut schema_rx) = tokio::sync::mpsc::unbounded_channel();
@@ -497,53 +429,32 @@ async fn collect_schema<'db, 'c>(
         Ok(())
     });
 
-    while let Some(mut data) = schema_rx.recv().await {
+    while let Some(mut sent_data) = schema_rx.recv().await {
         collection
-            .insert_file_hash(&data.filepath, &data.file_hash)
+            .insert_collected_file(
+                &sent_data.filepath,
+                &sent_data.file_hash,
+                Some(&sent_data.content),
+            )
             .await
             .with_context(|| {
                 format!(
-                    "Failed inserting the content hash for file '{}'",
-                    data.filepath
+                    "Failed inserting the collected file '{}'",
+                    sent_data.filepath
                 )
             })?;
-        collection
-            .insert_file_content(&data.filepath, &data.file_hash, &data.content)
-            .await
-            .with_context(|| {
-                format!("Failed inserting the content for file '{}'", data.filepath)
-            })?;
 
-        if base_origin.is_some() && data.schema.origin.is_none() {
-            data.schema.origin = base_origin.clone();
-        }
-
-        if base_test_run_properties.is_some() && data.schema.test_run_properties.is_none() {
-            data.schema.test_run_properties = base_test_run_properties.clone();
-        } else if base_test_run_properties.is_some() && data.schema.test_run_properties.is_some() {
-            data.schema.test_run_properties = merge_local_and_base_properties(
-                data.schema.test_run_properties,
-                &base_test_run_properties,
-            );
-        }
-
-        if base_test_case_properties.is_some() && data.schema.test_case_properties.is_none() {
-            data.schema.test_case_properties = base_test_case_properties.clone();
-        } else if base_test_case_properties.is_some() && data.schema.test_case_properties.is_some()
-        {
-            data.schema.test_case_properties = merge_local_and_base_properties(
-                data.schema.test_case_properties,
-                &base_test_case_properties,
-            );
-        }
+        let schema_hash = collection
+            .insert_schema_single_sources(&sent_data.schema, &sent_data.filepath, cfg_nr)
+            .await?;
 
         collection
-            .update_per_test_run_schema(Some(&data.filepath), data.schema)
+            .collect_test_run_schema(&sent_data.schema, &schema_hash)
             .await
             .with_context(|| {
                 format!(
                     "Failed updating test run data collected from file '{}'",
-                    data.filepath
+                    sent_data.filepath
                 )
             })?;
     }

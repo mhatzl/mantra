@@ -1,5 +1,6 @@
 use time::{Duration, OffsetDateTime};
 
+use crate::media_type::MediaType;
 use crate::path::RelativePathBuf;
 use crate::product::ProductId;
 use crate::{ConversionError, FmtHash};
@@ -117,6 +118,7 @@ pub struct TestRun {
     /// [req("testcov.test_run.nested")]
     #[serde(default)]
     pub test_runs: Vec<TestRun>,
+    pub media_type: Option<MediaType>,
 }
 
 /// Represents a test case in *mantra*.

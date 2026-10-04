@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use mantra_schema::{
     FmtHash, Schema,
-    path::RelativePath,
+    path::{RelativePath, RelativePathBuf},
     product::{Product, ProductId},
 };
 
@@ -124,7 +124,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(super) async fn insert_schema_multi_sources<S: Schema>(
         &mut self,
         schema: &S,
-        filepaths: &[&RelativePath],
+        filepaths: &[RelativePathBuf],
         cfg_nr: i64,
     ) -> Result<FmtHash, anyhow::Error> {
         let schema_hash = self

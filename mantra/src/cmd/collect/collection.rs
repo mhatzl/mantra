@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use mantra_schema::{FmtHash, Schema, path::RelativePath, time::OffsetDateTime};
+use mantra_schema::{
+    FmtHash, Schema,
+    path::{RelativePath, RelativePathBuf},
+    time::OffsetDateTime,
+};
 
 use crate::{
     cfg::ResolvedProductConfig,
@@ -338,7 +342,7 @@ impl<'db> Collection<'db> {
     pub(super) async fn insert_schema_multi_sources<S: Schema>(
         &mut self,
         schema: &S,
-        filepaths: &[&RelativePath],
+        filepaths: &[RelativePathBuf],
     ) -> Result<FmtHash, anyhow::Error> {
         let schema_hash = self.insert_schema(schema).await?;
 
