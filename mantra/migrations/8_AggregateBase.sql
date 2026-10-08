@@ -1,7 +1,34 @@
+-- Table to map requirement traces to products.
+--
+-- **Note:** Requirement trace could either be in DetectedReqTraces or DetectedProductReqTraces,
+-- because requirement traces without an explicit product ID are mapped to any product that
+-- collects content the trace is located in.
+-- [req("trace.id", "trace.mult_reqs")]
+create table DirectProductReqTraces (
+    -- Note: Not part of PK, because no req or annotation may have been collected in a collection.
+    -- This field is used for convenience to only access the latest relevant entries.
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    req_collect_nr text not null,
+    req_id text not null,
+    file_collect_nr text not null,
+    filepath text not null,
+    file_hash text not null,
+    line integer not null,
+    primary key (product_id, req_collect_nr, req_id, file_collect_nr, filepath, file_hash, line),
+    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
+    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash)
+        references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade
+);
+
 -- Table to represent the requirement hierarchy.
 --
 -- [req("req.hierarchy")]
 create table RequirementHierarchies (
+    -- Note: Not part of PK, because products may have not been collected that could affect an entry.
+    -- This field is used for convenience to only access the latest relevant entries.
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     child_collect_nr integer not null,
     -- Product ID the child requirement is defined in.
     child_product_id text not null,
@@ -203,7 +230,7 @@ create table ObsoleteTestRuns (
 -- Contains the resolved state of test cases considering potential overrides from reviews.
 create table ResolvedTestCaseStates (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -212,15 +239,15 @@ create table ResolvedTestCaseStates (
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed; 4=obsolete
     -- [req("testcov.test_case.state")]
     state integer not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, test_case_name),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date, test_case_name),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, test_case_name)
         references TestCases (collect_nr, product_id, test_run_name, test_run_date, name)
 );
 
 create view PassedTestCases as
 select
     agg_collect_nr,
-    collect_nr,
+    test_collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -231,7 +258,7 @@ where state = 1;
 create view SkippedTestCases as
 select
     agg_collect_nr,
-    collect_nr,
+    test_collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -242,7 +269,7 @@ where state = 2;
 create view FailedTestCases as
 select
     agg_collect_nr,
-    collect_nr,
+    test_collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -254,13 +281,13 @@ where state != 1 and state != 2;
 -- Contains test cases that passed and are **not** part of an obsolete test run.
 create table UsableTestCases (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr bigint not null references Collections (nr) on delete restrict,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
     test_case_name text not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, test_case_name),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name)
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date, test_case_name),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, test_case_name)
         references TestCases (collect_nr, product_id, test_run_name, test_run_date, name)
 );
 
@@ -287,49 +314,49 @@ create table LeafTestRuns (
 
 create table PassedTestRuns (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table FailedTestRuns (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table SkippedTestRuns (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains test tuns that are **not** obsolete and passed.
 create table UsableTestRuns (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create view TestRunStates as
 with BaseTestRunStates (
     agg_collect_nr,
-    collect_nr,
+    test_collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -337,7 +364,7 @@ with BaseTestRunStates (
 ) as (
     select
         agg_collect_nr,
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -346,7 +373,7 @@ with BaseTestRunStates (
     union all
     select
         agg_collect_nr,
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -355,7 +382,7 @@ with BaseTestRunStates (
     union all
     select
         agg_collect_nr,
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -364,7 +391,7 @@ with BaseTestRunStates (
 )
 select
     agg_collect_nr,
-    collect_nr,
+    test_collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -374,7 +401,7 @@ union all
 -- to not overwrite failed or skipped obsolete test runs
 select
     agg_collect_nr,
-    collect_nr,
+    test_collect_nr,
     product_id,
     test_run_name,
     test_run_date,
@@ -383,7 +410,7 @@ from ObsoleteTestRuns ot
 where not exists (
     select * from BaseTestRunStates bt
     where ot.agg_collect_nr = bt.agg_collect_nr
-    and ot.collect_nr = bt.collect_nr
+    and ot.test_collect_nr = bt.test_collect_nr
     and ot.product_id = bt.product_id
     and ot.test_run_name = bt.test_run_name
     and ot.test_run_date = bt.test_run_date
@@ -392,7 +419,7 @@ where not exists (
 -- Contains line coverage from test runs with optional review overrides applied.
 create table ResolvedTestRunLineCoverage (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -403,7 +430,7 @@ create table ResolvedTestRunLineCoverage (
     hits integer,
     primary key (
         agg_collect_nr,
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -411,7 +438,7 @@ create table ResolvedTestRunLineCoverage (
         cov_line
     ),
     foreign key (
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -430,7 +457,7 @@ create table ResolvedTestRunLineCoverage (
 -- Contains line coverage from test cases with optional review overrides applied.
 create table ResolvedTestCaseLineCoverage (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
@@ -442,7 +469,7 @@ create table ResolvedTestCaseLineCoverage (
     hits integer,
     primary key (
         agg_collect_nr,
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -451,7 +478,7 @@ create table ResolvedTestCaseLineCoverage (
         cov_line
     ),
     foreign key (
-        collect_nr,
+        test_collect_nr,
         product_id,
         test_run_name,
         test_run_date,
@@ -471,7 +498,7 @@ create table ResolvedTestCaseLineCoverage (
 
 create table ResolvedLineCoverageStates (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     cov_filepath text not null,
     cov_file_hash text,
@@ -479,100 +506,85 @@ create table ResolvedLineCoverageStates (
     state integer not null,
     primary key (
         agg_collect_nr,
-        collect_nr,
+        test_collect_nr,
         product_id,
         cov_filepath,
         cov_line
     ),
-    foreign key (collect_nr, product_id, cov_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    foreign key (test_collect_nr, product_id, cov_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 create table TraceCoveragePerTestRuns (
-    collect_nr integer not null,
+    -- Note: Not part of PK, because products may have not been collected that could affect an entry.
+    -- This field is used for convenience to only access the latest relevant entries.
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     product_id text not null,
+    test_collect_nr integer not null,
     test_run_name text not null,
     test_run_date text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
     hits integer not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
+    primary key (product_id, test_collect_nr, test_run_name, test_run_date, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains traces covered by test runs.
-create view TracesCoveredByTestRuns as
-select distinct
-    collect_nr,
+create table TraceCoveragePerTestCases (
+    -- Note: Not part of PK, because products may have not been collected that could affect an entry.
+    -- This field is used for convenience to only access the latest relevant entries.
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    test_collect_nr integer not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    test_case_name text not null,
+    file_collect_nr integer not null,
+    filepath text not null,
+    file_hash text not null,
+    traced_line integer not null,
+    cov_line integer not null,
+    hits integer not null,
+    primary key (product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+        references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
+    foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
+);
+
+-- Contains traces covered by tests.
+create view TracesCoveredByTests as
+select
+    agg_collect_nr,
     product_id,
-    test_run_name,
-    test_run_date,
+    filepath,
+    file_hash,
+    traced_line
+from TraceCoveragePerTestCases
+union
+select
+    agg_collect_nr,
+    product_id,
     filepath,
     file_hash,
     traced_line
 from TraceCoveragePerTestRuns;
 
-create table TraceCoveragePerTestCases (
-    collect_nr integer not null,
-    product_id text not null,
-    test_run_name text not null,
-    test_run_date text not null,
-    test_case_name text not null,
-    filepath text not null,
-    file_hash text not null,
-    traced_line integer not null,
-    cov_line integer not null,
-    hits integer not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
-        references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
-    foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
-);
-
--- Contains traces covered by test cases.
-create view TracesCoveredByTestCases as
-select distinct
-    collect_nr,
-    product_id,
-    test_run_name,
-    test_run_date,
-    test_case_name,
-    filepath,
-    file_hash,
-    traced_line
-from TraceCoveragePerTestCases;
-
--- Contains traces covered by tests.
-create view TracesCoveredByTests as
-select
-    collect_nr,
-    product_id,
-    filepath,
-    file_hash,
-    traced_line
-from TracesCoveredByTestCases
-union
-select
-    collect_nr,
-    product_id,
-    filepath,
-    file_hash,
-    traced_line
-from TracesCoveredByTestRuns;
-
 create view CoverableLinesPerFilepath as
-with CoveredLinesPerFilepath (agg_collect_nr, collect_nr, product_id, filepath, line) as (
-	select agg_collect_nr, collect_nr, product_id, cov_filepath, cov_line
+with CoveredLinesPerFilepath (agg_collect_nr, product_id, filepath, line) as (
+	select agg_collect_nr, product_id, cov_filepath, cov_line
 	from ResolvedTestRunLineCoverage
 
 	union
 
-	select agg_collect_nr, collect_nr, product_id, cov_filepath, cov_line
+	select agg_collect_nr, product_id, cov_filepath, cov_line
 	from ResolvedTestCaseLineCoverage
 )
-select agg_collect_nr, collect_nr, product_id, filepath, count(line) as coverable_lines
+select agg_collect_nr, product_id, filepath, count(line) as coverable_lines
 from CoveredLinesPerFilepath
-group by agg_collect_nr, collect_nr, product_id, filepath;
+group by agg_collect_nr, product_id, filepath;

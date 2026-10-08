@@ -69,7 +69,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(super) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
-        file_hash: &FmtHash,
+        file_hash: &Option<FmtHash>,
         content: Option<&str>,
     ) -> Result<(), anyhow::Error> {
         self.collection
@@ -77,7 +77,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .await?;
 
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
+        let product_id = self.product_id().clone();
         let filepath = filepath.as_str();
 
         sqlx::query!(
@@ -100,6 +100,34 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .execute(self.connection_mut())
         .await
         .with_context(|| format!("Failed inserting product related file: {}", filepath))?;
+
+        if let Some(hash) = file_hash.as_ref() {
+            sqlx::query!(
+                "
+                insert or ignore into ProductRelatedHashedFiles (
+                    collect_nr,
+                    product_id,
+                    filepath,
+                    file_hash
+                )
+                values (
+                    $1,
+                    $2,
+                    $3,
+                    $4
+                )
+                ",
+                collect_nr,
+                product_id,
+                filepath,
+                hash
+            )
+            .execute(self.connection_mut())
+            .await
+            .with_context(|| {
+                format!("Failed inserting product related hashed file: {}", filepath)
+            })?;
+        }
 
         Ok(())
     }

@@ -169,7 +169,7 @@ async fn collect_well_known<'db, 'c>(
         collection
             .insert_collected_file(
                 &sent_data.filepath,
-                &sent_data.file_hash,
+                &Some(sent_data.file_hash),
                 Some(&sent_data.content),
             )
             .await
@@ -202,6 +202,13 @@ async fn collect_well_known<'db, 'c>(
     }
 
     let (covered_files, coverage_timestamp) = merge_well_known_coverage_data(coverage_data);
+
+    for covered_file in &covered_files {
+        collection
+            .insert_collected_file(&covered_file.filepath, &covered_file.file_hash, None)
+            .await
+            .with_context(|| format!("Inserting covered file: {}", covered_file.filepath))?;
+    }
 
     let test_run = if shallow_test_run_data.len() == 1 {
         // only one test run => place all coverage data into it
@@ -429,11 +436,11 @@ async fn collect_schema<'db, 'c>(
         Ok(())
     });
 
-    while let Some(mut sent_data) = schema_rx.recv().await {
+    while let Some(sent_data) = schema_rx.recv().await {
         collection
             .insert_collected_file(
                 &sent_data.filepath,
-                &sent_data.file_hash,
+                &Some(sent_data.file_hash),
                 Some(&sent_data.content),
             )
             .await
@@ -443,6 +450,8 @@ async fn collect_schema<'db, 'c>(
                     sent_data.filepath
                 )
             })?;
+
+        // TODO: insert covered files
 
         let schema_hash = collection
             .insert_schema_single_sources(&sent_data.schema, &sent_data.filepath, cfg_nr)

@@ -191,14 +191,14 @@ impl<'db> Collection<'db> {
                 where rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and rh.child_collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = rh.child_product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = rh.child_product_id
                 )
                 and rh.parent_collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = rh.parent_product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = rh.parent_product_id
                 )
             )
             ",

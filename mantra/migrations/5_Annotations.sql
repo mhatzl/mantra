@@ -4,9 +4,9 @@ create table ProductAnnotationSources (
     product_id text not null,
     schema_hash text not null references Schemas (content_hash) on delete cascade,
     filepath text not null,
-    file_hash text not null references FileHashes (hash) on delete restrict,
+    file_hash text not null,
     primary key (collect_nr, product_id, schema_hash, filepath),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    foreign key (collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade
 );
 
 create table SchemaTraceProperties (
@@ -106,26 +106,6 @@ create table DetectedProductReqTraces (
     line integer not null,
     primary key (product_id, req_id, file_hash, line),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade
-);
-
--- Table to map requirement traces to products.
---
--- **Note:** Requirement trace could either be in DetectedReqTraces or DetectedProductReqTraces,
--- because requirement traces without an explicit product ID are mapped to any product that
--- collects content the trace is located in.
--- [req("trace.id", "trace.mult_reqs")]
-create table DirectProductReqTraces (
-    collect_nr integer not null,
-    product_id text not null,
-    req_collect_nr text not null,
-    req_id text not null,
-    filepath text not null,
-    file_hash text not null,
-    line integer not null,
-    primary key (collect_nr, product_id, req_collect_nr, req_id, filepath, file_hash, line),
-    foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
-    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
 );
 
 -- Table to store language elements such as functions, tests, structs, enums, classes, ...

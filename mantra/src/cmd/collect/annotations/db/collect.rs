@@ -120,6 +120,87 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(())
     }
 
+    pub(crate) async fn update_direct_req_traces(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id().clone();
+
+        // "insert or replace" because PK may remain unchanged for new collections,
+        // but we want "agg_collect_nr" to be the latest that updated an entry.
+        sqlx::query!(
+            "
+            insert or replace into DirectProductReqTraces (
+                agg_collect_nr,
+                product_id,
+                req_collect_nr,
+                req_id,
+                file_collect_nr,
+                filepath,
+                file_hash,
+                line
+            )
+            select
+                $1 as agg_collect_nr,
+                $2 as product_id,
+                r.collect_nr as req_collect_nr,
+                rt.req_id,
+                pas.collect_nr as file_collect_nr,
+                pas.filepath,
+                rt.file_hash,
+                rt.line
+            from DetectedReqTraces rt, Requirements r, ProductAnnotationSources pas
+            where rt.last_collect_nr >= pas.collect_nr
+            and pas.collect_nr = (
+                select max(cpas.collect_nr)
+                from ProductAnnotationSources cpas
+                where cpas.product_id = $2
+            )
+            and r.collect_nr = (
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = $2
+            )
+            and r.product_id = $2 and pas.product_id = $2
+            and rt.file_hash = pas.file_hash
+            and r.id = rt.req_id
+
+            union all
+
+            select
+                $1 as collect_nr,
+                $2 as product_id,
+                r.collect_nr as req_collect_nr,
+                rt.req_id,
+                pas.collect_nr as file_collect_nr,
+                pas.filepath,
+                rt.file_hash,
+                rt.line
+            from DetectedProductReqTraces rt, Requirements r, ProductAnnotationSources pas
+            where rt.last_collect_nr >= pas.collect_nr
+            and pas.collect_nr = (
+                select max(cpas.collect_nr)
+                from ProductAnnotationSources cpas
+                where cpas.product_id = $2
+            )
+            and r.collect_nr = (
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = $2
+            )
+            and r.product_id = $2 and pas.product_id = $2
+            and rt.product_id = $2
+            and rt.file_hash = pas.file_hash
+            and r.id = rt.req_id
+            ",
+            collect_nr,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Updating product traces")?;
+
+        Ok(())
+    }
+
     async fn collect_per_annotation_file(
         &mut self,
         file_annotations: &FileAnnotations,
@@ -219,46 +300,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     })?;
             }
         }
-
-        // Update direct product traces even if file hash has been collected already.
-        // Needed because a file hash may have been collected by another product.
-        // Only traces to requirements defined for the product are considered.
-        // Since PK is over all fields, "insert or ignore" is ok to use
-        sqlx::query!(
-            "
-            insert or ignore into DirectProductReqTraces (
-                collect_nr,
-                product_id,
-                req_id,
-                filepath,
-                file_hash,
-                line
-            )
-            select rt.last_collect_nr, $2 as product_id, rt.req_id, $3 as filepath, rt.file_hash, rt.line
-            from DetectedReqTraces rt, Requirements r
-            where rt.last_collect_nr = $1
-            and rt.file_hash = $4
-            and r.collect_nr = $1 and r.product_id = $2
-            and r.id = rt.req_id
-
-            union
-
-            select rt.last_collect_nr, rt.product_id, rt.req_id, $3 as filepath, rt.file_hash, rt.line
-            from DetectedProductReqTraces rt, Requirements r
-            where rt.last_collect_nr = $1
-            and rt.product_id = $2
-            and rt.file_hash = $4
-            and r.collect_nr = $1 and r.product_id = $2
-            and r.id = rt.req_id
-            ",
-            collect_nr,
-            product_id,
-            filepath,
-            file_hash
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Updating product traces")?;
 
         Ok(())
     }

@@ -99,6 +99,13 @@ impl<'db> Collection<'db> {
         //     .await
         //     .context("Failed to resolve element identifiers")?;
 
+        // Updating after requirements and annotations have been collected.
+        // Explicit call, because a collection may not update collected requirements or annotations.
+        product_collection
+            .update_direct_req_traces()
+            .await
+            .context("Updating direct requirement traces")?;
+
         let test_run_cfgs = product_collection
             .insert_test_run_collect_cfgs(product_cfg.test_runs)
             .await
@@ -215,70 +222,93 @@ impl<'db> Collection<'db> {
     pub(super) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
-        file_hash: &FmtHash,
+        file_hash: &Option<FmtHash>,
         content: Option<&str>,
     ) -> Result<(), anyhow::Error> {
-        sqlx::query!(
-            "
-            insert or ignore into FileHashes (
-                hash,
-                content
-            )
-            values (
-                $1,
-                $2
-            )
-            ",
-            file_hash,
-            content
-        )
-        .execute(self.connection_mut())
-        .await?;
-
         let filepath = filepath.as_str();
         let collect_nr = self.collect_nr();
 
-        if sqlx::query!(
-            "
-            select file_hash
-            from CollectedFiles
-            where collect_nr = $1 and filepath = $3 and file_hash != $4
-            ",
-            collect_nr,
-            filepath,
-            file_hash
-        )
-        .fetch_optional(self.connection_mut())
-        .await
-        .context("Failed to get collected files")?
-        .and_then(|r| r.file_hash)
-        .is_some()
-        {
-            log::warn!(
-                "Duplicate entry in same collection for filepath '{}' with different file hash.",
-                filepath
-            );
-
+        if let Some(hash) = file_hash.as_ref() {
             sqlx::query!(
                 "
-                insert into ConflictingCollectedFiles (
-                    collect_nr,
-                    filepath,
-                    file_hash
+                insert or ignore into FileHashes (
+                    hash,
+                    content
                 )
                 values (
                     $1,
-                    $2,
-                    $3
+                    $2
                 )
+                ",
+                hash,
+                content
+            )
+            .execute(self.connection_mut())
+            .await?;
+
+            if sqlx::query!(
+                "
+                select file_hash
+                from CollectedFiles
+                where collect_nr = $1 and filepath = $3 and file_hash != $4
                 ",
                 collect_nr,
                 filepath,
-                file_hash
+                hash
             )
-            .execute(self.connection_mut())
+            .fetch_optional(self.connection_mut())
             .await
-            .context("Failed to update conflicting collected files")?;
+            .context("Failed to get collected files")?
+            .and_then(|r| r.file_hash)
+            .is_some()
+            {
+                log::warn!(
+                    "Duplicate entry in same collection for filepath '{}' with different file hash.",
+                    filepath
+                );
+
+                sqlx::query!(
+                    "
+                    insert into ConflictingCollectedFiles (
+                        collect_nr,
+                        filepath,
+                        file_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3
+                    )
+                    ",
+                    collect_nr,
+                    filepath,
+                    hash
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to update conflicting collected files")?;
+            } else {
+                sqlx::query!(
+                    "
+                    insert into CollectedFiles (
+                        collect_nr,
+                        filepath,
+                        file_hash
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3
+                    )
+                    ",
+                    collect_nr,
+                    filepath,
+                    hash
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to update collected files")?;
+            }
         } else {
             sqlx::query!(
                 "
@@ -290,12 +320,11 @@ impl<'db> Collection<'db> {
                 values (
                     $1,
                     $2,
-                    $3
+                    null
                 )
                 ",
                 collect_nr,
-                filepath,
-                file_hash
+                filepath
             )
             .execute(self.connection_mut())
             .await

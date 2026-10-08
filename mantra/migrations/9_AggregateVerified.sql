@@ -1,61 +1,67 @@
 -- Contains covered lines mapped to traces that are only covered by passed test runs
 create table TraceMappedLinesOnlyCoveredByPassedTestRuns (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
     product_id text not null,
+    test_collect_nr integer not null,
     test_run_name text not null,
     test_run_date text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
+    primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Contains covered lines mapped to traces that are only covered by passed test cases
 create table TraceMappedLinesOnlyCoveredByPassedTestCases (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
     test_case_name text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+    primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Table combining TraceMappedLinesOnlyCoveredByPassedTestRuns
 -- and TraceMappedLinesOnlyCoveredByPassedTestCases
 create table TraceMappedLinesOnlyCoveredByPassedTests (
-    collect_nr integer not null,
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
     product_id text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    primary key (collect_nr, product_id, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    primary key (agg_collect_nr, product_id, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Contains traces that have no mapped line that was covered by a failed test.
 create table TracesOnlyCoveredByPassedTests (
-    collect_nr integer not null,
+    agg_collect_nr integer not null,
     product_id text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    primary key (collect_nr, product_id, filepath, traced_line),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    primary key (agg_collect_nr, product_id, file_collect_nr, filepath, traced_line),
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -64,17 +70,19 @@ create table TracesOnlyCoveredByPassedTests (
 -- also covered the line.
 create table TraceMappedLinesCoveredByFailedTestRuns (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
     product_id text not null,
+    test_collect_nr integer not null,
     test_run_name text not null,
     test_run_date text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
+    primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -83,44 +91,48 @@ create table TraceMappedLinesCoveredByFailedTestRuns (
 -- also covered the line.
 create table TraceMappedLinesCoveredByFailedTestCases (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    collect_nr integer not null,
     product_id text not null,
+    test_collect_nr integer not null,
     test_run_name text not null,
     test_run_date text not null,
     test_case_name text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    primary key (agg_collect_nr, collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
+    primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Table combining TraceMappedLinesCoveredByFailedTestRuns
 -- and TraceMappedLinesCoveredByFailedTestCases
 create table TraceMappedLinesCoveredByFailedTests (
-    collect_nr integer not null,
+    agg_collect_nr integer not null,
     product_id text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    primary key (collect_nr, product_id, filepath, traced_line, cov_line),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    primary key (agg_collect_nr, product_id, file_collect_nr, filepath, traced_line, cov_line),
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
 -- Contains traces that have at least one linked line that was covered by a failed test.
 create table TracesCoveredByFailedTests (
-    collect_nr integer not null,
+    agg_collect_nr integer not null,
     product_id text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     traced_line integer not null,
-    primary key (collect_nr, product_id, filepath, traced_line),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    primary key (agg_collect_nr, product_id, filepath, traced_line),
+    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 

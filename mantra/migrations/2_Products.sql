@@ -35,6 +35,16 @@ create table ProductRelatedFiles (
     foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete restrict
 );
 
+create table ProductRelatedHashedFiles (
+    collect_nr integer not null,
+    -- Product ID
+    product_id text not null,
+    filepath text not null,
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    primary key (collect_nr, product_id, filepath, file_hash),
+    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+);
+
 -- Table to map to properties of products.
 create table ProductProperties (
     collect_nr integer not null references Collections (nr) on delete restrict,

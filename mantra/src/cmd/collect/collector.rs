@@ -151,7 +151,7 @@ impl<'db, 'c, T: Schema + Send + 'static, C: SingleFileCollectable<'db, 'c, T> +
             collection
                 .insert_collected_file(
                     &sent_data.filepath,
-                    &sent_data.file_hash,
+                    &Some(sent_data.file_hash),
                     Some(&sent_data.content),
                 )
                 .await
