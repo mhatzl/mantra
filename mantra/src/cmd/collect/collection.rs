@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use anyhow::Context;
 use mantra_schema::{
@@ -10,7 +10,8 @@ use mantra_schema::{
 use crate::{
     cfg::ResolvedProductConfig,
     cmd::collect::{
-        SingleFileCollector, cfg::CollectConfig, product_collection::ProductCollection,
+        cfg::{CollectArguments, CollectConfig},
+        product_collection::ProductCollection,
     },
     db::{MantraConnection, MantraDb, MantraTransaction},
 };
@@ -66,63 +67,82 @@ impl<'db> Collection<'db> {
         })
     }
 
-    pub(super) async fn collect_product(
+    pub(super) async fn collect(&mut self, cfg: CollectConfig) -> Result<(), anyhow::Error> {
+        self.collect_products(&cfg.args, cfg.product_cfgs).await?;
+
+        self.aggregate().await
+    }
+
+    async fn aggregate(&mut self) -> Result<(), anyhow::Error> {
+        self.aggregate_requirements_data()
+            .await
+            .context("Failed to aggregate requirements data")?;
+        self.aggregate_annotations_data()
+            .await
+            .context("Failed to aggregate annotations data")?;
+        self.aggregate_test_run_data()
+            .await
+            .context("Failed to aggregated test runs data")?;
+
+        self.aggregate_verification_data()
+            .await
+            .context("Failed to aggregate verification states")?;
+
+        Ok(())
+    }
+
+    async fn collect_products(
+        &mut self,
+        args: &CollectArguments,
+        product_cfgs: Vec<ResolvedProductConfig>,
+    ) -> Result<(), anyhow::Error> {
+        let mut product_map = HashSet::new();
+
+        for mut product_cfg in product_cfgs {
+            if !product_map.insert(product_cfg.product.id.clone()) {
+                log::warn!(
+                    "Product '{}' has more than one product entry that maps to it!",
+                    &product_cfg.product.id
+                );
+            }
+
+            let product_id = product_cfg.product.id.clone();
+            let collect_data = if let Some(specific_id) = &args.product_id {
+                if specific_id == &product_id {
+                    if let Some(base) = &args.product_base {
+                        product_cfg.product.base = Some(base.clone());
+                    }
+                    if let Some(version) = &args.product_version {
+                        product_cfg.product.version = Some(version.clone());
+                    }
+
+                    true
+                } else {
+                    false
+                }
+            } else {
+                true
+            };
+
+            if collect_data {
+                self.collect_product(product_cfg)
+                    .await
+                    .with_context(|| format!("Failed to collect product '{}'", product_id))?
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn collect_product(
         &mut self,
         product_cfg: ResolvedProductConfig,
     ) -> Result<(), anyhow::Error> {
-        let mut product_collection = ProductCollection::new(self, &product_cfg.product)
+        let product_collection = ProductCollection::new(self, &product_cfg.product)
             .await
             .context("Creating product collection")?;
 
-        let collected_req_cfgs = product_collection
-            .insert_requirement_collect_cfgs(product_cfg.requirements)
-            .await
-            .context("Inserting requirement collection configs")?;
-        SingleFileCollector::collect(&mut product_collection, collected_req_cfgs)
-            .await
-            .context("Failed to collect requirements")?;
-        product_collection
-            .update_req_dot_parent()
-            .await
-            .context("Updating requirement dot-hierarchy")?;
-
-        let collected_annotation_cfgs = product_collection
-            .insert_annotation_collect_cfgs(product_cfg.annotations)
-            .await
-            .context("Inserting annotation collection config")?;
-        SingleFileCollector::collect(&mut product_collection, collected_annotation_cfgs)
-            .await
-            .context("Failed to collect annotations")?;
-        // TODO
-        // product_collection
-        //     .resolve_element_identifier(product_cfg.lsif)
-        //     .await
-        //     .context("Failed to resolve element identifiers")?;
-
-        // Updating after requirements and annotations have been collected.
-        // Explicit call, because a collection may not update collected requirements or annotations.
-        product_collection
-            .update_direct_req_traces()
-            .await
-            .context("Updating direct requirement traces")?;
-
-        let test_run_cfgs = product_collection
-            .insert_test_run_collect_cfgs(product_cfg.test_runs)
-            .await
-            .context("Inserting test run collection configs")?;
-        super::test_runs::collect(&mut product_collection, test_run_cfgs)
-            .await
-            .context("Failed to collect test runs")?;
-
-        let review_cfgs = product_collection
-            .insert_review_collect_cfgs(product_cfg.reviews)
-            .await
-            .context("Inserting review collection config")?;
-        SingleFileCollector::collect(&mut product_collection, review_cfgs)
-            .await
-            .context("Failed to collect reviews")?;
-
-        Ok(())
+        product_collection.collect(product_cfg).await
     }
 
     pub(super) fn connection_mut(&mut self) -> &mut MantraConnection {

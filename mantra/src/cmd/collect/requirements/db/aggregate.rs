@@ -1,12 +1,9 @@
 use anyhow::{Context, anyhow};
-use mantra_schema::annotations::TraceKind;
 
 use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_requirements_data(&mut self) -> Result<(), anyhow::Error> {
-        // Note: order is important, because later queries build on updated tables
-
         let collect_nr = self.collect_nr();
 
         let latest_collected_requirements_nr = sqlx::query!(
@@ -20,51 +17,51 @@ impl<'db> Collection<'db> {
         .context("Querying latest collection updating requirements")?
         .and_then(|r| r.latest_collect_nr);
 
-        // Aggregate data that is only affected by requirement updates
-        if latest_collected_requirements_nr == Some(collect_nr) {
-            self.update_requirement_hierarchies()
-                .await
-                .context("Updating requirement hierarchies")?;
-            self.update_root_requirements()
-                .await
-                .context("Failed to update root requirements")?;
-            self.update_requirement_descendants()
-                .await
-                .context("Failed to update requirement descendants")?;
-            self.update_leaf_requirements()
-                .await
-                .context("Failed to update leaf requirements")?;
-            self.update_deprecated_requirements()
-                .await
-                .context("Failed to update deprecated requirements")?;
-            self.update_excluded_requirements()
-                .await
-                .context("Failed to update excluded requirements")?;
+        if latest_collected_requirements_nr != Some(collect_nr) {
+            log::info!("No requirement data collected, skipping requirement aggregation");
 
-            self.check_replacing_requirements()
-                .await
-                .context("Failed checking requirement replacements")?;
-
-            self.update_optional_requirements()
-                .await
-                .context("Failed to update optional requirements")?;
-            self.update_manual_requirements()
-                .await
-                .context("Failed to update manual requirements")?;
-            self.update_usable_requirements()
-                .await
-                .context("Failed to update usable requirements")?;
-            self.update_usable_manual_requirements()
-                .await
-                .context("Failed to update usable manual requirements")?;
-            self.update_usable_non_manual_requirements()
-                .await
-                .context("Failed to update usable non-manual requirements")?;
+            return Ok(());
         }
 
-        self.update_directly_satisfied_requirements()
+        // Note: order is important, because later queries build on updated tables
+        self.update_requirement_hierarchies()
             .await
-            .context("Failed to update directly satisfied requirements")?;
+            .context("Updating requirement hierarchies")?;
+        self.update_root_requirements()
+            .await
+            .context("Failed to update root requirements")?;
+        self.update_requirement_descendants()
+            .await
+            .context("Failed to update requirement descendants")?;
+        self.update_leaf_requirements()
+            .await
+            .context("Failed to update leaf requirements")?;
+        self.update_deprecated_requirements()
+            .await
+            .context("Failed to update deprecated requirements")?;
+        self.update_excluded_requirements()
+            .await
+            .context("Failed to update excluded requirements")?;
+
+        self.check_replacing_requirements()
+            .await
+            .context("Failed checking requirement replacements")?;
+
+        self.update_optional_requirements()
+            .await
+            .context("Failed to update optional requirements")?;
+        self.update_manual_requirements()
+            .await
+            .context("Failed to update manual requirements")?;
+        self.update_usable_requirements()
+            .await
+            .context("Failed to update usable requirements")?;
+        self.update_usable_manual_requirements()
+            .await
+            .context("Failed to update usable manual requirements")?;
+        self.update_usable_non_manual_requirements()
+            .await
+            .context("Failed to update usable non-manual requirements")?;
 
         Ok(())
     }
@@ -867,69 +864,6 @@ impl<'db> Collection<'db> {
             and ur.req_id = mr.req_id
             ",
             collect_nr
-        )
-        .execute(self.connection_mut())
-        .await?;
-
-        Ok(())
-    }
-
-    async fn update_directly_satisfied_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-        let satisfies_kind = TraceKind::Satisfies.as_nr();
-
-        sqlx::query!(
-            "
-            insert or ignore into DirectlySatisfiedRequirements (
-                agg_collect_nr,
-                req_collect_nr,
-                product_id,
-                req_id
-            )
-            with NonManualSatisfyTraced (req_collect_nr, product_id, req_id) as (
-                select ur.req_collect_nr, ur.product_id, ur.req_id
-                from UsableNonManualRequirements ur, DirectProductReqTraces dt, Traces t
-                where ur.agg_collect_nr = (
-                    select max(cur.agg_collect_nr)
-                    from UsableNonManualRequirements cur
-                )
-                and dt.agg_collect_nr = (
-                    select max(cdt.agg_collect_nr)
-                    from DirectProductReqTraces cdt
-                )
-                and ur.req_collect_nr = dt.req_collect_nr
-                and ur.product_id = dt.product_id
-                and ur.req_id = dt.req_id and dt.file_hash = t.file_hash
-                and dt.line = t.line
-                and t.kind = $2
-            ),
-            ManualReviewed (req_collect_nr, product_id, req_id) as (
-                select mr.req_collect_nr, mr.product_id, mr.req_id
-                from UsableManualRequirements mr, ManuallyVerifiedRequirements vr
-                where mr.agg_collect_nr = (
-                    select max(cmr.agg_collect_nr)
-                    from UsableManualRequirements cmr
-                )
-                and vr.collect_nr = (
-                    select max(crv.collect_nr)
-                    from Reviews crv
-                    where crv.product_id = vr.product_id
-                )
-                and mr.req_collect_nr = vr.req_collect_nr
-                and mr.product_id = vr.product_id
-                and mr.req_id = vr.req_id
-            )
-
-            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
-            from NonManualSatisfyTraced
-
-            union
-
-            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
-            from ManualReviewed
-            ",
-            collect_nr,
-            satisfies_kind
         )
         .execute(self.connection_mut())
         .await?;

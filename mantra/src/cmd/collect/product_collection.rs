@@ -7,7 +7,11 @@ use mantra_schema::{
     product::{Product, ProductId},
 };
 
-use crate::{cmd::collect::collection::Collection, db::MantraConnection};
+use crate::{
+    cfg::ResolvedProductConfig,
+    cmd::collect::{SingleFileCollector, collection::Collection},
+    db::MantraConnection,
+};
 
 pub(super) struct ProductCollection<'db, 'c> {
     collection: &'c mut Collection<'db>,
@@ -29,6 +33,61 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .context("Failed collecting product metadata")?;
 
         Ok(pc)
+    }
+
+    pub(super) async fn collect(
+        mut self,
+        product_cfg: ResolvedProductConfig,
+    ) -> Result<(), anyhow::Error> {
+        let collected_req_cfgs = self
+            .insert_requirement_collect_cfgs(product_cfg.requirements)
+            .await
+            .context("Inserting requirement collection configs")?;
+        SingleFileCollector::collect(&mut self, collected_req_cfgs)
+            .await
+            .context("Failed to collect requirements")?;
+        self.update_req_dot_parent()
+            .await
+            .context("Updating requirement dot-hierarchy")?;
+
+        let collected_annotation_cfgs = self
+            .insert_annotation_collect_cfgs(product_cfg.annotations)
+            .await
+            .context("Inserting annotation collection config")?;
+        SingleFileCollector::collect(&mut self, collected_annotation_cfgs)
+            .await
+            .context("Failed to collect annotations")?;
+        // TODO
+        // product_collection
+        //     .resolve_element_identifier(product_cfg.lsif)
+        //     .await
+        //     .context("Failed to resolve element identifiers")?;
+
+        // Calling after requirements and annotations have been collected,
+        // because update depends on latest entries from both requirements and annotations.
+        //
+        // TODO: Skip if neither requirements or annotations are collected
+        self.update_direct_req_traces()
+            .await
+            .context("Updating direct requirement traces")?;
+
+        let test_run_cfgs = self
+            .insert_test_run_collect_cfgs(product_cfg.test_runs)
+            .await
+            .context("Inserting test run collection configs")?;
+        super::test_runs::collect(&mut self, test_run_cfgs)
+            .await
+            .context("Failed to collect test runs")?;
+
+        let review_cfgs = self
+            .insert_review_collect_cfgs(product_cfg.reviews)
+            .await
+            .context("Inserting review collection config")?;
+        SingleFileCollector::collect(&mut self, review_cfgs)
+            .await
+            .context("Failed to collect reviews")?;
+
+        Ok(())
     }
 
     pub(super) fn connection_mut(&mut self) -> &mut MantraConnection {

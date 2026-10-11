@@ -15,7 +15,7 @@ create table DirectProductReqTraces (
     filepath text not null,
     file_hash text not null,
     line integer not null,
-    primary key (product_id, req_collect_nr, req_id, file_collect_nr, filepath, file_hash, line),
+    primary key (product_id, req_collect_nr, req_id, file_collect_nr, filepath, line),
     foreign key (file_hash, line) references Traces (file_hash, line) on delete cascade,
     foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
     foreign key (file_collect_nr, product_id, filepath, file_hash)
@@ -225,6 +225,26 @@ create table ObsoleteTestRuns (
     test_run_date text not null,
     primary key (collect_nr, product_id, test_run_name, test_run_date),
     foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table ValidReviews (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    review_collect_nr integer not null,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    primary key (agg_collect_nr, review_collect_nr, product_id, review_name, review_date),
+    foreign key (review_collect_nr, product_id, review_name, review_date) references Reviews(collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table ValidTestRuns (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    test_collect_nr integer not null,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains the resolved state of test cases considering potential overrides from reviews.

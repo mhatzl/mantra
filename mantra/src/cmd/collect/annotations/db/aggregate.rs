@@ -4,6 +4,25 @@ use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_annotations_data(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
+        let latest_collected_annotations_nr = sqlx::query!(
+            r#"
+            select max(collect_nr) as "latest_collect_nr:i64"
+            from ProductAnnotationSources
+            "#
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Querying latest collection updating annotations")?
+        .and_then(|r| r.latest_collect_nr);
+
+        if latest_collected_annotations_nr != Some(collect_nr) {
+            log::info!("No annotation data collected, skipping annotation aggregation");
+
+            return Ok(());
+        }
+
         self.update_trace_spans()
             .await
             .context("Failed to update trace spans")?;

@@ -364,49 +364,49 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
                     if test_case_exists {
                         sqlx::query!(
-                        "
-                        insert into TestCaseOverrides (
+                            "
+                            insert into TestCaseOverrides (
+                                collect_nr,
+                                product_id,
+                                test_run_name,
+                                test_run_date,
+                                test_case_name,
+                                review_name,
+                                review_date,
+                                state,
+                                comment_hash
+                            )
+                            values (
+                                $1,
+                                $2,
+                                $3,
+                                $4,
+                                $5,
+                                $6,
+                                $7,
+                                $8,
+                                $9
+                            )
+                            ",
                             collect_nr,
                             product_id,
-                            test_run_name,
-                            test_run_date,
-                            test_case_name,
-                            review_name,
-                            review_date,
+                            test_run_override.name,
+                            test_run_override.utc_date,
+                            test_case_override.name,
+                            review.name,
+                            review.utc_date,
                             state,
                             comment_hash
                         )
-                        values (
-                            $1,
-                            $2,
-                            $3,
-                            $4,
-                            $5,
-                            $6,
-                            $7,
-                            $8,
-                            $9
-                        )
-                        ",
-                        collect_nr,
-                        product_id,
-                        test_run_override.name,
-                        test_run_override.utc_date,
-                        test_case_override.name,
-                        review.name,
-                        review.utc_date,
-                        state,
-                        comment_hash
-                    )
-                    .execute(self.connection_mut())
-                    .await
-                    .with_context(||
-                        format!(
-                            "Failed to insert test case state override for test case '{}' from test run '{}'",
-                            test_case_override.name,
-                            test_run_override.name
-                        )
-                    )?;
+                        .execute(self.connection_mut())
+                        .await
+                        .with_context(||
+                            format!(
+                                "Failed to insert test case state override for test case '{}' from test run '{}'",
+                                test_case_override.name,
+                                test_run_override.name
+                            )
+                        )?;
                     } else {
                         log::warn!(
                             "Ignoring state override for unknown test case '{}' from test run '{}'",
