@@ -13,7 +13,7 @@ create table TraceMappedLinesOnlyCoveredByPassedTestRuns (
     primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, file_collect_nr, filepath, traced_line, cov_line),
     foreign key (test_collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -33,7 +33,7 @@ create table TraceMappedLinesOnlyCoveredByPassedTestCases (
     primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, file_collect_nr, filepath, traced_line, cov_line),
     foreign key (test_collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -48,7 +48,7 @@ create table TraceMappedLinesOnlyCoveredByPassedTests (
     traced_line integer not null,
     cov_line integer not null,
     primary key (agg_collect_nr, product_id, file_collect_nr, filepath, traced_line, cov_line),
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -61,7 +61,7 @@ create table TracesOnlyCoveredByPassedTests (
     file_hash text not null,
     traced_line integer not null,
     primary key (agg_collect_nr, product_id, file_collect_nr, filepath, traced_line),
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -82,7 +82,7 @@ create table TraceMappedLinesCoveredByFailedTestRuns (
     primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, file_collect_nr, filepath, traced_line, cov_line),
     foreign key (test_collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -104,7 +104,7 @@ create table TraceMappedLinesCoveredByFailedTestCases (
     primary key (agg_collect_nr, product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, file_collect_nr, filepath, traced_line, cov_line),
     foreign key (test_collect_nr, product_id, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -119,7 +119,7 @@ create table TraceMappedLinesCoveredByFailedTests (
     traced_line integer not null,
     cov_line integer not null,
     primary key (agg_collect_nr, product_id, file_collect_nr, filepath, traced_line, cov_line),
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
@@ -132,7 +132,7 @@ create table TracesCoveredByFailedTests (
     file_hash text not null,
     traced_line integer not null,
     primary key (agg_collect_nr, product_id, filepath, traced_line),
-    foreign key (file_collect_nr, product_id, filepath) references ProductRelatedHashedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 

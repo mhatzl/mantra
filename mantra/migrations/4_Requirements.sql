@@ -103,7 +103,9 @@ create table RequirementParents (
     -- The ID of the parent requirement.
     parent_req_id text not null,
     -- 'true' makes the requirement an optional child
-    optional bool not null,
+    optional bool,
+    -- Optional aspect a child covers of a parent
+    aspect text,
     primary key (collect_nr, product_id, req_id, parent_product_id, parent_req_id),
     foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );
@@ -124,7 +126,9 @@ create table RequirementChildren (
     -- The ID of the child requirement.
     child_req_id text not null,
     -- 'true' makes the child requirement optional for the (parent) requirement
-    optional bool not null,
+    optional bool,
+    -- Optional aspect a child covers of a parent
+    aspect text,
     primary key (collect_nr, product_id, req_id, child_product_id, child_req_id),
     foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );

@@ -5,45 +5,63 @@ use crate::cmd::collect::Collection;
 
 impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_requirements_data(&mut self) -> Result<(), anyhow::Error> {
-        // Note: order is nmportant, because later queries build on updated tables
-        self.update_requirement_hierarchies()
-            .await
-            .context("Updating requirement hierarchies")?;
-        self.update_root_requirements()
-            .await
-            .context("Failed to update root requirements")?;
-        self.update_requirement_descendants()
-            .await
-            .context("Failed to update requirement descendants")?;
-        self.update_leaf_requirements()
-            .await
-            .context("Failed to update leaf requirements")?;
-        self.update_deprecated_requirements()
-            .await
-            .context("Failed to update deprecated requirements")?;
-        self.update_excluded_requirements()
-            .await
-            .context("Failed to update excluded requirements")?;
+        // Note: order is important, because later queries build on updated tables
 
-        self.check_replacing_requirements()
-            .await
-            .context("Failed checking requirement replacements")?;
+        let collect_nr = self.collect_nr();
 
-        self.update_optional_requirements()
-            .await
-            .context("Failed to update optional requirements")?;
-        self.update_manual_requirements()
-            .await
-            .context("Failed to update manual requirements")?;
-        self.update_usable_requirements()
-            .await
-            .context("Failed to update usable requirements")?;
-        self.update_usable_manual_requirements()
-            .await
-            .context("Failed to update usable manual requirements")?;
-        self.update_usable_non_manual_requirements()
-            .await
-            .context("Failed to update usable non-manual requirements")?;
+        let latest_collected_requirements_nr = sqlx::query!(
+            r#"
+            select max(collect_nr) as "latest_collect_nr:i64"
+            from Requirements
+            "#
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Querying latest collection updating requirements")?
+        .and_then(|r| r.latest_collect_nr);
+
+        // Aggregate data that is only affected by requirement updates
+        if latest_collected_requirements_nr == Some(collect_nr) {
+            self.update_requirement_hierarchies()
+                .await
+                .context("Updating requirement hierarchies")?;
+            self.update_root_requirements()
+                .await
+                .context("Failed to update root requirements")?;
+            self.update_requirement_descendants()
+                .await
+                .context("Failed to update requirement descendants")?;
+            self.update_leaf_requirements()
+                .await
+                .context("Failed to update leaf requirements")?;
+            self.update_deprecated_requirements()
+                .await
+                .context("Failed to update deprecated requirements")?;
+            self.update_excluded_requirements()
+                .await
+                .context("Failed to update excluded requirements")?;
+
+            self.check_replacing_requirements()
+                .await
+                .context("Failed checking requirement replacements")?;
+
+            self.update_optional_requirements()
+                .await
+                .context("Failed to update optional requirements")?;
+            self.update_manual_requirements()
+                .await
+                .context("Failed to update manual requirements")?;
+            self.update_usable_requirements()
+                .await
+                .context("Failed to update usable requirements")?;
+            self.update_usable_manual_requirements()
+                .await
+                .context("Failed to update usable manual requirements")?;
+            self.update_usable_non_manual_requirements()
+                .await
+                .context("Failed to update usable non-manual requirements")?;
+        }
+
         self.update_directly_satisfied_requirements()
             .await
             .context("Failed to update directly satisfied requirements")?;
@@ -72,13 +90,13 @@ impl<'db> Collection<'db> {
                 r.collect_nr as parent_collect_nr,
                 rp.parent_product_id,
                 rp.parent_req_id,
-                rp.optional
+                (rp.optional is not null and rp.optional = true) as optional
             from Requirements r, RequirementParents rp
             where rp.collect_nr = $1 and r.product_id = rp.parent_product_id
             and r.id = rp.parent_req_id and r.collect_nr = (
-                select max(p.collect_nr)
-                from Products p
-                where p.id = r.product_id
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
             )
 
             union
@@ -90,13 +108,13 @@ impl<'db> Collection<'db> {
                 $1 as parent_collect_nr,
                 rc.product_id as parent_product_id,
                 rc.req_id as parent_req_id,
-                rc.optional
+                (rc.optional is not null and rc.optional = true) as optional
             from Requirements r, RequirementChildren rc
             where rc.collect_nr = $1 and r.product_id = rc.child_product_id
             and r.id = rc.child_req_id and r.collect_nr = (
-                select max(p.collect_nr)
-                from Products p
-                where p.id = r.product_id
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
             )
             ",
             collect_nr
@@ -239,14 +257,14 @@ impl<'db> Collection<'db> {
                     optional
                 from RequirementHierarchies rh
                 where rh.child_collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = rh.child_product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = rh.child_product_id
                 )
                 and rh.parent_collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = rh.parent_product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = rh.parent_product_id
                 )
 
                 union all
@@ -264,9 +282,9 @@ impl<'db> Collection<'db> {
                 and tc.descendant_product_id = rh.parent_product_id
                 and tc.descendant_req_id = rh.parent_req_id
                 and rh.child_collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = rh.child_product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = rh.child_product_id
                 )
                 -- prevents endless recursion in case of requirement cycles
                 -- match on parent to have the cycle entry in the descendants,
@@ -385,9 +403,9 @@ impl<'db> Collection<'db> {
             select $1 as agg_collect_nr, collect_nr, product_id, id
             from Requirements r
             where r.collect_nr = (
-                select max(p.collect_nr)
-                from Products p
-                where p.id = r.product_id
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
             )
             and not exists (
                 select *
@@ -396,9 +414,9 @@ impl<'db> Collection<'db> {
                 and r.product_id = rh.parent_product_id
                 and r.id = rh.parent_req_id
                 and rh.child_collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = rh.child_product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = rh.child_product_id
                 )
             )
             ",
@@ -441,9 +459,9 @@ impl<'db> Collection<'db> {
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r
                     where r.collect_nr = (
-                        select max(p.collect_nr)
-                        from Products p
-                        where p.id = r.product_id
+                        select max(cr.collect_nr)
+                        from Requirements cr
+                        where cr.product_id = r.product_id
                     ) and r.deprecated is not null and r.deprecated = false
                 )
 
@@ -455,9 +473,9 @@ impl<'db> Collection<'db> {
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
@@ -468,9 +486,9 @@ impl<'db> Collection<'db> {
                 select collect_nr, product_id, id
                 from Requirements r
                 where r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and not exists (
                     select *
@@ -522,9 +540,9 @@ impl<'db> Collection<'db> {
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r
                     where r.collect_nr = (
-                        select max(p.collect_nr)
-                        from Products p
-                        where p.id = r.product_id
+                        select max(cr.collect_nr)
+                        from Requirements cr
+                        where cr.product_id = r.product_id
                     ) and r.exclude is not null and r.exclude = false
                 )
 
@@ -536,9 +554,9 @@ impl<'db> Collection<'db> {
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
@@ -549,9 +567,9 @@ impl<'db> Collection<'db> {
                 select collect_nr, product_id, id
                 from Requirements r
                 where r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and not exists (
                     select *
@@ -603,9 +621,9 @@ impl<'db> Collection<'db> {
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r
                     where r.collect_nr = (
-                        select max(p.collect_nr)
-                        from Products p
-                        where p.id = r.product_id
+                        select max(cr.collect_nr)
+                        from Requirements cr
+                        where cr.product_id = r.product_id
                     ) and r.optional is not null and r.optional = false
                 )
 
@@ -617,22 +635,23 @@ impl<'db> Collection<'db> {
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.optional is null or r.optional = false)
+                and rh.optional = false
             ),
             IsOptional(collect_nr, product_id, id) as (
                 select collect_nr, product_id, id
                 from Requirements r
                 where r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and not exists (
                     select *
@@ -684,9 +703,9 @@ impl<'db> Collection<'db> {
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r
                     where r.collect_nr = (
-                        select max(p.collect_nr)
-                        from Products p
-                        where p.id = r.product_id
+                        select max(cr.collect_nr)
+                        from Requirements cr
+                        where cr.product_id = r.product_id
                     ) and r.manual_verification is not null and r.manual_verification = false
                 )
 
@@ -698,9 +717,9 @@ impl<'db> Collection<'db> {
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
@@ -711,9 +730,9 @@ impl<'db> Collection<'db> {
                 select collect_nr, product_id, id
                 from Requirements r
                 where r.collect_nr = (
-                    select max(p.collect_nr)
-                    from Products p
-                    where p.id = r.product_id
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
                 )
                 and not exists (
                     select *
@@ -748,9 +767,9 @@ impl<'db> Collection<'db> {
             select $1 as agg_collect_nr, collect_nr, product_id, id
             from Requirements r
             where r.collect_nr = (
-                select max(p.collect_nr)
-                from Products p
-                where p.id = r.product_id
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
             )
 
             except
@@ -847,12 +866,15 @@ impl<'db> Collection<'db> {
             with NonManualSatisfyTraced (req_collect_nr, product_id, req_id) as (
                 select ur.req_collect_nr, ur.product_id, ur.req_id
                 from UsableNonManualRequirements ur, DirectProductReqTraces dt, Traces t
-                where ur.agg_collect_nr = $1 and dt.collect_nr = (
-                    select max(collect_nr)
-                    from Products p
-                    where p.id = dt.product_id
+                where ur.agg_collect_nr = (
+                    select max(cur.agg_collect_nr)
+                    from UsableNonManualRequirements cur
                 )
-                and ur.req_collect_nr = dt.collect_nr
+                and dt.agg_collect_nr = (
+                    select max(cdt.agg_collect_nr)
+                    from DirectProductReqTraces cdt
+                )
+                and ur.req_collect_nr = dt.req_collect_nr
                 and ur.product_id = dt.product_id
                 and ur.req_id = dt.req_id and dt.file_hash = t.file_hash
                 and dt.line = t.line
@@ -861,11 +883,16 @@ impl<'db> Collection<'db> {
             ManualReviewed (req_collect_nr, product_id, req_id) as (
                 select mr.req_collect_nr, mr.product_id, mr.req_id
                 from UsableManualRequirements mr, ManuallyVerifiedRequirements vr
-                where mr.agg_collect_nr = $1 and vr.collect_nr = (
-                    select max(collect_nr)
-                    from Products p
-                    where p.id = vr.product_id
-                ) and mr.req_collect_nr = vr.collect_nr
+                where mr.agg_collect_nr = (
+                    select max(cmr.agg_collect_nr)
+                    from UsableManualRequirements cmr
+                )
+                and vr.collect_nr = (
+                    select max(crv.collect_nr)
+                    from Reviews crv
+                    where crv.product_id = vr.product_id
+                )
+                and mr.req_collect_nr = vr.req_collect_nr
                 and mr.product_id = vr.product_id
                 and mr.req_id = vr.req_id
             )

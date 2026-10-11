@@ -107,12 +107,12 @@ pub struct Requirement {
     /// ID of the requirement.
     /// [req("req.id")]
     pub id: ReqId,
-    /// Optional list of parent requirement IDs.
+    /// Optional list of parent requirement relations.
     /// [req("req.hierarchy.mult_parents")]
-    pub parents: Option<Vec<RequirementPk>>,
-    /// Optional list of child requirement IDs.
+    pub parents: Option<Vec<RequirementRelation>>,
+    /// Optional list of child requirement relations.
     /// [req("req.hierarchy.explicit_children")]
-    pub children: Option<Vec<RequirementPk>>,
+    pub children: Option<Vec<RequirementRelation>>,
     /// Title of the requirement.
     /// [req("req.title")]
     pub title: String,
@@ -169,6 +169,125 @@ impl Requirement {
             properties: None,
             media_type: None,
         }
+    }
+}
+
+/// This struct defines the relation between requirements.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub struct RequirementRelation {
+    /// ID of the related requirement.
+    /// [req("req.id")]
+    pub id: ReqId,
+    /// ID of the product the related requirement is defined in.
+    /// If `None`, the related requirement is assumed to be in the same product.
+    pub product_id: Option<ProductId>,
+    /// `true` marks the relation as optional.
+    pub optional: Option<bool>,
+    /// Optional aspect that is covered by this relation.
+    pub aspect: Option<String>,
+}
+
+impl RequirementRelation {
+    pub fn new_minimal(id: ReqId) -> Self {
+        Self {
+            id,
+            product_id: None,
+            optional: None,
+            aspect: None,
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for RequirementRelation {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        fn deserialize_str_or_obj<'de, D>(deserializer: D) -> Result<RequirementRelation, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            struct StrOrObj;
+
+            impl<'de> serde::de::Visitor<'de> for StrOrObj {
+                type Value = RequirementRelation;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    formatter.write_str("string or a map with keys `id` and `product_id`")
+                }
+
+                fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    Ok(RequirementRelation::new_minimal(
+                        ReqId::new(value.to_owned())
+                            .map_err(|err| serde::de::Error::custom(err.to_string()))?,
+                    ))
+                }
+
+                fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+                where
+                    A: serde::de::MapAccess<'de>,
+                {
+                    #[derive(serde::Deserialize)]
+                    #[serde(field_identifier, rename_all = "snake_case")]
+                    enum Field {
+                        Id,
+                        ProductId,
+                        Optional,
+                        Aspect,
+                    }
+
+                    let mut req_id = None;
+                    let mut product_id = None;
+                    let mut optional = None;
+                    let mut aspect = None;
+
+                    while let Some(field) = map.next_key()? {
+                        match field {
+                            Field::Id => {
+                                if req_id.is_some() {
+                                    return Err(serde::de::Error::duplicate_field("id"));
+                                }
+                                req_id = Some(map.next_value()?);
+                            }
+                            Field::ProductId => {
+                                if product_id.is_some() {
+                                    return Err(serde::de::Error::duplicate_field("product_id"));
+                                }
+                                product_id = Some(map.next_value()?);
+                            }
+                            Field::Optional => {
+                                if optional.is_some() {
+                                    return Err(serde::de::Error::duplicate_field("optional"));
+                                }
+                                optional = Some(map.next_value()?);
+                            }
+                            Field::Aspect => {
+                                if aspect.is_some() {
+                                    return Err(serde::de::Error::duplicate_field("aspect"));
+                                }
+                                aspect = Some(map.next_value()?);
+                            }
+                        }
+                    }
+                    let req_id = req_id.ok_or_else(|| serde::de::Error::missing_field("id"))?;
+                    let product_id = product_id.unwrap_or_default();
+                    Ok(RequirementRelation {
+                        id: req_id,
+                        product_id,
+                        optional,
+                        aspect,
+                    })
+                }
+            }
+
+            deserializer.deserialize_any(StrOrObj)
+        }
+
+        deserialize_str_or_obj(deserializer)
     }
 }
 

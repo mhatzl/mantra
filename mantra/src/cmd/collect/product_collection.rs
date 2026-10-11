@@ -102,6 +102,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .with_context(|| format!("Failed inserting product related file: {}", filepath))?;
 
         if let Some(hash) = file_hash.as_ref() {
+            // Note: different hashes for the same file are already handled in `Collection`.
+            // So having multiple entries with different hashes is fine here.
             sqlx::query!(
                 "
                 insert or ignore into ProductRelatedHashedFiles (

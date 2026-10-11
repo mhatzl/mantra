@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        insert into ConflictingHashes (\n            hash,\n            content\n        )\n        values (\n            $1,\n            $2\n        )\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "deeb3b193f8ca6cf4d01837abbd057bd054f57dc5c2072865e64fc63d0600ba4"
+}

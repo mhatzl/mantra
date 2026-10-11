@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select content\n                from FileHashes\n                where hash = $1 and content is not null\n                and content != $2\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "FileHashes",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "29019229aff51fb1753713b41338a3886f7adbefb264f8f6bd02fd9ff52f08b5"
+}

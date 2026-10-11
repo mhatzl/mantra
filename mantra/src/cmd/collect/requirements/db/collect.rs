@@ -288,21 +288,27 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         product_id,
                         req_id,
                         parent_product_id,
-                        parent_req_id
+                        parent_req_id,
+                        optional,
+                        aspect
                     )
                     values (
                         $1,
                         $2,
                         $3,
                         $4,
-                        $5
+                        $5,
+                        $6,
+                        $7
                     )
                     ",
                     collect_nr,
                     product_id,
                     req.id,
                     parent_product_id,
-                    parent.id
+                    parent.id,
+                    parent.optional,
+                    parent.aspect
                 )
                 .execute(self.connection_mut())
                 .await
@@ -328,21 +334,27 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         product_id,
                         req_id,
                         child_product_id,
-                        child_req_id
+                        child_req_id,
+                        optional,
+                        aspect
                     )
                     values (
                         $1,
                         $2,
                         $3,
                         $4,
-                        $5
+                        $5,
+                        $6,
+                        $7
                     )
                     ",
                     collect_nr,
                     product_id,
                     req.id,
                     child_product_id,
-                    child.id
+                    child.id,
+                    child.optional,
+                    child.aspect
                 )
                 .execute(self.connection_mut())
                 .await
