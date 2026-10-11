@@ -5,11 +5,10 @@ use comrak::{
     Node, Options,
     nodes::{ListType, NodeValue},
 };
-use mantra_lang_tracing::collect::collector::AnnotationCollector;
 use mantra_schema::{
     Properties, SCHEMA_VERSION,
     product::ProductId,
-    requirements::{ReqId, Requirement, RequirementPk, RequirementSchema},
+    requirements::{ReqId, Requirement, RequirementRelation, RequirementSchema},
 };
 
 use crate::cmd::collect::{
@@ -274,6 +273,7 @@ fn fill_req_body(
         requirement.manual_verification = req_fields.manual_verification;
         requirement.optional = req_fields.optional;
         requirement.parents = req_fields.parents;
+        requirement.children = req_fields.children;
         requirement.properties = req_fields.properties;
         requirement.replaces = req_fields.replaces;
     }
@@ -306,7 +306,8 @@ fn fill_req_body(
 
 #[derive(Default)]
 struct ReqFields {
-    parents: Option<Vec<RequirementPk>>,
+    parents: Option<Vec<RequirementRelation>>,
+    children: Option<Vec<RequirementRelation>>,
     manual_verification: Option<bool>,
     deprecated: Option<bool>,
     exclude: Option<bool>,
@@ -315,8 +316,10 @@ struct ReqFields {
     properties: Option<Properties>,
 }
 
+#[derive(PartialEq, Eq)]
 enum FieldKey {
     Parents,
+    Children,
     ManualVerification,
     Deprecated,
     Exclude,
@@ -329,6 +332,7 @@ impl FieldKey {
     fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "parents" => FieldKey::Parents,
+            "children" => FieldKey::Children,
             "manual verification" | "manual" => FieldKey::ManualVerification,
             "deprecated" => FieldKey::Deprecated,
             "exclude" => FieldKey::Exclude,
@@ -343,6 +347,7 @@ impl std::fmt::Display for FieldKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FieldKey::Parents => write!(f, "Parents"),
+            FieldKey::Children => write!(f, "Children"),
             FieldKey::ManualVerification => write!(f, "Manual Verification"),
             FieldKey::Deprecated => write!(f, "Deprecated"),
             FieldKey::Exclude => write!(f, "Exclude"),
@@ -402,42 +407,22 @@ fn extract_req_fields(
         let field_key = FieldKey::from_str(&raw_key);
 
         match field_key {
-            FieldKey::Parents => {
-                // TODO: replace with proper parents field parsing
-                // This is a workaround that uses the similarity of Rust attrbiute macros and the Parents field syntax.
-                // Since Rust traces do not currently support trace properties and parent requirements are references like traces,
-                // the syntax is identical.
+            FieldKey::Parents | FieldKey::Children => {
+                // TODO: extract on underlying raw value instead of parsed Markdown
+                let relations: Vec<RequirementRelation> = json5::from_str(&raw_value)?;
 
-                // Faking trace syntax by turning '["req-id"]' into '[req("req-id")]'
-                let val = raw_value.replacen("[", "[req(", 1);
-                let Some((modified_list, _)) = val.rsplit_once(']') else {
-                    bail!(
-                        "Parents field value must be a list of requirement references and end with ']'"
-                    );
-                };
-
-                let annotations =
-                    mantra_lang_tracing::collect::rust::RustCodeCollector::collect_relative(
-                        &format!("#{})] fn foo() {{}}", modified_list.replace('\\', "")),
-                        key_paragraph.data().sourcepos.start.line.try_into()?,
-                    )?;
-
-                if annotations.traces.is_empty() {
-                    bail!("No parent IDs found in '{}'", raw_value);
-                } else if annotations.traces.len() > 1 {
-                    bail!("More than one list of requirements was detected.");
-                }
-
-                let parent_refs = annotations
-                    .traces
-                    .into_iter()
-                    .next()
-                    .expect("Checked above that exactly one entry exists");
-
-                if fields.parents.is_some() {
-                    bail!("Duplicate entry! Key 'Parents' has been set more than once");
+                if field_key == FieldKey::Parents {
+                    if fields.parents.is_some() {
+                        bail!("Duplicate entry! Key 'Parents' has been set more than once");
+                    } else {
+                        fields.parents = Some(relations);
+                    }
                 } else {
-                    fields.parents = Some(parent_refs.ids);
+                    if fields.children.is_some() {
+                        bail!("Duplicate entry! Key 'Children' has been set more than once");
+                    } else {
+                        fields.children = Some(relations);
+                    }
                 }
             }
             FieldKey::ManualVerification => {
