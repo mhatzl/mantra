@@ -5,9 +5,10 @@ use mantra_schema::path::RelativePathBuf;
 #[cfg(test)]
 pub mod test_stub;
 
+pub type SqlDb = sqlx::sqlite::Sqlite;
 pub type MantraPool = sqlx::SqlitePool;
 pub type MantraConnection = sqlx::sqlite::SqliteConnection;
-pub type MantraTransaction<'db> = sqlx::Transaction<'db, sqlx::sqlite::Sqlite>;
+pub type MantraTransaction<'db> = sqlx::Transaction<'db, SqlDb>;
 
 #[derive(Debug)]
 pub struct MantraDb {

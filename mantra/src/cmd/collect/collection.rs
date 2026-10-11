@@ -167,6 +167,23 @@ impl<'db> Collection<'db> {
             )
             .execute(self.connection_mut())
             .await?;
+        } else if sqlx::query!(
+            "
+            select content
+            from GeneralTexts
+            where hash = $1 and content != $2
+            ",
+            hash,
+            content
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Failed to get collected content for general text hashes")?
+        .is_some()
+        {
+            self.insert_conflicting_hashed_content(hash, content)
+                .await
+                .context("Inserting conflicting hashed general text")?;
         } else {
             sqlx::query!(
                 "
@@ -196,9 +213,10 @@ impl<'db> Collection<'db> {
         let filepath = filepath.as_str();
         let collect_nr = self.collect_nr();
 
+        // Ignoring insert to not overwrite potentially existhing hashes
         sqlx::query!(
             "
-            insert into CollectedFiles (
+            insert or ignore into CollectedFiles (
                 collect_nr,
                 filepath,
                 file_hash
@@ -229,28 +247,72 @@ impl<'db> Collection<'db> {
         let collect_nr = self.collect_nr();
 
         if let Some(hash) = file_hash.as_ref() {
-            sqlx::query!(
-                "
-                insert or ignore into FileHashes (
-                    hash,
-                    content
-                )
-                values (
-                    $1,
-                    $2
-                )
+            if !self.replace_hashed
+                && let Some(some_content) = content
+                && sqlx::query!(
+                    "
+                select content
+                from FileHashes
+                where hash = $1 and content is not null
+                and content != $2
                 ",
-                hash,
-                content
-            )
-            .execute(self.connection_mut())
-            .await?;
+                    hash,
+                    some_content
+                )
+                .fetch_optional(self.connection_mut())
+                .await
+                .context("Failed to get collected content for file hashes")?
+                .and_then(|r| r.content)
+                .is_some()
+            {
+                self.insert_conflicting_hashed_content(hash, some_content)
+                    .await
+                    .context("Inserting conflicting hashed file content")?;
+            } else {
+                // Check to not overwrite potential content for an existing entry
+                if content.is_some() {
+                    sqlx::query!(
+                        "
+                        insert or ignore into FileHashes (
+                            hash,
+                            content
+                        )
+                        values (
+                            $1,
+                            $2
+                        )
+                        ",
+                        hash,
+                        content
+                    )
+                    .execute(self.connection_mut())
+                    .await?;
+                } else {
+                    sqlx::query!(
+                        "
+                        insert or replace into FileHashes (
+                            hash,
+                            content
+                        )
+                        values (
+                            $1,
+                            $2
+                        )
+                        ",
+                        hash,
+                        content
+                    )
+                    .execute(self.connection_mut())
+                    .await?;
+                }
+            }
 
             if sqlx::query!(
                 "
                 select file_hash
                 from CollectedFiles
-                where collect_nr = $1 and filepath = $3 and file_hash != $4
+                where collect_nr = $1 and filepath = $3
+                and file_hash is not null and file_hash != $4
                 ",
                 collect_nr,
                 filepath,
@@ -262,6 +324,7 @@ impl<'db> Collection<'db> {
             .and_then(|r| r.file_hash)
             .is_some()
             {
+                // TODO: Convert to error once stacked errors are used
                 log::warn!(
                     "Duplicate entry in same collection for filepath '{}' with different file hash.",
                     filepath
@@ -288,9 +351,10 @@ impl<'db> Collection<'db> {
                 .await
                 .context("Failed to update conflicting collected files")?;
             } else {
+                // Either no existing entry, or stored file_hash is null, so replace
                 sqlx::query!(
                     "
-                    insert into CollectedFiles (
+                    insert or replace into CollectedFiles (
                         collect_nr,
                         filepath,
                         file_hash
@@ -310,9 +374,10 @@ impl<'db> Collection<'db> {
                 .context("Failed to update collected files")?;
             }
         } else {
+            // Important to ignore here to not overwrite potentially existing entries with a set file_hash
             sqlx::query!(
                 "
-                insert into CollectedFiles (
+                insert or ignore into CollectedFiles (
                     collect_nr,
                     filepath,
                     file_hash
@@ -332,6 +397,14 @@ impl<'db> Collection<'db> {
         }
 
         Ok(())
+    }
+
+    async fn insert_conflicting_hashed_content(
+        &mut self,
+        hash: &FmtHash,
+        content: &str,
+    ) -> Result<(), anyhow::Error> {
+        insert_conflicting_hashed_content(&mut self.transaction, hash, content).await
     }
 
     pub(super) async fn insert_schema_single_source<S: Schema>(
@@ -525,6 +598,23 @@ async fn insert_general_json<'db>(
         )
         .execute(&mut *transaction.as_mut())
         .await?;
+    } else if sqlx::query!(
+        "
+        select content
+        from GeneralJson
+        where hash = $1 and content != $2
+        ",
+        hash,
+        content
+    )
+    .fetch_optional(&mut *transaction.as_mut())
+    .await
+    .context("Failed to get collected content for general JSON hashes")?
+    .is_some()
+    {
+        insert_conflicting_hashed_content(transaction, hash, content)
+            .await
+            .context("Inserting conflicting hashed general JSON")?;
     } else {
         sqlx::query!(
             "
@@ -543,6 +633,38 @@ async fn insert_general_json<'db>(
         .execute(&mut *transaction.as_mut())
         .await?;
     }
+
+    Ok(())
+}
+
+async fn insert_conflicting_hashed_content<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    hash: &FmtHash,
+    content: impl sqlx::Type<crate::db::SqlDb> + sqlx::Encode<'_, crate::db::SqlDb>,
+) -> Result<(), anyhow::Error> {
+    // TODO: Convert to error once stacked errors are used
+    log::warn!(
+        "Duplicate entry in same collection for hash '{}' with different content.",
+        hash
+    );
+
+    sqlx::query!(
+        "
+        insert into ConflictingHashes (
+            hash,
+            content
+        )
+        values (
+            $1,
+            $2
+        )
+        ",
+        hash,
+        content
+    )
+    .execute(&mut *transaction.as_mut())
+    .await
+    .context("Failed to update conflicting collected hashed content")?;
 
     Ok(())
 }
