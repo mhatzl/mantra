@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into RequirementChildren (\n                        collect_nr,\n                        product_id,\n                        req_id,\n                        child_product_id,\n                        child_req_id,\n                        optional,\n                        aspect\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        $6,\n                        $7\n                    )\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "a013cbaf19f1a193d9efb8c06272f7dc0054a62e1faea7625eb7fbba45e282fd"
+}

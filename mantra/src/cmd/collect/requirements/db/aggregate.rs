@@ -452,6 +452,13 @@ impl<'db> Collection<'db> {
                     and r.id = rr.req_id
                     -- means not explicitly deprecated
                     and (r.deprecated is null or r.deprecated = false)
+                    and not exists (
+                        select rp.req_id
+                        from RequirementReplacements rp
+                        where rp.collect_nr = r.collect_nr
+                        and rp.product_id = r.product_id
+                        and rp.replaced_req_id = r.id
+                    )
 
                     union all
 
@@ -462,16 +469,25 @@ impl<'db> Collection<'db> {
                         select max(cr.collect_nr)
                         from Requirements cr
                         where cr.product_id = r.product_id
-                    ) and r.deprecated is not null and r.deprecated = false
+                    )
+                    and r.deprecated is not null and r.deprecated = false
+                    -- being replaced always deprecates a requirement
+                    and not exists (
+                        select rp.req_id
+                        from RequirementReplacements rp
+                        where rp.collect_nr = r.collect_nr
+                        and rp.product_id = r.product_id
+                        and rp.replaced_req_id = r.id
+                    )
                 )
 
                 union all
 
                 select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
-                from IsIncluded nm, RequirementHierarchies rh, Requirements r
-                where nm.collect_nr = rh.parent_collect_nr
-                and nm.product_id = rh.parent_product_id
-                and nm.id = rh.parent_req_id
+                from IsIncluded ii, RequirementHierarchies rh, Requirements r
+                where ii.collect_nr = rh.parent_collect_nr
+                and ii.product_id = rh.parent_product_id
+                and ii.id = rh.parent_req_id
                 and r.collect_nr = (
                     select max(cr.collect_nr)
                     from Requirements cr
@@ -481,6 +497,13 @@ impl<'db> Collection<'db> {
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.deprecated is null or r.deprecated = false)
+                and not exists (
+                    select rp.req_id
+                    from RequirementReplacements rp
+                    where rp.collect_nr = r.collect_nr
+                    and rp.product_id = r.product_id
+                    and rp.replaced_req_id = r.id
+                )
             ),
             IsDeprecated(collect_nr, product_id, id) as (
                 select collect_nr, product_id, id
@@ -492,10 +515,10 @@ impl<'db> Collection<'db> {
                 )
                 and not exists (
                     select *
-                    from IsIncluded nm
-                    where nm.collect_nr = r.collect_nr
-                    and nm.product_id = r.product_id
-                    and nm.id = r.id
+                    from IsIncluded ii
+                    where ii.collect_nr = r.collect_nr
+                    and ii.product_id = r.product_id
+                    and ii.id = r.id
                 )
             )
             select distinct $1 as agg_collect_nr, collect_nr, product_id, id
