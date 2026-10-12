@@ -1,5 +1,5 @@
 use anyhow::{Context, anyhow};
-use mantra_schema::report::tests::ResolvedLineCoverageState;
+use mantra_schema::{report::tests::ResolvedLineCoverageState, test_runs::TestCaseState};
 
 use crate::cmd::collect::Collection;
 
@@ -169,8 +169,9 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into ResolvedTestRunLineCoverage (
-                collect_nr,
+            insert into ResolvedTestRunLineCoverage (
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
@@ -181,12 +182,13 @@ impl<'db> Collection<'db> {
                 hits
             )
             select
-                tro.collect_nr,
+                $1 as agg_collect_nr,
+                tro.test_collect_nr,
                 tro.product_id,
                 tro.test_run_name,
                 tro.test_run_date,
                 tro.cov_filepath,
-                pf.file_hash as cov_file_hash,
+                cfh.file_hash as cov_file_hash,
                 tro.cov_line,
                 case
                     when tro.hits is not null and tro.hits > 0 then $4
@@ -194,51 +196,71 @@ impl<'db> Collection<'db> {
                 end as state,
                 tro.hits
             from TestRunLineCoverageOverrides tro
-                left join ProductRelatedFiles pf on
-                    tro.collect_nr = pf.collect_nr
-                    and tro.product_id = pf.product_id
-                    and tro.cov_filepath = pf.filepath
-            where tro.collect_nr = $1
+                left join CollectedFileHashes cfh on
+                    tro.test_collect_nr = cfh.agg_collect_nr
+                    and tro.cov_filepath = cfh.filepath,
+                ValidReviews vr
+            where tro.collect_nr = (
+                select max(rv.collect_nr)
+                from Reviews rv
+                where rv.product_id = tro.product_id
+            )
+            and vr.review_collect_nr = tro.collect_nr
+            and vr.product_id = tro.product_id
+            and vr.review_name = tro.review_name
+            and vr.review_date = tro.review_date
 
             union all
 
             select
+                $1 as agg_collect_nr,
                 t.collect_nr,
                 t.product_id,
                 t.test_run_name,
                 t.test_run_date,
                 t.cov_filepath,
-                t.cov_file_hash,
+                cfh.file_hash as cov_file_hash,
                 t.cov_line,
                 case
                     when exists (
-                        select er.filepath, er.start_line, er.end_line
-                        from ExcludedLineRanges er
-                        where er.collect_nr = $1 and er.product_id = t.product_id
-                        and t.cov_filepath = er.filepath
-                        and t.cov_line >= er.start_line and t.cov_line <= er.end_line
+                        select el.line
+                        from ExcludedCoverageLines el
+                        where cfh.file_hash is not null
+                        and cfh.file_hash = el.file_hash
+                        and t.cov_line = el.line
                     ) then $3
                     when t.hits is not null and t.hits > 0 then $2
                     else $6
                 end as state,
                 t.hits
             from TestRunLineCoverage t
-            where not exists (
+                left join CollectedFileHashes cfh on
+                    t.collect_nr = cfh.agg_collect_nr
+                    and t.cov_filepath = cfh.filepath
+            where t.collect_nr = (
+                select max(tr.collect_nr)
+                from TestRuns tr
+                where tr.product_id = t.product_id
+            )
+            and not exists (
                 select
-                    collect_nr,
-                    product_id,
-                    test_run_name,
-                    test_run_date,
-                    cov_filepath,
                     cov_line
-                from TestRunLineCoverageOverrides o
-                where t.collect_nr = $1
-                and t.collect_nr = o.collect_nr
-                and t.product_id = o.product_id
-                and t.test_run_name = o.test_run_name
-                and t.test_run_date = o.test_run_date
-                and t.cov_filepath = o.cov_filepath
-                and t.cov_line = o.cov_line
+                from TestRunLineCoverageOverrides tro, ValidReviews vr
+                where tro.collect_nr = (
+                    select max(rv.collect_nr)
+                    from Reviews rv
+                    where rv.product_id = tro.product_id
+                )
+                and vr.review_collect_nr = tro.collect_nr
+                and vr.product_id = tro.product_id
+                and vr.review_name = tro.review_name
+                and vr.review_date = tro.review_date
+                and tro.test_collect_nr = t.collect_nr
+                and tro.product_id = t.product_id
+                and tro.test_run_name = t.test_run_name
+                and tro.test_run_date = t.test_run_date
+                and tro.cov_filepath = t.cov_filepath
+                and tro.cov_line = t.cov_line
             )
             ",
             collect_nr,
@@ -254,83 +276,104 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into ResolvedTestCaseLineCoverage (
-            collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date,
-            test_case_name,
-            cov_filepath,
-            cov_file_hash,
-            cov_line,
-            state,
-            hits
-        )
-        select
-            tco.collect_nr,
-            tco.product_id,
-            tco.test_run_name,
-            tco.test_run_date,
-            tco.test_case_name,
-            tco.cov_filepath,
-            pf.file_hash as cov_file_hash,
-            tco.cov_line,
-            case
-                when tco.hits is not null and tco.hits > 0 then $4
-                else $5
-            end as state,
-            tco.hits
-        from TestCaseLineCoverageOverrides tco
-            left join ProductRelatedFiles pf on
-                tco.collect_nr = pf.collect_nr
-                and tco.product_id = pf.product_id
-                and tco.cov_filepath = pf.filepath
-        where tco.collect_nr = $1
-
-        union all
-
-        select
-            t.collect_nr,
-            t.product_id,
-            t.test_run_name,
-            t.test_run_date,
-            t.test_case_name,
-            t.cov_filepath,
-            t.cov_file_hash,
-            t.cov_line,
-            case
-                when exists (
-                    select er.filepath, er.start_line, er.end_line
-                    from ExcludedLineRanges er
-                    where er.collect_nr = $1 and er.product_id = t.product_id
-                    and t.cov_filepath = er.filepath
-                    and t.cov_line >= er.start_line and t.cov_line <= er.end_line
-                ) then $3
-                when t.hits is not null and t.hits > 0 then $2
-                else $6
-            end as state,
-            t.hits
-        from TestCaseLineCoverage t
-        where not exists (
-            select
-                collect_nr,
+            insert into ResolvedTestCaseLineCoverage (
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date,
                 test_case_name,
                 cov_filepath,
-                cov_line
-            from TestCaseLineCoverageOverrides o
-            where t.collect_nr = $1
-            and t.collect_nr = o.collect_nr
-            and t.product_id = o.product_id
-            and t.test_run_name = o.test_run_name
-            and t.test_run_date = o.test_run_date
-            and t.test_case_name = o.test_case_name
-            and t.cov_filepath = o.cov_filepath
-            and t.cov_line = o.cov_line
-        )
-        ",
+                cov_file_hash,
+                cov_line,
+                state,
+                hits
+            )
+            select
+                $1 as agg_collect_nr,
+                tco.test_collect_nr,
+                tco.product_id,
+                tco.test_run_name,
+                tco.test_run_date,
+                tco.test_case_name,
+                tco.cov_filepath,
+                cfh.file_hash as cov_file_hash,
+                tco.cov_line,
+                case
+                    when tco.hits is not null and tco.hits > 0 then $4
+                    else $5
+                end as state,
+                tco.hits
+            from TestCaseLineCoverageOverrides tco
+                left join CollectedFileHashes cfh on
+                    tco.test_collect_nr = cfh.agg_collect_nr
+                    and tco.cov_filepath = cfh.filepath,
+                ValidReviews vr
+            where tco.collect_nr = (
+                select max(rv.collect_nr)
+                from Reviews rv
+                where rv.product_id = tco.product_id
+            )
+            and vr.review_collect_nr = tco.collect_nr
+            and vr.product_id = tco.product_id
+            and vr.review_name = tco.review_name
+            and vr.review_date = tco.review_date
+
+            union all
+
+            select
+                $1 as agg_collect_nr,
+                t.collect_nr,
+                t.product_id,
+                t.test_run_name,
+                t.test_run_date,
+                t.test_case_name,
+                t.cov_filepath,
+                cfh.file_hash as cov_file_hash,
+                t.cov_line,
+                case
+                    when exists (
+                        select el.line
+                        from ExcludedCoverageLines el
+                        where cfh.file_hash is not null
+                        and cfh.file_hash = el.file_hash
+                        and t.cov_line = el.line
+                    ) then $3
+                    when t.hits is not null and t.hits > 0 then $2
+                    else $6
+                end as state,
+                t.hits
+            from TestCaseLineCoverage t
+                left join CollectedFileHashes cfh on
+                    t.collect_nr = cfh.agg_collect_nr
+                    and t.cov_filepath = cfh.filepath
+            where t.collect_nr = (
+                select max(tr.collect_nr)
+                from TestRuns tr
+                where tr.product_id = t.product_id
+            )
+            and not exists (
+                select
+                    cov_line
+                from TestCaseLineCoverageOverrides tco, ValidReviews vr
+                where tco.collect_nr = (
+                    select max(rv.collect_nr)
+                    from Reviews rv
+                    where rv.product_id = tco.product_id
+                )
+                and vr.review_collect_nr = tco.collect_nr
+                and vr.product_id = tco.product_id
+                and vr.review_name = tco.review_name
+                and vr.review_date = tco.review_date
+                and tco.test_collect_nr = t.collect_nr
+                and tco.product_id = t.product_id
+                and tco.test_run_name = t.test_run_name
+                and tco.test_run_date = t.test_run_date
+                and tco.test_case_name = t.test_case_name
+                and tco.cov_filepath = t.cov_filepath
+                and tco.cov_line = t.cov_line
+            )
+            ",
             collect_nr,
             covered_state,
             excluded_state,
@@ -344,86 +387,66 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into ResolvedLineCoverageStates (
-            last_collect_nr,
-            product_id,
-            cov_filepath,
-            cov_file_hash,
-            cov_line,
-            state
-        )
-        with ResolvedCoveredLineHits (cov_filepath, cov_file_hash, cov_line, hits) as (
-            select
+            insert into ResolvedLineCoverageStates (
+                agg_collect_nr,
+                product_id,
                 cov_filepath,
                 cov_file_hash,
                 cov_line,
-                max(hits)
-            from (
-                select
-                    cov_filepath,
-                    cov_file_hash,
-                    cov_line,
-                    max(hits) as hits
-                from ResolvedTestRunLineCoverage
-                where last_collect_nr = $1 and product_id = $2
-                group by cov_filepath, cov_file_hash, cov_line
-
-                union all
-
-                select
-                    cov_filepath,
-                    cov_file_hash,
-                    cov_line,
-                    max(hits) as hits
-                from ResolvedTestCaseLineCoverage
-                where last_collect_nr = $1 and product_id = $2
-                group by cov_filepath, cov_file_hash, cov_line
+                state
             )
-            group by cov_filepath, cov_file_hash, cov_line
-        ),
-        OverriddenLines (cov_filepath, cov_line) as (
-            select cov_filepath, cov_line
-            from TestCaseLineCoverageOverrides
-            where last_collect_nr = $1 and product_id = $2
+            with ResolvedCoveredLineHits (product_id, cov_filepath, cov_file_hash, cov_line, hits) as (
+                select
+                    product_id,
+                    cov_filepath,
+                    cov_file_hash,
+                    cov_line,
+                    max(hits)
+                from (
+                    select
+                        product_id,
+                        cov_filepath,
+                        cov_file_hash,
+                        cov_line,
+                        max(hits) as hits
+                    from ResolvedTestRunLineCoverage rtc
+                    where agg_collect_nr = $1
+                    group by product_id, cov_filepath, cov_file_hash, cov_line
 
-            union
+                    union all
 
-            select cov_filepath, cov_line
-            from TestRunLineCoverageOverrides
-            where last_collect_nr = $1 and product_id = $2
-        )
-        select
-            $1 as last_collect_nr,
-            $2 as product_id,
-            cov_filepath,
-            cov_file_hash,
-            cov_line,
-            case when exists (
-                select cov_filepath, cov_line
-                from OverriddenLines ol
-                where lh.cov_filepath = ol.cov_filepath
-                and lh.cov_line = ol.cov_line
-            ) then case
-                when lh.hits is not null and lh.hits > 0 then $5
-                else $6
-                end
-            when exists (
-                select er.filepath, er.start_line, er.end_line
-                from ExcludedLineRanges er
-                where er.last_collect_nr = $1 and er.product_id = $2
-                and lh.cov_filepath = er.filepath
-                and lh.cov_line >= er.start_line and lh.cov_line <= er.end_line
-            ) then $3
-            when lh.hits is not null and lh.hits > 0 then $2
-            else $6
-            end as state
-        from ResolvedCoveredLineHits lh
-        ",
+                    select
+                        product_id,
+                        cov_filepath,
+                        cov_file_hash,
+                        cov_line,
+                        max(hits) as hits
+                    from ResolvedTestCaseLineCoverage
+                    where agg_collect_nr = $1
+                    group by product_id, cov_filepath, cov_file_hash, cov_line
+                )
+                group by product_id, cov_filepath, cov_file_hash, cov_line
+            )
+            select
+                $1 as agg_collect_nr,
+                product_id,
+                cov_filepath,
+                cov_file_hash,
+                cov_line,
+                case when lh.hits is not null and lh.hits > 0 then $2
+                when exists (
+                    select el.line
+                    from ExcludedCoverageLines el
+                    where el.file_hash = lh.cov_file_hash
+                    and el.line = lh.cov_line
+                ) then $3
+                else $4
+                end as state
+            from ResolvedCoveredLineHits lh
+            ",
             collect_nr,
             covered_state,
             excluded_state,
-            overridden_covered_state,
-            overridden_uncovered_state,
             uncovered_state,
         )
         .execute(self.connection_mut())
@@ -435,7 +458,6 @@ impl<'db> Collection<'db> {
 
     async fn update_failed_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
         let passed_test_nr = TestCaseState::Passed.as_nr();
         let skipped_test_nr = TestCaseState::Skipped.as_nr();
 
@@ -501,25 +523,11 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-        delete from FailedTestRuns
-        where last_collect_nr != $1
-        and product_id = $2
-        ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_skipped_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
         let skipped_test_nr = TestCaseState::Skipped.as_nr();
 
         sqlx::query!(
@@ -597,25 +605,11 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-        delete from SkippedTestRuns
-        where last_collect_nr != $1
-        and product_id = $2
-        ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_passed_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
         let passed_test_nr = TestCaseState::Passed.as_nr();
 
         sqlx::query!(
@@ -707,25 +701,11 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-        delete from PassedTestRuns
-        where last_collect_nr != $1
-        and product_id = $2
-        ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_usable_test_runs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
@@ -756,25 +736,11 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-        delete from UsableTestRuns
-        where last_collect_nr != $1
-        and product_id = $2
-        ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_test_run_trace_coverage(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
@@ -819,25 +785,11 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
-        sqlx::query!(
-            "
-        delete from TraceCoveragePerTestRuns
-        where last_collect_nr != $1
-        and product_id = $2
-        ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
-
         Ok(())
     }
 
     async fn update_test_case_trace_coverage(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let product_id = self.product_id();
 
         sqlx::query!(
             "
@@ -882,19 +834,6 @@ impl<'db> Collection<'db> {
         )
         .execute(self.connection_mut())
         .await?;
-
-        sqlx::query!(
-            "
-        delete from TraceCoveragePerTestCases
-        where last_collect_nr != $1
-        and product_id = $2
-        ",
-            collect_nr,
-            product_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to delete outdated data")?;
 
         Ok(())
     }

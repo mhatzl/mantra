@@ -9,9 +9,9 @@ create table DirectProductReqTraces (
     -- This field is used for convenience to only access the latest relevant entries.
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     product_id text not null,
-    req_collect_nr text not null,
+    req_collect_nr integer not null,
     req_id text not null,
-    file_collect_nr text not null,
+    file_collect_nr integer not null,
     filepath text not null,
     file_hash text not null,
     line integer not null,
@@ -205,6 +205,14 @@ create table ExcludedCoverageLines (
     file_hash text not null references FileHashes (hash) on delete restrict,
     line integer not null,
     primary key (file_hash, line)
+);
+
+create table CollectedFileHashes (
+    agg_collect_nr integer not null,
+    filepath text not null,
+    file_hash text not null references FileHashes (hash) on delete restrict,
+    primary key (agg_collect_nr, filepath, file_hash),
+    foreign key (agg_collect_nr, filepath) references CollectedFiles(collect_nr, filepath) on delete cascade
 );
 
 -- Contains reviews that are obsolete and must **not** be used for further analysis.
@@ -518,7 +526,6 @@ create table ResolvedTestCaseLineCoverage (
 
 create table ResolvedLineCoverageStates (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    test_collect_nr integer not null,
     product_id text not null,
     cov_filepath text not null,
     cov_file_hash text,
@@ -526,12 +533,10 @@ create table ResolvedLineCoverageStates (
     state integer not null,
     primary key (
         agg_collect_nr,
-        test_collect_nr,
         product_id,
         cov_filepath,
         cov_line
-    ),
-    foreign key (test_collect_nr, product_id, cov_filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    )
 );
 
 create table TraceCoveragePerTestRuns (

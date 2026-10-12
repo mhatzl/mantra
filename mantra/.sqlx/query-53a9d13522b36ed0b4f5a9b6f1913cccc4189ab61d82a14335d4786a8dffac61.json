@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with LatestHashes (collect_nr, filepath, file_hash) as (\n                select\n                    cf.collect_nr,\n                    cf.filepath,\n                    case\n                        when cf.file_hash is null\n                        -- may not lead to a hash value in case none got collected\n                        then (\n                            select cfi.file_hash\n                            from CollectedFiles cfi\n                            where cfi.filepath = cf.filepath\n                            and cfi.file_hash is not null\n                            and cfi.collect_nr < cf.collect_nr\n                            order by cfi.collect_nr desc\n                            limit 1\n                        )\n                        else cf.file_hash\n                    end\n                from CollectedFiles cf\n                where cf.collect_nr = $1\n            )\n            insert or ignore into CollectedFileHashes (\n                agg_collect_nr,\n                filepath,\n                file_hash\n            )\n            select\n                collect_nr,\n                filepath,\n                file_hash\n            from LatestHashes\n            where file_hash is not null\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "53a9d13522b36ed0b4f5a9b6f1913cccc4189ab61d82a14335d4786a8dffac61"
+}

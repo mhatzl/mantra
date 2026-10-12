@@ -69,6 +69,10 @@ impl<'db> Collection<'db> {
             self.update_directly_satisfied_requirements().await?;
         }
 
+        self.update_collected_file_hashes()
+            .await
+            .context("Updating collected file hashes")?;
+
         self.update_obsoletions()
             .await
             .context("Updating obsolete test runs and reviews")?;
@@ -79,8 +83,52 @@ impl<'db> Collection<'db> {
                 .context("Resolving test states")?;
         }
 
-        
-        
+        Ok(())
+    }
+
+    async fn update_collected_file_hashes(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
+        sqlx::query!(
+            "
+            with LatestHashes (collect_nr, filepath, file_hash) as (
+                select
+                    cf.collect_nr,
+                    cf.filepath,
+                    case
+                        when cf.file_hash is null
+                        -- may not lead to a hash value in case none got collected
+                        then (
+                            select cfi.file_hash
+                            from CollectedFiles cfi
+                            where cfi.filepath = cf.filepath
+                            and cfi.file_hash is not null
+                            and cfi.collect_nr < cf.collect_nr
+                            order by cfi.collect_nr desc
+                            limit 1
+                        )
+                        else cf.file_hash
+                    end
+                from CollectedFiles cf
+                where cf.collect_nr = $1
+            )
+            insert or ignore into CollectedFileHashes (
+                agg_collect_nr,
+                filepath,
+                file_hash
+            )
+            select
+                collect_nr,
+                filepath,
+                file_hash
+            from LatestHashes
+            where file_hash is not null
+            ",
+            collect_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
+
         Ok(())
     }
 }
