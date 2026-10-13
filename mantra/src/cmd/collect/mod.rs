@@ -13,7 +13,6 @@ pub mod annotations;
 pub mod cfg;
 pub mod collection;
 pub mod collector;
-pub mod db;
 pub mod lsif;
 pub mod markup;
 pub mod mixed_aggregation;

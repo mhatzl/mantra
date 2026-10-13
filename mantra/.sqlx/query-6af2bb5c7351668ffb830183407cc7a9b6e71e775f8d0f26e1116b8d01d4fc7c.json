@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into TracesCoveredByFailedTests (\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line\n            )\n            select distinct\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line\n            from TraceMappedLinesCoveredByFailedTests\n            where agg_collect_nr = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6af2bb5c7351668ffb830183407cc7a9b6e71e775f8d0f26e1116b8d01d4fc7c"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into UsableTestRuns (\n                agg_collect_nr,\n                test_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            select\n                ptr.agg_collect_nr,\n                ptr.test_collect_nr,\n                ptr.product_id,\n                ptr.test_run_name,\n                ptr.test_run_date\n            from PassedTestRuns ptr, ValidTestRuns vtr\n            where ptr.agg_collect_nr = $1 and vtr.agg_collect_nr = $1\n            and ptr.test_collect_nr = vtr.test_collect_nr\n            and ptr.product_id = vtr.product_id\n            and ptr.test_run_name = vtr.test_run_name\n            and ptr.test_run_date = vtr.test_run_date\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "cd0a7150dae614d6d5565d4fa2fa101a6c6030e67d2eea320896d69a283a74b0"
+}

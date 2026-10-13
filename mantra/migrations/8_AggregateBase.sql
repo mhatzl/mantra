@@ -455,7 +455,7 @@ create table ResolvedTestRunLineCoverage (
     cov_file_hash text,
     cov_line integer not null,
     state integer not null,
-    hits integer,
+    hits integer not null,
     primary key (
         agg_collect_nr,
         test_collect_nr,
@@ -494,7 +494,7 @@ create table ResolvedTestCaseLineCoverage (
     cov_file_hash text,
     cov_line integer not null,
     state integer not null,
-    hits integer,
+    hits integer not null,
     primary key (
         agg_collect_nr,
         test_collect_nr,
@@ -539,6 +539,21 @@ create table ResolvedLineCoverageStates (
     )
 );
 
+create table ResolvedLineCoverageTestStates (
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    product_id text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line integer not null,
+    state integer not null,
+    primary key (
+        agg_collect_nr,
+        product_id,
+        cov_filepath,
+        cov_line
+    )
+);
+
 create table TraceCoveragePerTestRuns (
     -- Note: Not part of PK, because products may have not been collected that could affect an entry.
     -- This field is used for convenience to only access the latest relevant entries.
@@ -553,7 +568,7 @@ create table TraceCoveragePerTestRuns (
     traced_line integer not null,
     cov_line integer not null,
     hits integer not null,
-    primary key (product_id, test_collect_nr, test_run_name, test_run_date, file_collect_nr, filepath, traced_line, cov_line),
+    primary key (product_id, test_collect_nr, test_run_name, test_run_date, filepath, traced_line, cov_line),
     foreign key (test_collect_nr, product_id, test_run_name, test_run_date, filepath, cov_line)
         references TestRunLineCoverage(collect_nr, product_id, test_run_name, test_run_date, cov_filepath, cov_line) on delete cascade,
     foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
@@ -575,7 +590,7 @@ create table TraceCoveragePerTestCases (
     traced_line integer not null,
     cov_line integer not null,
     hits integer not null,
-    primary key (product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, file_collect_nr, filepath, traced_line, cov_line),
+    primary key (product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, filepath, traced_line, cov_line),
     foreign key (product_id, test_collect_nr, test_run_name, test_run_date, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(collect_nr, product_id, test_run_name, test_run_date, test_case_name, cov_filepath, cov_line) on delete cascade,
     foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,

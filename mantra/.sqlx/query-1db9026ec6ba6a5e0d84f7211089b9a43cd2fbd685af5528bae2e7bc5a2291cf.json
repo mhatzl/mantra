@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into TraceMappedLinesOnlyCoveredByPassedTests (\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            )\n            -- union, because tables may contain duplicate covered line entries\n            select\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            from TraceMappedLinesOnlyCoveredByPassedTestRuns\n            where agg_collect_nr = $1\n\n            union\n\n            select\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            from TraceMappedLinesOnlyCoveredByPassedTestCases\n            where agg_collect_nr = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "1db9026ec6ba6a5e0d84f7211089b9a43cd2fbd685af5528bae2e7bc5a2291cf"
+}

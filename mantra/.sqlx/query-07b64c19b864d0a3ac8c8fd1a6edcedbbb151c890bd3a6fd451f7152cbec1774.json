@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into TraceCoveragePerTestCases (\n                agg_collect_nr,\n                test_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line,\n                hits\n            )\n            select\n                rc.agg_collect_nr,\n                rc.test_collect_nr,\n                rc.product_id,\n                rc.test_run_name,\n                rc.test_run_date,\n                rc.test_case_name,\n                cf.collect_nr,\n                rc.cov_filepath,\n                rc.cov_file_hash,\n                ts.traced_line,\n                rc.cov_line,\n                rc.hits\n            from ResolvedTestCaseLineCoverage rc, TraceSpans ts, CollectedFiles cf\n            where rc.agg_collect_nr = $1\n            and rc.cov_file_hash not null\n            and rc.cov_file_hash = ts.file_hash\n            and rc.cov_line >= ts.start_line\n            and rc.cov_line <= ts.end_line\n            -- if an excluded line has hits, the hits take priority\n            and (\n                (rc.hits not null and rc.hits > 0)\n                or rc.cov_line not in (\n                    select line\n                    from ExcludedCoverageLines\n                    where file_hash = ts.file_hash\n                )\n            )\n            and cf.filepath = rc.cov_filepath\n            and cf.file_hash = rc.cov_file_hash\n            and cf.collect_nr = (\n                select max(cfc.collect_nr)\n                from CollectedFiles cfc\n                where cfc.filepath = cf.filepath\n                and cfc.file_hash = cf.file_hash\n                and cfc.collect_nr <= rc.test_collect_nr\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "07b64c19b864d0a3ac8c8fd1a6edcedbbb151c890bd3a6fd451f7152cbec1774"
+}

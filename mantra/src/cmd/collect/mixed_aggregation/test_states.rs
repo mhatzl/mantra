@@ -1,5 +1,8 @@
 use anyhow::Context;
-use mantra_schema::{report::tests::ResolvedLineCoverageState, test_runs::TestCaseState};
+use mantra_schema::{
+    report::tests::{ResolvedLineCoverageState, TestState},
+    test_runs::TestCaseState,
+};
 
 use crate::cmd::collect::Collection;
 
@@ -26,6 +29,9 @@ impl<'db> Collection<'db> {
         self.update_usable_test_runs()
             .await
             .context("Failed to update usable test runs")?;
+        self.resolve_line_coverage_test_states()
+            .await
+            .context("Resolving covered line test states")?;
         self.update_test_run_trace_coverage()
             .await
             .context("Failed to update test run trace coverage")?;
@@ -144,7 +150,7 @@ impl<'db> Collection<'db> {
                 pc.test_run_date,
                 pc.test_case_name
             from PassedTestCases pc, ValidTestRuns vtr
-            where pc.agg_collect_nr = $1
+            where pc.agg_collect_nr = $1 and vtr.agg_collect_nr = $1
             and pc.test_collect_nr = vtr.test_collect_nr
             and pc.product_id = vtr.product_id
             and pc.test_run_name = vtr.test_run_name
@@ -194,7 +200,7 @@ impl<'db> Collection<'db> {
                     when tro.hits is not null and tro.hits > 0 then $4
                     else $5
                 end as state,
-                tro.hits
+                coalesce(tro.hits, 0) as hits
             from TestRunLineCoverageOverrides tro
                 left join CollectedFileHashes cfh on
                     tro.test_collect_nr = cfh.agg_collect_nr
@@ -232,7 +238,7 @@ impl<'db> Collection<'db> {
                     when t.hits is not null and t.hits > 0 then $2
                     else $6
                 end as state,
-                t.hits
+                coalesce(t.hits, 0) as hits
             from TestRunLineCoverage t
                 left join CollectedFileHashes cfh on
                     t.collect_nr = cfh.agg_collect_nr
@@ -303,7 +309,7 @@ impl<'db> Collection<'db> {
                     when tco.hits is not null and tco.hits > 0 then $4
                     else $5
                 end as state,
-                tco.hits
+                coalesce(tco.hits, 0) as hits
             from TestCaseLineCoverageOverrides tco
                 left join CollectedFileHashes cfh on
                     tco.test_collect_nr = cfh.agg_collect_nr
@@ -342,7 +348,7 @@ impl<'db> Collection<'db> {
                     when t.hits is not null and t.hits > 0 then $2
                     else $6
                 end as state,
-                t.hits
+                coalesce(t.hits, 0) as hits
             from TestCaseLineCoverage t
                 left join CollectedFileHashes cfh on
                     t.collect_nr = cfh.agg_collect_nr
@@ -433,7 +439,7 @@ impl<'db> Collection<'db> {
                 cov_filepath,
                 cov_file_hash,
                 cov_line,
-                case when lh.hits is not null and lh.hits > 0 then $2
+                case when lh.hits > 0 then $2
                 when exists (
                     select el.line
                     from ExcludedCoverageLines el
@@ -737,28 +743,145 @@ impl<'db> Collection<'db> {
                 test_run_date
             )
             select
-                agg_collect_nr,
-                test_collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date
-            from PassedTestRuns
-            where agg_collect_nr = $1
-
-            except
-
-            select
-                $1 as agg_collect_nr,
-                collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date
-            from ObsoleteTestRuns
+                ptr.agg_collect_nr,
+                ptr.test_collect_nr,
+                ptr.product_id,
+                ptr.test_run_name,
+                ptr.test_run_date
+            from PassedTestRuns ptr, ValidTestRuns vtr
+            where ptr.agg_collect_nr = $1 and vtr.agg_collect_nr = $1
+            and ptr.test_collect_nr = vtr.test_collect_nr
+            and ptr.product_id = vtr.product_id
+            and ptr.test_run_name = vtr.test_run_name
+            and ptr.test_run_date = vtr.test_run_date
             ",
             collect_nr
         )
         .execute(self.connection_mut())
         .await?;
+
+        Ok(())
+    }
+
+    async fn resolve_line_coverage_test_states(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
+        let failed = TestState::Failed.as_nr();
+        let passed = TestState::Passed.as_nr();
+        let skipped = TestState::Skipped.as_nr();
+        let unknown = TestState::Unknown.as_nr();
+
+        sqlx::query!(
+            "
+            insert into ResolvedLineCoverageTestStates (
+                agg_collect_nr,
+                product_id,
+                cov_filepath,
+                cov_file_hash,
+                cov_line,
+                state
+            )
+            with ResolvedLineCoveragePerTest (
+                agg_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                cov_filepath,
+                cov_file_hash,
+                cov_line,
+                state
+            ) as (
+                select
+                    agg_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    cov_filepath,
+                    cov_file_hash,
+                    cov_line,
+                    state
+                from ResolvedTestRunLineCoverage
+                where agg_collect_nr = $1
+
+                union
+
+                select
+                    agg_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date,
+                    cov_filepath,
+                    cov_file_hash,
+                    cov_line,
+                    state
+                from ResolvedTestCaseLineCoverage
+                where agg_collect_nr = $1
+            )
+            select
+                agg_collect_nr,
+                product_id,
+                cov_filepath,
+                cov_file_hash,
+                cov_line,
+                case
+                    when exists (
+                        select ftc.test_run_name
+                        from FailedTestCases ftc
+                        where ftc.agg_collect_nr = rpt.agg_collect_nr
+                        and ftc.product_id = rpt.product_id
+                        and ftc.test_run_name = rpt.test_run_name
+                        and ftc.test_run_date = rpt.test_run_date
+                    ) or exists (
+                        select ftr.test_run_name
+                        from FailedTestRuns ftr
+                        where ftr.agg_collect_nr = rpt.agg_collect_nr
+                        and ftr.product_id = rpt.product_id
+                        and ftr.test_run_name = rpt.test_run_name
+                        and ftr.test_run_date = rpt.test_run_date
+                    ) then $2
+                    when exists (
+                        select stc.test_run_name
+                        from SkippedTestCases stc
+                        where stc.agg_collect_nr = rpt.agg_collect_nr
+                        and stc.product_id = rpt.product_id
+                        and stc.test_run_name = rpt.test_run_name
+                        and stc.test_run_date = rpt.test_run_date
+                    ) or exists (
+                        select str.test_run_name
+                        from SkippedTestRuns str
+                        where str.agg_collect_nr = rpt.agg_collect_nr
+                        and str.product_id = rpt.product_id
+                        and str.test_run_name = rpt.test_run_name
+                        and str.test_run_date = rpt.test_run_date
+                    ) then $4
+                    when exists (
+                        select ptc.test_run_name
+                        from PassedTestCases ptc
+                        where ptc.agg_collect_nr = rpt.agg_collect_nr
+                        and ptc.product_id = rpt.product_id
+                        and ptc.test_run_name = rpt.test_run_name
+                        and ptc.test_run_date = rpt.test_run_date
+                    ) or exists (
+                        select ptr.test_run_name
+                        from PassedTestRuns ptr
+                        where ptr.agg_collect_nr = rpt.agg_collect_nr
+                        and ptr.product_id = rpt.product_id
+                        and ptr.test_run_name = rpt.test_run_name
+                        and ptr.test_run_date = rpt.test_run_date
+                    ) then $3
+                    else $5
+                    end as state
+            from ResolvedLineCoveragePerTest rpt
+            ",
+            collect_nr,
+            failed,
+            passed,
+            skipped,
+            unknown,
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to update ResolvedLineCoverageStates")?;
 
         Ok(())
     }
@@ -774,6 +897,7 @@ impl<'db> Collection<'db> {
             product_id,
             test_run_name,
             test_run_date,
+            file_collect_nr,
             filepath,
             file_hash,
             traced_line,
@@ -786,12 +910,13 @@ impl<'db> Collection<'db> {
             rc.product_id,
             rc.test_run_name,
             rc.test_run_date,
+            cf.collect_nr,
             rc.cov_filepath,
             rc.cov_file_hash,
             ts.traced_line,
             rc.cov_line,
             rc.hits
-        from ResolvedTestRunLineCoverage rc, TraceSpans ts
+        from ResolvedTestRunLineCoverage rc, TraceSpans ts, CollectedFiles cf
         where rc.agg_collect_nr = $1
         and rc.cov_file_hash not null
         and rc.cov_file_hash = ts.file_hash
@@ -805,6 +930,15 @@ impl<'db> Collection<'db> {
                 from ExcludedCoverageLines
                 where file_hash = ts.file_hash
             )
+        )
+        and cf.filepath = rc.cov_filepath
+        and cf.file_hash = rc.cov_file_hash
+        and cf.collect_nr = (
+            select max(cfc.collect_nr)
+            from CollectedFiles cfc
+            where cfc.filepath = cf.filepath
+            and cfc.file_hash = cf.file_hash
+            and cfc.collect_nr <= rc.test_collect_nr
         )
         ",
             collect_nr
@@ -827,6 +961,7 @@ impl<'db> Collection<'db> {
                 test_run_name,
                 test_run_date,
                 test_case_name,
+                file_collect_nr,
                 filepath,
                 file_hash,
                 traced_line,
@@ -840,12 +975,13 @@ impl<'db> Collection<'db> {
                 rc.test_run_name,
                 rc.test_run_date,
                 rc.test_case_name,
+                cf.collect_nr,
                 rc.cov_filepath,
                 rc.cov_file_hash,
                 ts.traced_line,
                 rc.cov_line,
                 rc.hits
-            from ResolvedTestCaseLineCoverage rc, TraceSpans ts
+            from ResolvedTestCaseLineCoverage rc, TraceSpans ts, CollectedFiles cf
             where rc.agg_collect_nr = $1
             and rc.cov_file_hash not null
             and rc.cov_file_hash = ts.file_hash
@@ -859,6 +995,15 @@ impl<'db> Collection<'db> {
                     from ExcludedCoverageLines
                     where file_hash = ts.file_hash
                 )
+            )
+            and cf.filepath = rc.cov_filepath
+            and cf.file_hash = rc.cov_file_hash
+            and cf.collect_nr = (
+                select max(cfc.collect_nr)
+                from CollectedFiles cfc
+                where cfc.filepath = cf.filepath
+                and cfc.file_hash = cf.file_hash
+                and cfc.collect_nr <= rc.test_collect_nr
             )
             ",
             collect_nr

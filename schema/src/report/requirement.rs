@@ -130,15 +130,20 @@ impl RequirementReference {
 pub enum RequirementState {
     Failed = 0,
     Verified = 1,
-    Skipped = 2,
-    Unverified = 3,
+    Satisfied = 2,
+    Skipped = 3,
     Deprecated = 4,
     Excluded = 5,
+    Untraced = 6,
 }
 
 impl RequirementState {
     pub fn as_nr(&self) -> i32 {
         *self as i32
+    }
+
+    pub fn as_i64(&self) -> i64 {
+        *self as i64
     }
 }
 
@@ -146,14 +151,22 @@ impl TryFrom<i64> for RequirementState {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(RequirementState::Failed),
-            1 => Ok(RequirementState::Verified),
-            2 => Ok(RequirementState::Skipped),
-            3 => Ok(RequirementState::Unverified),
-            4 => Ok(RequirementState::Deprecated),
-            5 => Ok(RequirementState::Excluded),
-            _ => Err(ConversionError::UnknownState),
+        if value == RequirementState::Failed.as_i64() {
+            Ok(RequirementState::Failed)
+        } else if value == RequirementState::Verified.as_i64() {
+            Ok(RequirementState::Verified)
+        } else if value == RequirementState::Satisfied.as_i64() {
+            Ok(RequirementState::Satisfied)
+        } else if value == RequirementState::Skipped.as_i64() {
+            Ok(RequirementState::Skipped)
+        } else if value == RequirementState::Deprecated.as_i64() {
+            Ok(RequirementState::Deprecated)
+        } else if value == RequirementState::Excluded.as_i64() {
+            Ok(RequirementState::Excluded)
+        } else if value == RequirementState::Untraced.as_i64() {
+            Ok(RequirementState::Untraced)
+        } else {
+            Err(ConversionError::UnknownState)
         }
     }
 }
