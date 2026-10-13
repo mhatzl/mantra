@@ -1,4 +1,4 @@
-use anyhow::{Context, anyhow};
+use anyhow::Context;
 use mantra_schema::{report::tests::ResolvedLineCoverageState, test_runs::TestCaseState};
 
 use crate::cmd::collect::Collection;
@@ -463,60 +463,63 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into FailedTestRuns (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        )
-        with TestRunsWithFailedTestCase (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        ) as (
-            select
-                last_collect_nr,
+            insert or ignore into FailedTestRuns (
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from ResolvedTestCaseStates
-            where last_collect_nr = $1
-            and product_id = $2
-            and state != $3 and state != $4
-        ), IndirectFailedTestRun (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        ) as (
+            )
+            with TestRunsWithFailedTestCase (
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            ) as (
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from ResolvedTestCaseStates
+                where agg_collect_nr = $1
+                and state != $2 and state != $3
+            ), IndirectFailedTestRun (
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            ) as (
+                select
+                    d.collect_nr,
+                    d.product_id,
+                    d.test_run_name,
+                    d.test_run_date
+                from TestRunDescendants d, TestRunsWithFailedTestCase f
+                where d.collect_nr = f.test_collect_nr
+                and d.product_id = f.product_id
+                and d.descendant_test_run_name = f.test_run_name
+                and d.descendant_test_run_date = f.test_run_date
+            )
             select
-            d.last_collect_nr,
-            d.product_id,
-            d.test_run_name,
-            d.test_run_date
-            from TestRunDescendants d, TestRunsWithFailedTestCase f
-            where d.last_collect_nr = f.last_collect_nr
-            and d.product_id = f.product_id
-            and d.descendant_test_run_name = f.test_run_name
-            and d.descendant_test_run_date = f.test_run_date
-        )
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from TestRunsWithFailedTestCase
-        union all
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from IndirectFailedTestRun
-        ",
+                $1 as agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            from TestRunsWithFailedTestCase
+
+            union all
+
+            select
+                $1 as agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            from IndirectFailedTestRun
+            ",
             collect_nr,
-            product_id,
             passed_test_nr,
             skipped_test_nr
         )
@@ -532,74 +535,80 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into SkippedTestRuns (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        )
-        with TestRunsWithSkippedTestCase (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        ) as (
-            select
-                last_collect_nr,
+            insert or ignore into SkippedTestRuns (
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from ResolvedTestCaseStates
-            where last_collect_nr = $1
-            and product_id = $2
-            and state = $3
-        ), IndirectSkippedTestRun (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        ) as (
-            select
-            d.last_collect_nr,
-            d.product_id,
-            d.test_run_name,
-            d.test_run_date
-            from TestRunDescendants d, TestRunsWithSkippedTestCase s
-            where d.last_collect_nr = s.last_collect_nr
-            and d.product_id = s.product_id
-            and d.descendant_test_run_name = s.test_run_name
-            and d.descendant_test_run_date = s.test_run_date
-        )
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from (
-            select
-                last_collect_nr,
+            )
+            with TestRunsWithSkippedTestCase (
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from TestRunsWithSkippedTestCase
-            union all
-            select
-                last_collect_nr,
+            ) as (
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from ResolvedTestCaseStates
+                where agg_collect_nr = $1
+                and state = $2
+            ), IndirectSkippedTestRun (
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from IndirectSkippedTestRun
-        )
-        except
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from FailedTestRuns
-        ",
+            ) as (
+                select
+                    d.collect_nr,
+                    d.product_id,
+                    d.test_run_name,
+                    d.test_run_date
+                from TestRunDescendants d, TestRunsWithSkippedTestCase s
+                where d.collect_nr = s.test_collect_nr
+                and d.product_id = s.product_id
+                and d.descendant_test_run_name = s.test_run_name
+                and d.descendant_test_run_date = s.test_run_date
+            )
+            select
+                $1 as agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            from (
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from TestRunsWithSkippedTestCase
+
+                union all
+
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from IndirectSkippedTestRun
+            )
+
+            except
+
+            select
+                agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            from FailedTestRuns
+            where agg_collect_nr = $1
+            ",
             collect_nr,
-            product_id,
             skipped_test_nr
         )
         .execute(self.connection_mut())
@@ -614,88 +623,99 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into PassedTestRuns (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        )
-        with TestRunsWithPassedTestCase (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        ) as (
-            select
-                last_collect_nr,
+            insert or ignore into PassedTestRuns (
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from ResolvedTestCaseStates
-            where last_collect_nr = $1
-            and product_id = $2
-            and state = $3
-        ), IndirectPassedTestRun (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        ) as (
-            select
-            d.last_collect_nr,
-            d.product_id,
-            d.test_run_name,
-            d.test_run_date
-            from TestRunDescendants d, TestRunsWithPassedTestCase p
-            where d.last_collect_nr = p.last_collect_nr
-            and d.product_id = p.product_id
-            and d.descendant_test_run_name = p.test_run_name
-            and d.descendant_test_run_date = p.test_run_date
-        )
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from (
-            select
-                last_collect_nr,
+            )
+            with TestRunsWithPassedTestCase (
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from TestRunsWithPassedTestCase
-            union all
-            select
-                last_collect_nr,
+            ) as (
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from ResolvedTestCaseStates
+                where agg_collect_nr = $1
+                and state = $2
+            ), IndirectPassedTestRun (
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from IndirectPassedTestRun
-        )
-        except
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from (
+            ) as (
+                select
+                    d.collect_nr,
+                    d.product_id,
+                    d.test_run_name,
+                    d.test_run_date
+                from TestRunDescendants d, TestRunsWithPassedTestCase p
+                where d.collect_nr = p.test_collect_nr
+                and d.product_id = p.product_id
+                and d.descendant_test_run_name = p.test_run_name
+                and d.descendant_test_run_date = p.test_run_date
+            )
             select
-                last_collect_nr,
+                $1 as agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from FailedTestRuns
-            union all
+            from (
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from TestRunsWithPassedTestCase
+
+                union all
+
+                select
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from IndirectPassedTestRun
+            )
+
+            except
+
             select
-                last_collect_nr,
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
-            from SkippedTestRuns
-        )
-        ",
+            from (
+                select
+                    agg_collect_nr,
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from FailedTestRuns
+                where agg_collect_nr = $1
+
+                union all
+
+                select
+                    agg_collect_nr,
+                    test_collect_nr,
+                    product_id,
+                    test_run_name,
+                    test_run_date
+                from SkippedTestRuns
+                where agg_collect_nr = $1
+            )
+            ",
             collect_nr,
-            product_id,
             passed_test_nr
         )
         .execute(self.connection_mut())
@@ -709,29 +729,33 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into UsableTestRuns (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        )
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from PassedTestRuns
-        where last_collect_nr = $1 and product_id = $2
-        except
-        select
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date
-        from ObsoleteTestRuns
-        ",
-            collect_nr,
-            product_id
+            insert or ignore into UsableTestRuns (
+                agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            )
+            select
+                agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            from PassedTestRuns
+            where agg_collect_nr = $1
+
+            except
+
+            select
+                $1 as agg_collect_nr,
+                collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date
+            from ObsoleteTestRuns
+            ",
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -744,8 +768,9 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into TraceCoveragePerTestRuns (
-            last_collect_nr,
+        insert or ignore into TraceCoveragePerTestRuns (
+            agg_collect_nr,
+            test_collect_nr,
             product_id,
             test_run_name,
             test_run_date,
@@ -756,31 +781,33 @@ impl<'db> Collection<'db> {
             hits
         )
         select
-            sc.last_collect_nr,
-            sc.product_id,
-            sc.test_run_name,
-            sc.test_run_date,
-            sc.cov_filepath,
-            ts.file_hash,
+            rc.agg_collect_nr,
+            rc.test_collect_nr,
+            rc.product_id,
+            rc.test_run_name,
+            rc.test_run_date,
+            rc.cov_filepath,
+            rc.cov_file_hash,
             ts.traced_line,
-            sc.cov_line,
-            sc.hits
-        from ResolvedTestRunLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts
-        where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
-        and sc.product_id = $2 and sc.product_id = pf.product_id
-        and sc.hits not null and sc.cov_filepath = pf.filepath
-        and pf.file_hash = ts.file_hash
-        and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)
-        and sc.cov_line >= ts.start_line
-        and sc.cov_line <= ts.end_line
-        and sc.cov_line not in (
-            select line
-            from ExcludedCoverageLines
-            where file_hash = ts.file_hash
+            rc.cov_line,
+            rc.hits
+        from ResolvedTestRunLineCoverage rc, TraceSpans ts
+        where rc.agg_collect_nr = $1
+        and rc.cov_file_hash not null
+        and rc.cov_file_hash = ts.file_hash
+        and rc.cov_line >= ts.start_line
+        and rc.cov_line <= ts.end_line
+        -- if an excluded line has hits, the hits take priority
+        and (
+            (rc.hits not null and rc.hits > 0)
+            or rc.cov_line not in (
+                select line
+                from ExcludedCoverageLines
+                where file_hash = ts.file_hash
+            )
         )
         ",
-            collect_nr,
-            product_id
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -793,44 +820,48 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-        insert or replace into TraceCoveragePerTestCases (
-            last_collect_nr,
-            product_id,
-            test_run_name,
-            test_run_date,
-            test_case_name,
-            filepath,
-            file_hash,
-            traced_line,
-            cov_line,
-            hits
-        )
-        select
-            sc.last_collect_nr,
-            sc.product_id,
-            sc.test_run_name,
-            sc.test_run_date,
-            sc.test_case_name,
-            sc.cov_filepath,
-            ts.file_hash,
-            ts.traced_line,
-            sc.cov_line,
-            sc.hits
-        from ResolvedTestCaseLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts
-        where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
-        and sc.product_id = $2 and sc.product_id = pf.product_id
-        and sc.hits not null and sc.cov_filepath = pf.filepath
-        and pf.file_hash = ts.file_hash
-        and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)
-        and sc.cov_line >= ts.start_line and sc.cov_line <= ts.end_line
-        and sc.cov_line not in (
-            select line
-            from ExcludedCoverageLines
-            where file_hash = ts.file_hash
-        )
-        ",
-            collect_nr,
-            product_id
+            insert or ignore into TraceCoveragePerTestCases (
+                agg_collect_nr,
+                test_collect_nr,
+                product_id,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                filepath,
+                file_hash,
+                traced_line,
+                cov_line,
+                hits
+            )
+            select
+                rc.agg_collect_nr,
+                rc.test_collect_nr,
+                rc.product_id,
+                rc.test_run_name,
+                rc.test_run_date,
+                rc.test_case_name,
+                rc.cov_filepath,
+                rc.cov_file_hash,
+                ts.traced_line,
+                rc.cov_line,
+                rc.hits
+            from ResolvedTestCaseLineCoverage rc, TraceSpans ts
+            where rc.agg_collect_nr = $1
+            and rc.cov_file_hash not null
+            and rc.cov_file_hash = ts.file_hash
+            and rc.cov_line >= ts.start_line
+            and rc.cov_line <= ts.end_line
+            -- if an excluded line has hits, the hits take priority
+            and (
+                (rc.hits not null and rc.hits > 0)
+                or rc.cov_line not in (
+                    select line
+                    from ExcludedCoverageLines
+                    where file_hash = ts.file_hash
+                )
+            )
+            ",
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;

@@ -5,7 +5,7 @@ pub mod test_states;
 pub mod trace_mapping;
 pub mod verification;
 
-use anyhow::{Context, anyhow};
+use anyhow::Context;
 
 use crate::cmd::collect::Collection;
 
@@ -36,17 +36,6 @@ impl<'db> Collection<'db> {
         .context("Querying latest collection updating annotations")?
         .and_then(|r| r.latest_collect_nr);
 
-        let latest_collected_test_nr = sqlx::query!(
-            r#"
-            select max(collect_nr) as "latest_collect_nr:i64"
-            from TestRuns
-            "#
-        )
-        .fetch_optional(self.connection_mut())
-        .await
-        .context("Querying latest collection updating tests")?
-        .and_then(|r| r.latest_collect_nr);
-
         let latest_collected_review_nr = sqlx::query!(
             r#"
             select max(collect_nr) as "latest_collect_nr:i64"
@@ -60,7 +49,6 @@ impl<'db> Collection<'db> {
 
         let requirements_collected = latest_collected_requirements_nr == Some(collect_nr);
         let annotations_collected = latest_collected_annotations_nr == Some(collect_nr);
-        let tests_collected = latest_collected_test_nr == Some(collect_nr);
         let reviews_collected = latest_collected_review_nr == Some(collect_nr);
 
         // Note: Order is important, because later queries build on updated tables
@@ -77,11 +65,9 @@ impl<'db> Collection<'db> {
             .await
             .context("Updating obsolete test runs and reviews")?;
 
-        if annotations_collected || tests_collected || reviews_collected {
-            self.resolve_tests()
-                .await
-                .context("Resolving test states")?;
-        }
+        self.resolve_tests()
+            .await
+            .context("Resolving test states")?;
 
         Ok(())
     }
