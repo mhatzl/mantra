@@ -11,7 +11,7 @@ impl<'db> Collection<'db> {
         let req_failed_nr = RequirementState::Failed.as_nr();
         let req_skipped_nr = RequirementState::Skipped.as_nr();
         let req_satisfied_nr = RequirementState::Satisfied.as_nr();
-        let req_untraced_nr = RequirementState::Untraced.as_nr();
+        let req_untraced_nr = RequirementState::Unknown.as_nr();
 
         sqlx::query!(
             "

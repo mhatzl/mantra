@@ -7,7 +7,7 @@ pub mod direct;
 pub mod indirect;
 
 impl<'db> Collection<'db> {
-    pub(crate) async fn aggregate_verification_data(&mut self) -> Result<(), anyhow::Error> {
+    pub(crate) async fn update_verification_states(&mut self) -> Result<(), anyhow::Error> {
         self.update_direct_req_verification_states()
             .await
             .context("Failed to update direct requirement states")?;
@@ -30,7 +30,7 @@ impl<'db> Collection<'db> {
         self.update_satisfied_reqs()
             .await
             .context("Failed to update satisfied requirements")?;
-        self.update_untraced_reqs()
+        self.update_unknown_reqs()
             .await
             .context("Failed to update untraced requirements")?;
 
@@ -43,7 +43,7 @@ impl<'db> Collection<'db> {
         let req_failed_nr = RequirementState::Failed.as_nr();
         let req_skipped_nr = RequirementState::Skipped.as_nr();
         let req_satisfied_nr = RequirementState::Satisfied.as_nr();
-        let req_untraced_nr = RequirementState::Untraced.as_nr();
+        let req_untraced_nr = RequirementState::Unknown.as_nr();
         let req_deprecated_nr = RequirementState::Deprecated.as_nr();
         let req_excluded_nr = RequirementState::Excluded.as_nr();
 
@@ -251,13 +251,13 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn update_untraced_reqs(&mut self) -> Result<(), anyhow::Error> {
+    async fn update_unknown_reqs(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let req_untraced_nr = RequirementState::Untraced.as_nr();
+        let req_unknown_nr = RequirementState::Unknown.as_nr();
 
         sqlx::query!(
             "
-            insert or replace into UntracedRequirements (
+            insert or replace into UnknownRequirements (
                 last_collect_nr,
                 product_id,
                 id
@@ -272,7 +272,7 @@ impl<'db> Collection<'db> {
             ",
             collect_nr,
             product_id,
-            req_untraced_nr,
+            req_unknown_nr,
         )
         .execute(self.connection_mut())
         .await?;

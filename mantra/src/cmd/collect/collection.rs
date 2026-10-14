@@ -84,9 +84,9 @@ impl<'db> Collection<'db> {
             .await
             .context("Failed to aggregated test runs data")?;
 
-        self.aggregate_verification_data()
+        self.aggregate_mixed()
             .await
-            .context("Failed to aggregate verification states")?;
+            .context("Aggregating interleaved data")?;
 
         Ok(())
     }

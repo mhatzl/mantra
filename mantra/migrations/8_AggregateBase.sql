@@ -575,6 +575,19 @@ create table TraceCoveragePerTestRuns (
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
+create view TracesCoveredByTestRuns as
+select distinct
+    agg_collect_nr,
+    product_id,
+    test_collect_nr,
+    test_run_name,
+    test_run_date,
+    file_collect_nr,
+    filepath,
+    file_hash,
+    traced_line
+from TraceCoveragePerTestRuns;
+
 create table TraceCoveragePerTestCases (
     -- Note: Not part of PK, because products may have not been collected that could affect an entry.
     -- This field is used for convenience to only access the latest relevant entries.
@@ -596,6 +609,20 @@ create table TraceCoveragePerTestCases (
     foreign key (file_collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade,
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
+
+create view TracesCoveredByTestCases as
+select distinct
+    agg_collect_nr,
+    product_id,
+    test_collect_nr,
+    test_run_name,
+    test_run_date,
+    test_case_name,
+    file_collect_nr,
+    filepath,
+    file_hash,
+    traced_line
+from TraceCoveragePerTestCases;
 
 -- Contains traces covered by tests.
 create view TracesCoveredByTests as

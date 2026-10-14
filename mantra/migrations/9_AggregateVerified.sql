@@ -194,7 +194,7 @@ create table DirectRequirementVerificationStates (
     -- 0=failed; 1=verified; 2=skipped; 3=unverified
     state integer not null,
     primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, req_id) on delete cascade,
+    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
     constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
@@ -340,9 +340,9 @@ create table SatisfiedRequirements (
     constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
--- Contains requirements that are untraced.
+-- Contains requirements that are neither verified nor satisfied.
 -- For leaf requirements, this means the state in DirectRequirementVerificationStates is untraced.
-create table UntracedRequirements (
+create table UnknownRequirements (
     agg_collect_nr integer not null references Collections (nr) on delete restrict,
     req_collect_nr integer not null,
     product_id text not null,

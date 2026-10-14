@@ -134,7 +134,7 @@ pub enum RequirementState {
     Skipped = 3,
     Deprecated = 4,
     Excluded = 5,
-    Untraced = 6,
+    Unknown = 6,
 }
 
 impl RequirementState {
@@ -163,8 +163,8 @@ impl TryFrom<i64> for RequirementState {
             Ok(RequirementState::Deprecated)
         } else if value == RequirementState::Excluded.as_i64() {
             Ok(RequirementState::Excluded)
-        } else if value == RequirementState::Untraced.as_i64() {
-            Ok(RequirementState::Untraced)
+        } else if value == RequirementState::Unknown.as_i64() {
+            Ok(RequirementState::Unknown)
         } else {
             Err(ConversionError::UnknownState)
         }

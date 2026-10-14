@@ -86,13 +86,18 @@ impl<'db> Collection<'db> {
             )
             select
                 $1 as agg_collect_nr,
-                test_collect_nr,
-                product_id,
-                test_run_name,
-                test_run_date,
-                test_case_name,
-                state
-            from LatestTestCaseOverrides
+                o.test_collect_nr,
+                o.product_id,
+                o.test_run_name,
+                o.test_run_date,
+                o.test_case_name,
+                o.state
+            from LatestTestCaseOverrides o, ValidTestRuns vt
+            where vt.agg_collect_nr = $1
+            and o.test_collect_nr = vt.test_collect_nr
+            and o.product_id = vt.product_id
+            and o.test_run_name = vt.test_run_name
+            and o.test_run_date = vt.test_run_date
 
             union all
 
@@ -104,12 +109,12 @@ impl<'db> Collection<'db> {
                 t.test_run_date,
                 t.name as test_case_name,
                 t.state
-            from TestCases t
-            where t.collect_nr = (
-                select max(tr.collect_nr)
-                from TestRuns tr
-                where tr.product_id = t.product_id
-            )
+            from TestCases t, ValidTestRuns vt
+            where vt.agg_collect_nr = $1
+            and t.collect_nr = vt.test_collect_nr
+            and t.product_id = vt.product_id
+            and t.test_run_name = vt.test_run_name
+            and t.test_run_date = vt.test_run_date
             and not exists (
                 select
                     o.test_case_name
