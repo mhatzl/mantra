@@ -16,6 +16,7 @@ impl<'db> Collection<'db> {
         let req_skipped_nr = RequirementState::Skipped.as_nr();
         let req_satisfied_nr = RequirementState::Satisfied.as_nr();
         let req_unknown_nr = RequirementState::Unknown.as_nr();
+        let req_partial_verified_nr = RequirementState::PartiallyVerified.as_nr();
         let test_case_passed_nr = TestCaseState::Passed.as_nr();
         let test_case_skipped_nr = TestCaseState::Skipped.as_nr();
 
@@ -124,6 +125,27 @@ impl<'db> Collection<'db> {
             and ct.agg_collect_nr = (
                 select max(cct.agg_collect_nr)
                 from TracesCoveredByFailedTests cct
+                where cct.product_id = ct.product_id
+            )
+            and ct.product_id = rt.product_id
+            and ct.filepath = rt.filepath
+            and ct.file_hash = rt.file_hash
+            and ct.traced_line = rt.line
+        ), ReqsCoveredBySkippedTests (
+            req_collect_nr,
+            product_id,
+            req_id
+        ) as (
+            select distinct rt.req_collect_nr, rt.product_id, rt.req_id
+            from TracesCoveredBySkippedTests ct, DirectProductReqTraces rt
+            where rt.agg_collect_nr = (
+                select max(crt.agg_collect_nr)
+                from DirectProductReqTraces crt
+                where crt.product_id = rt.product_id
+            )
+            and ct.agg_collect_nr = (
+                select max(cct.agg_collect_nr)
+                from TracesCoveredBySkippedTests cct
                 where cct.product_id = ct.product_id
             )
             and ct.product_id = rt.product_id
@@ -400,8 +422,16 @@ impl<'db> Collection<'db> {
                         -- unknown
                         else $8
                         end
-                    -- neither failed nor passed and since coverage cannot (realistically) be captured
-                    -- from skipped tests, the state is unknown
+                    -- covered by skipped test might be due to test case being overridden by a review,
+                    -- or via static analysis mapping coverage to tests at compile time.
+                    when exists (
+                        select s.req_id
+                        from ReqsCoveredBySkippedTests s
+                        where rt.req_collect_nr = s.req_collect_nr
+                        and rt.product_id = s.product_id
+                        and rt.req_id = s.req_id
+                    ) then $6
+                    -- neither failed, skipped, nor passed => unknown
                     else $8
                     end
             from DirectProductReqTraces rt
@@ -576,8 +606,7 @@ impl<'db> Collection<'db> {
                             and mr.req_id = ts.req_id
                             and ts.state = $6
                         ) then $6
-                        -- verify trace exists, but wasn't verified => satisfied
-                        -- independent of review
+                        -- verify trace exists, but wasn't verified => partially verified due to review
                         when exists (
                             select ts.req_id
                             from TracedReqStates ts, VerifyTraceExists vt
@@ -588,10 +617,26 @@ impl<'db> Collection<'db> {
                             and mr.product_id = vt.product_id
                             and mr.req_id = vt.req_id
                             and ts.state != $4
-                        ) then $7
+                        ) then $11
                         -- verified
                         else $4
                         end
+                    -- no manual review, but passed test => partially verified
+                    when exists (
+                        select ts.req_id
+                        from TracedReqStates ts
+                        where mr.req_collect_nr = ts.req_collect_nr
+                        and mr.product_id = ts.product_id
+                        and mr.req_id = ts.req_id
+                        and ts.state = $4
+                    ) or exists (
+                        select ts.req_id
+                        from ReqsExplicitlyVerifiedByTestCasesState ts
+                        where mr.req_collect_nr = ts.req_collect_nr
+                        and mr.product_id = ts.product_id
+                        and mr.req_id = ts.req_id
+                        and ts.state = $4
+                    ) then $11
                     -- unknown
                     else $8
                 end
@@ -618,9 +663,9 @@ impl<'db> Collection<'db> {
                     and r.product_id = ts.product_id
                     and r.req_id = ts.req_id
                     and ts.state = $5
-                ) then $5
+                )
                 -- failing through direct test
-                when exists (
+                or exists (
                     select ts.req_id
                     from ReqsExplicitlyVerifiedByTestCasesState ts
                     where r.req_collect_nr = ts.req_collect_nr
@@ -628,8 +673,17 @@ impl<'db> Collection<'db> {
                     and r.req_id = ts.req_id
                     and ts.state = $5
                 ) then $5
-                -- skipped through direct test
+                -- skipped through covered trace
                 when exists (
+                    select ts.req_id
+                    from TracedReqStates ts
+                    where r.req_collect_nr = ts.req_collect_nr
+                    and r.product_id = ts.product_id
+                    and r.req_id = ts.req_id
+                    and ts.state = $6
+                )
+                -- skipped through direct test
+                or exists (
                     select ts.req_id
                     from ReqsExplicitlyVerifiedByTestCasesState ts
                     where r.req_collect_nr = ts.req_collect_nr
@@ -645,9 +699,9 @@ impl<'db> Collection<'db> {
                     and r.product_id = ts.product_id
                     and r.req_id = ts.req_id
                     and ts.state = $4
-                ) then $4
+                )
                 -- verified through direct test
-                when exists (
+                or exists (
                     select ts.req_id
                     from ReqsExplicitlyVerifiedByTestCasesState ts
                     where r.req_collect_nr = ts.req_collect_nr
@@ -655,6 +709,7 @@ impl<'db> Collection<'db> {
                     and r.req_id = ts.req_id
                     and ts.state = $4
                 ) then $4
+                -- unknown
                 else $8
             end
         from UsableRequirements r
@@ -677,7 +732,8 @@ impl<'db> Collection<'db> {
         req_satisfied_nr,
         req_unknown_nr,
         test_case_passed_nr,
-        test_case_skipped_nr
+        test_case_skipped_nr,
+        req_partial_verified_nr
      )
      .execute(self.connection_mut())
      .await?;

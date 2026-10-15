@@ -11,6 +11,11 @@ impl<'db> Collection<'db> {
         self.update_direct_req_verification_states()
             .await
             .context("Failed to update direct requirement states")?;
+
+        self.update_failed_reqs()
+            .await
+            .context("Failed to update failed requirements")?;
+
         self.update_indirect_req_verification_states()
             .await
             .context("Failed to update indirect requirement states")?;
@@ -21,9 +26,7 @@ impl<'db> Collection<'db> {
         self.update_verified_reqs()
             .await
             .context("Failed to update verified requirements")?;
-        self.update_failed_reqs()
-            .await
-            .context("Failed to update failed requirements")?;
+
         self.update_skipped_reqs()
             .await
             .context("Failed to update skipped requirements")?;
@@ -33,6 +36,62 @@ impl<'db> Collection<'db> {
         self.update_unknown_reqs()
             .await
             .context("Failed to update untraced requirements")?;
+
+        Ok(())
+    }
+
+    async fn update_failed_reqs(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let req_failed_nr = RequirementState::Failed.as_nr();
+
+        sqlx::query!(
+            "
+            insert or replace into FailedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
+                product_id,
+                req_id
+            )
+            select
+                ur.agg_collect_nr,
+                ur.req_collect_nr,
+                ur.product_id,
+                ur.req_id
+            from UsableRequirements ur
+                left join DirectRequirementVerificationStates ds
+                    on ur.agg_collect_nr = ds.agg_collect_nr
+                    and ur.req_collect_nr = ds.req_collect_nr
+                    and ur.product_id = ds.product_id
+                    and ur.req_id = ds.req_id
+            where ur.agg_collect_nr = $1
+            and (
+                -- directly failed
+                (ds.state not null and ds.state = $2)
+                -- at least one descendant failed
+                or exists (
+                    select rd.req_id
+                    from RequirementDescendants rd, DirectRequirementVerificationStates dsi
+                    where rd.agg_collect_nr = (
+                        select max(crd.agg_collect_nr)
+                        from RequirementDescendants crd
+                        where crd.product_id = rd.product_id
+                    )
+                    and ur.req_collect_nr = rd.req_collect_nr
+                    and ur.product_id = rd.product_id
+                    and ur.req_id = rd.req_id
+                    and ur.agg_collect_nr = dsi.agg_collect_nr
+                    and rd.descendant_collect_nr = dsi.req_collect_nr
+                    and rd.descendant_product_id = dsi.product_id
+                    and rd.descendant_req_id = dsi.req_id
+                    and dsi.state = $2
+                )
+            )
+            ",
+            collect_nr,
+            req_failed_nr
+        )
+        .execute(self.connection_mut())
+        .await?;
 
         Ok(())
     }
@@ -186,35 +245,6 @@ impl<'db> Collection<'db> {
             collect_nr,
             product_id,
             req_skipped_nr,
-        )
-        .execute(self.connection_mut())
-        .await?;
-
-        Ok(())
-    }
-
-    async fn update_failed_reqs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-        let req_failed_nr = RequirementState::Failed.as_nr();
-
-        sqlx::query!(
-            "
-            insert or replace into FailedRequirements (
-                last_collect_nr,
-                product_id,
-                id
-            )
-            select
-                rs.last_collect_nr,
-                rs.product_id,
-                rs.id
-            from RequirementVerificationStates rs
-            where rs.last_collect_nr = $1 and rs.product_id = $2
-            and rs.state == $3
-            ",
-            collect_nr,
-            product_id,
-            req_failed_nr
         )
         .execute(self.connection_mut())
         .await?;

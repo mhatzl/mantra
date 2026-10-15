@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableLeafRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            select distinct\n                ur.agg_collect_nr,\n                ur.req_collect_nr,\n                ur.product_id,\n                ur.req_id\n            from UsableRequirements ur, LeafRequirements lr\n            where ur.agg_collect_nr = $1\n            and ur.agg_collect_nr = lr.agg_collect_nr\n            and ur.req_collect_nr = lr.req_collect_nr\n            and ur.product_id = lr.product_id\n            and ur.req_id = lr.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "1538a1fa06e63299699916300e522b780266a72993650d6f116018c5a7ac48be"
+}

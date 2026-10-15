@@ -134,7 +134,10 @@ pub enum RequirementState {
     Skipped = 3,
     Deprecated = 4,
     Excluded = 5,
-    Unknown = 6,
+    /// Requirement may be directly or indirectly verified by children,
+    /// but not all verified conditions have been fulfilled.
+    PartiallyVerified = 6,
+    Unknown = 7,
 }
 
 impl RequirementState {
@@ -163,6 +166,8 @@ impl TryFrom<i64> for RequirementState {
             Ok(RequirementState::Deprecated)
         } else if value == RequirementState::Excluded.as_i64() {
             Ok(RequirementState::Excluded)
+        } else if value == RequirementState::PartiallyVerified.as_i64() {
+            Ok(RequirementState::PartiallyVerified)
         } else if value == RequirementState::Unknown.as_i64() {
             Ok(RequirementState::Unknown)
         } else {
