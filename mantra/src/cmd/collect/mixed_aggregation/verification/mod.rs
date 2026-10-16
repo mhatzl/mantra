@@ -102,91 +102,141 @@ impl<'db> Collection<'db> {
         let req_failed_nr = RequirementState::Failed.as_nr();
         let req_skipped_nr = RequirementState::Skipped.as_nr();
         let req_satisfied_nr = RequirementState::Satisfied.as_nr();
-        let req_untraced_nr = RequirementState::Unknown.as_nr();
+        let req_unknown_nr = RequirementState::Unknown.as_nr();
         let req_deprecated_nr = RequirementState::Deprecated.as_nr();
         let req_excluded_nr = RequirementState::Excluded.as_nr();
+        let req_partially_verified_nr = RequirementState::PartiallyVerified.as_nr();
 
         sqlx::query!(
             "
-            insert or replace into RequirementVerificationStates (
-                last_collect_nr,
+            insert into RequirementVerificationStates (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id,
+                req_id,
                 state
             )
             select
-                r.last_collect_nr,
+                $1 as agg_collect_nr,
+                r.collect_nr,
                 r.product_id,
                 r.id,
                 case
+                    -- deprecated
                     when exists (
-                        select dr.id
+                        select dr.req_id
                         from DeprecatedRequirements dr
-                        where r.last_collect_nr = dr.last_collect_nr
+                        where dr.agg_collect_nr = (
+                            select max(cdr.agg_collect_nr)
+                            from DeprecatedRequirements cdr
+                            where cdr.product_id = dr.product_id
+                        )
+                        and r.collect_nr = dr.req_collect_nr
                         and r.product_id = dr.product_id
-                        and r.id = dr.id
-                    ) then $7
+                        and r.id = dr.req_id
+                    ) then $6
+                    -- excluded
                     when exists (
-                        select ir.id
-                        from ExcludedRequirements ir
-                        where r.last_collect_nr = ir.last_collect_nr
-                        and r.product_id = ir.product_id
-                        and r.id = ir.id
-                    ) then $8
+                        select er.req_id
+                        from ExcludedRequirements er
+                        where er.agg_collect_nr = (
+                            select max(cer.agg_collect_nr)
+                            from ExcludedRequirements cer
+                            where cer.product_id = er.product_id
+                        )
+                        and r.collect_nr = er.req_collect_nr
+                        and r.product_id = er.product_id
+                        and r.id = er.req_id
+                    ) then $7
                     -- failed
-                    when ((ids.state is not null and ids.state = $4) or (ds.state is not null and ds.state = $4))
-                    then $4
+                    when exists (
+                        select fr.req_id
+                        from FailedRequirements fr
+                        where fr.agg_collect_nr = $1
+                        and r.collect_nr = fr.req_collect_nr
+                        and r.product_id = fr.product_id
+                        and r.id = fr.req_id
+                    ) then $3
                     -- skipped
-                    when ds.state is not null and (ds.state = $5
-                        or (ds.state = $6 and (ids.state is not null and ids.state = $5))
-                    ) then $5
+                    when ds.state is not null and (ds.state = $4
+                        or (
+                            (ds.state = $5 or ds.state = $8) -- unknown or satisfied
+                            and (ids.state is not null and ids.state = $4)
+                        )
+                    ) then $4
+                    -- leaves: unknown, satisfied, partially verified, verified
+                    --
+                    -- partially verified
+                    when ds.state is not null and (ds.state = $9
+                        or (ids.state is not null and ids.state = $9)
+                    ) then $9
                     -- verified
                     when ds.state is not null
-                    and ((ds.state = $3 and (
-                            ids.state is null
-                            -- only optional children with failed and skipped already handled above
-                            or not exists (
-                                select rh.parent_req_id
-                                from RequirementHierarchies rh
-                                where rh.parent_req_id = r.id and rh.parent_product_id = r.product_id
-                                and not exists (
-                                    select op.id
-                                    from OptionalRequirements op
-                                    where op.id = rh.child_req_id and op.product_id = rh.child_product_id
+                    and (
+                        -- verified leaf
+                        (ds.state = $2 and ids.state is null)
+                        -- indirectly verified
+                        or (ids.state = $2 and
+                            -- manual requirements must be directly verified
+                            -- !(Em !verified) => Vm verified
+                            not (ds.state != $2
+                                and exists(
+                                    select mr.req_id
+                                    from ManualRequirements mr
+                                    where mr.agg_collect_nr = (
+                                        select max(cmr.agg_collect_nr)
+                                        from ManualRequirements cmr
+                                        where cmr.product_id = mr.product_id
+                                    )
+                                    and mr.req_collect_nr = r.collect_nr
+                                    and mr.product_id = r.product_id
+                                    and mr.req_id = r.id
                                 )
                             )
-                        ))
-                        or ((ds.state = $3 or (
-                            -- manual requirements must always be directly verified
-                            ds.state = $6 and not exists (
-                                select mr.id
-                                from ManualRequirements mr
-                                where mr.id = r.id and mr.product_id = r.product_id
-                            )))
-                            and (ids.state is not null and ids.state = $3))
-                    ) then $3
-                    -- unverified
-                    else $6
+                        )
+                    ) then $2
+                    -- satisfied
+                    when exists (
+                        select sr.req_id
+                        from DirectlySatisfiedRequirements sr
+                        where sr.agg_collect_nr = (
+                            select max(csr.agg_collect_nr)
+                            from DirectlySatisfiedRequirements csr
+                            where csr.product_id = sr.product_id
+                        )
+                        and sr.req_collect_nr = r.collect_nr
+                        and sr.product_id = r.product_id
+                        and sr.req_id = r.id
+                    ) then $8
+                    -- unknown
+                    else $5
                 end
             from Requirements r
-                left join DirectRequirementVerificationStates ds on
-                r.last_collect_nr = ds.last_collect_nr
-                and r.product_id = ds.product_id
-                and r.id = ds.id
-                left join IndirectRequirementVerificationStates ids on
-                r.last_collect_nr = ids.last_collect_nr
-                and r.product_id = ids.product_id
-                and r.id = ids.id
-            where r.last_collect_nr = $1 and r.product_id = $2
+                left join DirectRequirementVerificationStates ds
+                    on r.collect_nr = ds.req_collect_nr
+                    and r.product_id = ds.product_id
+                    and r.id = ds.req_id
+                    and ds.agg_collect_nr = $1
+                left join IndirectRequirementVerificationStates ids
+                    on r.collect_nr = ids.req_collect_nr
+                    and r.product_id = ids.product_id
+                    and r.id = ids.req_id
+                    and ids.agg_collect_nr = $1
+            where r.collect_nr = (
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
+            )
             ",
             collect_nr,
-            product_id,
             req_verified_nr,
             req_failed_nr,
             req_skipped_nr,
-            req_unverified_nr,
+            req_unknown_nr,
             req_deprecated_nr,
-            req_excluded_nr
+            req_excluded_nr,
+            req_satisfied_nr,
+            req_partially_verified_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -200,21 +250,22 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into VerifiedRequirements (
-                last_collect_nr,
+            insert into VerifiedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
             select
-                rs.last_collect_nr,
+                rs.agg_collect_nr,
+                rs.req_collect_nr,
                 rs.product_id,
-                rs.id
+                rs.req_id
             from RequirementVerificationStates rs
-            where rs.last_collect_nr = $1 and rs.product_id = $2
-            and rs.state == $3
+            where rs.agg_collect_nr = $1
+            and rs.state == $2
             ",
             collect_nr,
-            product_id,
             req_verified_nr
         )
         .execute(self.connection_mut())
@@ -229,21 +280,22 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into SkippedRequirements (
-                last_collect_nr,
+            insert into SkippedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
             select
-                rs.last_collect_nr,
+                rs.agg_collect_nr,
+                rs.req_collect_nr,
                 rs.product_id,
-                rs.id
+                rs.req_id
             from RequirementVerificationStates rs
-            where rs.last_collect_nr = $1 and rs.product_id = $2
-            and rs.state == $3
+            where rs.agg_collect_nr = $1
+            and rs.state == $2
             ",
             collect_nr,
-            product_id,
             req_skipped_nr,
         )
         .execute(self.connection_mut())
@@ -258,21 +310,22 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into SatisfiedRequirements (
-                last_collect_nr,
+            insert into SatisfiedRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
             select
-                rs.last_collect_nr,
+                rs.agg_collect_nr,
+                rs.req_collect_nr,
                 rs.product_id,
-                rs.id
+                rs.req_id
             from RequirementVerificationStates rs
-            where rs.last_collect_nr = $1 and rs.product_id = $2
-            and rs.state == $3
+            where rs.agg_collect_nr = $1
+            and rs.state == $2
             ",
             collect_nr,
-            product_id,
             req_satisfied_nr,
         )
         .execute(self.connection_mut())
@@ -287,21 +340,22 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into UnknownRequirements (
-                last_collect_nr,
+            insert into UnknownRequirements (
+                agg_collect_nr,
+                req_collect_nr,
                 product_id,
-                id
+                req_id
             )
             select
-                rs.last_collect_nr,
+                rs.agg_collect_nr,
+                rs.req_collect_nr,
                 rs.product_id,
-                rs.id
+                rs.req_id
             from RequirementVerificationStates rs
-            where rs.last_collect_nr = $1 and rs.product_id = $2
-            and rs.state == $3
+            where rs.agg_collect_nr = $1
+            and rs.state == $2
             ",
             collect_nr,
-            product_id,
             req_unknown_nr,
         )
         .execute(self.connection_mut())

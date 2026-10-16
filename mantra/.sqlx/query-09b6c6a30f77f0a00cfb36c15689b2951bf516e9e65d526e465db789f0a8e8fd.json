@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into VerifiedRequirements (\n                agg_collect_nr,\n                req_collect_nr,\n                product_id,\n                req_id\n            )\n            select\n                rs.agg_collect_nr,\n                rs.req_collect_nr,\n                rs.product_id,\n                rs.req_id\n            from RequirementVerificationStates rs\n            where rs.agg_collect_nr = $1\n            and rs.state == $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "09b6c6a30f77f0a00cfb36c15689b2951bf516e9e65d526e465db789f0a8e8fd"
+}
