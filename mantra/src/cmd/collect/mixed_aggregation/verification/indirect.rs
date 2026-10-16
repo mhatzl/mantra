@@ -599,7 +599,7 @@ impl<'db> Collection<'db> {
                 req_id,
                 state
             )
-            with ReqsWithVerifiedNonOptionalDescendants (
+            with ReqsWithVerifiedDescendants (
                 req_collect_nr,
                 product_id,
                 req_id
@@ -622,18 +622,6 @@ impl<'db> Collection<'db> {
                 and rd.descendant_collect_nr = ds.req_collect_nr
                 and rd.descendant_product_id = ds.product_id
                 and rd.descendant_req_id = ds.req_id
-                and not exists (
-                    select op.req_id
-                    from OptionalRequirements op
-                    where op.agg_collect_nr = (
-                        select max(cop.agg_collect_nr)
-                        from OptionalRequirements cop
-                        where cop.product_id = op.product_id
-                    )
-                    and op.req_collect_nr = ds.req_collect_nr
-                    and op.product_id = ds.product_id
-                    and op.req_id = ds.req_id
-                )
                 and ds.state = $2
             )
             select
@@ -660,15 +648,6 @@ impl<'db> Collection<'db> {
                         and s.product_id = r.product_id
                         and s.req_id = r.req_id
                     ) then $4
-                    -- unknown, because satisfied can only be achieved directly
-                    when exists (
-                        select u.req_id
-                        from RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState u
-                        where u.agg_collect_nr = r.agg_collect_nr
-                        and u.req_collect_nr = r.req_collect_nr
-                        and u.product_id = r.product_id
-                        and u.req_id = r.req_id
-                    ) then $5
                     -- verified requirements with only-optional non-failed children
                     when exists (
                         select os.req_id
@@ -699,9 +678,7 @@ impl<'db> Collection<'db> {
                             and ocs.req_id = rh.child_req_id
                         )
                     ) then $2
-                    -- failed, skipped, satisfied, or unknown handled above
-                    --
-                    -- partially verified
+                    -- partially verified beats unknown, because it provides more information
                     when exists (
                         select u.req_id
                         from RequirementsWithChildrenHavingPartiallyVerifiedState u
@@ -710,10 +687,22 @@ impl<'db> Collection<'db> {
                         and u.product_id = r.product_id
                         and u.req_id = r.req_id
                     ) then $6
-                    -- verified
+                    -- unknown, because satisfied can only be achieved directly
+                    when exists (
+                        select u.req_id
+                        from RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState u
+                        where u.agg_collect_nr = r.agg_collect_nr
+                        and u.req_collect_nr = r.req_collect_nr
+                        and u.product_id = r.product_id
+                        and u.req_id = r.req_id
+                    ) then $5
+                    -- failed, skipped, partially verified, satisfied, or unknown handled above.
+                    -- If at least one descendant is verified and the requirement was not matched so far,
+                    -- verification must have propagated up.
+                    -- => verified
                     when exists (
                         select v.req_id
-                        from ReqsWithVerifiedNonOptionalDescendants v
+                        from ReqsWithVerifiedDescendants v
                         where v.req_collect_nr = r.req_collect_nr
                         and v.product_id = r.product_id
                         and v.req_id = r.req_id
