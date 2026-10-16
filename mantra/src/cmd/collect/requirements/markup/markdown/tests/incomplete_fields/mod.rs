@@ -159,3 +159,35 @@ fn duplicate_replaces() {
 
     panic!("Expected error message not found in '{schema_err:#?}'");
 }
+
+#[test]
+fn bullets_without_any_metadata() {
+    let file = super::test_file!("bullets_without_any_metadata.md");
+    let schema_err =
+        markdown::collect_requirements(&ProductId::new(String::from("product-id")).unwrap(), &file)
+            .expect_err("Parsing errorneous doc must result in error");
+
+    for err_msg in schema_err.chain() {
+        if err_msg.to_string() == "Leading bullet list must contain key-value metadata." {
+            return;
+        }
+    }
+
+    panic!("Expected error message not found in '{schema_err:#?}'");
+}
+
+#[test]
+fn bullets_mixed_with_metadata() {
+    let file = super::test_file!("bullets_mixed_with_metadata.md");
+    let schema_err =
+        markdown::collect_requirements(&ProductId::new(String::from("product-id")).unwrap(), &file)
+            .expect_err("Parsing errorneous doc must result in error");
+
+    for err_msg in schema_err.chain() {
+        if err_msg.to_string() == "Leading bullet list must contain key-value metadata." {
+            return;
+        }
+    }
+
+    panic!("Expected error message not found in '{schema_err:#?}'");
+}
