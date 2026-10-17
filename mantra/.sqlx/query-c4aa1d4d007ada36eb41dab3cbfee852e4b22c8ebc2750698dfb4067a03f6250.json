@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into RemovedRequirements (\n                removed_collect_nr,\n                last_collect_nr,\n                product_id,\n                req_id\n            )\n            select $1 as removed_collect_nr, r.collect_nr, r.product_id, r.id\n            from Requirements r left join RemovedRequirements rr\n                on rr.last_collect_nr = r.collect_nr\n                and rr.product_id = r.product_id\n                and rr.req_id = r.id\n            where r.product_id = $2\n            and r.collect_nr < $1\n            -- only consider requirements not already removed\n            and rr.removed_collect_nr is null\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c4aa1d4d007ada36eb41dab3cbfee852e4b22c8ebc2750698dfb4067a03f6250"
+}

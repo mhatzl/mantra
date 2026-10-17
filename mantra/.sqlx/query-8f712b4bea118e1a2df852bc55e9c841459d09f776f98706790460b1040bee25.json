@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ChangedRequirements (\n                new_collect_nr,\n                old_collect_nr,\n                product_id,\n                req_id\n            )\n            select rn.collect_nr, ro.collect_nr, rn.product_id, rn.id\n            from Requirements rn, Requirements ro\n            where rn.collect_nr = $1\n            and rn.product_id = $2\n            and rn.product_id = ro.product_id\n            and rn.id = ro.id\n            and ro.collect_nr = (\n                select max(ri.collect_nr)\n                from Requirements ri\n                where ri.collect_nr < rn.collect_nr\n                and ri.product_id = ro.product_id\n                and ri.id = ro.id\n            )\n            and rn.data_hash != ro.data_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "8f712b4bea118e1a2df852bc55e9c841459d09f776f98706790460b1040bee25"
+}

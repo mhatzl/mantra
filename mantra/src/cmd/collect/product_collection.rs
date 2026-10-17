@@ -9,7 +9,7 @@ use mantra_schema::{
 
 use crate::{
     cfg::ResolvedProductConfig,
-    cmd::collect::{SingleFileCollector, collection::Collection},
+    cmd::collect::{SingleFileCollector, cfg::CollectMode, collection::Collection},
     db::MantraConnection,
 };
 
@@ -38,6 +38,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(super) async fn collect(
         mut self,
         product_cfg: ResolvedProductConfig,
+        collect_mode: &CollectMode,
     ) -> Result<(), anyhow::Error> {
         let collected_req_cfgs = self
             .insert_requirement_collect_cfgs(product_cfg.requirements)
@@ -49,6 +50,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         self.update_req_dot_parent()
             .await
             .context("Updating requirement dot-hierarchy")?;
+        self.update_requirement_changes(collect_mode)
+            .await
+            .context("Updating requirement changes")?;
 
         let collected_annotation_cfgs = self
             .insert_annotation_collect_cfgs(product_cfg.annotations)

@@ -22,19 +22,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_obsolete_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        // TODO: Adapt collect cmd to collect reqs, annotations, tests, and reviews separately.
-        // If reqs and annotations for the same product are collected in a later collection,
-        // tests are marked as obsolete (same for reviews).
+        let collect_nr = self.collect_nr();
 
         sqlx::query!(
             "
             insert or ignore into ObsoleteTestRuns (
-                collect_nr,
+                agg_collect_nr,
+                test_collect_nr,
                 product_id,
                 test_run_name,
                 test_run_date
             )
-            select collect_nr, product_id, name, utc_date
+            select $1 as agg_collect_nr, collect_nr, product_id, name, utc_date
             from TestRuns tr
             where
             -- requirements collected since test was added
@@ -56,7 +55,8 @@ impl<'db> Collection<'db> {
                 where ctr.product_id = tr.product_id
                 and ctr.name = tr.name
             )
-            "
+            ",
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -81,7 +81,7 @@ impl<'db> Collection<'db> {
             where not exists (
                 select otr.test_run_name
                 from ObsoleteTestRuns otr
-                where otr.collect_nr = tr.collect_nr
+                where otr.test_collect_nr = tr.collect_nr
                 and otr.product_id = tr.product_id
                 and otr.test_run_name = tr.name
                 and otr.test_run_date = tr.utc_date
@@ -96,6 +96,8 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_obsolete_reviews(&mut self) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+
         sqlx::query!(
             "
             with TestLineCoverageOverrides (collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date) as (
@@ -116,12 +118,18 @@ impl<'db> Collection<'db> {
                 from TestLineCoverageOverrides
             )
             insert or ignore into ObsoleteReviews (
-                collect_nr,
+                agg_collect_nr,
+                review_collect_nr,
                 product_id,
                 review_name,
                 review_date
             )
-            select collect_nr, product_id, name, utc_date
+            select
+                $1 as agg_collect_nr,
+                collect_nr,
+                product_id,
+                name,
+                utc_date
             from Reviews rv
             where
             -- requirements collected since review was added
@@ -140,7 +148,12 @@ impl<'db> Collection<'db> {
 
             union all
 
-            select o.collect_nr, o.product_id, o.review_name, o.review_date
+            select
+                $1 as agg_collect_nr,
+                o.collect_nr,
+                o.product_id,
+                o.review_name,
+                o.review_date
             from TestOverrides o
             where o.test_collect_nr < (
                 select max(tr.collect_nr)
@@ -151,12 +164,13 @@ impl<'db> Collection<'db> {
             or exists (
                 select otr.test_run_name
                 from ObsoleteTestRuns otr
-                where otr.collect_nr = o.test_collect_nr
+                where otr.test_collect_nr = o.test_collect_nr
                 and otr.product_id = o.product_id
                 and otr.test_run_name = o.test_run_name
                 and otr.test_run_date = o.test_run_date
             )
-            "
+            ",
+            collect_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -181,7 +195,7 @@ impl<'db> Collection<'db> {
             where not exists (
                 select orv.review_name
                 from ObsoleteReviews orv
-                where orv.collect_nr = rv.collect_nr
+                where orv.review_collect_nr = rv.collect_nr
                 and orv.product_id = rv.product_id
                 and orv.review_name = rv.name
                 and orv.review_date = rv.utc_date

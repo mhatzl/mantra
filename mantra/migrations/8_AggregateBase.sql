@@ -217,22 +217,32 @@ create table CollectedFileHashes (
 
 -- Contains reviews that are obsolete and must **not** be used for further analysis.
 create table ObsoleteReviews (
-    collect_nr integer not null,
+    -- Collection in which the review got obsolete.
+    --
+    -- Not part of PK, because once obsolete, a review is never valid again
+    -- and this field is only to map to the timestamp the review got obsolete.
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    review_collect_nr integer not null,
     product_id text not null,
     review_name text not null,
     review_date text not null,
-    primary key (collect_nr, product_id, review_name, review_date),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (review_collect_nr, product_id, review_name, review_date),
+    foreign key (review_collect_nr, product_id, review_name, review_date) references Reviews(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 -- Contains test runs that are obsolete and must **not** be used for further analysis.
 create table ObsoleteTestRuns (
-    collect_nr integer not null,
+    -- Collection in which the test run got obsolete.
+    --
+    -- Not part of PK, because once obsolete, a test run is never valid again
+    -- and this field is only to map to the timestamp the test run got obsolete.
+    agg_collect_nr integer not null references Collections (nr) on delete restrict,
+    test_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
     test_run_date text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (test_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
 );
 
 create table ValidReviews (

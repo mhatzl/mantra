@@ -3,7 +3,6 @@ use mantra_lang_tracing::collect::collector::AnnotationCollector;
 use mantra_schema::{
     FmtHash,
     annotations::{AnnotationSchema, FileAnnotations},
-    path::RelativePath,
     product::ProductId,
 };
 
@@ -68,7 +67,7 @@ impl<'db, 'c> SingleFileCollectable<'db, 'c, AnnotationSchema> for CollectAnnota
 }
 
 fn collect_from_content(
-    product_id: &ProductId,
+    _product_id: &ProductId,
     file: &CollectableFile,
 ) -> Result<Option<AnnotationSchema>, anyhow::Error> {
     if file.extension() == Some("rs") {
@@ -77,6 +76,8 @@ fn collect_from_content(
                 .context("Failed to collect annotations from Rust content")?;
         Ok(Some(AnnotationSchema {
             schema_version: None,
+            // Annotation detection is currently product ID independent,
+            // so we set `None` here to get the same schema hash in case file is collected multiple times by different products.
             product_id: None,
             files: vec![FileAnnotations {
                 filepath: file.filepath.clone(),

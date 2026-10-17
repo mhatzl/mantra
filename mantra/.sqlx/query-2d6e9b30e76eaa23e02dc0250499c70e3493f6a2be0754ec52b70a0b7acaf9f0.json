@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into ValidTestRuns (\n                agg_collect_nr,\n                test_collect_nr,\n                product_id,\n                test_run_name,\n                test_run_date\n            )\n            select $1 as agg_collect_nr, collect_nr, product_id, name, utc_date\n            from TestRuns tr\n            where not exists (\n                select otr.test_run_name\n                from ObsoleteTestRuns otr\n                where otr.test_collect_nr = tr.collect_nr\n                and otr.product_id = tr.product_id\n                and otr.test_run_name = tr.name\n                and otr.test_run_date = tr.utc_date\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2d6e9b30e76eaa23e02dc0250499c70e3493f6a2be0754ec52b70a0b7acaf9f0"
+}

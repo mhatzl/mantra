@@ -73,6 +73,38 @@ pub struct CollectArguments {
     /// Mantra will set the given value as version for the product identified by the product ID.
     #[arg(long, requires = "product_id")]
     pub product_version: Option<String>,
+    #[arg(value_enum, long, default_value_t)]
+    pub mode: CollectMode,
+}
+
+/// The collection mode of `mantra collect`.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    clap::ValueEnum,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum CollectMode {
+    /// Assumes that all relevant information is collected in one collection.
+    /// Data from previous collections that is not present in this collection
+    /// will be considered removed and not used for further analysis.
+    ///
+    /// This is the default mode.
+    #[default]
+    RemoveMissing,
+    /// Assumes that newly collected data only adds new information,
+    /// and therefore previous collected data remains valid for further analysis.
+    ///
+    /// Choose this mode for example if you want to add new tests or reviews,
+    /// without affecting previous collected tests and reviews.
+    Additive,
 }
 
 #[derive(

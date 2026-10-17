@@ -10,7 +10,7 @@ use mantra_schema::{
 use crate::{
     cfg::ResolvedProductConfig,
     cmd::collect::{
-        cfg::{CollectArguments, CollectConfig},
+        cfg::{CollectArguments, CollectConfig, CollectMode},
         product_collection::ProductCollection,
     },
     db::{MantraConnection, MantraDb, MantraTransaction},
@@ -125,11 +125,17 @@ impl<'db> Collection<'db> {
             };
 
             if collect_data {
-                self.collect_product(product_cfg)
+                self.collect_product(product_cfg, &args.mode)
                     .await
                     .with_context(|| format!("Failed to collect product '{}'", product_id))?
             }
         }
+
+        // Note: Since products may still exist even if no data was collected,
+        // we base existence on the product configuration entries.
+        self.update_existing_products(product_map.iter(), &args.mode)
+            .await
+            .context("Updating which products still exist")?;
 
         Ok(())
     }
@@ -137,12 +143,13 @@ impl<'db> Collection<'db> {
     async fn collect_product(
         &mut self,
         product_cfg: ResolvedProductConfig,
+        collect_mode: &CollectMode,
     ) -> Result<(), anyhow::Error> {
         let product_collection = ProductCollection::new(self, &product_cfg.product)
             .await
             .context("Creating product collection")?;
 
-        product_collection.collect(product_cfg).await
+        product_collection.collect(product_cfg, collect_mode).await
     }
 
     pub(super) fn connection_mut(&mut self) -> &mut MantraConnection {

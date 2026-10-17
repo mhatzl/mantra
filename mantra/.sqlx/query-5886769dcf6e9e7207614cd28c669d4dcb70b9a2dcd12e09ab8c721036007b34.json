@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or replace into ExistingRequirements (\n                latest_collect_nr,\n                product_id,\n                req_id\n            )\n            select ar.first_collect_nr, ar.product_id, ar.req_id\n            from AddedRequirements ar\n            where ar.first_collect_nr = $1\n            and ar.product_id = $2\n\n            union all\n\n            -- already existed but collected again => bump collect\n            select r.collect_nr, r.product_id, r.id\n            from Requirements r, ExistingRequirements er\n            where r.collect_nr = $1\n            and r.product_id = $2\n            and r.product_id = er.product_id\n            and r.id = er.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "5886769dcf6e9e7207614cd28c669d4dcb70b9a2dcd12e09ab8c721036007b34"
+}

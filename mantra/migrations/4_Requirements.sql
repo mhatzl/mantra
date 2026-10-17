@@ -32,8 +32,8 @@ create table ConfigRequirementProperties (
 -- [req("req.id", "changes.track.reqs.id")]
 create table Requirements (
     collect_nr integer not null,
-    id text not null,
     product_id text not null,
+    id text not null,
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
     -- [req("req.manual")]
@@ -69,7 +69,7 @@ create table Requirements (
     schema_hash text not null references Schemas (content_hash) on delete restrict,
     -- Optional MIME/media type of requirement related general texts (e.g. title and description).
     media_type text,
-    primary key (collect_nr, id, product_id),
+    primary key (collect_nr, product_id, id),
     foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
 );
 
@@ -77,14 +77,14 @@ create table Requirements (
 -- [req("req.properties")]
 create table RequirementProperties (
     collect_nr integer not null,
-    req_id text not null,
     product_id text not null,
+    req_id text not null,
     -- Key of the property
     property_key text not null,
     -- Hash of a custom property of the requirement.
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, req_id, product_id, property_key),
-    foreign key (collect_nr, req_id, product_id) references Requirements (collect_nr, id, product_id) on delete cascade
+    primary key (collect_nr, product_id, req_id, property_key),
+    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );
 
 -- Table to store the direct parents of a requirement.
@@ -139,12 +139,54 @@ create table RequirementChildren (
 -- [req("req.replacing")]
 create table RequirementReplacements (
     collect_nr integer not null,
-    req_id text not null,
     product_id text not null,
+    req_id text not null,
     -- Requirement id that is replaced by the requirement set in "req_id"
     replaced_req_id text not null,
-    primary key (collect_nr, req_id, product_id, replaced_req_id),
-    foreign key (collect_nr, req_id, product_id) references Requirements (collect_nr, id, product_id) on delete cascade,
+    primary key (collect_nr, product_id, req_id, replaced_req_id),
+    foreign key (collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
     -- **Note:** Deferred, because replaced ID may not have been collected yet
-    foreign key (collect_nr, replaced_req_id, product_id) references Requirements (collect_nr, id, product_id) on delete cascade deferrable initially deferred
+    foreign key (collect_nr, product_id, replaced_req_id) references Requirements (collect_nr, product_id, id) on delete cascade deferrable initially deferred
+);
+
+create table AddedRequirements (
+    -- collection in which the requirement was first collected
+    first_collect_nr integer not null,
+    product_id text not null,
+    req_id text not null,
+    primary key (first_collect_nr, product_id, req_id),
+    foreign key (first_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
+);
+
+create table RemovedRequirements (
+    -- collection in which the requirement was removed
+    removed_collect_nr integer not null references Collections (nr) on delete restrict,
+    -- last collection the requirement was collected
+    --
+    -- Note: All previous entries of the requirement are also considered removed.
+    last_collect_nr integer not null,
+    product_id text not null,
+    req_id text not null,
+    primary key (last_collect_nr, product_id, req_id),
+    foreign key (last_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
+);
+
+create table ChangedRequirements (
+    new_collect_nr integer not null,
+    old_collect_nr integer not null,
+    product_id text not null,
+    req_id text not null,
+    primary key (new_collect_nr, product_id, req_id),
+    foreign key (new_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
+    foreign key (old_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
+);
+
+-- Requirements that have not been removed
+create table ExistingRequirements (
+    -- latest collection in which the requirement was collected
+    latest_collect_nr integer not null,
+    product_id text not null,
+    req_id text not null,
+    primary key (product_id, req_id),
+    foreign key (latest_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
 );
