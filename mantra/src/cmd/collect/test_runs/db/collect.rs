@@ -20,7 +20,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 for (key, value) in props {
                     let value_hash = FmtHash::from(&value);
 
-                    self.insert_general_json(&value_hash, &value)
+                    self.insert_general_json(&value_hash, value)
                         .await
                         .with_context(|| {
                             format!("Inserting value for test run schema property '{key}'")
@@ -53,7 +53,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 for (key, value) in props {
                     let value_hash = FmtHash::from(&value);
 
-                    self.insert_general_json(&value_hash, &value)
+                    self.insert_general_json(&value_hash, value)
                         .await
                         .with_context(|| {
                             format!("Inserting value for test case schema property '{key}'")
@@ -126,7 +126,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .context("Querying collected test runs")?
         .map(|r| r.data_hash);
 
-        let data_hash = FmtHash::from(&serde_json::to_value(&test_run)?);
+        let data_hash = FmtHash::from(&serde_json::to_value(test_run)?);
 
         if let Some(collected_data) = collected_test_run_hash {
             if FmtHash::with_inner(collected_data) != data_hash {
@@ -504,16 +504,25 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         test_run_name,
                         test_run_date,
                         test_case_name,
+                        req_collect_nr,
                         req_id
                     )
-                    values (
+                    select
                         $1,
                         $2,
                         $3,
                         $4,
                         $5,
+                        r.collect_nr,
                         $6
+                    from Requirements r
+                    where r.collect_nr = (
+                        select max(cr.collect_nr)
+                        from Requirements cr
+                        where cr.product_id = r.product_id
                     )
+                    and r.product_id = $2
+                    and r.id = $6
                     ",
                     collect_nr,
                     product_id,

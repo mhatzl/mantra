@@ -21,7 +21,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for (key, value) in props {
                 let value_hash = FmtHash::from(&value);
 
-                self.insert_general_json(&value_hash, &value)
+                self.insert_general_json(&value_hash, value)
                     .await
                     .with_context(|| format!("Inserting value for trace property '{key}'"))?;
 
@@ -285,7 +285,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     ) -> Result<(), anyhow::Error> {
         let kind = trace.kind.as_nr();
         let collect_nr = self.collect_nr();
-        let product_id = &self.product_id();
 
         if sqlx::query!(
             "

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ManuallyVerifiedRequirements (\n                    collect_nr,\n                    product_id,\n                    review_name,\n                    review_date,\n                    req_collect_nr,\n                    req_id,\n                    comment_hash\n                )\n                select\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    r.collect_nr,\n                    $5,\n                    $6\n                from Requirements r\n                where r.collect_nr = (\n                    select max(cr.collect_nr)\n                    from Requirements cr\n                    where cr.product_id = r.product_id\n                )\n                and r.product_id = $2\n                and r.id = $5\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "21ecbd36a0cf4281aff3e5027cec789125ef1382562ee174ada47f7caaa8a909"
+}

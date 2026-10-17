@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            select * from TestRunLineCoverage tc\n                            where\n                                collect_nr = (\n                                    select max(ctc.collect_nr)\n                                    from TestRunLineCoverage ctc\n                                    where ctc.product_id = tc.product_id\n                                )\n                                and product_id = $1\n                                and test_run_name = $2\n                                and test_run_date = $3 and cov_filepath = $4\n                                and cov_line = $5\n                            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "collect_nr"
+          }
+        }
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "test_run_name"
+          }
+        }
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "test_run_date"
+          }
+        }
+      },
+      {
+        "name": "cov_filepath",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "cov_filepath"
+          }
+        }
+      },
+      {
+        "name": "cov_file_hash",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "cov_file_hash"
+          }
+        }
+      },
+      {
+        "name": "cov_line",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "cov_line"
+          }
+        }
+      },
+      {
+        "name": "hits",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "hits"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "70f4f92f1959860194f64501337dbba819111715f73ff99b491de3fc5fc49956"
+}

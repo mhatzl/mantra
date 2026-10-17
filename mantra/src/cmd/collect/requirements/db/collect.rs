@@ -21,7 +21,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for (key, value) in props {
                 let value_hash = FmtHash::from(&value);
 
-                self.insert_general_json(&value_hash, &value)
+                self.insert_general_json(&value_hash, value)
                     .await
                     .with_context(|| {
                         format!("Inserting value for requirement schema property '{key}'")
@@ -54,7 +54,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         for req in &req_schema.requirements {
             let req_id = req.id.clone();
-            self.update_requirement(&schema_hash, req)
+            self.update_requirement(schema_hash, req)
                 .await
                 .with_context(|| format!("Failed to update requirement '{}'", req_id))?;
         }

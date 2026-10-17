@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            insert into TestRunLineCoverageOverrides (\n                                collect_nr,\n                                product_id,\n                                test_collect_nr,\n                                test_run_name,\n                                test_run_date,\n                                review_name,\n                                review_date,\n                                cov_filepath,\n                                cov_line,\n                                hits,\n                                comment_hash\n                            )\n                            select\n                                $1,\n                                $2,\n                                tr.collect_nr,\n                                $3,\n                                $4,\n                                $5,\n                                $6,\n                                $7,\n                                $8,\n                                $9,\n                                $10\n                            from TestRuns tr\n                            where tr.collect_nr = (\n                                select max(ctr.collect_nr)\n                                from TestRuns ctr\n                                where ctr.product_id = tr.product_id\n                            )\n                            and tr.product_id = $2\n                            and tr.name = $3\n                            and tr.utc_date = $4\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "3c62e6e8fe707a6c5526686370771a359a6602256dd19594f574611a48481cd9"
+}

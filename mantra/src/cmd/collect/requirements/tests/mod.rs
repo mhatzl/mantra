@@ -47,7 +47,7 @@ mod indirect_states {
 
         let depr_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             depr_state
@@ -61,7 +61,7 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -73,8 +73,8 @@ mod indirect_states {
             "Expected req-1.sub-1 to have deprecated state indirectly due to req-1."
         );
         assert!(
-            depr_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to have deprecated state indirectly due to req-1."
+            !depr_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to **not** have deprecated state due to explicit 'false'."
         );
         assert!(
             depr_reqs.contains(&"req-1.sub-2".to_string()),
@@ -97,8 +97,8 @@ mod indirect_states {
             "Expected req-2.sub-2 to **not** have deprecated state."
         );
         assert!(
-            depr_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to have deprecated state indirectly due to at least one parent being deprecated."
+            !depr_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to **not** have deprecated state due to only one of two parents being deprecated."
         );
     }
 
@@ -110,7 +110,7 @@ mod indirect_states {
 
         let excluded_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             excluded_state
@@ -124,7 +124,7 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -132,12 +132,12 @@ mod indirect_states {
             "Expected req-1 to have excluded state."
         );
         assert!(
-            excluded_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have excluded state indirectly due to req-1."
+            !excluded_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to **not** have excluded state due to explicit 'false'."
         );
         assert!(
-            excluded_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to have excluded state indirectly due to req-1."
+            !excluded_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to **not** have excluded state."
         );
         assert!(
             excluded_reqs.contains(&"req-1.sub-2".to_string()),
@@ -167,18 +167,18 @@ mod indirect_states {
 
     #[sqlx::test]
     async fn optional_indirect_req(pool: MantraPool) {
-        let unverified_state = RequirementState::Unverified.as_nr();
+        let unknown_state = RequirementState::Unknown.as_nr();
         let verified_state = RequirementState::Verified.as_nr();
         let failed_state = RequirementState::Failed.as_nr();
 
         let db = db_from_dir!(pool, "indirect_states/optional_propagation").unwrap();
 
-        let unverified_reqs: Vec<String> = sqlx::query!(
+        let unknown_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
-            unverified_state
+            unknown_state
         )
         .fetch_all(
             db.connection()
@@ -189,12 +189,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -208,12 +208,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let failed_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             failed_state
@@ -227,12 +227,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let optional_reqs: Vec<String> = sqlx::query!(
             "
-            select id from OptionalRequirements
+            select req_id from OptionalRequirements
             "
         )
         .fetch_all(
@@ -244,7 +244,7 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -260,8 +260,8 @@ mod indirect_states {
             "Expected req-1.sub-1.sub-sub-1 to be directly verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-1.sub-2".to_string()),
@@ -300,8 +300,8 @@ mod indirect_states {
             "Expected req-3.sub-1 to be directly verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-3.sub-2".to_string()),
+            "Expected req-3.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-3.sub-2".to_string()),
@@ -324,8 +324,8 @@ mod indirect_states {
             "Expected req-4.sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-4.sub-2".to_string()),
+            "Expected req-4.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-4.sub-2".to_string()),
@@ -356,8 +356,8 @@ mod indirect_states {
             "Expected req-5.sub-1.sub-sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-5.sub-2".to_string()),
+            "Expected req-5.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-5.sub-2".to_string()),
@@ -365,27 +365,44 @@ mod indirect_states {
         );
         assert!(
             verified_reqs.contains(&"req-6".to_string()),
-            "Expected req-6to be verified."
+            "Expected req-6 to be verified."
         );
         assert!(
             !optional_reqs.contains(&"req-6".to_string()),
             "Expected req-6 to **not** be optional."
         );
+        assert!(
+            verified_reqs.contains(&"req-7".to_string()),
+            "Expected req-7 to be verified."
+        );
+        assert!(
+            optional_reqs.contains(&"req-7".to_string()),
+            "Expected req-7 to be optional."
+        );
+        assert!(
+            verified_reqs.contains(&"req-7.sub-1".to_string()),
+            "Expected req-7 to be verified."
+        );
+        assert!(
+            !optional_reqs.contains(&"req-7.sub-1".to_string()),
+            "Expected req-7.sub-1 to **not** be optional."
+        );
     }
 
     #[sqlx::test]
     async fn verified_indirect_req(pool: MantraPool) {
-        let unverified_state = RequirementState::Unverified.as_nr();
+        let unknown_state = RequirementState::Unknown.as_nr();
         let verified_state = RequirementState::Verified.as_nr();
+        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
 
         let db = db_from_dir!(pool, "indirect_states/verified_propagation").unwrap();
 
-        let unverified_reqs: Vec<String> = sqlx::query!(
+        let unknown_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
-            unverified_state
+            unknown_state
         )
         .fetch_all(
             db.connection()
@@ -396,12 +413,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -415,12 +432,31 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
+        .collect();
+
+        let partially_verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select req_id from RequirementVerificationStates
+            where state = $1
+            ",
+            partially_verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.req_id)
         .collect();
 
         let direct_verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from DirectRequirementVerificationStates
+            select req_id from DirectRequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -434,12 +470,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let optional_reqs: Vec<String> = sqlx::query!(
             "
-            select id from OptionalRequirements
+            select req_id from OptionalRequirements
             "
         )
         .fetch_all(
@@ -451,12 +487,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let manual_reqs: Vec<String> = sqlx::query!(
             "
-            select id from ManualRequirements
+            select req_id from ManualRequirements
             "
         )
         .fetch_all(
@@ -468,7 +504,7 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -484,8 +520,8 @@ mod indirect_states {
             "Expected req-2 to be directly verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be unverified."
+            partially_verified_reqs.contains(&"req-2".to_string()),
+            "Expected req-2 to be partially verified."
         );
         assert!(
             manual_reqs.contains(&"req-2".to_string()),
@@ -500,8 +536,8 @@ mod indirect_states {
             "Expected req-2.sub-1 to **not** require manual verification."
         );
         assert!(
-            unverified_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-2.sub-2".to_string()),
+            "Expected req-2.sub-2 to be unknown."
         );
         assert!(
             manual_reqs.contains(&"req-2.sub-2".to_string()),
@@ -512,8 +548,8 @@ mod indirect_states {
             "Expected req-3 to be verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be unverified."
+            partially_verified_reqs.contains(&"req-3.sub-1".to_string()),
+            "Expected req-3.sub-1 to be partially verified."
         );
         assert!(
             direct_verified_reqs.contains(&"req-3.sub-1".to_string()),
@@ -532,8 +568,8 @@ mod indirect_states {
             "Expected req-3.sub-1.sub-sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
-            "Expected req-3.sub-1.sub-sub-2 to be unverified."
+            unknown_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
+            "Expected req-3.sub-1.sub-sub-2 to be unknown."
         );
         assert!(
             !optional_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
@@ -547,19 +583,20 @@ mod indirect_states {
 
     #[sqlx::test]
     async fn indirec_direct_req(pool: MantraPool) {
-        let unverified_state = RequirementState::Unverified.as_nr();
+        let unknown_state = RequirementState::Unknown.as_nr();
         let verified_state = RequirementState::Verified.as_nr();
         let skipped_state = RequirementState::Skipped.as_nr();
         let failed_state = RequirementState::Failed.as_nr();
+        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
 
         let db = db_from_dir!(pool, "indirect_states/indirect_direct_mix").unwrap();
 
-        let unverified_reqs: Vec<String> = sqlx::query!(
+        let unknown_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
-            unverified_state
+            unknown_state
         )
         .fetch_all(
             db.connection()
@@ -570,12 +607,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -589,12 +626,31 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
+        .collect();
+
+        let partially_verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select req_id from RequirementVerificationStates
+            where state = $1
+            ",
+            partially_verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.req_id)
         .collect();
 
         let skipped_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             skipped_state
@@ -608,12 +664,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let failed_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             failed_state
@@ -627,12 +683,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let optional_reqs: Vec<String> = sqlx::query!(
             "
-            select id from OptionalRequirements
+            select req_id from OptionalRequirements
             "
         )
         .fetch_all(
@@ -644,7 +700,7 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -660,8 +716,8 @@ mod indirect_states {
             "Expected req-1.sub-1.sub-sub-1 to be failed."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-1.sub-2".to_string()),
@@ -692,12 +748,12 @@ mod indirect_states {
             "Expected req-2.sub-2 to be verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to be unverified."
+            partially_verified_reqs.contains(&"req-3".to_string()),
+            "Expected req-3 to be partially verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be unverified."
+            unknown_reqs.contains(&"req-3.sub-1".to_string()),
+            "Expected req-3.sub-1 to be unknown."
         );
         assert!(
             verified_reqs.contains(&"req-3.sub-2".to_string()),
@@ -716,8 +772,8 @@ mod indirect_states {
             "Expected req-4.sub-1 to be directly verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-4.sub-2".to_string()),
+            "Expected req-4.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-4.sub-2".to_string()),
@@ -740,16 +796,16 @@ mod indirect_states {
             "Expected req-5.sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be unverified."
+            unknown_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+            "Expected req-5.sub-1.sub-sub-1 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
             "Expected req-5.sub-1.sub-sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-5.sub-2".to_string()),
+            "Expected req-5.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-5.sub-2".to_string()),
@@ -772,8 +828,8 @@ mod indirect_states {
             "Expected req-6.sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
-            "Expected req-6.sub-1.sub-sub-1 to be unverified."
+            unknown_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
+            "Expected req-6.sub-1.sub-sub-1 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
@@ -804,8 +860,8 @@ mod indirect_states {
             "Expected req-7.sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
-            "Expected req-7.sub-1.sub-sub-1 to be unverified."
+            unknown_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+            "Expected req-7.sub-1.sub-sub-1 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
@@ -823,17 +879,18 @@ mod indirect_states {
 
     #[sqlx::test]
     async fn manual_indirect_req(pool: MantraPool) {
-        let unverified_state = RequirementState::Unverified.as_nr();
+        let unknown_state = RequirementState::Unknown.as_nr();
         let verified_state = RequirementState::Verified.as_nr();
+        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
 
         let db = db_from_dir!(pool, "indirect_states/manual_propagation").unwrap();
 
-        let unverified_reqs: Vec<String> = sqlx::query!(
+        let unknown_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
-            unverified_state
+            unknown_state
         )
         .fetch_all(
             db.connection()
@@ -844,12 +901,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -863,12 +920,31 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
+        .collect();
+
+        let partially_verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select req_id from RequirementVerificationStates
+            where state = $1
+            ",
+            partially_verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.req_id)
         .collect();
 
         let optional_reqs: Vec<String> = sqlx::query!(
             "
-            select id from OptionalRequirements
+            select req_id from OptionalRequirements
             "
         )
         .fetch_all(
@@ -880,12 +956,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let manual_reqs: Vec<String> = sqlx::query!(
             "
-            select id from ManualRequirements
+            select req_id from ManualRequirements
             "
         )
         .fetch_all(
@@ -897,7 +973,7 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -913,8 +989,8 @@ mod indirect_states {
             "Expected req-1.sub-1.sub-sub-1 to be verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-1.sub-2".to_string()),
+            "Expected req-1.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-1.sub-2".to_string()),
@@ -941,8 +1017,8 @@ mod indirect_states {
             "Expected req-2.sub-1 to require manual verification."
         );
         assert!(
-            unverified_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be unverified."
+            unknown_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
@@ -969,16 +1045,16 @@ mod indirect_states {
             "Expected req-3.sub-1 to be verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-3.sub-2".to_string()),
+            "Expected req-3.sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-3.sub-2".to_string()),
             "Expected req-3.sub-2 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to be unverified."
+            partially_verified_reqs.contains(&"req-4".to_string()),
+            "Expected req-4 to be partially verified."
         );
         assert!(
             manual_reqs.contains(&"req-4".to_string()),
@@ -993,16 +1069,16 @@ mod indirect_states {
             "Expected req-4.sub-1 to require manual verification."
         );
         assert!(
-            unverified_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be unverified."
+            unknown_reqs.contains(&"req-4.sub-2".to_string()),
+            "Expected req-4.sub-2 to be unknown."
         );
         assert!(
             manual_reqs.contains(&"req-4.sub-2".to_string()),
             "Expected req-4.sub-2 to require manual verification."
         );
         assert!(
-            unverified_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to be indirectly unverified."
+            partially_verified_reqs.contains(&"req-5".to_string()),
+            "Expected req-5 to be indirectly partially verified."
         );
         assert!(
             manual_reqs.contains(&"req-5".to_string()),
@@ -1041,16 +1117,16 @@ mod indirect_states {
             "Expected req-6 to **not** require manual verification."
         );
         assert!(
-            unverified_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be unverified."
+            partially_verified_reqs.contains(&"req-7".to_string()),
+            "Expected req-7 to be partially verified."
         );
         assert!(
             !manual_reqs.contains(&"req-7".to_string()),
             "Expected req-7 to **not** require manual verification."
         );
         assert!(
-            unverified_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7.sub-1 to be unverified."
+            partially_verified_reqs.contains(&"req-7.sub-1".to_string()),
+            "Expected req-7.sub-1 to be partially verified."
         );
         assert!(
             manual_reqs.contains(&"req-7.sub-1".to_string()),
@@ -1076,7 +1152,7 @@ mod indirect_states {
 
     #[sqlx::test]
     async fn nested_req(pool: MantraPool) {
-        let unverified_state = RequirementState::Unverified.as_nr();
+        let unknown_state = RequirementState::Unknown.as_nr();
         let verified_state = RequirementState::Verified.as_nr();
         let skipped_state = RequirementState::Skipped.as_nr();
         let excluded_state = RequirementState::Excluded.as_nr();
@@ -1084,12 +1160,12 @@ mod indirect_states {
 
         let db = db_from_dir!(pool, "indirect_states/nested_propagation").unwrap();
 
-        let unverified_reqs: Vec<String> = sqlx::query!(
+        let unknown_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
-            unverified_state
+            unknown_state
         )
         .fetch_all(
             db.connection()
@@ -1100,12 +1176,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -1119,12 +1195,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let skipped_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             skipped_state
@@ -1138,12 +1214,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let excluded_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             excluded_state
@@ -1157,12 +1233,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let deprecated_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             deprecated_state
@@ -1176,12 +1252,12 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         let optional_reqs: Vec<String> = sqlx::query!(
             "
-            select id from OptionalRequirements
+            select req_id from OptionalRequirements
             "
         )
         .fetch_all(
@@ -1193,28 +1269,28 @@ mod indirect_states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
-            unverified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be unverified."
+            unknown_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to be unknown."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to be unverified."
+            unknown_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to be unknown."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to be unverified."
+            unknown_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+            "Expected req-1.sub-1.sub-sub-1 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
             "Expected req-1.sub-1.sub-sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
-            "Expected req-1.sub-1.sub-sub-2 to be unverified."
+            unknown_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
+            "Expected req-1.sub-1.sub-sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
@@ -1241,16 +1317,16 @@ mod indirect_states {
             "Expected req-2.sub-1 to be skipped."
         );
         assert!(
-            unverified_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be unverified."
+            unknown_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+            "Expected req-2.sub-1.sub-sub-1 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
             "Expected req-2.sub-1.sub-sub-1 to be optional."
         );
         assert!(
-            unverified_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
-            "Expected req-2.sub-1.sub-sub-2 to be unverified."
+            unknown_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
+            "Expected req-2.sub-1.sub-sub-2 to be unknown."
         );
         assert!(
             optional_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
@@ -1284,7 +1360,7 @@ mod states {
 
         let depr_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             depr_state
@@ -1298,7 +1374,7 @@ mod states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -1355,7 +1431,7 @@ mod states {
 
         let excluded_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             exclude_state
@@ -1369,7 +1445,7 @@ mod states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -1426,7 +1502,7 @@ mod states {
 
         let failed_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             failed_state
@@ -1440,7 +1516,7 @@ mod states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -1481,7 +1557,7 @@ mod states {
 
         let skipped_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             skipped_state
@@ -1495,7 +1571,7 @@ mod states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -1525,17 +1601,17 @@ mod states {
     }
 
     #[sqlx::test]
-    async fn unverified_req(pool: MantraPool) {
-        let unverified_state = RequirementState::Unverified.as_nr();
+    async fn unknown_req(pool: MantraPool) {
+        let unknown_state = RequirementState::Unknown.as_nr();
 
-        let db = db_from_dir!(pool, "states/unverified").unwrap();
+        let db = db_from_dir!(pool, "states/unknown").unwrap();
 
-        let unverified_reqs: Vec<String> = sqlx::query!(
+        let unknown_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
-            unverified_state
+            unknown_state
         )
         .fetch_all(
             db.connection()
@@ -1546,45 +1622,45 @@ mod states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
-            unverified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to remain in unverified state, due to unverified child, even if directly verified."
+            unknown_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to remain in unknown state, due to unknown child, even if directly verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to remain unverified, even if parent is verified."
+            unknown_reqs.contains(&"req-1.sub-1".to_string()),
+            "Expected req-1.sub-1 to remain unknown, even if parent is verified."
         );
         assert!(
-            unverified_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to have unverified state."
+            unknown_reqs.contains(&"req-2".to_string()),
+            "Expected req-2 to have unknown state."
         );
         assert!(
-            unverified_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have unverified state."
+            unknown_reqs.contains(&"req-2.sub-1".to_string()),
+            "Expected req-2.sub-1 to have unknown state."
         );
         assert!(
-            unverified_reqs.contains(&"req-manual".to_string()),
-            "Expected req-manual to have unverified state, even if req was verified by test, because manual review is missing."
+            unknown_reqs.contains(&"req-manual".to_string()),
+            "Expected req-manual to have unknown state, even if req was verified by test, because manual review is missing."
         );
         assert!(
-            unverified_reqs.contains(&"req-satisfy".to_string()),
-            "Expected req-satisfy to have unverified state, because no test covers the trace."
+            unknown_reqs.contains(&"req-satisfy".to_string()),
+            "Expected req-satisfy to have unknown state, because no test covers the trace."
         );
         assert!(
-            unverified_reqs.contains(&"req-verify".to_string()),
-            "Expected req-verify to have unverified state, because no test covers the trace."
+            unknown_reqs.contains(&"req-verify".to_string()),
+            "Expected req-verify to have unknown state, because no test covers the trace."
         );
         assert!(
-            unverified_reqs.contains(&"req-satisfy-verify".to_string()),
-            "Expected req-satisfy-verify to have unverified state,
+            unknown_reqs.contains(&"req-satisfy-verify".to_string()),
+            "Expected req-satisfy-verify to have unknown state,
             because the test covering the verify trace does not cover the satisfy trace and vice versa."
         );
         assert!(
-            unverified_reqs.contains(&"req-mult-satisfy".to_string()),
-            "Expected req-mult-satisfy to have unverified state,
+            unknown_reqs.contains(&"req-mult-satisfy".to_string()),
+            "Expected req-mult-satisfy to have unknown state,
             because not all satisfy traces are covered by tests."
         );
     }
@@ -1597,7 +1673,7 @@ mod states {
 
         let verified_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             verified_state
@@ -1611,7 +1687,7 @@ mod states {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(
@@ -1654,7 +1730,7 @@ mod replacements {
 
         let deprecated_reqs: Vec<String> = sqlx::query!(
             "
-            select id from RequirementVerificationStates
+            select req_id from RequirementVerificationStates
             where state = $1
             ",
             deprecated_state
@@ -1668,7 +1744,7 @@ mod replacements {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| r.id)
+        .map(|r| r.req_id)
         .collect();
 
         assert!(

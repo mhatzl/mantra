@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                                select * from TestCaseLineCoverage tc\n                                where\n                                    collect_nr = (\n                                        select max(ctc.collect_nr)\n                                        from TestCaseLineCoverage ctc\n                                        where ctc.product_id = tc.product_id\n                                    )\n                                    and product_id = $1\n                                    and test_run_name = $2\n                                    and test_run_date = $3 and test_case_name = $4\n                                    and cov_filepath = $5 and cov_line = $6\n                                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "collect_nr"
+          }
+        }
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_run_name"
+          }
+        }
+      },
+      {
+        "name": "test_run_date",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_run_date"
+          }
+        }
+      },
+      {
+        "name": "test_case_name",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_case_name"
+          }
+        }
+      },
+      {
+        "name": "cov_filepath",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_filepath"
+          }
+        }
+      },
+      {
+        "name": "cov_file_hash",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_file_hash"
+          }
+        }
+      },
+      {
+        "name": "cov_line",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_line"
+          }
+        }
+      },
+      {
+        "name": "hits",
+        "ordinal": 8,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "hits"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "daa44302eb13df2e6d11206b531693678065036e2c65ed954421902ad137ccd3"
+}

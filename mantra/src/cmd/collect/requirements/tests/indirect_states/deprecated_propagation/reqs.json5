@@ -13,8 +13,9 @@
         },
         {
             id: "req-1.sub-1.sub-sub-1",
-            title: "First Sub-Sub-Requirement (Indirectly Deprecated)",
+            title: "First Sub-Sub-Requirement (Explicitly Not Deprecated)",
             origin: "Deprecated state test",
+            deprecated: false,
         },
         {
             id: "req-1.sub-2",
@@ -49,7 +50,7 @@
                 "req-1",
                 "req-2"
             ],
-            title: "Requirement with 1/2 deprecated parents (Indirectly Deprecated)",
+            title: "Requirement with 1/2 deprecated parents (Not Deprecated)",
             origin: "Deprecated state test",
         }
     ]

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            insert into TestCaseOverrides (\n                                collect_nr,\n                                product_id,\n                                test_collect_nr,\n                                test_run_name,\n                                test_run_date,\n                                test_case_name,\n                                review_name,\n                                review_date,\n                                state,\n                                comment_hash\n                            )\n                            select\n                                $1,\n                                $2,\n                                tc.collect_nr,\n                                $3,\n                                $4,\n                                $5,\n                                $6,\n                                $7,\n                                $8,\n                                $9\n                            from TestCases tc\n                            where collect_nr = (\n                                select max(ctc.collect_nr)\n                                from TestCases ctc\n                                where ctc.product_id = tc.product_id\n                            )\n                            and product_id = $2\n                            and test_run_name = $3\n                            and test_run_date = $4\n                            and name = $5\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "1e93886db673b1cb8d67511212cb6bd5e13ed01027f9352a068612faf72cfa2f"
+}

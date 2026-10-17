@@ -10,38 +10,25 @@ pub(super) async fn collect_test_data(
     db: &MantraDb,
     mantra_cfg: &Path,
 ) -> Result<(), anyhow::Error> {
-    for cfg in test_collect_cfgs(mantra_cfg).await? {
-        super::collect(db, cfg).await?;
-    }
-
-    Ok(())
+    super::collect(db, collect_test_cfg(mantra_cfg).await?).await
 }
 
-pub(super) async fn test_collect_cfgs(
-    mantra_cfg: &Path,
-) -> Result<Vec<CollectConfig>, anyhow::Error> {
+pub(super) async fn collect_test_cfg(mantra_cfg: &Path) -> Result<CollectConfig, anyhow::Error> {
     let cfg_file: MantraConfigFile = crate::io::async_deserialize_from_path(mantra_cfg).await?;
     cfg_file.inheritable_product_cfg.check_validity()?;
 
-    let mut collect_cfgs = Vec::new();
+    let mut product_cfgs = Vec::new();
 
     for product_cfg in cfg_file.products {
-        collect_cfgs.push(CollectConfig {
-            cfg_filepath: mantra_cfg.to_path_buf(),
-            args: CollectArguments::default(),
-            envs: CollectEnvironmentVariables {},
-            product: product_cfg
-                .product
-                .to_product(&cfg_file.inheritable_product_cfg)?,
-            requirements: product_cfg.requirements,
-            annotations: product_cfg.annotations,
-            test_runs: product_cfg.test_runs,
-            reviews: product_cfg.reviews,
-            lsif: product_cfg.lsif,
-        })
+        product_cfgs.push(product_cfg.resolve(&cfg_file.inheritable_product_cfg)?);
     }
 
-    Ok(collect_cfgs)
+    Ok(CollectConfig {
+        cfg_filepath: mantra_cfg.to_path_buf(),
+        args: CollectArguments::default(),
+        envs: CollectEnvironmentVariables {},
+        product_cfgs,
+    })
 }
 
 macro_rules! db_from_cfg_file {

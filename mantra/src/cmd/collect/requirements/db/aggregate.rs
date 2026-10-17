@@ -72,6 +72,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into RequirementHierarchies (
+                agg_collect_nr,
                 child_collect_nr,
                 child_product_id,
                 child_req_id,
@@ -81,6 +82,7 @@ impl<'db> Collection<'db> {
                 optional
             )
             select
+                $1 as agg_collect_nr,
                 $1 as child_collect_nr,
                 rp.product_id as child_product_id,
                 rp.req_id as child_req_id,
@@ -99,6 +101,7 @@ impl<'db> Collection<'db> {
             union
 
             select
+                $1 as agg_collect_nr,
                 r.collect_nr as child_collect_nr,
                 rc.child_product_id,
                 rc.child_req_id,
@@ -138,7 +141,7 @@ impl<'db> Collection<'db> {
         .context("Querying for missing requirement parents")?;
 
         // TODO: do not fail on first error
-        for missing_parent in missing_parents {
+        if let Some(missing_parent) = missing_parents.first() {
             anyhow::bail!(
                 "Missing requirement parent product-id='{}' req-id='{}' for child product-id='{}' req-id='{}'",
                 missing_parent.parent_product_id,
@@ -167,7 +170,7 @@ impl<'db> Collection<'db> {
         .context("Querying for missing requirement children")?;
 
         // TODO: do not fail on first error
-        for missing_child in missing_children {
+        if let Some(missing_child) = missing_children.first() {
             anyhow::bail!(
                 "Missing requirement child product-id='{}' req-id='{}' for parent product-id='{}' req-id='{}'",
                 missing_child.child_product_id,
@@ -187,7 +190,7 @@ impl<'db> Collection<'db> {
         // so we check that we only consider requirements that were last collected for their product.
         sqlx::query!(
             "
-            insert or ignore into RootRequirements (
+            insert into RootRequirements (
                 agg_collect_nr,
                 req_collect_nr,
                 product_id,
@@ -302,7 +305,7 @@ impl<'db> Collection<'db> {
                 descendant_req_id,
                 optional
             )
-            select
+            select distinct
                 $1 as agg_collect_nr,
                 collect_nr,
                 product_id,
@@ -430,14 +433,14 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into DeprecatedRequirements (
+            insert into DeprecatedRequirements (
                 agg_collect_nr,
                 req_collect_nr,
                 product_id,
                 req_id
             )
             with recursive IsIncluded(collect_nr, product_id, id) as (
-                select r.collect_nr, r.product_id, r.id
+                select collect_nr, product_id, id
                 from (
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r, RootRequirements rr
@@ -482,7 +485,13 @@ impl<'db> Collection<'db> {
 
                 select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
                 from IsIncluded ii, RequirementHierarchies rh, Requirements r
-                where ii.collect_nr = rh.parent_collect_nr
+                where rh.agg_collect_nr = (
+                    select max(crh.agg_collect_nr)
+                    from RequirementHierarchies crh
+                    where crh.child_product_id = rh.child_product_id
+                    and crh.parent_product_id = rh.parent_product_id
+                )
+                and ii.collect_nr = rh.parent_collect_nr
                 and ii.product_id = rh.parent_product_id
                 and ii.id = rh.parent_req_id
                 and r.collect_nr = (
@@ -541,7 +550,7 @@ impl<'db> Collection<'db> {
                 req_id
             )
             with recursive IsIncluded(collect_nr, product_id, id) as (
-                select r.collect_nr, r.product_id, r.id
+                select collect_nr, product_id, id
                 from (
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r, RootRequirements rr
@@ -570,7 +579,13 @@ impl<'db> Collection<'db> {
 
                 select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
                 from IsIncluded nm, RequirementHierarchies rh, Requirements r
-                where nm.collect_nr = rh.parent_collect_nr
+                where rh.agg_collect_nr = (
+                    select max(crh.agg_collect_nr)
+                    from RequirementHierarchies crh
+                    where crh.child_product_id = rh.child_product_id
+                    and crh.parent_product_id = rh.parent_product_id
+                )
+                and nm.collect_nr = rh.parent_collect_nr
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (
@@ -622,7 +637,7 @@ impl<'db> Collection<'db> {
                 req_id
             )
             with recursive IsMandatory(collect_nr, product_id, id) as (
-                select r.collect_nr, r.product_id, r.id
+                select collect_nr, product_id, id
                 from (
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r, RootRequirements rr
@@ -651,7 +666,13 @@ impl<'db> Collection<'db> {
 
                 select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
                 from IsMandatory nm, RequirementHierarchies rh, Requirements r
-                where nm.collect_nr = rh.parent_collect_nr
+                where rh.agg_collect_nr = (
+                    select max(crh.agg_collect_nr)
+                    from RequirementHierarchies crh
+                    where crh.child_product_id = rh.child_product_id
+                    and crh.parent_product_id = rh.parent_product_id
+                )
+                and nm.collect_nr = rh.parent_collect_nr
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (
@@ -697,14 +718,14 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into ManualRequirements (
+            insert into ManualRequirements (
                 agg_collect_nr,
                 req_collect_nr,
                 product_id,
                 req_id
             )
             with recursive NonManual(collect_nr, product_id, id) as (
-                select r.collect_nr, r.product_id, r.id
+                select collect_nr, product_id, id
                 from (
                     select r.collect_nr, r.product_id, r.id
                     from Requirements r, RootRequirements rr
@@ -733,7 +754,13 @@ impl<'db> Collection<'db> {
 
                 select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
                 from NonManual nm, RequirementHierarchies rh, Requirements r
-                where nm.collect_nr = rh.parent_collect_nr
+                where rh.agg_collect_nr = (
+                    select max(crh.agg_collect_nr)
+                    from RequirementHierarchies crh
+                    where crh.child_product_id = rh.child_product_id
+                    and crh.parent_product_id = rh.parent_product_id
+                )
+                and nm.collect_nr = rh.parent_collect_nr
                 and nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
                 and r.collect_nr = (

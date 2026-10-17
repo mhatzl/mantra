@@ -20,7 +20,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for (key, value) in props {
                 let value_hash = FmtHash::from(&value);
 
-                self.insert_general_json(&value_hash, &value)
+                self.insert_general_json(&value_hash, value)
                     .await
                     .with_context(|| {
                         format!("Inserting value for review schema property '{key}'")
@@ -343,15 +343,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
                     let test_case_exists = sqlx::query!(
                         "
-                        select * from TestCases
+                        select * from TestCases tc
                         where
-                            collect_nr = $1
-                            and product_id = $2
-                            and test_run_name = $3
-                            and test_run_date = $4
-                            and name = $5
+                            collect_nr = (
+                                select max(ctc.collect_nr)
+                                from TestCases ctc
+                                where ctc.product_id = tc.product_id
+                            )
+                            and product_id = $1
+                            and test_run_name = $2
+                            and test_run_date = $3
+                            and name = $4
                         ",
-                        collect_nr,
                         product_id,
                         test_run_override.name,
                         test_run_override.utc_date,
@@ -368,6 +371,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             insert into TestCaseOverrides (
                                 collect_nr,
                                 product_id,
+                                test_collect_nr,
                                 test_run_name,
                                 test_run_date,
                                 test_case_name,
@@ -376,9 +380,10 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 state,
                                 comment_hash
                             )
-                            values (
+                            select
                                 $1,
                                 $2,
+                                tc.collect_nr,
                                 $3,
                                 $4,
                                 $5,
@@ -386,7 +391,16 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 $7,
                                 $8,
                                 $9
+                            from TestCases tc
+                            where collect_nr = (
+                                select max(ctc.collect_nr)
+                                from TestCases ctc
+                                where ctc.product_id = tc.product_id
                             )
+                            and product_id = $2
+                            and test_run_name = $3
+                            and test_run_date = $4
+                            and name = $5
                             ",
                             collect_nr,
                             product_id,
@@ -454,14 +468,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         for line_nr in &line_info.nrs {
                             let covered_line_exists = sqlx::query!(
                                 "
-                                select * from TestCaseLineCoverage
+                                select * from TestCaseLineCoverage tc
                                 where
-                                    collect_nr = $1 and product_id = $2
-                                    and test_run_name = $3
-                                    and test_run_date = $4 and test_case_name = $5
-                                    and cov_filepath = $6 and cov_line = $7
+                                    collect_nr = (
+                                        select max(ctc.collect_nr)
+                                        from TestCaseLineCoverage ctc
+                                        where ctc.product_id = tc.product_id
+                                    )
+                                    and product_id = $1
+                                    and test_run_name = $2
+                                    and test_run_date = $3 and test_case_name = $4
+                                    and cov_filepath = $5 and cov_line = $6
                                 ",
-                                collect_nr,
                                 product_id,
                                 test_run_override.name,
                                 test_run_override.utc_date,
@@ -480,6 +498,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 insert into TestCaseLineCoverageOverrides (
                                     collect_nr,
                                     product_id,
+                                    test_collect_nr,
                                     test_run_name,
                                     test_run_date,
                                     test_case_name,
@@ -490,9 +509,10 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                     hits,
                                     comment_hash
                                 )
-                                values (
+                                select
                                     $1,
                                     $2,
+                                    tc.collect_nr,
                                     $3,
                                     $4,
                                     $5,
@@ -502,7 +522,16 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                     $9,
                                     $10,
                                     $11
+                                from TestCases tc
+                                where tc.collect_nr = (
+                                    select max(ctc.collect_nr)
+                                    from TestCases ctc
+                                    where ctc.product_id = tc.product_id
                                 )
+                                and tc.product_id = $2
+                                and tc.test_run_name = $3
+                                and tc.test_run_date = $4
+                                and tc.name = $5
                                 ",
                                 collect_nr,
                                 product_id,
@@ -582,14 +611,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     for line_nr in &line_info.nrs {
                         let covered_line_exists = sqlx::query!(
                             "
-                            select * from TestRunLineCoverage
+                            select * from TestRunLineCoverage tc
                             where
-                                collect_nr = $1 and product_id = $2
-                                and test_run_name = $3
-                                and test_run_date = $4 and cov_filepath = $5
-                                and cov_line = $6
+                                collect_nr = (
+                                    select max(ctc.collect_nr)
+                                    from TestRunLineCoverage ctc
+                                    where ctc.product_id = tc.product_id
+                                )
+                                and product_id = $1
+                                and test_run_name = $2
+                                and test_run_date = $3 and cov_filepath = $4
+                                and cov_line = $5
                             ",
-                            collect_nr,
                             product_id,
                             test_run_override.name,
                             test_run_override.utc_date,
@@ -607,6 +640,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             insert into TestRunLineCoverageOverrides (
                                 collect_nr,
                                 product_id,
+                                test_collect_nr,
                                 test_run_name,
                                 test_run_date,
                                 review_name,
@@ -616,9 +650,10 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 hits,
                                 comment_hash
                             )
-                            values (
+                            select
                                 $1,
                                 $2,
+                                tr.collect_nr,
                                 $3,
                                 $4,
                                 $5,
@@ -627,7 +662,15 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 $8,
                                 $9,
                                 $10
+                            from TestRuns tr
+                            where tr.collect_nr = (
+                                select max(ctr.collect_nr)
+                                from TestRuns ctr
+                                where ctr.product_id = tr.product_id
                             )
+                            and tr.product_id = $2
+                            and tr.name = $3
+                            and tr.utc_date = $4
                             ",
                             collect_nr,
                             product_id,
@@ -698,10 +741,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         let req_available = sqlx::query!(
             "
-            select id from Requirements
-            where collect_nr = $1 and product_id = $2 and id = $3
+            select id from Requirements r
+            where collect_nr = (
+                select max(cr.collect_nr)
+                from Requirements cr
+                where cr.product_id = r.product_id
+            ) and product_id = $1 and id = $2
             ",
-            collect_nr,
             product_id,
             req_id
         )
@@ -713,28 +759,37 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if req_available {
             sqlx::query!(
                 "
-            insert into ManuallyVerifiedRequirements (
+                insert into ManuallyVerifiedRequirements (
+                    collect_nr,
+                    product_id,
+                    review_name,
+                    review_date,
+                    req_collect_nr,
+                    req_id,
+                    comment_hash
+                )
+                select
+                    $1,
+                    $2,
+                    $3,
+                    $4,
+                    r.collect_nr,
+                    $5,
+                    $6
+                from Requirements r
+                where r.collect_nr = (
+                    select max(cr.collect_nr)
+                    from Requirements cr
+                    where cr.product_id = r.product_id
+                )
+                and r.product_id = $2
+                and r.id = $5
+                ",
                 collect_nr,
-                req_id,
                 product_id,
                 review_name,
                 review_date,
-                comment_hash
-            )
-            values (
-                $1,
-                $2,
-                $3,
-                $4,
-                $5,
-                $6
-            )
-            ",
-                collect_nr,
                 req_id,
-                product_id,
-                review_name,
-                review_date,
                 comment_hash
             )
             .execute(self.connection_mut())

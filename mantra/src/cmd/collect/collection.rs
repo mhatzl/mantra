@@ -73,7 +73,7 @@ impl<'db> Collection<'db> {
         self.aggregate().await
     }
 
-    async fn aggregate(&mut self) -> Result<(), anyhow::Error> {
+    pub(super) async fn aggregate(&mut self) -> Result<(), anyhow::Error> {
         self.aggregate_requirements_data()
             .await
             .context("Failed to aggregate requirements data")?;
@@ -91,7 +91,7 @@ impl<'db> Collection<'db> {
         Ok(())
     }
 
-    async fn collect_products(
+    pub(super) async fn collect_products(
         &mut self,
         args: &CollectArguments,
         product_cfgs: Vec<ResolvedProductConfig>,

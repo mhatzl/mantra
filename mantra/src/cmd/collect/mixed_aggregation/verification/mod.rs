@@ -166,34 +166,76 @@ impl<'db> Collection<'db> {
                     ) then $4
                     -- leaves: unknown, satisfied, partially verified, verified
                     --
+                    -- directly verified reqs with only optional children
+                    when exists (
+                        select voc.req_id
+                        from VerifiedRequirementsWithOnlyOptionalChildren voc
+                        where voc.agg_collect_nr = $1
+                        and r.collect_nr = voc.req_collect_nr
+                        and r.product_id = voc.product_id
+                        and r.id = voc.req_id
+                    ) then $2
+                    -- manual requirement
+                    when exists(
+                        select mr.req_id
+                        from ManualRequirements mr
+                        where mr.agg_collect_nr = (
+                            select max(cmr.agg_collect_nr)
+                            from ManualRequirements cmr
+                            where cmr.product_id = mr.product_id
+                        )
+                        and mr.req_collect_nr = r.collect_nr
+                        and mr.product_id = r.product_id
+                        and mr.req_id = r.id
+                    ) then
+                        case
+                            -- manual reqs must always be directly verified
+                            when ds.state is not null and ds.state = $2
+                            then
+                                case
+                                    -- no children
+                                    when ids.state is null or ids.state = $2
+                                    then $2
+                                    -- directly verified, but children not verified => partially verified
+                                    -- at least one child either partially verified, satisfied, or unknown
+                                    else $9
+                                end
+                            -- missing direct verification, but (partially) verified through children
+                            when ids.state is not null and (ids.state = $9 or ids.state = $2)
+                            then $9
+                            -- satisfied
+                            when exists (
+                                select sr.req_id
+                                from DirectlySatisfiedRequirements sr
+                                where sr.agg_collect_nr = (
+                                    select max(csr.agg_collect_nr)
+                                    from DirectlySatisfiedRequirements csr
+                                    where csr.product_id = sr.product_id
+                                )
+                                and sr.req_collect_nr = r.collect_nr
+                                and sr.product_id = r.product_id
+                                and sr.req_id = r.id
+                            ) then $8
+                            -- unknown
+                            else $5
+                        end
                     -- partially verified
                     when ds.state is not null and (ds.state = $9
-                        or (ids.state is not null and ids.state = $9)
+                        or (ids.state is not null
+                            and (ids.state = $9
+                                -- indirectly either satisfied or unknown is left besides verified
+                                or (ds.state = $2 and ids.state != $2)
+                            )
+                        )
                     ) then $9
                     -- verified
                     when ds.state is not null
                     and (
                         -- verified leaf
                         (ds.state = $2 and ids.state is null)
-                        -- indirectly verified
-                        or (ids.state = $2 and
-                            -- manual requirements must be directly verified
-                            -- !(Em !verified) => Vm verified
-                            not (ds.state != $2
-                                and exists(
-                                    select mr.req_id
-                                    from ManualRequirements mr
-                                    where mr.agg_collect_nr = (
-                                        select max(cmr.agg_collect_nr)
-                                        from ManualRequirements cmr
-                                        where cmr.product_id = mr.product_id
-                                    )
-                                    and mr.req_collect_nr = r.collect_nr
-                                    and mr.product_id = r.product_id
-                                    and mr.req_id = r.id
-                                )
-                            )
-                        )
+                        -- indirectly verified, direct verification is optional in this case
+                        -- manual reqs handled above
+                        or ids.state = $2
                     ) then $2
                     -- satisfied
                     when exists (

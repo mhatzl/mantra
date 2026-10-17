@@ -103,6 +103,18 @@
             ],
             title: "Requirement with 1/2 optional parents (Not Optional)",
             origin: "Optional requirement test",
+        },
+        {
+            id: "req-7",
+            title: "Seventh Requirement (Optional + Indirectly Verified)",
+            origin: "Optional requirement test",
+            optional: true
+        },
+        {
+            id: "req-7.sub-1",
+            title: "First Sub-Requirement (Non-Optional + Directly Verified)",
+            origin: "Optional requirement test",
+            optional: false
         }
     ]
 }

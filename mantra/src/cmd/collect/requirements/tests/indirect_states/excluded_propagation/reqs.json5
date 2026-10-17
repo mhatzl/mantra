@@ -8,12 +8,13 @@
         },
         {
             id: "req-1.sub-1",
-            title: "First Sub-Requirement (Indirectly Excluded)",
+            title: "First Sub-Requirement (Not Excluded)",
             origin: "Excluded state test",
+            exclude: false,
         },
         {
             id: "req-1.sub-1.sub-sub-1",
-            title: "First Sub-Sub-Requirement (Indirectly Excluded)",
+            title: "First Sub-Sub-Requirement (Not Excluded)",
             origin: "Excluded state test",
         },
         {

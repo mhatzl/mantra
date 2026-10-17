@@ -75,50 +75,75 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            -- Note: Includes leaf requirements needed for indirect check later
             insert into RequirementsWithOnlyOptionalChildren (
                 agg_collect_nr,
                 req_collect_nr,
                 product_id,
                 req_id
             )
-            -- Note: Includes leaf requirements needed for indirect check later
-            select
-                ur.agg_collect_nr,
-                ur.req_collect_nr,
-                ur.product_id,
-                ur.req_id
-            from UsableRequirements ur
-            where ur.agg_collect_nr = $1
-            and not exists (
-                select rh.child_req_id
-                from
-                    RequirementHierarchies rh,
-                    UsableRequirements uri
-                where rh.agg_collect_nr = (
-                    select max(crh.agg_collect_nr)
-                    from RequirementHierarchies crh
-                    where crh.child_product_id = rh.child_product_id
-                    and crh.parent_product_id = rh.parent_product_id
-                )
-                and ur.req_collect_nr = rh.parent_collect_nr
-                and ur.product_id = rh.parent_product_id
-                and ur.req_id = rh.parent_req_id
-                and uri.req_collect_nr = rh.child_collect_nr
-                and uri.product_id = rh.child_product_id
-                and uri.req_id = rh.child_req_id
-                and (rh.optional = false or not exists (
-                    select op.req_id
-                    from OptionalRequirements op
-                    where op.agg_collect_nr = (
-                        select max(cop.agg_collect_nr)
-                        from OptionalRequirements cop
-                        where cop.product_id = op.product_id
+            with RequirementsWithNonOptionalChild (
+                agg_collect_nr,
+                req_collect_nr,
+                product_id,
+                req_id
+            ) as (
+                select
+                    ur.agg_collect_nr,
+                    ur.req_collect_nr,
+                    ur.product_id,
+                    ur.req_id
+                from UsableNonLeafRequirements ur
+                where ur.agg_collect_nr = $1
+                and exists (
+                    select rh.child_req_id
+                    from
+                        RequirementHierarchies rh,
+                        UsableRequirements uri
+                    where uri.agg_collect_nr = ur.agg_collect_nr
+                    and rh.agg_collect_nr = (
+                        select max(crh.agg_collect_nr)
+                        from RequirementHierarchies crh
+                        where crh.child_product_id = rh.child_product_id
+                        and crh.parent_product_id = rh.parent_product_id
                     )
-                    and op.req_collect_nr = rh.child_collect_nr
-                    and op.product_id = rh.child_product_id
-                    and op.req_id = rh.child_req_id
-                ))
+                    and ur.req_collect_nr = rh.parent_collect_nr
+                    and ur.product_id = rh.parent_product_id
+                    and ur.req_id = rh.parent_req_id
+                    and uri.req_collect_nr = rh.child_collect_nr
+                    and uri.product_id = rh.child_product_id
+                    and uri.req_id = rh.child_req_id
+                    and rh.optional = false
+                    and not exists (
+                        select op.req_id
+                        from OptionalRequirements op
+                        where op.agg_collect_nr = (
+                            select max(cop.agg_collect_nr)
+                            from OptionalRequirements cop
+                            where cop.product_id = op.product_id
+                        )
+                        and op.req_collect_nr = rh.child_collect_nr
+                        and op.product_id = rh.child_product_id
+                        and op.req_id = rh.child_req_id
+                    )
+                )
             )
+            select
+                agg_collect_nr,
+                req_collect_nr,
+                product_id,
+                req_id
+            from UsableRequirements ur
+            where agg_collect_nr = $1
+
+            except
+
+            select
+                agg_collect_nr,
+                req_collect_nr,
+                product_id,
+                req_id
+            from RequirementsWithNonOptionalChild
             ",
             collect_nr
         )
@@ -155,9 +180,9 @@ impl<'db> Collection<'db> {
                     lr.req_collect_nr,
                     lr.product_id,
                     lr.req_id,
-                    lr.req_collect_nr,
-                    lr.product_id,
-                    lr.req_id,
+                    lr.req_collect_nr as child_collect_nr,
+                    lr.product_id as child_product_id,
+                    lr.req_id as child_req_id,
                     ds.state
                 from
                     UsableLeafRequirements lr,
@@ -206,7 +231,7 @@ impl<'db> Collection<'db> {
                 and sor.product_id = rh.child_product_id
                 and sor.req_id = rh.child_req_id
             )
-            select
+            select distinct
                 $1 as agg_collect_nr,
                 req_collect_nr,
                 product_id,
@@ -275,70 +300,97 @@ impl<'db> Collection<'db> {
             with recursive ReqsWithNonOptionalChildrenHavingSkippedState (
                 req_collect_nr,
                 product_id,
-                req_id
+                req_id,
+                child_collect_nr,
+                child_product_id,
+                child_req_id
             ) as (
-                select r.req_collect_nr, r.product_id, r.req_id
-                from UsableNonLeafRequirements r
-                where r.agg_collect_nr = $1
-                and exists (
-                    select rh.child_req_id
-                    from
-                        RequirementHierarchies rh,
-                        DirectRequirementVerificationStates ds,
-                        UsableLeafRequirements lr
-                    where rh.agg_collect_nr = (
+                select
+                    req_collect_nr,
+                    product_id,
+                    req_id,
+                    child_collect_nr,
+                    child_product_id,
+                    child_req_id
+                from (
+                    select
+                        r.req_collect_nr,
+                        r.product_id,
+                        r.req_id,
+                        rh.child_collect_nr,
+                        rh.child_product_id,
+                        rh.child_req_id
+                    from UsableNonLeafRequirements r, RequirementHierarchies rh
+                    where r.agg_collect_nr = $1
+                    and rh.agg_collect_nr = (
                         select max(crh.agg_collect_nr)
                         from RequirementHierarchies crh
                         where crh.child_product_id = rh.child_product_id
                         and crh.parent_product_id = rh.parent_product_id
                     )
-                    and ds.agg_collect_nr = r.agg_collect_nr
-                    and lr.agg_collect_nr = r.agg_collect_nr
                     and r.req_collect_nr = rh.parent_collect_nr
                     and r.product_id = rh.parent_product_id
                     and r.req_id = rh.parent_req_id
-                    and rh.child_collect_nr = lr.req_collect_nr
-                    and rh.child_product_id = lr.product_id
-                    and rh.child_req_id = lr.req_id
-                    and lr.req_collect_nr = ds.req_collect_nr
-                    and lr.product_id = ds.product_id
-                    and lr.req_id = ds.req_id
-                    and ds.state = $2
-                    and rh.optional = false
-                    and not exists (
-                        select op.req_id
-                        from OptionalRequirements op
-                        where op.agg_collect_nr = (
-                            select max(cop.agg_collect_nr)
-                            from OptionalRequirements cop
-                            where cop.product_id = op.product_id
+                    and exists (
+                        select rh.child_req_id
+                        from
+                            DirectRequirementVerificationStates ds,
+                            UsableLeafRequirements lr
+                        where ds.agg_collect_nr = r.agg_collect_nr
+                        and lr.agg_collect_nr = r.agg_collect_nr
+                        and rh.child_collect_nr = lr.req_collect_nr
+                        and rh.child_product_id = lr.product_id
+                        and rh.child_req_id = lr.req_id
+                        and lr.req_collect_nr = ds.req_collect_nr
+                        and lr.product_id = ds.product_id
+                        and lr.req_id = ds.req_id
+                        and ds.state = $2
+                        and rh.optional = false
+                        and not exists (
+                            select op.req_id
+                            from OptionalRequirements op
+                            where op.agg_collect_nr = (
+                                select max(cop.agg_collect_nr)
+                                from OptionalRequirements cop
+                                where cop.product_id = op.product_id
+                            )
+                            and op.req_collect_nr = rh.child_collect_nr
+                            and op.product_id = rh.child_product_id
+                            and op.req_id = rh.child_req_id
                         )
-                        and op.req_collect_nr = rh.child_collect_nr
-                        and op.product_id = rh.child_product_id
-                        and op.req_id = rh.child_req_id
                     )
-                )
-                -- skipped req that only has optional children
-                -- may serve as skipped child for its parents
-                or exists (
-                    select ooc.req_id
+
+                    union all
+
+                    -- skipped req that only has optional children
+                    -- may serve as skipped child for its parents
+                    select
+                        ds.req_collect_nr,
+                        ds.product_id,
+                        ds.req_id,
+                        ds.req_collect_nr,
+                        ds.product_id,
+                        ds.req_id
                     from
                         DirectRequirementVerificationStates ds,
                         RequirementsWithOnlyOptionalChildren ooc
-                    where ds.agg_collect_nr = r.agg_collect_nr
-                    and ds.req_collect_nr = r.req_collect_nr
-                    and ds.product_id = r.product_id
-                    and ds.req_id = r.req_id
-                    and ooc.agg_collect_nr = r.agg_collect_nr
-                    and ooc.req_collect_nr = r.req_collect_nr
-                    and ooc.product_id = r.product_id
-                    and ooc.req_id = r.req_id
+                    where ds.agg_collect_nr = $1
+                    and ooc.agg_collect_nr = ds.agg_collect_nr
+                    and ooc.req_collect_nr = ds.req_collect_nr
+                    and ooc.product_id = ds.product_id
+                    and ooc.req_id = ds.req_id
                     and ds.state = $2
                 )
 
                 union all
 
-                select r.req_collect_nr, r.product_id, r.req_id
+                select
+                    r.req_collect_nr,
+                    r.product_id,
+                    r.req_id,
+                    rh.child_collect_nr,
+                    rh.child_product_id,
+                    rh.child_req_id
                 from
                     UsableNonLeafRequirements r,
                     ReqsWithNonOptionalChildrenHavingSkippedState sc,
@@ -370,8 +422,12 @@ impl<'db> Collection<'db> {
                     and op.req_id = rh.child_req_id
                 )
             )
-            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
+            select distinct $1 as agg_collect_nr, req_collect_nr, product_id, req_id
             from ReqsWithNonOptionalChildrenHavingSkippedState
+            -- filter base requirements since their state did not depend on children
+            where req_collect_nr != child_collect_nr
+            or product_id != child_product_id
+            or req_id != child_req_id
             ",
             collect_nr,
             req_skipped_nr
@@ -391,98 +447,133 @@ impl<'db> Collection<'db> {
             with recursive ReqsWithNonOptionalChildrenHavingStatisfiedOrUnknownState (
                 req_collect_nr,
                 product_id,
-                req_id
+                req_id,
+                child_collect_nr,
+                child_product_id,
+                child_req_id
             ) as (
-                select r.req_collect_nr, r.product_id, r.req_id
-                from UsableNonLeafRequirements r
-                where r.agg_collect_nr = $1
-                -- at least one non-optional leaf either has satisfied or unknown
-                and exists (
-                    select rh.child_req_id
-                    from
-                        RequirementHierarchies rh,
-                        DirectRequirementVerificationStates ds,
-                        UsableLeafRequirements lr
-                    where rh.agg_collect_nr = (
+                select
+                    req_collect_nr,
+                    product_id,
+                    req_id,
+                    child_collect_nr,
+                    child_product_id,
+                    child_req_id
+                from (
+                    -- at least one non-optional leaf either has satisfied or unknown
+                    select
+                        r.req_collect_nr,
+                        r.product_id,
+                        r.req_id,
+                        rh.child_collect_nr,
+                        rh.child_product_id,
+                        rh.child_req_id
+                    from UsableNonLeafRequirements r, RequirementHierarchies rh
+                    where r.agg_collect_nr = $1
+                    and rh.agg_collect_nr = (
                         select max(crh.agg_collect_nr)
                         from RequirementHierarchies crh
                         where crh.child_product_id = rh.child_product_id
                         and crh.parent_product_id = rh.parent_product_id
                     )
-                    and ds.agg_collect_nr = r.agg_collect_nr
-                    and lr.agg_collect_nr = r.agg_collect_nr
                     and r.req_collect_nr = rh.parent_collect_nr
                     and r.product_id = rh.parent_product_id
                     and r.req_id = rh.parent_req_id
-                    and rh.child_collect_nr = lr.req_collect_nr
-                    and rh.child_product_id = lr.product_id
-                    and rh.child_req_id = lr.req_id
-                    and lr.req_collect_nr = ds.req_collect_nr
-                    and lr.product_id = ds.product_id
-                    and lr.req_id = ds.req_id
-                    and (ds.state = $2 or ds.state = $3)
-                    and rh.optional = false
-                    and not exists (
-                        select op.req_id
-                        from OptionalRequirements op
-                        where op.agg_collect_nr = (
-                            select max(cop.agg_collect_nr)
-                            from OptionalRequirements cop
-                            where cop.product_id = op.product_id
+                    and exists (
+                        select lr.req_id
+                        from
+                            DirectRequirementVerificationStates ds,
+                            UsableLeafRequirements lr
+                        where ds.agg_collect_nr = r.agg_collect_nr
+                        and lr.agg_collect_nr = r.agg_collect_nr
+                        and rh.child_collect_nr = lr.req_collect_nr
+                        and rh.child_product_id = lr.product_id
+                        and rh.child_req_id = lr.req_id
+                        and lr.req_collect_nr = ds.req_collect_nr
+                        and lr.product_id = ds.product_id
+                        and lr.req_id = ds.req_id
+                        and (ds.state = $2 or ds.state = $3)
+                        and rh.optional = false
+                        and not exists (
+                            select op.req_id
+                            from OptionalRequirements op
+                            where op.agg_collect_nr = (
+                                select max(cop.agg_collect_nr)
+                                from OptionalRequirements cop
+                                where cop.product_id = op.product_id
+                            )
+                            and op.req_collect_nr = rh.child_collect_nr
+                            and op.product_id = rh.child_product_id
+                            and op.req_id = rh.child_req_id
                         )
-                        and op.req_collect_nr = rh.child_collect_nr
-                        and op.product_id = rh.child_product_id
-                        and op.req_id = rh.child_req_id
                     )
-                )
-                -- reqs with only optional children added as base in case they are
-                -- only of satisfied or unknown state, because they are likely children
-                -- of requirements that may have non-optional children as well.
-                or exists (
-                    select ooc.req_id
-                    from
-                        DirectRequirementVerificationStates ds,
-                        RequirementsWithOnlyOptionalChildren ooc
-                    where ds.agg_collect_nr = r.agg_collect_nr
-                    and ds.req_collect_nr = r.req_collect_nr
-                    and ds.product_id = r.product_id
-                    and ds.req_id = r.req_id
-                    and ooc.agg_collect_nr = r.agg_collect_nr
-                    and ooc.req_collect_nr = r.req_collect_nr
-                    and ooc.product_id = r.product_id
-                    and ooc.req_id = r.req_id
-                    and (ds.state = $2 or ds.state = $3)
-                    and not exists (
-                        select vr.req_id
-                        from VerifiedRequirementsWithOnlyOptionalChildren vr
-                        where r.agg_collect_nr = vr.agg_collect_nr
-                        and r.req_collect_nr = vr.req_collect_nr
-                        and r.product_id = vr.product_id
-                        and r.req_id = vr.req_id
+
+                    union all
+
+                    select
+                        r.req_collect_nr,
+                        r.product_id,
+                        r.req_id,
+                        r.req_collect_nr as child_collect_nr,
+                        r.product_id as child_product_id,
+                        r.req_id as child_req_id
+                    from UsableRequirements r
+                    -- reqs with only optional children added as base in case they are
+                    -- only of satisfied or unknown state, because they are likely children
+                    -- of requirements that may have non-optional children as well.
+                    where r.agg_collect_nr = $1
+                    and exists (
+                        select ooc.req_id
+                        from
+                            DirectRequirementVerificationStates ds,
+                            RequirementsWithOnlyOptionalChildren ooc
+                        where ds.agg_collect_nr = r.agg_collect_nr
+                        and ds.req_collect_nr = r.req_collect_nr
+                        and ds.product_id = r.product_id
+                        and ds.req_id = r.req_id
+                        and ooc.agg_collect_nr = r.agg_collect_nr
+                        and ooc.req_collect_nr = r.req_collect_nr
+                        and ooc.product_id = r.product_id
+                        and ooc.req_id = r.req_id
+                        and (ds.state = $2 or ds.state = $3)
+                        and not exists (
+                            select vr.req_id
+                            from VerifiedRequirementsWithOnlyOptionalChildren vr
+                            where r.agg_collect_nr = vr.agg_collect_nr
+                            and r.req_collect_nr = vr.req_collect_nr
+                            and r.product_id = vr.product_id
+                            and r.req_id = vr.req_id
+                        )
                     )
-                )
-                -- manual requirements must be reviewed directly independent of the state of children
-                or exists (
-					select mr.req_id
-                    from ManualRequirements mr, DirectRequirementVerificationStates ds
-                    where mr.agg_collect_nr = (
-                        select max(cmr.agg_collect_nr)
-                        from ManualRequirements cmr
-                        where cmr.product_id = mr.product_id
-                    )
-                    and mr.req_collect_nr = r.req_collect_nr
-                    and mr.product_id = r.product_id
-                    and mr.req_id = r.req_id
-                    and ds.agg_collect_nr = r.agg_collect_nr
-                    and ds.req_collect_nr = r.req_collect_nr
-                    and ds.product_id = r.product_id
-                    and ds.req_id = r.req_id
-                    and (ds.state = $2 or ds.state = $3)
+                    -- manual requirements must be reviewed directly independent of the state of children
+                    or exists (
+    					select mr.req_id
+                        from ManualRequirements mr, DirectRequirementVerificationStates ds
+                        where mr.agg_collect_nr = (
+                            select max(cmr.agg_collect_nr)
+                            from ManualRequirements cmr
+                            where cmr.product_id = mr.product_id
+                        )
+                        and mr.req_collect_nr = r.req_collect_nr
+                        and mr.product_id = r.product_id
+                        and mr.req_id = r.req_id
+                        and ds.agg_collect_nr = r.agg_collect_nr
+                        and ds.req_collect_nr = r.req_collect_nr
+                        and ds.product_id = r.product_id
+                        and ds.req_id = r.req_id
+                        and (ds.state = $2 or ds.state = $3)
+    				)
 				)
 
                 union all
 
-                select r.req_collect_nr, r.product_id, r.req_id
+                select
+                    r.req_collect_nr,
+                    r.product_id,
+                    r.req_id,
+                    rh.child_collect_nr,
+                    rh.child_product_id,
+                    rh.child_req_id
                 from
                     UsableNonLeafRequirements r,
                     ReqsWithNonOptionalChildrenHavingStatisfiedOrUnknownState uc,
@@ -514,8 +605,12 @@ impl<'db> Collection<'db> {
                     and op.req_id = rh.child_req_id
                 )
             )
-            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
+            select distinct $1 as agg_collect_nr, req_collect_nr, product_id, req_id
             from ReqsWithNonOptionalChildrenHavingStatisfiedOrUnknownState
+            -- filter base requirements since their state did not depend on children
+            where req_collect_nr != child_collect_nr
+            or product_id != child_product_id
+            or req_id != child_req_id
             ",
             collect_nr,
             req_satisfied_nr,
@@ -580,7 +675,7 @@ impl<'db> Collection<'db> {
                     and vr.req_id = rh.child_req_id
                 )
             )
-            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
+            select distinct $1 as agg_collect_nr, req_collect_nr, product_id, req_id
             from ReqsWithChildrenHavingPartiallyVerifiedState
             ",
             collect_nr,
