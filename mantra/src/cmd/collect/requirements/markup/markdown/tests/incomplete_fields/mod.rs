@@ -10,9 +10,7 @@ fn bad_parent() {
             .expect_err("Parsing errorneous doc must result in error");
 
     for err_msg in schema_err.chain() {
-        if err_msg.to_string()
-            == "Parents field value must be a list of requirement references and end with ']'"
-        {
+        if err_msg.to_string() == "Property key: \'Parents\'" {
             return;
         }
     }

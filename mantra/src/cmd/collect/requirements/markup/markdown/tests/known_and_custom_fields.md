@@ -19,3 +19,12 @@
 
 - **Parents:** ["req-1"]
 - some_flag: false
+
+# `req-4`: Title
+
+- **Children:** ["req-3"]
+- **Parents:** [{ id: "req-1", product_id: "prod-1", optional: true}]
+
+# `req-5`: Title
+
+- **Parents:** [{ id: "req-1", aspect: "aspect-A" }, { id: "req-2", optional: true, aspect: "aspect-10" }]

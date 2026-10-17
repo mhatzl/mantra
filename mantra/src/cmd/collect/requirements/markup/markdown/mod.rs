@@ -409,7 +409,8 @@ fn extract_req_fields(
         match field_key {
             FieldKey::Parents | FieldKey::Children => {
                 // TODO: extract on underlying raw value instead of parsed Markdown
-                let relations: Vec<RequirementRelation> = json5::from_str(&raw_value)?;
+                let relations: Vec<RequirementRelation> = json5::from_str(&raw_value)
+                    .map_err(|err| anyhow!(err).context(format!("Property key: '{}'", raw_key)))?;
 
                 if field_key == FieldKey::Parents {
                     if fields.parents.is_some() {
