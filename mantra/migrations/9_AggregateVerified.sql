@@ -292,16 +292,6 @@ create table RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState (
     constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
 );
 
-create table RequirementsWithChildrenHavingPartiallyVerifiedState (
-    agg_collect_nr integer not null references Collections (nr) on delete restrict,
-    req_collect_nr integer not null,
-    product_id text not null,
-    req_id text not null,
-    primary key (agg_collect_nr, req_collect_nr, product_id, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements(collect_nr, product_id, id) on delete cascade,
-    constraint agg_after_collect check (req_collect_nr <= agg_collect_nr)
-);
-
 -- Contains verification states for requirements based on the requirement hierarchy.
 -- This table only contains non-leaf requirements (requirements that have at least one child).
 create table IndirectRequirementVerificationStates (

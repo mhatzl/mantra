@@ -204,8 +204,26 @@ impl<'db> Collection<'db> {
                     rh.child_product_id,
                     rh.child_req_id,
                     case
+                        -- failed propagates even for optional reqs
                         when ds.state = $3 or sor.state = $3 then $3
-                        when ds.state = $2 or (ds.state = $4 and sor.state = $2) then $2
+                        when ds.state = $2 or (
+                            -- unknown or satisfied
+                            (ds.state = $4 or ds.state = $5)
+                            and sor.state = $2
+                            -- manual requirements must be directly verified
+                            and not exists (
+                                select m.req_id
+                                from ManualRequirements m
+                                where m.agg_collect_nr = (
+                                    select max(cm.agg_collect_nr)
+                                    from ManualRequirements cm
+                                    where cm.product_id = m.product_id
+                                )
+                                and m.req_collect_nr = r.req_collect_nr
+                                and m.product_id = r.product_id
+                                and m.req_id = r.req_id
+                            )
+                        ) then $2
                         else ds.state
                     end
                 from
@@ -245,6 +263,7 @@ impl<'db> Collection<'db> {
             collect_nr,
             req_verified_nr,
             req_failed_nr,
+            req_satisfied_nr,
             req_unknown_nr
         )
         .execute(self.connection_mut())
@@ -622,71 +641,6 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert into RequirementsWithChildrenHavingPartiallyVerifiedState (
-                agg_collect_nr,
-                req_collect_nr,
-                product_id,
-                req_id
-            )
-            with recursive ReqsWithChildrenHavingPartiallyVerifiedState (
-                req_collect_nr,
-                product_id,
-                req_id
-            ) as (
-                -- start at any partially verified requirement
-                select r.req_collect_nr, r.product_id, r.req_id
-                from UsableRequirements r, DirectRequirementVerificationStates ds
-                where r.agg_collect_nr = $1
-                and ds.agg_collect_nr = r.agg_collect_nr
-                and ds.req_collect_nr = r.req_collect_nr
-                and ds.product_id = r.product_id
-                and ds.req_id = r.req_id
-                and ds.state = $2
-
-                union all
-
-                select r.req_collect_nr, r.product_id, r.req_id
-                from
-                    UsableNonLeafRequirements r,
-                    ReqsWithChildrenHavingPartiallyVerifiedState sc,
-                    RequirementHierarchies rh
-                where rh.agg_collect_nr = (
-                    select max(crh.agg_collect_nr)
-                    from RequirementHierarchies crh
-                    where crh.child_product_id = rh.child_product_id
-                    and crh.parent_product_id = rh.parent_product_id
-                )
-                and r.agg_collect_nr = $1
-                and r.req_collect_nr = rh.parent_collect_nr
-                and r.product_id = rh.parent_product_id
-                and r.req_id = rh.parent_req_id
-                and sc.req_collect_nr = rh.child_collect_nr
-                and sc.product_id = rh.child_product_id
-                and sc.req_id = rh.child_req_id
-                -- ignore verified requirements with only-optional children,
-                -- because even if a child of it is only partially verified
-                -- the requirement is considered verified for its parents
-                and not exists (
-                    select vr.req_id
-                    from VerifiedRequirementsWithOnlyOptionalChildren vr
-                    where vr.agg_collect_nr = r.agg_collect_nr
-                    and vr.req_collect_nr = rh.child_collect_nr
-                    and vr.product_id = rh.child_product_id
-                    and vr.req_id = rh.child_req_id
-                )
-            )
-            select distinct $1 as agg_collect_nr, req_collect_nr, product_id, req_id
-            from ReqsWithChildrenHavingPartiallyVerifiedState
-            ",
-            collect_nr,
-            req_skipped_nr
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to update RequirementsWithChildrenHavingPartiallyVerifiedState")?;
-
-        sqlx::query!(
-            "
             insert into IndirectRequirementVerificationStates (
                 agg_collect_nr,
                 req_collect_nr,
@@ -718,6 +672,30 @@ impl<'db> Collection<'db> {
                 and rd.descendant_product_id = ds.product_id
                 and rd.descendant_req_id = ds.req_id
                 and ds.state = $2
+            ), ReqsWithFullyOrPartiallyVerifiedDescendants (
+                req_collect_nr,
+                product_id,
+                req_id
+            ) as (
+                select r.req_collect_nr, r.product_id, r.req_id
+                from
+                    UsableNonLeafRequirements r,
+                    RequirementDescendants rd,
+                    DirectRequirementVerificationStates ds
+                where r.agg_collect_nr = $1
+                and ds.agg_collect_nr = r.agg_collect_nr
+                and rd.agg_collect_nr = (
+                    select max(crd.agg_collect_nr)
+                    from RequirementDescendants crd
+                    where crd.product_id = rd.product_id
+                )
+                and rd.req_collect_nr = r.req_collect_nr
+                and rd.product_id = r.product_id
+                and rd.req_id = r.req_id
+                and rd.descendant_collect_nr = ds.req_collect_nr
+                and rd.descendant_product_id = ds.product_id
+                and rd.descendant_req_id = ds.req_id
+                and (ds.state = $2 or ds.state = $6)
             )
             select
                 r.agg_collect_nr,
@@ -773,16 +751,7 @@ impl<'db> Collection<'db> {
                             and ocs.req_id = rh.child_req_id
                         )
                     ) then $2
-                    -- partially verified beats unknown, because it provides more information
-                    when exists (
-                        select u.req_id
-                        from RequirementsWithChildrenHavingPartiallyVerifiedState u
-                        where u.agg_collect_nr = r.agg_collect_nr
-                        and u.req_collect_nr = r.req_collect_nr
-                        and u.product_id = r.product_id
-                        and u.req_id = r.req_id
-                    ) then $6
-                    -- unknown, because satisfied can only be achieved directly
+                    -- partially verified or unknown, because satisfied can only be achieved directly
                     when exists (
                         select u.req_id
                         from RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState u
@@ -790,7 +759,19 @@ impl<'db> Collection<'db> {
                         and u.req_collect_nr = r.req_collect_nr
                         and u.product_id = r.product_id
                         and u.req_id = r.req_id
-                    ) then $5
+                    ) then
+                        case
+                            -- partially verified beats unknown, because it provides more information
+                            -- even if req itself is manual, partially verified state is valid
+                            when exists (
+                                select pvd.req_id
+                                from ReqsWithFullyOrPartiallyVerifiedDescendants pvd
+                                where pvd.req_collect_nr = r.req_collect_nr
+                                and pvd.product_id = r.product_id
+                                and pvd.req_id = r.req_id
+                            ) then $6
+                            else $5
+                        end
                     -- failed, skipped, partially verified, satisfied, or unknown handled above.
                     -- If at least one descendant is verified and the requirement was not matched so far,
                     -- verification must have propagated up.
@@ -803,6 +784,7 @@ impl<'db> Collection<'db> {
                         and v.req_id = r.req_id
                     ) then $2
                     -- unknown
+                    -- e.g. only-optional children and none verified
                     else $5
                 end
             from UsableNonLeafRequirements r

@@ -223,7 +223,7 @@ impl<'db> Collection<'db> {
                     when ds.state is not null and (ds.state = $9
                         or (ids.state is not null
                             and (ids.state = $9
-                                -- indirectly either satisfied or unknown is left besides verified
+                                -- indirectly either satisfied or unknown for non-manual is left besides verified
                                 or (ds.state = $2 and ids.state != $2)
                             )
                         )
@@ -238,18 +238,8 @@ impl<'db> Collection<'db> {
                         or ids.state = $2
                     ) then $2
                     -- satisfied
-                    when exists (
-                        select sr.req_id
-                        from DirectlySatisfiedRequirements sr
-                        where sr.agg_collect_nr = (
-                            select max(csr.agg_collect_nr)
-                            from DirectlySatisfiedRequirements csr
-                            where csr.product_id = sr.product_id
-                        )
-                        and sr.req_collect_nr = r.collect_nr
-                        and sr.product_id = r.product_id
-                        and sr.req_id = r.id
-                    ) then $8
+                    when ds.state is not null and ds.state = $8
+                    then $8
                     -- unknown
                     else $5
                 end
