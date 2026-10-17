@@ -169,7 +169,7 @@ async fn collect_well_known<'db, 'c>(
         collection
             .insert_collected_file(
                 &sent_data.filepath,
-                &Some(sent_data.file_hash),
+                Some(&sent_data.file_hash),
                 Some(&sent_data.content),
             )
             .await
@@ -433,7 +433,7 @@ async fn collect_schema<'db, 'c>(
         collection
             .insert_collected_file(
                 &sent_data.filepath,
-                &Some(sent_data.file_hash),
+                Some(&sent_data.file_hash),
                 Some(&sent_data.content),
             )
             .await

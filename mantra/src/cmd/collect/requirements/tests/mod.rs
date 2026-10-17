@@ -1157,6 +1157,7 @@ mod indirect_states {
         let skipped_state = RequirementState::Skipped.as_nr();
         let excluded_state = RequirementState::Excluded.as_nr();
         let deprecated_state = RequirementState::Deprecated.as_nr();
+        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
 
         let db = db_from_dir!(pool, "indirect_states/nested_propagation").unwrap();
 
@@ -1185,6 +1186,25 @@ mod indirect_states {
             where state = $1
             ",
             verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.req_id)
+        .collect();
+
+        let partially_verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select req_id from RequirementVerificationStates
+            where state = $1
+            ",
+            partially_verified_state
         )
         .fetch_all(
             db.connection()
@@ -1273,8 +1293,8 @@ mod indirect_states {
         .collect();
 
         assert!(
-            unknown_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be unknown."
+            partially_verified_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to be partially verified."
         );
         assert!(
             unknown_reqs.contains(&"req-1.sub-1".to_string()),
@@ -1603,8 +1623,29 @@ mod states {
     #[sqlx::test]
     async fn unknown_req(pool: MantraPool) {
         let unknown_state = RequirementState::Unknown.as_nr();
+        let satisfied_state = RequirementState::Satisfied.as_nr();
+        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
 
         let db = db_from_dir!(pool, "states/unknown").unwrap();
+
+        let partially_verified_reqs: Vec<String> = sqlx::query!(
+            "
+            select req_id from RequirementVerificationStates
+            where state = $1
+            ",
+            partially_verified_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.req_id)
+        .collect();
 
         let unknown_reqs: Vec<String> = sqlx::query!(
             "
@@ -1625,13 +1666,32 @@ mod states {
         .map(|r| r.req_id)
         .collect();
 
+        let satisfied_reqs: Vec<String> = sqlx::query!(
+            "
+            select req_id from RequirementVerificationStates
+            where state = $1
+            ",
+            satisfied_state
+        )
+        .fetch_all(
+            db.connection()
+                .await
+                .expect("Failed to get a connection")
+                .as_mut(),
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|r| r.req_id)
+        .collect();
+
         assert!(
-            unknown_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to remain in unknown state, due to unknown child, even if directly verified."
+            partially_verified_reqs.contains(&"req-1".to_string()),
+            "Expected req-1 to be partially verified, due to unknown child and direct verified."
         );
         assert!(
             unknown_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to remain unknown, even if parent is verified."
+            "Expected req-1.sub-1 to have unknown state."
         );
         assert!(
             unknown_reqs.contains(&"req-2".to_string()),
@@ -1642,26 +1702,25 @@ mod states {
             "Expected req-2.sub-1 to have unknown state."
         );
         assert!(
-            unknown_reqs.contains(&"req-manual".to_string()),
-            "Expected req-manual to have unknown state, even if req was verified by test, because manual review is missing."
+            partially_verified_reqs.contains(&"req-manual".to_string()),
+            "Expected req-manual to be partially verified due to verified by test, but only partial due to missing review."
         );
         assert!(
-            unknown_reqs.contains(&"req-satisfy".to_string()),
-            "Expected req-satisfy to have unknown state, because no test covers the trace."
+            satisfied_reqs.contains(&"req-satisfy".to_string()),
+            "Expected req-satisfy to have satisfied state, because no test verifies the req, but satisfy trace exists."
         );
         assert!(
             unknown_reqs.contains(&"req-verify".to_string()),
-            "Expected req-verify to have unknown state, because no test covers the trace."
+            "Expected req-verify to have unknown state, because no test covers the verify trace."
         );
         assert!(
-            unknown_reqs.contains(&"req-satisfy-verify".to_string()),
-            "Expected req-satisfy-verify to have unknown state,
+            satisfied_reqs.contains(&"req-satisfy-verify".to_string()),
+            "Expected req-satisfy-verify to have satisfied state,
             because the test covering the verify trace does not cover the satisfy trace and vice versa."
         );
         assert!(
-            unknown_reqs.contains(&"req-mult-satisfy".to_string()),
-            "Expected req-mult-satisfy to have unknown state,
-            because not all satisfy traces are covered by tests."
+            satisfied_reqs.contains(&"req-mult-satisfy".to_string()),
+            "Expected req-mult-satisfy to have satisfied state, because it has no (covered) verify traces or direct test."
         );
     }
 
@@ -1701,10 +1760,6 @@ mod states {
         assert!(
             verified_reqs.contains(&"req-manual".to_string()),
             "Expected req-manual to have verified state."
-        );
-        assert!(
-            verified_reqs.contains(&"req-satisfy".to_string()),
-            "Expected req-satisfy to have verified state."
         );
         assert!(
             verified_reqs.contains(&"req-verify".to_string()),
@@ -1770,7 +1825,7 @@ mod replacements {
     }
 
     #[sqlx::test]
-    async fn verified_req(pool: MantraPool) {
+    async fn bad_req_replacements(pool: MantraPool) {
         let db_res = db_from_dir!(pool, "replacements/bad_replaces");
 
         let Err(db_err) = db_res else {

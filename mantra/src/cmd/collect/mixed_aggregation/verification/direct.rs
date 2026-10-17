@@ -709,6 +709,19 @@ impl<'db> Collection<'db> {
                     and r.req_id = ts.req_id
                     and ts.state = $4
                 ) then $4
+                -- satisfied
+                when exists (
+                    select ds.req_id
+                    from DirectlySatisfiedRequirements ds
+                    where ds.agg_collect_nr = (
+                        select max(cds.agg_collect_nr)
+                        from DirectlySatisfiedRequirements cds
+                        where cds.product_id = ds.product_id
+                    )
+                    and r.req_collect_nr = ds.req_collect_nr
+                    and r.product_id = ds.product_id
+                    and r.req_id = ds.req_id
+                ) then $7
                 -- unknown
                 else $8
             end

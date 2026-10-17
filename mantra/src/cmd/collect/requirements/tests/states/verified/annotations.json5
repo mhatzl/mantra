@@ -4,7 +4,7 @@
         file_hash: "<place hash here>",
         annotations: {
             traces: [{
-                ids: ["req-satisfy", "req-satisfy-verify"],
+                ids: ["req-satisfy-verify"],
                 line: 10,
                 kind: "satisfies",
             },{

@@ -13,10 +13,6 @@
         origin: "Verified state test",
         manual_verification: true,
     },{
-        id: "req-satisfy",
-        title: "Verified Satisfy Traced Requirement",
-        origin: "Verified state test",
-    },{
         id: "req-verify",
         title: "Verified Verify Traced Requirement",
         origin: "Verified state test",

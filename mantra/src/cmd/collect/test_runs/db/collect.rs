@@ -391,9 +391,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         for covered_file in &test_run.covered_files {
             let filepath = covered_file.filepath.as_str();
 
-            self.insert_collected_file(&covered_file.filepath, &covered_file.file_hash, None)
-                .await
-                .with_context(|| format!("Inserting covered file: '{}'", filepath))?;
+            self.insert_collected_file(
+                &covered_file.filepath,
+                covered_file.file_hash.as_ref(),
+                None,
+            )
+            .await
+            .with_context(|| format!("Inserting covered file: '{}'", filepath))?;
 
             for line in &covered_file.lines {
                 sqlx::query!(
@@ -652,7 +656,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(location) = &test_case.location {
                 let filepath = location.filepath.as_str();
 
-                self.insert_collected_file(&location.filepath, &location.file_hash, None)
+                self.insert_collected_file(&location.filepath, location.file_hash.as_ref(), None)
                     .await
                     .with_context(|| {
                         format!("Inserting test case location file: '{}'", filepath)
@@ -757,9 +761,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for covered_file in &test_case.covered_files {
                 let filepath = covered_file.filepath.as_str();
 
-                self.insert_collected_file(&covered_file.filepath, &covered_file.file_hash, None)
-                    .await
-                    .with_context(|| format!("Inserting test case covered file: '{}'", filepath))?;
+                self.insert_collected_file(
+                    &covered_file.filepath,
+                    covered_file.file_hash.as_ref(),
+                    None,
+                )
+                .await
+                .with_context(|| format!("Inserting test case covered file: '{}'", filepath))?;
 
                 for line in &covered_file.lines {
                     sqlx::query!(

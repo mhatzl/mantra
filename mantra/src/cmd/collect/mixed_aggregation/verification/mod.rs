@@ -200,8 +200,9 @@ impl<'db> Collection<'db> {
                                     -- at least one child either partially verified, satisfied, or unknown
                                     else $9
                                 end
-                            -- missing direct verification, but (partially) verified through children
-                            when ids.state is not null and (ids.state = $9 or ids.state = $2)
+                            -- missing direct verification, but (partially) verified directly or through children
+                            when (ds.state is not null and ds.state = $9)
+                                or (ids.state is not null and (ids.state = $9 or ids.state = $2))
                             then $9
                             -- satisfied
                             when exists (

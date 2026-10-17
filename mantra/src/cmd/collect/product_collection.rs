@@ -128,7 +128,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(super) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
-        file_hash: &Option<FmtHash>,
+        file_hash: Option<&FmtHash>,
         content: Option<&str>,
     ) -> Result<(), anyhow::Error> {
         self.collection

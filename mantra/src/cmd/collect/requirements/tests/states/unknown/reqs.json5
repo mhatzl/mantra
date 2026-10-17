@@ -22,7 +22,7 @@
         manual_verification: true,
     },{
         id: "req-satisfy",
-        title: "Unverified Satisfy Traced Requirement",
+        title: "No verifies trace, but one satisfies one => satisfied",
         origin: "Unverified state test",
     },{
         id: "req-verify",
@@ -34,7 +34,7 @@
         origin: "Verified state test",
     },{
         id: "req-mult-satisfy",
-        title: "Unverified Satisfy Traced Requirement (Not all traces covered)",
+        title: "No verifies trace, but multiple satisfies ones => satisfied",
         origin: "Unverified state test",
     }]
 }

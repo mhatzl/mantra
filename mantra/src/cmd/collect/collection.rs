@@ -260,7 +260,7 @@ impl<'db> Collection<'db> {
     pub(super) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
-        file_hash: &Option<FmtHash>,
+        file_hash: Option<&FmtHash>,
         content: Option<&str>,
     ) -> Result<(), anyhow::Error> {
         let filepath = filepath.as_str();

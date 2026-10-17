@@ -4,7 +4,7 @@
         file_hash: "<place hash here>",
         annotations: {
             traces: [{
-                ids: ["req-satisfy", "req-satisfy-verify", "req-mult-satisfy"],
+                ids: ["req-satisfy-verify", "req-mult-satisfy"],
                 line: 10,
                 kind: "satisfies",
             },{
@@ -12,7 +12,7 @@
                 line: 20,
                 kind: "verifies",
             },{
-                ids: ["req-satisfy-verify", "req-mult-satisfy"],
+                ids: ["req-satisfy", "req-satisfy-verify", "req-mult-satisfy"],
                 line: 110,
                 kind: "satisfies",
             },{

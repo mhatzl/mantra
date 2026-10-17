@@ -69,6 +69,10 @@ impl<'db> Collection<'db> {
             .await
             .context("Resolving test states")?;
 
+        self.aggregate_trace_mappings()
+            .await
+            .context("Updating trace mappings")?;
+
         self.update_verification_states()
             .await
             .context("Updating requirement verification states")?;

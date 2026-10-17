@@ -82,6 +82,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for file_annotations in &annotation_schema.files {
                 let filepath = file_annotations.filepath.as_str();
 
+                self.insert_collected_file(
+                    &file_annotations.filepath,
+                    Some(&file_annotations.file_hash),
+                    file_annotations.content.as_deref(),
+                )
+                .await
+                .context("")?;
+
                 self.collect_per_annotation_file(file_annotations, &element_source_hash)
                     .await
                     .with_context(|| format!("Updating annotations for file: '{filepath}'"))?;
@@ -199,7 +207,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for trace in &file_annotations.annotations.traces {
                 let line = trace.line;
 
-                self.update_trace(filepath, &file_annotations.file_hash, trace)
+                self.update_trace(&file_annotations.file_hash, trace)
                     .await
                     .with_context(|| {
                         format!("Failed to update the trace found at line '{}'", line)
@@ -279,7 +287,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
     async fn update_trace(
         &mut self,
-        filepath: &str,
         file_hash: &FmtHash,
         trace: &Trace,
     ) -> Result<(), anyhow::Error> {
