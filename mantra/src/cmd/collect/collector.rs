@@ -132,7 +132,7 @@ impl<'db, T: Send + 'static, C: SingleFileCollectable<'db, T> + Send + 'static>
                                             );
                                         }
                                         Err(err) => log::error!(
-                                            "Failed reading schema from '{}'. Err: {err}",
+                                            "Failed reading schema from '{}'. Err: {err:#}",
                                             filepath.display()
                                         ),
                                     }

@@ -187,6 +187,28 @@ fn extract_requirements(
     Ok(requirements)
 }
 
+fn starts_with_metadata_entry(node: Node) -> bool {
+    if let Some(item) = node.first_child()
+        && let Some(paragraph) = item.first_child()
+        && matches!(paragraph.data().value, NodeValue::Paragraph)
+        && let Some(first_child) = paragraph.first_child()
+    {
+        match &first_child.data().value {
+            NodeValue::Text(_) => flattened_content(paragraph.children()).contains(':'),
+            NodeValue::Strong => first_child.first_child().is_some_and(|key_node| {
+                matches!(
+                    &key_node.data().value,
+                    NodeValue::Text(key_text)
+                        if key_text.split_once(':').is_some_and(|(_, suffix)| suffix.is_empty())
+                )
+            }),
+            _ => false,
+        }
+    } else {
+        false
+    }
+}
+
 struct RequirementHeading {
     id: ReqId,
     title: String,
@@ -247,28 +269,7 @@ fn fill_req_body(
         comrak::arena_tree::Children<'_, std::cell::RefCell<comrak::nodes::Ast>>,
     >,
 ) -> Result<(), anyhow::Error> {
-    let peeked_node = top_nodes.peek();
-
-    if peeked_node
-        .map(|n| {
-            if let NodeValue::List(list) = &n.data().value
-                && list.list_type == ListType::Bullet
-            {
-                true
-            } else {
-                false
-            }
-        })
-        .unwrap_or(false)
-    {
-        let node = top_nodes
-            .next()
-            .expect("Peek above ensures that there is a node");
-        let children = node.children().peekable();
-
-        let req_fields: ReqFields = extract_req_fields(children)
-            .context("Failed to extract requirement fields from the bullet list")?;
-
+    if let Some(req_fields) = extract_leading_metadata(top_nodes)? {
         requirement.deprecated = req_fields.deprecated.unwrap_or_default();
         requirement.exclude = req_fields.exclude.unwrap_or_default();
         requirement.manual_verification = req_fields.manual_verification.unwrap_or_default();
@@ -302,6 +303,36 @@ fn fill_req_body(
     requirement.description = description;
 
     Ok(())
+}
+
+fn extract_leading_metadata(
+    top_nodes: &mut std::iter::Peekable<
+        comrak::arena_tree::Children<'_, std::cell::RefCell<comrak::nodes::Ast>>,
+    >,
+) -> Result<Option<ReqFields>, anyhow::Error> {
+    let Some(node) = top_nodes.peek() else {
+        return Ok(None);
+    };
+
+    let NodeValue::List(list) = &node.data().value else {
+        return Ok(None);
+    };
+
+    if list.list_type != ListType::Bullet {
+        return Ok(None);
+    }
+
+    if !starts_with_metadata_entry(*node) {
+        bail!("Leading bullet list must contain key-value metadata.");
+    }
+
+    let node = top_nodes
+        .next()
+        .expect("Peek above ensures that there is a node");
+
+    extract_req_fields(node.children().peekable())
+        .context("Failed to extract requirement fields from the bullet list")
+        .map(Some)
 }
 
 #[derive(Default)]
