@@ -9,7 +9,7 @@ use mantra_schema::{
 };
 use tokio::task::JoinSet;
 
-use crate::cmd::collect::{product_collection::ProductCollection, walker};
+use crate::cmd::collect::{products::collection::ProductCollection, walker};
 
 pub(super) struct SingleFileCollector<'db, 'c, T, C: SingleFileCollectable<'db, 'c, T>> {
     collection: ProductCollection<'db, 'c>,

@@ -16,8 +16,6 @@ pub mod collector;
 // pub mod lsif;
 pub mod markup;
 pub mod mixed_aggregation;
-pub mod product_changes;
-pub mod product_collection;
 pub mod products;
 pub mod requirements;
 pub mod reviews;

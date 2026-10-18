@@ -11,7 +11,7 @@ use crate::{
     cfg::ResolvedProductConfig,
     cmd::collect::{
         cfg::{CollectArguments, CollectConfig, CollectMode},
-        product_collection::ProductCollection,
+        products::collection::ProductCollection,
     },
     db::{MantraConnection, MantraDb, MantraTransaction},
 };
@@ -133,9 +133,9 @@ impl<'db> Collection<'db> {
 
         // Note: Since products may still exist even if no data was collected,
         // we base existence on the product configuration entries.
-        self.update_existing_products(product_map.iter(), &args.mode)
+        self.update_product_changes(product_map.iter(), &args.mode)
             .await
-            .context("Updating which products still exist")?;
+            .context("Updating product changes")?;
 
         Ok(())
     }
@@ -338,8 +338,8 @@ impl<'db> Collection<'db> {
                 "
                 select file_hash
                 from CollectedFiles
-                where collect_nr = $1 and filepath = $3
-                and file_hash is not null and file_hash != $4
+                where collect_nr = $1 and filepath = $2
+                and file_hash is not null and file_hash != $3
                 ",
                 collect_nr,
                 filepath,
@@ -398,7 +398,7 @@ impl<'db> Collection<'db> {
                 )
                 .execute(self.connection_mut())
                 .await
-                .context("Failed to update collected files")?;
+                .context("Failed to insert collected file")?;
             }
         } else {
             // Important to ignore here to not overwrite potentially existing entries with a set file_hash
@@ -420,7 +420,7 @@ impl<'db> Collection<'db> {
             )
             .execute(self.connection_mut())
             .await
-            .context("Failed to update collected files")?;
+            .context("Failed to insert collected file without hash")?;
         }
 
         Ok(())

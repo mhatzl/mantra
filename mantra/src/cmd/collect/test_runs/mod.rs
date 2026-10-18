@@ -20,7 +20,7 @@ use crate::cmd::collect::{
         WellKnownTest, WellKnownTestFormat,
     },
     collector::CollectableFile,
-    product_collection::ProductCollection,
+    products::collection::ProductCollection,
     test_runs::convert::{
         ShallowTestRun, WellKnownCoverageConversion, WellKnownCoverageData, WellKnownTestConversion,
     },

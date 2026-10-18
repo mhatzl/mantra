@@ -1,6 +1,6 @@
 use anyhow::Context;
 
-use crate::cmd::collect::{cfg::CollectMode, product_collection::ProductCollection};
+use crate::cmd::collect::{cfg::CollectMode, products::collection::ProductCollection};
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn update_requirement_changes(

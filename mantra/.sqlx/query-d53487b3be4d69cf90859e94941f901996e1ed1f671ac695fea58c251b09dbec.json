@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from ExistingAnnotationSources\n                where product_id in (\n                    select product_id\n                    from RemovedProducts\n                    where removed_collect_nr = $1\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "d53487b3be4d69cf90859e94941f901996e1ed1f671ac695fea58c251b09dbec"
+}

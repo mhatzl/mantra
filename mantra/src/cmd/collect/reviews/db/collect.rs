@@ -6,7 +6,7 @@ use mantra_schema::{
     time::OffsetDateTime,
 };
 
-use crate::cmd::collect::{product_collection::ProductCollection, reviews::db::DbIgnoredEntry};
+use crate::cmd::collect::{products::collection::ProductCollection, reviews::db::DbIgnoredEntry};
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn update_per_review_schema(

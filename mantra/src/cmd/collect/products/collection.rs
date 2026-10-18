@@ -13,13 +13,13 @@ use crate::{
     db::MantraConnection,
 };
 
-pub(super) struct ProductCollection<'db, 'c> {
+pub(crate) struct ProductCollection<'db, 'c> {
     collection: &'c mut Collection<'db>,
     product_id: ProductId,
 }
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
-    pub(super) async fn new(
+    pub(crate) async fn new(
         collection: &'c mut Collection<'db>,
         product: &Product,
     ) -> Result<Self, anyhow::Error> {
@@ -28,14 +28,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             product_id: product.id.clone(),
         };
 
-        pc.collect_product(product)
+        pc.collect_product_metadata(product)
             .await
             .context("Failed collecting product metadata")?;
 
         Ok(pc)
     }
 
-    pub(super) async fn collect(
+    pub(crate) async fn collect(
         mut self,
         product_cfg: ResolvedProductConfig,
         collect_mode: &CollectMode,
@@ -79,7 +79,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .insert_test_run_collect_cfgs(product_cfg.test_runs)
             .await
             .context("Inserting test run collection configs")?;
-        super::test_runs::collect(&mut self, test_run_cfgs)
+        crate::cmd::collect::test_runs::collect(&mut self, test_run_cfgs)
             .await
             .context("Failed to collect test runs")?;
 
@@ -94,19 +94,19 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(())
     }
 
-    pub(super) fn connection_mut(&mut self) -> &mut MantraConnection {
+    pub(crate) fn connection_mut(&mut self) -> &mut MantraConnection {
         self.collection.connection_mut()
     }
 
-    pub(super) fn collect_nr(&self) -> i64 {
+    pub(crate) fn collect_nr(&self) -> i64 {
         self.collection.collect_nr()
     }
 
-    pub(super) fn product_id(&self) -> &ProductId {
+    pub(crate) fn product_id(&self) -> &ProductId {
         &self.product_id
     }
 
-    pub(super) async fn insert_general_json(
+    pub(crate) async fn insert_general_json(
         &mut self,
         hash: &FmtHash,
         content: &serde_json::Value,
@@ -114,7 +114,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         self.collection.insert_general_json(hash, content).await
     }
 
-    pub(super) async fn insert_general_text(
+    pub(crate) async fn insert_general_text(
         &mut self,
         hash: &FmtHash,
         content: &str,
@@ -122,14 +122,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         self.collection.insert_general_text(hash, content).await
     }
 
-    pub(super) async fn collect_unhashed_file(
+    pub(crate) async fn collect_unhashed_file(
         &mut self,
         filepath: &RelativePath,
     ) -> Result<(), anyhow::Error> {
         self.collection.collect_unhashed_file(filepath).await
     }
 
-    pub(super) async fn insert_collected_file(
+    pub(crate) async fn insert_collected_file(
         &mut self,
         filepath: &RelativePath,
         file_hash: Option<&FmtHash>,
@@ -197,7 +197,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(())
     }
 
-    pub(super) async fn insert_schema_single_sources<S: Schema>(
+    pub(crate) async fn insert_schema_single_sources<S: Schema>(
         &mut self,
         schema: &S,
         filepath: &RelativePath,
@@ -214,7 +214,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_multi_sources<S: Schema>(
+    pub(crate) async fn insert_schema_multi_sources<S: Schema>(
         &mut self,
         schema: &S,
         filepaths: &[RelativePathBuf],
@@ -231,7 +231,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_no_source<S: Schema>(
+    pub(crate) async fn insert_schema_no_source<S: Schema>(
         &mut self,
         schema: &S,
         cfg_nr: i64,
@@ -244,7 +244,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(schema_hash)
     }
 
-    pub(super) async fn insert_schema_source(
+    pub(crate) async fn insert_schema_source(
         &mut self,
         schema_hash: &FmtHash,
         filepath: &RelativePath,
@@ -257,14 +257,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         self.insert_cfg_collected_schema(cfg_nr, schema_hash).await
     }
 
-    pub(super) async fn schema_collected(
+    pub(crate) async fn schema_collected(
         &mut self,
         schema_hash: &FmtHash,
     ) -> Result<bool, anyhow::Error> {
         self.collection.schema_collected(schema_hash).await
     }
 
-    pub(super) async fn new_collect_cfg(&mut self) -> Result<i64, anyhow::Error> {
+    pub(crate) async fn new_collect_cfg(&mut self) -> Result<i64, anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
@@ -344,7 +344,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     }
 
     /// Returns the absolute path to the directory the used mantra config file is located in.
-    pub(super) fn abs_cfg_file_parent_path(&self) -> PathBuf {
+    pub(crate) fn abs_cfg_file_parent_path(&self) -> PathBuf {
         self.collection.abs_cfg_file_parent_path()
     }
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from ExistingProducts\n                where latest_collect_nr < $1\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6e4d7fd92fe64155eaf97085159c55b6f516895d354c308d7b736805a11c0800"
+}

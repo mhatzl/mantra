@@ -22,6 +22,8 @@ create table Products (
     description_hash text references GeneralTexts (hash) on delete restrict,
     -- Optional MIME/media type of product related general texts (e.g. description).
     media_type text,
+    -- hash of the product metadata
+    data_hash text not null,
     primary key (collect_nr, id)
 );
 
@@ -55,4 +57,35 @@ create table ProductProperties (
     value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (collect_nr, product_id, property_key),
     foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
+);
+
+create table AddedProducts (
+    first_collect_nr integer not null,
+    product_id text not null,
+    primary key (first_collect_nr, product_id),
+    foreign key (first_collect_nr, product_id) references Products (collect_nr, id) on delete cascade
+);
+
+create table ChangedProducts (
+    new_collect_nr integer not null,
+    old_collect_nr integer not null,
+    product_id text not null,
+    primary key (new_collect_nr, product_id),
+    foreign key (new_collect_nr, product_id) references Products (collect_nr, id) on delete cascade,
+    foreign key (old_collect_nr, product_id) references Products (collect_nr, id) on delete cascade
+);
+
+create table ExistingProducts (
+    latest_collect_nr integer not null,
+    product_id text not null,
+    primary key (product_id),
+    foreign key (latest_collect_nr, product_id) references Products (collect_nr, id) on delete cascade
+);
+
+create table RemovedProducts (
+    removed_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr integer not null,
+    product_id text not null,
+    primary key (last_collect_nr, product_id),
+    foreign key (last_collect_nr, product_id) references Products (collect_nr, id) on delete cascade
 );

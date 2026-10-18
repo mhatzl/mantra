@@ -1,7 +1,9 @@
 use anyhow::Context;
 use mantra_schema::FmtHash;
 
-use crate::cmd::collect::{cfg::CollectRequirementsConfig, product_collection::ProductCollection};
+use crate::cmd::collect::{
+    cfg::CollectRequirementsConfig, products::collection::ProductCollection,
+};
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn insert_requirement_collect_cfgs(

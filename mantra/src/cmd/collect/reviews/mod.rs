@@ -5,7 +5,7 @@ use mantra_schema::{FmtHash, path::RelativePath, product::ProductId, reviews::Re
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},
     collector::{CollectableFile, SingleFileCollectable},
-    product_collection::ProductCollection,
+    products::collection::ProductCollection,
     walker,
 };
 

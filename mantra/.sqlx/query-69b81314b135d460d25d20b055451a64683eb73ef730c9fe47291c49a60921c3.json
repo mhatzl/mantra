@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into ChangedProducts (\n                            new_collect_nr,\n                            old_collect_nr,\n                            product_id\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3\n                        )\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "69b81314b135d460d25d20b055451a64683eb73ef730c9fe47291c49a60921c3"
+}

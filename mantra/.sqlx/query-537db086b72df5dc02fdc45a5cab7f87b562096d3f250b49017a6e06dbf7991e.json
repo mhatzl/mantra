@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    select p.collect_nr\n                    from Products p, Products ep\n                    where p.collect_nr = $1\n                    and p.id = $3\n                    and ep.collect_nr = $2\n                    and ep.id = $3\n                    and p.data_hash != ep.data_hash\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "collect_nr",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "collect_nr"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "537db086b72df5dc02fdc45a5cab7f87b562096d3f250b49017a6e06dbf7991e"
+}

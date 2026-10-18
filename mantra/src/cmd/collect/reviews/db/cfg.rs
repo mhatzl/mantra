@@ -1,7 +1,7 @@
 use anyhow::Context;
 use mantra_schema::FmtHash;
 
-use crate::cmd::collect::{cfg::CollectReviewsConfig, product_collection::ProductCollection};
+use crate::cmd::collect::{cfg::CollectReviewsConfig, products::collection::ProductCollection};
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn insert_review_collect_cfgs(

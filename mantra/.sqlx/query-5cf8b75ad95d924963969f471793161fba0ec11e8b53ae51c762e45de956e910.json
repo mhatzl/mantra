@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from ExistingTestRuns\n                where product_id in (\n                    select product_id\n                    from RemovedProducts\n                    where removed_collect_nr = $1\n                )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5cf8b75ad95d924963969f471793161fba0ec11e8b53ae51c762e45de956e910"
+}

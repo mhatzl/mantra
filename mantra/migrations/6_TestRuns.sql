@@ -480,3 +480,66 @@ create table TestCaseLineCoverage (
         filepath
     ) on delete cascade
 );
+
+create table AddedTestRuns (
+    first_collect_nr integer not null,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    primary key (first_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (
+        first_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date
+    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table RemovedTestRuns (
+    removed_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr integer not null,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    primary key (last_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (
+        last_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date
+    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table ChangedTestRuns (
+    new_collect_nr integer not null,
+    old_collect_nr integer not null,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    primary key (new_collect_nr, product_id, test_run_name, test_run_date),
+    foreign key (
+        new_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date
+    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (old_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date
+    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table ExistingTestRuns (
+    latest_collect_nr integer not null,
+    product_id text not null,
+    test_run_name text not null,
+    test_run_date text not null,
+    primary key (product_id, test_run_name, test_run_date),
+    foreign key (
+        latest_collect_nr,
+        product_id,
+        test_run_name,
+        test_run_date
+    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+);

@@ -1,6 +1,6 @@
 use anyhow::Context;
 
-use crate::cmd::collect::product_collection::ProductCollection;
+use crate::cmd::collect::products::collection::ProductCollection;
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn update_direct_req_traces(&mut self) -> Result<(), anyhow::Error> {

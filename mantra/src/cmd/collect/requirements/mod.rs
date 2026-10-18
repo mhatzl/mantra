@@ -5,7 +5,7 @@ use mantra_schema::{FmtHash, product::ProductId, requirements::RequirementSchema
 use crate::cmd::collect::{
     cfg::{CollectRequirementsConfig, RequirementSourceVariant},
     collector::{CollectableFile, SingleFileCollectable},
-    product_collection::ProductCollection,
+    products::collection::ProductCollection,
     walker,
 };
 

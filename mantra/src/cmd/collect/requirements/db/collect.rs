@@ -7,7 +7,7 @@ use mantra_schema::{
     requirements::{ReqId, Requirement, RequirementSchema},
 };
 
-use crate::cmd::collect::product_collection::ProductCollection;
+use crate::cmd::collect::products::collection::ProductCollection;
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn update_per_req_schema(
@@ -70,7 +70,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let records = sqlx::query!(
             "
                 select id from Requirements
-                where product_id = $1 and collect_nr = $2
+                where collect_nr = $1
+                and product_id = $2
                 and instr(id, '.') > 0
             ",
             product_id,
@@ -92,6 +93,29 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     })?,
                 )
                 .await
+                // dot-parent may have been set explicitly
+                //
+                // TODO: could maybe be a lint to state that the explicit one is not needed
+                // in case optional = false and no aspect is set
+                && sqlx::query!(
+                    "
+                        select req_id
+                        from RequirementParents
+                        where collect_nr = $1
+                        and product_id = $2
+                        and req_id = $3
+                        and parent_product_id = $2
+                        and parent_req_id = $4
+                    ",
+                    collect_nr,
+                    product_id,
+                    record.id,
+                    parent_id
+                )
+                .fetch_optional(self.connection_mut())
+                .await
+                .context("Checking if dot-parent relation already exists")?
+                .is_none()
             {
                 sqlx::query!(
                     "

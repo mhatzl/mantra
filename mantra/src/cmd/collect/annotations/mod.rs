@@ -9,7 +9,7 @@ use mantra_schema::{
 use crate::cmd::collect::{
     cfg::{AnnotationSourceVariant, CollectAnnotationsConfig},
     collector::{CollectableFile, SingleFileCollectable},
-    product_collection::ProductCollection,
+    products::collection::ProductCollection,
     walker,
 };
 
@@ -63,6 +63,7 @@ impl<'db, 'c> SingleFileCollectable<'db, 'c, AnnotationSchema> for CollectAnnota
         collection
             .collect_per_annotation_schema(schema, schema_hash)
             .await
+            .context("Collect annotations from schema")
     }
 }
 

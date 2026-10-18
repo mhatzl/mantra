@@ -319,3 +319,66 @@ create table IgnoredReviewEntries (
     primary key (collect_nr, product_id, review_name, review_date, entry_hash),
     foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
 );
+
+create table AddedReviews (
+    first_collect_nr integer not null,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    primary key (first_collect_nr, product_id, review_name, review_date),
+    foreign key (
+        first_collect_nr,
+        product_id,
+        review_name,
+        review_date
+    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table RemovedReviews (
+    removed_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr integer not null,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    primary key (last_collect_nr, product_id, review_name, review_date),
+    foreign key (
+        last_collect_nr,
+        product_id,
+        review_name,
+        review_date
+    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table ChangedReviews (
+    new_collect_nr integer not null,
+    old_collect_nr integer not null,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    primary key (new_collect_nr, product_id, review_name, review_date),
+    foreign key (
+        new_collect_nr,
+        product_id,
+        review_name,
+        review_date
+    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (old_collect_nr,
+        product_id,
+        review_name,
+        review_date
+    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+);
+
+create table ExistingReviews (
+    latest_collect_nr integer not null,
+    product_id text not null,
+    review_name text not null,
+    review_date text not null,
+    primary key (product_id, review_name, review_date),
+    foreign key (
+        latest_collect_nr,
+        product_id,
+        review_name,
+        review_date
+    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+);

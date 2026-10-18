@@ -5,7 +5,7 @@ use mantra_schema::{
     test_runs::{TestRun, TestRunSchema},
 };
 
-use crate::cmd::collect::product_collection::ProductCollection;
+use crate::cmd::collect::products::collection::ProductCollection;
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn collect_test_run_schema(

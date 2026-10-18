@@ -9,6 +9,42 @@ create table ProductAnnotationSources (
     foreign key (collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade
 );
 
+create table AddedAnnotationSources (
+    first_collect_nr integer not null,
+    product_id text not null,
+    filepath text not null,
+    primary key (first_collect_nr, product_id, filepath),
+    foreign key (first_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+);
+
+create table RemovedAnnotationSources (
+    removed_collect_nr integer not null references Collections (nr) on delete restrict,
+    last_collect_nr integer not null,
+    product_id text not null,
+    filepath text not null,
+    primary key (last_collect_nr, product_id, filepath),
+    foreign key (last_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+);
+
+create table ChangedAnnotationSources (
+    new_collect_nr integer not null,
+    old_collect_nr integer not null,
+    product_id text not null,
+    filepath text not null,
+    primary key (new_collect_nr, product_id, filepath),
+    foreign key (new_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    foreign key (old_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+);
+
+create table ExistingAnnotationSources (
+    -- latest collection in which the annotation source was collected
+    latest_collect_nr integer not null,
+    product_id text not null,
+    filepath text not null,
+    primary key (product_id, filepath),
+    foreign key (latest_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+);
+
 create table SchemaTraceProperties (
     schema_hash text not null references Schemas (content_hash) on delete cascade,
     property_key text not null,

@@ -7,7 +7,7 @@ use mantra_schema::{
     },
 };
 
-use crate::cmd::collect::product_collection::ProductCollection;
+use crate::cmd::collect::products::collection::ProductCollection;
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn collect_per_annotation_schema(
@@ -88,7 +88,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     file_annotations.content.as_deref(),
                 )
                 .await
-                .context("")?;
+                .with_context(|| format!("Inserting collected file: {}", filepath))?;
 
                 self.collect_per_annotation_file(file_annotations, &element_source_hash)
                     .await
