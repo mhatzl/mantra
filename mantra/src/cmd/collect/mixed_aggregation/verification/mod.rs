@@ -46,7 +46,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into FailedRequirements (
+            insert or ignore into FailedRequirements (
                 agg_collect_nr,
                 req_collect_nr,
                 product_id,

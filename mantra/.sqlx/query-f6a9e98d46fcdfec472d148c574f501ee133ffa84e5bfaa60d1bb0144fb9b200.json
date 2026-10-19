@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        select req_id\n                        from RequirementParents\n                        where collect_nr = $1\n                        and product_id = $2\n                        and req_id = $3\n                        and parent_product_id = $2\n                        and parent_req_id = $4\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f6a9e98d46fcdfec472d148c574f501ee133ffa84e5bfaa60d1bb0144fb9b200"
+}

@@ -19,7 +19,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected && let Some(props) = &annotation_schema.trace_properties {
             for (key, value) in props {
-                let value_hash = FmtHash::from(&value);
+                let value_hash = FmtHash::new_serialized(&value);
 
                 self.insert_general_json(&value_hash, value)
                     .await
@@ -69,7 +69,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected_for_product {
             let element_source = ElementIdentSource::Schema(schema_hash.clone());
-            let element_source_hash = FmtHash::from(&element_source);
+            let element_source_hash = FmtHash::new_serialized(&element_source);
             let source_value = serde_json::to_value(&element_source)?;
 
             // Note: This may insert an unused JSON blob in case no element ident is defined in this schema,
@@ -352,7 +352,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(props) = &trace.properties {
             for prop in props {
-                let value_hash = FmtHash::from(&prop.1);
+                let value_hash = FmtHash::new_serialized(&prop.1);
                 self.insert_general_json(&value_hash, prop.1)
                     .await
                     .with_context(|| {
@@ -550,7 +550,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         coverage_exclude: &CoverageExclude,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let comment_hash = FmtHash::from(&coverage_exclude.comment);
+        let comment_hash = FmtHash::new(&coverage_exclude.comment);
         self.insert_general_text(&comment_hash, &coverage_exclude.comment)
             .await
             .context("Failed to insert coverage exclusion comment")?;

@@ -97,6 +97,8 @@ impl<'db> Collection<'db> {
                     $1,
                     $2
                 )
+                on conflict (product_id) do update
+                set latest_collect_nr = excluded.latest_collect_nr
                 ",
                 collect_nr,
                 product_id

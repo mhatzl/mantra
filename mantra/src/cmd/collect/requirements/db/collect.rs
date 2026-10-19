@@ -19,7 +19,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected && let Some(props) = &req_schema.properties {
             for (key, value) in props {
-                let value_hash = FmtHash::from(&value);
+                let value_hash = FmtHash::new_serialized(&value);
 
                 self.insert_general_json(&value_hash, value)
                     .await
@@ -195,14 +195,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             );
         }
 
-        let data_hash = FmtHash::from(&req);
+        let data_hash = FmtHash::new_serialized(&req);
 
-        let origin_hash = FmtHash::from(&req.origin);
+        let origin_hash = FmtHash::new_serialized(&req.origin);
         self.insert_general_json(&origin_hash, &req.origin)
             .await
             .context("Failed to insert the requirement origin")?;
 
-        let description_hash = req.description.as_ref().map(FmtHash::from);
+        let description_hash = req.description.as_ref().map(|d| FmtHash::new(d));
         if let Some(hash) = &description_hash
             && let Some(description) = &req.description
         {
@@ -265,7 +265,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if let Some(props) = &req.properties {
             for prop in props {
                 let key = &prop.0;
-                let value_hash = FmtHash::from(&prop.1);
+                let value_hash = FmtHash::new_serialized(&prop.1);
                 self.insert_general_json(&value_hash, prop.1)
                     .await
                     .with_context(|| format!("Failed to insert content for property '{}'", key))?;

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                select file_hash\n                from CollectedFiles\n                where collect_nr = $1 and filepath = $3\n                and file_hash is not null and file_hash != $4\n                ",
+  "query": "\n                select file_hash\n                from CollectedFiles\n                where collect_nr = $1 and filepath = $2\n                and file_hash is not null and file_hash != $3\n                ",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       true
     ]
   },
-  "hash": "9b309f0ed4568c704daf2456545afffe2e0c75b5eb721c6943ce535b05319ef2"
+  "hash": "35cdcff8f17c53bb8be448d750fca93149c400122a3e0fa5d9953d85e193cbec"
 }

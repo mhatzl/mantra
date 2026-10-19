@@ -34,7 +34,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert into AddedRequirements (
+            insert or ignore into AddedRequirements (
                 first_collect_nr,
                 product_id,
                 req_id
@@ -69,7 +69,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert or replace into RemovedRequirements (
+            insert or ignore into RemovedRequirements (
                 removed_collect_nr,
                 last_collect_nr,
                 product_id,
@@ -100,7 +100,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert into ChangedRequirements (
+            insert or ignore into ChangedRequirements (
                 new_collect_nr,
                 old_collect_nr,
                 product_id,
@@ -157,7 +157,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert or replace into ExistingRequirements (
+            insert or ignore into ExistingRequirements (
                 latest_collect_nr,
                 product_id,
                 req_id

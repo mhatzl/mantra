@@ -102,20 +102,18 @@ impl FmtHash {
     pub fn with_inner(hash: String) -> Self {
         Self(hash)
     }
+
+    pub fn new_serialized<S: serde::Serialize>(value: &S) -> Self {
+        let content = serde_json::to_string(value).expect(
+            "Types that implement serde::Serialize should never fail to serialize to JSON.",
+        );
+        Self::new(&content)
+    }
 }
 
 impl std::fmt::Display for FmtHash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl<S: serde::Serialize> From<&S> for FmtHash {
-    fn from(value: &S) -> Self {
-        let content = serde_json::to_string(value).expect(
-            "Types that implement serde::Serialize should never fail to serialize to JSON.",
-        );
-        Self::new(&content)
     }
 }
 

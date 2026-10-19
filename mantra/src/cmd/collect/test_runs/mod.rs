@@ -279,7 +279,7 @@ fn to_sub_test_runs(
         })
         .collect();
 
-    let name = FmtHash::from(&test_run_names).to_string();
+    let name = FmtHash::new_serialized(&test_run_names).to_string();
     let utc_date = match earliest_utc_date.or(coverage_timestamp) {
         Some(timestamp) => timestamp,
         None => {

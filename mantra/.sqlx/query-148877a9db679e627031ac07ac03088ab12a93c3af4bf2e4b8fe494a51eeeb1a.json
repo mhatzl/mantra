@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into GeneralJson (\n                hash,\n                content\n            )\n            values (\n                $1,\n                $2\n            )\n            on conflict (hash) do update\n            set content = excluded.content\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "148877a9db679e627031ac07ac03088ab12a93c3af4bf2e4b8fe494a51eeeb1a"
+}

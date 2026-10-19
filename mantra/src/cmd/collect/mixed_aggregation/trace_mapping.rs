@@ -47,7 +47,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into TraceMappedLinesCoveredByFailedTestRuns (
+            insert into TraceMappedLinesCoveredByFailedTestRuns (
                 agg_collect_nr,
                 product_id,
                 test_collect_nr,
@@ -77,6 +77,20 @@ impl<'db> Collection<'db> {
             and tc.test_run_name = ftr.test_run_name
             and tc.test_run_date = ftr.test_run_date
             and tc.hits > 0
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                test_collect_nr,
+                test_run_name,
+                test_run_date,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesCoveredByFailedTestRuns.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -93,7 +107,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedLinesCoveredByFailedTestCases (
+            insert into TraceMappedLinesCoveredByFailedTestCases (
                 agg_collect_nr,
                 product_id,
                 test_collect_nr,
@@ -126,6 +140,21 @@ impl<'db> Collection<'db> {
             and tc.test_run_date = ftc.test_run_date
             and tc.test_case_name = ftc.test_case_name
             and tc.hits > 0
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                test_collect_nr,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesCoveredByFailedTestCases.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -142,7 +171,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedLinesCoveredByFailedTests (
+            insert into TraceMappedLinesCoveredByFailedTests (
                 agg_collect_nr,
                 product_id,
                 file_collect_nr,
@@ -175,6 +204,17 @@ impl<'db> Collection<'db> {
                 cov_line
             from TraceMappedLinesCoveredByFailedTestCases
             where agg_collect_nr = $1
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesCoveredByFailedTests.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -189,7 +229,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into TracesCoveredByFailedTests (
+            insert into TracesCoveredByFailedTests (
                 agg_collect_nr,
                 product_id,
                 file_collect_nr,
@@ -206,6 +246,16 @@ impl<'db> Collection<'db> {
                 traced_line
             from TraceMappedLinesCoveredByFailedTests
             where agg_collect_nr = $1
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                filepath,
+                traced_line
+            ) do update
+            set
+                file_collect_nr = max(TracesCoveredByFailedTests.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -222,7 +272,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedLinesCoveredBySkippedTests (
+            insert into TraceMappedLinesCoveredBySkippedTests (
                 agg_collect_nr,
                 product_id,
                 file_collect_nr,
@@ -276,6 +326,19 @@ impl<'db> Collection<'db> {
                 and tc.test_case_name = stc.test_case_name
                 and tc.hits > 0
             )
+            -- hack to prevent on-conflict bellow from being taken as join
+            where true
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesCoveredBySkippedTests.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -290,7 +353,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into TracesCoveredBySkippedTests (
+            insert into TracesCoveredBySkippedTests (
                 agg_collect_nr,
                 product_id,
                 file_collect_nr,
@@ -307,6 +370,16 @@ impl<'db> Collection<'db> {
                 traced_line
             from TraceMappedLinesCoveredBySkippedTests
             where agg_collect_nr = $1
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                filepath,
+                traced_line
+            ) do update
+            set
+                file_collect_nr = max(TracesCoveredBySkippedTests.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -323,7 +396,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into TraceMappedLinesOnlyCoveredByPassedTestRuns (
+            insert into TraceMappedLinesOnlyCoveredByPassedTestRuns (
                 agg_collect_nr,
                 product_id,
                 test_collect_nr,
@@ -360,6 +433,20 @@ impl<'db> Collection<'db> {
                 and tc.filepath = fst.filepath
                 and tc.cov_line = fst.cov_line
             )
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                test_collect_nr,
+                test_run_name,
+                test_run_date,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesOnlyCoveredByPassedTestRuns.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -376,7 +463,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or replace into TraceMappedLinesOnlyCoveredByPassedTestCases (
+            insert into TraceMappedLinesOnlyCoveredByPassedTestCases (
                 agg_collect_nr,
                 product_id,
                 test_collect_nr,
@@ -416,6 +503,21 @@ impl<'db> Collection<'db> {
                 and tc.filepath = fst.filepath
                 and tc.cov_line = fst.cov_line
             )
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                test_collect_nr,
+                test_run_name,
+                test_run_date,
+                test_case_name,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesOnlyCoveredByPassedTestCases.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -432,7 +534,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into TraceMappedLinesOnlyCoveredByPassedTests (
+            insert into TraceMappedLinesOnlyCoveredByPassedTests (
                 agg_collect_nr,
                 product_id,
                 file_collect_nr,
@@ -465,6 +567,17 @@ impl<'db> Collection<'db> {
                 cov_line
             from TraceMappedLinesOnlyCoveredByPassedTestCases
             where agg_collect_nr = $1
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                filepath,
+                traced_line,
+                cov_line
+            ) do update
+            set
+                file_collect_nr = max(TraceMappedLinesOnlyCoveredByPassedTests.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )
@@ -514,6 +627,16 @@ impl<'db> Collection<'db> {
                 and pt.file_hash = st.file_hash
                 and pt.traced_line = st.traced_line
             )
+
+            on conflict (
+                agg_collect_nr,
+                product_id,
+                filepath,
+                traced_line
+            ) do update
+            set
+                file_collect_nr = max(TracesOnlyCoveredByPassedTests.file_collect_nr, excluded.file_collect_nr),
+                file_hash = excluded.file_hash
             ",
             collect_nr
         )

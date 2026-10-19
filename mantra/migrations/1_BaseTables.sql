@@ -30,15 +30,6 @@ create table FileHashes (
     content text
 );
 
--- Table to store conflicting content for either GeneralTexts,
--- GeneralJson, or FileHashes entries.
-create table ConflictingHashes (
-    -- Hash of the content.
-    hash text not null,
-    content text not null,
-    primary key (hash, content)
-);
-
 -- Base table used to track changes over multiple `mantra collect` runs.
 -- [req("lifecycle.product", "changes.track")]
 create table Collections (

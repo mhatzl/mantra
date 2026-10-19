@@ -7,11 +7,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id().clone();
 
-        // "insert or replace" because PK may remain unchanged for new collections,
+        // "on conflict update" at the end because PK may remain unchanged for new collections,
         // but we want "agg_collect_nr" to be the latest that updated an entry.
         sqlx::query!(
             "
-            insert or replace into DirectProductReqTraces (
+            insert into DirectProductReqTraces (
                 agg_collect_nr,
                 product_id,
                 req_collect_nr,
@@ -73,6 +73,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             and rt.product_id = $2
             and rt.file_hash = pas.file_hash
             and r.id = rt.req_id
+
+            on conflict (
+                product_id,
+                req_collect_nr,
+                req_id,
+                file_collect_nr,
+                filepath,
+                line
+            ) do update
+            set
+                agg_collect_nr = excluded.agg_collect_nr,
+                file_hash = excluded.file_hash
             ",
             collect_nr,
             product_id

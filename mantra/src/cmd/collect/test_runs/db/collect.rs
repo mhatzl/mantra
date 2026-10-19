@@ -18,7 +18,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if !schema_collected {
             if let Some(props) = &test_run_schema.test_run_properties {
                 for (key, value) in props {
-                    let value_hash = FmtHash::from(&value);
+                    let value_hash = FmtHash::new_serialized(&value);
 
                     self.insert_general_json(&value_hash, value)
                         .await
@@ -51,7 +51,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
             if let Some(props) = &test_run_schema.test_case_properties {
                 for (key, value) in props {
-                    let value_hash = FmtHash::from(&value);
+                    let value_hash = FmtHash::new_serialized(&value);
 
                     self.insert_general_json(&value_hash, value)
                         .await
@@ -126,7 +126,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .context("Querying collected test runs")?
         .map(|r| r.data_hash);
 
-        let data_hash = FmtHash::from(&serde_json::to_value(test_run)?);
+        let data_hash = FmtHash::new_serialized(&serde_json::to_value(test_run)?);
 
         if let Some(collected_data) = collected_test_run_hash {
             if FmtHash::with_inner(collected_data) != data_hash {
@@ -137,7 +137,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             }
         }
 
-        let origin_hash = test_run.origin.as_ref().map(FmtHash::from);
+        let origin_hash = test_run.origin.as_ref().map(FmtHash::new_serialized);
         if let Some(hash) = &origin_hash
             && let Some(origin) = &test_run.origin
         {
@@ -146,7 +146,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 .context("Failed to insert the test run origin")?;
         }
 
-        let description_hash = test_run.description.as_ref().map(FmtHash::from);
+        let description_hash = test_run.description.as_ref().map(|d| FmtHash::new(d));
         if let Some(hash) = &description_hash
             && let Some(description) = &test_run.description
         {
@@ -205,7 +205,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(props) = &test_run.properties {
             for prop in props {
-                let value_hash = FmtHash::from(&prop.1);
+                let value_hash = FmtHash::new_serialized(&prop.1);
                 self.insert_general_json(&value_hash, prop.1).await?;
 
                 sqlx::query!(
@@ -350,7 +350,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             // TODO: ensure that log srcs only appear once
             for log in logs {
                 let log_src = log.source.as_nr();
-                let log_hash = FmtHash::from(&log.content);
+                let log_hash = FmtHash::new(&log.content);
 
                 self.insert_general_text(&log_hash, &log.content)
                     .await
@@ -445,7 +445,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         for test_case in &test_run.test_cases {
             let state = test_case.state.as_nr();
-            let description_hash = test_case.description.as_ref().map(FmtHash::from);
+            let description_hash = test_case.description.as_ref().map(|d| FmtHash::new(d));
             if let Some(hash) = &description_hash
                 && let Some(description) = &test_case.description
             {
@@ -548,7 +548,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(properties) = &test_case.properties {
                 for property in properties {
                     let key = &property.0;
-                    let value_hash = FmtHash::from(&property.1);
+                    let value_hash = FmtHash::new_serialized(&property.1);
 
                     self.insert_general_json(&value_hash, property.1)
                         .await
@@ -603,7 +603,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 // TODO: ensure that log srcs only appear once
                 for log in logs {
                     let log_src = log.source.as_nr();
-                    let log_hash = FmtHash::from(&log.content);
+                    let log_hash = FmtHash::new(&log.content);
                     self.insert_general_text(&log_hash, &log.content)
                         .await
                         .with_context(|| {
@@ -707,7 +707,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(state_props) = &test_case.state_properties {
                 for property in state_props {
                     let key = &property.0;
-                    let value_hash = FmtHash::from(&property.1);
+                    let value_hash = FmtHash::new_serialized(&property.1);
 
                     self.insert_general_json(&value_hash, property.1)
                     .await

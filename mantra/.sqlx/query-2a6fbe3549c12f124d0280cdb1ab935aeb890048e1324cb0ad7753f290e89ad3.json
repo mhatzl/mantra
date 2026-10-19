@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TraceMappedLinesOnlyCoveredByPassedTestCases (\n                agg_collect_nr,\n                product_id,\n                test_collect_nr,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            )\n            select\n                tc.agg_collect_nr,\n                tc.product_id,\n                tc.test_collect_nr,\n                tc.test_run_name,\n                tc.test_run_date,\n                tc.test_case_name,\n                tc.file_collect_nr,\n                tc.filepath,\n                tc.file_hash,\n                tc.traced_line,\n                tc.cov_line\n            from TraceCoveragePerTestCases tc, UsableTestCases uc\n            where tc.agg_collect_nr = $1 and uc.agg_collect_nr = $1\n            and tc.product_id = uc.product_id\n            and tc.test_run_name = uc.test_run_name\n            and tc.test_run_date = uc.test_run_date\n            and tc.test_case_name = uc.test_case_name\n            and tc.hits > 0\n            and not exists (\n                select fst.cov_line\n                from TraceMappedLinesCoveredByFailedOrSkippedTests fst\n                where tc.agg_collect_nr = fst.agg_collect_nr\n                and tc.product_id = fst.product_id\n                and tc.filepath = fst.filepath\n                and tc.cov_line = fst.cov_line\n            )\n\n            on conflict (\n                agg_collect_nr,\n                product_id,\n                test_collect_nr,\n                test_run_name,\n                test_run_date,\n                test_case_name,\n                filepath,\n                traced_line,\n                cov_line\n            ) do update\n            set\n                file_collect_nr = max(TraceMappedLinesOnlyCoveredByPassedTestCases.file_collect_nr, excluded.file_collect_nr),\n                file_hash = excluded.file_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2a6fbe3549c12f124d0280cdb1ab935aeb890048e1324cb0ad7753f290e89ad3"
+}

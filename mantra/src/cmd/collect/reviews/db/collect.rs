@@ -18,7 +18,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected && let Some(props) = &review_schema.properties {
             for (key, value) in props {
-                let value_hash = FmtHash::from(&value);
+                let value_hash = FmtHash::new_serialized(&value);
 
                 self.insert_general_json(&value_hash, value)
                     .await
@@ -91,9 +91,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             anyhow::bail!("Duplicate review entry found in the same collection!");
         }
 
-        let data_hash = FmtHash::from(&review);
+        let data_hash = FmtHash::new_serialized(&review);
 
-        let origin_hash = review.origin.as_ref().map(FmtHash::from);
+        let origin_hash = review.origin.as_ref().map(FmtHash::new_serialized);
         if let Some(hash) = &origin_hash
             && let Some(origin) = &review.origin
         {
@@ -101,7 +101,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 .await
                 .context("Failed to insert the review origin")?;
         }
-        let description_hash = review.description.as_ref().map(FmtHash::from);
+        let description_hash = review.description.as_ref().map(|d| FmtHash::new(d));
         if let Some(hash) = &description_hash
             && let Some(description) = &review.description
         {
@@ -181,7 +181,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if let Some(props) = &review.properties {
             for prop in props {
                 let key = &prop.0;
-                let value_hash = FmtHash::from(&prop.1);
+                let value_hash = FmtHash::new_serialized(&prop.1);
                 self.insert_general_json(&value_hash, prop.1)
                     .await
                     .with_context(|| format!("Failed to insert content for property '{}'", key))?;
@@ -290,7 +290,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         }
 
         for verified_req in &review.requirements {
-            let comment_hash = FmtHash::from(&verified_req.comment);
+            let comment_hash = FmtHash::new(&verified_req.comment);
             self.insert_general_text(&comment_hash, &verified_req.comment)
                 .await
                 .with_context(|| {
@@ -329,7 +329,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         for test_run_override in &review.test_run_overrides {
             for test_case_override in &test_run_override.test_cases {
                 if let Some(override_state) = &test_case_override.state {
-                    let comment_hash = FmtHash::from(&override_state.comment);
+                    let comment_hash = FmtHash::new(&override_state.comment);
                     self.insert_general_text(&comment_hash, &override_state.comment)
                     .await
                     .with_context(||
@@ -452,7 +452,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     let filepath = coverage_override.filepath.as_str();
 
                     for line_info in &coverage_override.lines {
-                        let comment_hash = FmtHash::from(&line_info.comment);
+                        let comment_hash = FmtHash::new(&line_info.comment);
                         self.insert_general_text(&comment_hash, &line_info.comment)
                         .await
                         .with_context(||
@@ -596,7 +596,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 let filepath = coverage_override.filepath.as_str();
 
                 for line_info in &coverage_override.lines {
-                    let comment_hash = FmtHash::from(&line_info.comment);
+                    let comment_hash = FmtHash::new(&line_info.comment);
                     self.insert_general_text(&comment_hash, &line_info.comment)
                     .await
                     .with_context(||
@@ -819,9 +819,10 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         review_date: &OffsetDateTime,
         entry: DbIgnoredEntry,
     ) -> Result<(), anyhow::Error> {
-        let entry_hash = FmtHash::from(&entry);
+        let entry_value = serde_json::to_value(&entry)?;
+        let entry_hash = FmtHash::new_serialized(&entry_value);
 
-        self.insert_general_json(&entry_hash, &serde_json::to_value(&entry)?)
+        self.insert_general_json(&entry_hash, &entry_value)
             .await
             .context("Failed to insert ignore content")?;
 

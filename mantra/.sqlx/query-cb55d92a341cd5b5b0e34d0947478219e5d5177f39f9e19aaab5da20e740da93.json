@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select origin_hash\n            from Schemas\n            where content_hash = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "origin_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Schemas",
+            "name": "origin_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "cb55d92a341cd5b5b0e34d0947478219e5d5177f39f9e19aaab5da20e740da93"
+}

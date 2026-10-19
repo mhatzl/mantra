@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TraceMappedLinesOnlyCoveredByPassedTests (\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            )\n            -- union, because tables may contain duplicate covered line entries\n            select\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            from TraceMappedLinesOnlyCoveredByPassedTestRuns\n            where agg_collect_nr = $1\n\n            union\n\n            select\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            from TraceMappedLinesOnlyCoveredByPassedTestCases\n            where agg_collect_nr = $1\n\n            on conflict (\n                agg_collect_nr,\n                product_id,\n                filepath,\n                traced_line,\n                cov_line\n            ) do update\n            set\n                file_collect_nr = max(TraceMappedLinesOnlyCoveredByPassedTests.file_collect_nr, excluded.file_collect_nr),\n                file_hash = excluded.file_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "44602c70f54264014ebc6cd8e10e70d092ca0155ba9f5ab364c61da8c5d3d1f2"
+}

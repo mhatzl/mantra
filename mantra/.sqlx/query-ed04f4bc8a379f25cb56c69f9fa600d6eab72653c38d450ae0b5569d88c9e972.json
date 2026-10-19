@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TraceMappedLinesCoveredByFailedTestRuns (\n                agg_collect_nr,\n                product_id,\n                test_collect_nr,\n                test_run_name,\n                test_run_date,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line,\n                cov_line\n            )\n            select\n                tc.agg_collect_nr,\n                tc.product_id,\n                tc.test_collect_nr,\n                tc.test_run_name,\n                tc.test_run_date,\n                tc.file_collect_nr,\n                tc.filepath,\n                tc.file_hash,\n                tc.traced_line,\n                tc.cov_line\n            from TraceCoveragePerTestRuns tc, FailedTestRuns ftr\n            where tc.agg_collect_nr = $1 and ftr.agg_collect_nr = $1\n            and tc.product_id = ftr.product_id\n            and tc.test_collect_nr = ftr.test_collect_nr\n            and tc.test_run_name = ftr.test_run_name\n            and tc.test_run_date = ftr.test_run_date\n            and tc.hits > 0\n\n            on conflict (\n                agg_collect_nr,\n                product_id,\n                test_collect_nr,\n                test_run_name,\n                test_run_date,\n                filepath,\n                traced_line,\n                cov_line\n            ) do update\n            set\n                file_collect_nr = max(TraceMappedLinesCoveredByFailedTestRuns.file_collect_nr, excluded.file_collect_nr),\n                file_hash = excluded.file_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "ed04f4bc8a379f25cb56c69f9fa600d6eab72653c38d450ae0b5569d88c9e972"
+}

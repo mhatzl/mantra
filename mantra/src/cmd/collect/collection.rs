@@ -1,8 +1,9 @@
 use std::{collections::HashSet, path::PathBuf};
 
-use anyhow::Context;
+use anyhow::{Context, bail};
 use mantra_schema::{
     FmtHash, Schema,
+    media_type::{self, MediaType},
     path::{RelativePath, RelativePathBuf},
     time::OffsetDateTime,
 };
@@ -177,40 +178,31 @@ impl<'db> Collection<'db> {
         hash: &FmtHash,
         content: &str,
     ) -> Result<(), anyhow::Error> {
+        // Content hash computed internally, so should always be correct
+        //debug_assert_eq!(hash, &FmtHash::new(content));
+        let expected = FmtHash::new(content);
+        if hash != &expected {
+            bail!("Unexpected hash '{}'. Expected: {}", hash, expected);
+        }
+
         if self.replace_hashed {
             sqlx::query!(
                 "
-                insert or replace into GeneralTexts (
+                insert into GeneralTexts (
                     hash,
                     content
                 )
                 values (
                     $1,
                     $2
-                )
+                ) on conflict (hash) do update
+                set content = excluded.content
                 ",
                 hash,
                 content
             )
             .execute(self.connection_mut())
             .await?;
-        } else if sqlx::query!(
-            "
-            select content
-            from GeneralTexts
-            where hash = $1 and content != $2
-            ",
-            hash,
-            content
-        )
-        .fetch_optional(self.connection_mut())
-        .await
-        .context("Failed to get collected content for general text hashes")?
-        .is_some()
-        {
-            self.insert_conflicting_hashed_content(hash, content)
-                .await
-                .context("Inserting conflicting hashed general text")?;
         } else {
             sqlx::query!(
                 "
@@ -270,71 +262,70 @@ impl<'db> Collection<'db> {
         file_hash: Option<&FmtHash>,
         content: Option<&str>,
     ) -> Result<(), anyhow::Error> {
+        let media_type = MediaType::new(filepath);
         let filepath = filepath.as_str();
         let collect_nr = self.collect_nr();
 
+        if let Some(hash) = file_hash
+            && let Some(some_content) = content
+        {
+            let expected_hash = FmtHash::new(some_content);
+
+            if &expected_hash != hash {
+                bail!(
+                    "Wrong content hash for filepath '{}'. Expected: {}",
+                    filepath,
+                    expected_hash
+                );
+            }
+        }
+
         if let Some(hash) = file_hash.as_ref() {
-            if !self.replace_hashed
+            if self.replace_hashed
                 && let Some(some_content) = content
-                && sqlx::query!(
+            {
+                sqlx::query!(
                     "
-                select content
-                from FileHashes
-                where hash = $1 and content is not null
-                and content != $2
-                ",
+                    insert into FileHashes (
+                        hash,
+                        content
+                    )
+                    values (
+                        $1,
+                        $2
+                    )
+                    on conflict (hash) do update
+                    set content = excluded.content
+                    ",
                     hash,
                     some_content
                 )
-                .fetch_optional(self.connection_mut())
-                .await
-                .context("Failed to get collected content for file hashes")?
-                .and_then(|r| r.content)
-                .is_some()
-            {
-                self.insert_conflicting_hashed_content(hash, some_content)
-                    .await
-                    .context("Inserting conflicting hashed file content")?;
+                .execute(self.connection_mut())
+                .await?;
             } else {
-                // Check to not overwrite potential content for an existing entry
-                if content.is_some() {
-                    sqlx::query!(
-                        "
-                        insert or ignore into FileHashes (
-                            hash,
-                            content
-                        )
-                        values (
-                            $1,
-                            $2
-                        )
-                        ",
+                // either
+                sqlx::query!(
+                    "
+                    insert into FileHashes (
                         hash,
                         content
                     )
-                    .execute(self.connection_mut())
-                    .await?;
-                } else {
-                    sqlx::query!(
-                        "
-                        insert or replace into FileHashes (
-                            hash,
-                            content
-                        )
-                        values (
-                            $1,
-                            $2
-                        )
-                        ",
-                        hash,
-                        content
+                    values (
+                        $1,
+                        $2
                     )
-                    .execute(self.connection_mut())
-                    .await?;
-                }
+                    on conflict (hash) do update
+                    -- we take the one that is not null
+                    set content = coalesce(FileHashes.content, excluded.content)
+                    ",
+                    hash,
+                    content
+                )
+                .execute(self.connection_mut())
+                .await?;
             }
 
-            if sqlx::query!(
+            if let Some(collected_hash) = sqlx::query!(
                 "
                 select file_hash
                 from CollectedFiles
@@ -349,12 +340,13 @@ impl<'db> Collection<'db> {
             .await
             .context("Failed to get collected files")?
             .and_then(|r| r.file_hash)
-            .is_some()
             {
                 // TODO: Convert to error once stacked errors are used
                 log::warn!(
-                    "Duplicate entry in same collection for filepath '{}' with different file hash.",
-                    filepath
+                    "Different file hashes in same collection for filepath '{}'.\n\tPrevious: {}\n\tNew: {}",
+                    filepath,
+                    collected_hash,
+                    hash
                 );
 
                 sqlx::query!(
@@ -377,61 +369,41 @@ impl<'db> Collection<'db> {
                 .execute(self.connection_mut())
                 .await
                 .context("Failed to update conflicting collected files")?;
-            } else {
-                // Either no existing entry, or stored file_hash is null, so replace
-                sqlx::query!(
-                    "
-                    insert or replace into CollectedFiles (
-                        collect_nr,
-                        filepath,
-                        file_hash
-                    )
-                    values (
-                        $1,
-                        $2,
-                        $3
-                    )
-                    ",
-                    collect_nr,
-                    filepath,
-                    hash
-                )
-                .execute(self.connection_mut())
-                .await
-                .context("Failed to insert collected file")?;
             }
-        } else {
-            // Important to ignore here to not overwrite potentially existing entries with a set file_hash
-            sqlx::query!(
-                "
-                insert or ignore into CollectedFiles (
-                    collect_nr,
-                    filepath,
-                    file_hash
-                )
-                values (
-                    $1,
-                    $2,
-                    null
-                )
-                ",
-                collect_nr,
-                filepath
-            )
-            .execute(self.connection_mut())
-            .await
-            .context("Failed to insert collected file without hash")?;
         }
 
-        Ok(())
-    }
+        sqlx::query!(
+            "
+            insert into CollectedFiles (
+                collect_nr,
+                filepath,
+                file_hash,
+                media_type
+            )
+            values (
+                $1,
+                $2,
+                $3,
+                $4
+            )
+            on conflict (collect_nr, filepath) do update
+            set
+                -- use the non-null value
+                file_hash = coalesce(CollectedFiles.file_hash, excluded.file_hash),
+                -- always use the latest media-type representation we created above
+                -- in case media types based on file extensions changed
+                media_type = excluded.file_hash
+            ",
+            collect_nr,
+            filepath,
+            file_hash,
+            media_type
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Failed to insert collected file")?;
 
-    async fn insert_conflicting_hashed_content(
-        &mut self,
-        hash: &FmtHash,
-        content: &str,
-    ) -> Result<(), anyhow::Error> {
-        insert_conflicting_hashed_content(&mut self.transaction, hash, content).await
+        Ok(())
     }
 
     pub(super) async fn insert_schema_single_source<S: Schema>(
@@ -563,21 +535,41 @@ impl<'db> Collection<'db> {
     }
 
     async fn insert_schema<S: Schema>(&mut self, schema: &S) -> Result<FmtHash, anyhow::Error> {
-        let schema_hash = FmtHash::from(schema);
+        let schema_hash = FmtHash::new_serialized(schema);
 
         let origin_hash = if let Some(origin_value) = schema.origin() {
-            let origin_hash = FmtHash::from(origin_value);
+            let origin_hash = FmtHash::new_serialized(origin_value);
             self.insert_general_json(&origin_hash, origin_value).await?;
             Some(origin_hash)
         } else {
             None
         };
 
-        // TODO: flag if potential existing origin differs
-        // Should not happen, since origin is part of the hash, so indicates a hashing error
+        if let Some(record) = sqlx::query!(
+            "
+            select origin_hash
+            from Schemas
+            where content_hash = $1
+            ",
+            schema_hash
+        )
+        .fetch_optional(self.connection_mut())
+        .await
+        .context("Querying collected schemas")?
+        {
+            if record.origin_hash.map(FmtHash::with_inner) != origin_hash {
+                bail!(
+                    "Schema previously collected with different origin, which indicates hashing mistake, because the origin is part of the schema"
+                );
+            } else {
+                // Schema already inserted
+                return Ok(schema_hash);
+            }
+        }
+
         sqlx::query!(
             "
-            insert or replace into Schemas (
+            insert into Schemas (
                 content_hash,
                 origin_hash
             )
@@ -608,10 +600,17 @@ async fn insert_general_json<'db>(
     content: &serde_json::Value,
     replace_hashed: bool,
 ) -> Result<(), anyhow::Error> {
+    // Content hash computed internally, so should always be correct
+    //debug_assert_eq!(hash, &FmtHash::from(content));
+    let expected = FmtHash::new_serialized(content);
+    if hash != &expected {
+        bail!("Unexpected hash '{}'. Expected: {}", hash, expected);
+    }
+
     if replace_hashed {
         sqlx::query!(
             "
-            insert or replace into GeneralJson (
+            insert into GeneralJson (
                 hash,
                 content
             )
@@ -619,29 +618,14 @@ async fn insert_general_json<'db>(
                 $1,
                 $2
             )
+            on conflict (hash) do update
+            set content = excluded.content
             ",
             hash,
             content
         )
         .execute(&mut *transaction.as_mut())
         .await?;
-    } else if sqlx::query!(
-        "
-        select content
-        from GeneralJson
-        where hash = $1 and content != $2
-        ",
-        hash,
-        content
-    )
-    .fetch_optional(&mut *transaction.as_mut())
-    .await
-    .context("Failed to get collected content for general JSON hashes")?
-    .is_some()
-    {
-        insert_conflicting_hashed_content(transaction, hash, content)
-            .await
-            .context("Inserting conflicting hashed general JSON")?;
     } else {
         sqlx::query!(
             "
@@ -660,38 +644,6 @@ async fn insert_general_json<'db>(
         .execute(&mut *transaction.as_mut())
         .await?;
     }
-
-    Ok(())
-}
-
-async fn insert_conflicting_hashed_content<'db>(
-    transaction: &mut MantraTransaction<'db>,
-    hash: &FmtHash,
-    content: impl sqlx::Type<crate::db::SqlDb> + sqlx::Encode<'_, crate::db::SqlDb>,
-) -> Result<(), anyhow::Error> {
-    // TODO: Convert to error once stacked errors are used
-    log::warn!(
-        "Duplicate entry in same collection for hash '{}' with different content.",
-        hash
-    );
-
-    sqlx::query!(
-        "
-        insert into ConflictingHashes (
-            hash,
-            content
-        )
-        values (
-            $1,
-            $2
-        )
-        ",
-        hash,
-        content
-    )
-    .execute(&mut *transaction.as_mut())
-    .await
-    .context("Failed to update conflicting collected hashed content")?;
 
     Ok(())
 }

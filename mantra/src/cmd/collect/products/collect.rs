@@ -11,10 +11,10 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let collect_nr = self.collect_nr();
         let product_id = &product.id;
 
-        let data_hash = FmtHash::from(product);
+        let data_hash = FmtHash::new_serialized(product);
 
         let description_hash = if let Some(description) = &product.description {
-            let hash = FmtHash::from(&description);
+            let hash = FmtHash::new(&description);
             self.insert_general_text(&hash, description)
                 .await
                 .context("Failed to insert the product description")?;
@@ -73,7 +73,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for property in properties {
                 let key = property.0;
                 let value = property.1;
-                let hash = FmtHash::from(&value);
+                let hash = FmtHash::new_serialized(&value);
 
                 self.insert_general_json(&hash, value)
                     .await

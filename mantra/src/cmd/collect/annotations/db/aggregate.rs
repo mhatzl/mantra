@@ -36,7 +36,7 @@ impl<'db> Collection<'db> {
     async fn update_trace_spans(&mut self) -> Result<(), anyhow::Error> {
         sqlx::query!(
             "
-            insert or replace into TraceSpans (
+            insert into TraceSpans (
                 file_hash,
                 traced_line,
                 start_line,
@@ -68,6 +68,9 @@ impl<'db> Collection<'db> {
                 from CodeBlockTraces
             )
             group by file_hash, traced_line
+            -- use the latest end-line value
+            on conflict (file_hash, traced_line, start_line) do update
+                set end_line = excluded.end_line
             "
         )
         .execute(self.connection_mut())

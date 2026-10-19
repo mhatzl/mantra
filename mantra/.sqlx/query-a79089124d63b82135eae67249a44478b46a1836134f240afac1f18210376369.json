@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into FileHashes (\n                        hash,\n                        content\n                    )\n                    values (\n                        $1,\n                        $2\n                    )\n                    on conflict (hash) do update\n                    set content = excluded.content\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a79089124d63b82135eae67249a44478b46a1836134f240afac1f18210376369"
+}

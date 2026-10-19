@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TracesCoveredByFailedTests (\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line\n            )\n            select distinct\n                agg_collect_nr,\n                product_id,\n                file_collect_nr,\n                filepath,\n                file_hash,\n                traced_line\n            from TraceMappedLinesCoveredByFailedTests\n            where agg_collect_nr = $1\n\n            on conflict (\n                agg_collect_nr,\n                product_id,\n                filepath,\n                traced_line\n            ) do update\n            set\n                file_collect_nr = max(TracesCoveredByFailedTests.file_collect_nr, excluded.file_collect_nr),\n                file_hash = excluded.file_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b1344efed19908c0865ca8444c60c28f28fba027ab7205261246222da7db11ba"
+}
