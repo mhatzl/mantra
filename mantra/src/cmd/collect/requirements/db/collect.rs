@@ -74,8 +74,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 and product_id = $2
                 and instr(id, '.') > 0
             ",
-            product_id,
-            collect_nr
+            collect_nr,
+            product_id
         )
         .fetch_all(self.connection_mut())
         .await
@@ -93,11 +93,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     })?,
                 )
                 .await
+            {
                 // dot-parent may have been set explicitly
                 //
                 // TODO: could maybe be a lint to state that the explicit one is not needed
                 // in case optional = false and no aspect is set
-                && sqlx::query!(
+                if sqlx::query!(
                     "
                         select req_id
                         from RequirementParents
@@ -116,9 +117,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 .await
                 .context("Checking if dot-parent relation already exists")?
                 .is_none()
-            {
-                sqlx::query!(
-                    "
+                {
+                    sqlx::query!(
+                        "
                     insert into RequirementParents (
                         collect_nr,
                         product_id,
@@ -136,20 +137,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         false
                     )
                     ",
-                    collect_nr,
-                    product_id,
-                    record.id,
-                    product_id,
-                    parent_id
-                )
-                .execute(self.connection_mut())
-                .await
-                .with_context(|| {
-                    format!(
-                        "Failed updating dot-hierarchy for requirement '{}'",
-                        record.id
+                        collect_nr,
+                        product_id,
+                        record.id,
+                        product_id,
+                        parent_id
                     )
-                })?;
+                    .execute(self.connection_mut())
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed updating dot-hierarchy for requirement '{}'",
+                            record.id
+                        )
+                    })?;
+                }
             } else {
                 missing_parent.push(record.id);
             }

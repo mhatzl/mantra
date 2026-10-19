@@ -1837,6 +1837,6 @@ mod replacements {
                 return;
             }
         }
-        panic!("Failed to detect bad replacement relations");
+        panic!("Failed to detect bad replacement relations in errors: {db_err:#}");
     }
 }
