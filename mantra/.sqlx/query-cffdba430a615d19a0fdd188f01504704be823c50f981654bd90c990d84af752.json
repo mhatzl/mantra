@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "select max(id) as \"id!\" from Collections",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "cffdba430a615d19a0fdd188f01504704be823c50f981654bd90c990d84af752"
+}

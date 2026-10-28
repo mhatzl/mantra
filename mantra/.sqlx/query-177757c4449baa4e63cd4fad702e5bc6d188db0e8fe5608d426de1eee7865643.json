@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        select optional, aspect\n                        from RequirementParents\n                        where latest_collection = $1\n                        and product_id = $2\n                        and req_id = $3\n                        and parent_product_id = $2\n                        and parent_req_id = $4\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "optional",
+        "ordinal": 0,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "optional"
+          }
+        }
+      },
+      {
+        "name": "aspect",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "aspect"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "177757c4449baa4e63cd4fad702e5bc6d188db0e8fe5608d426de1eee7865643"
+}

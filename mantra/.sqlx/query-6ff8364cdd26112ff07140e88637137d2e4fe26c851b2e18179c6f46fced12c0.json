@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Requirements (\n                latest_collection,\n                id,\n                product_id,\n                kind,\n                manual_verification,\n                deprecated,\n                exclude,\n                optional,\n                draft,\n                title,\n                origin_hash,\n                description_hash,\n                data_hash,\n                schema_hash,\n                media_type\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                $11,\n                $12,\n                $13,\n                $14,\n                $15\n            )\n            on conflict (\n                id,\n                product_id\n            ) do update\n            set\n                latest_collection = excluded.latest_collection,\n                kind = excluded.kind,\n                manual_verification = excluded.manual_verification,\n                deprecated = excluded.deprecated,\n                exclude = excluded.exclude,\n                optional = excluded.optional,\n                draft = excluded.draft,\n                title = excluded.title,\n                origin_hash = excluded.origin_hash,\n                description_hash = excluded.description_hash,\n                data_hash = excluded.data_hash,\n                schema_hash = excluded.schema_hash,\n                media_type = excluded.media_type\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 15
+    },
+    "nullable": []
+  },
+  "hash": "6ff8364cdd26112ff07140e88637137d2e4fe26c851b2e18179c6f46fced12c0"
+}

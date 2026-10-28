@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into ProductRelatedHashedFiles (\n                    latest_collection,\n                    product_id,\n                    filepath,\n                    file_hash\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4\n                )\n                on conflict (\n                    product_id,\n                    filepath\n                ) do update\n                set\n                    latest_collection = excluded.latest_collection,\n                    file_hash = excluded.file_hash\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "4b89c8c9e85aa9e0f3526047bb04c15987bf3b3cea3dfdfe2e67447e255e843a"
+}

@@ -28,7 +28,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     async fn insert_requirement_cfg(
         &mut self,
         req_cfg: &CollectRequirementsConfig,
-        cfg_nr: i64,
+        cfg_entry: i64,
     ) -> Result<(), anyhow::Error> {
         let source_value = serde_json::to_value(req_cfg.source)?;
         let source_hash = FmtHash::new_serialized(&source_value);
@@ -54,9 +54,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into RequirementCollectConfigs (
-                collect_nr,
+                latest_collection,
                 product_id,
-                cfg_nr,
+                cfg_entry,
                 path,
                 source_hash,
                 origin_hash,
@@ -71,10 +71,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $6,
                 $7
             )
+            on conflict (
+                product_id,
+                cfg_entry
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                path = excluded.path,
+                source_hash = excluded.source_hash,
+                origin_hash = excluded.origin_hash,
+                pattern = excluded.pattern
             ",
             collect_nr,
             product_id,
-            cfg_nr,
+            cfg_entry,
             path,
             source_hash,
             origin_hash,
@@ -94,9 +104,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into ConfigRequirementProperties (
-                        collect_nr,
+                        latest_collection,
                         product_id,
-                        cfg_nr,
+                        cfg_entry,
                         property_key,
                         value_hash
                     )
@@ -107,10 +117,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $4,
                         $5
                     )
+                    on conflict (
+                        product_id,
+                        cfg_entry,
+                        property_key
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     product_id,
-                    cfg_nr,
+                    cfg_entry,
                     key,
                     value_hash
                 )

@@ -40,6 +40,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         product_cfg: ResolvedProductConfig,
         collect_mode: &CollectMode,
     ) -> Result<(), anyhow::Error> {
+        // ----- Requirements ----
         let collected_req_cfgs = self
             .insert_requirement_collect_cfgs(product_cfg.requirements)
             .await
@@ -47,12 +48,19 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         SingleFileCollector::collect(&mut self, collected_req_cfgs)
             .await
             .context("Failed to collect requirements")?;
+
+        // Note: Done before updating dot-parents, so only existing requirements are checked for potential parents
+        if collect_mode == &CollectMode::RemoveMissing {
+            self.remove_outdated_requirement_parts()
+                .await
+                .context("Removing outdated requirement parts")?;
+        }
+
         self.update_req_dot_parent()
             .await
             .context("Updating requirement dot-hierarchy")?;
-        self.update_requirement_changes(collect_mode)
-            .await
-            .context("Updating requirement changes")?;
+
+        // ----- Annotations ----
 
         let collected_annotation_cfgs = self
             .insert_annotation_collect_cfgs(product_cfg.annotations)
@@ -61,6 +69,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         SingleFileCollector::collect(&mut self, collected_annotation_cfgs)
             .await
             .context("Failed to collect annotations")?;
+
+        if collect_mode == &CollectMode::RemoveMissing {
+            self.remove_outdated_annotation_parts()
+                .await
+                .context("Removing outdated annotation parts")?;
+        }
         // TODO
         // product_collection
         //     .resolve_element_identifier(product_cfg.lsif)
@@ -75,6 +89,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .await
             .context("Updating direct requirement traces")?;
 
+        // ----- Test Runs ----
+
         let test_run_cfgs = self
             .insert_test_run_collect_cfgs(product_cfg.test_runs)
             .await
@@ -83,6 +99,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .await
             .context("Failed to collect test runs")?;
 
+        if collect_mode == &CollectMode::RemoveMissing {
+            self.remove_outdated_test_run_parts()
+                .await
+                .context("Removing outdated test run parts")?;
+        }
+
+        // ----- Reviews ----
+
         let review_cfgs = self
             .insert_review_collect_cfgs(product_cfg.reviews)
             .await
@@ -90,6 +114,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         SingleFileCollector::collect(&mut self, review_cfgs)
             .await
             .context("Failed to collect reviews")?;
+
+        if collect_mode == &CollectMode::RemoveMissing {
+            self.remove_outdated_review_parts()
+                .await
+                .context("Removing outdated review parts")?;
+        }
 
         Ok(())
     }
@@ -145,8 +175,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert or ignore into ProductRelatedFiles (
-                collect_nr,
+            insert into ProductRelatedFiles (
+                latest_collection,
                 product_id,
                 filepath
             )
@@ -155,6 +185,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $2,
                 $3
             )
+            on conflict (
+                product_id,
+                filepath
+            ) do update
+            set
+                latest_collection = excluded.latest_collection
             ",
             collect_nr,
             product_id,
@@ -166,11 +202,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(hash) = file_hash.as_ref() {
             // Note: different hashes for the same file are already handled in `Collection`.
-            // So having multiple entries with different hashes is fine here.
+            // So always overwriting file_hash here is fine, because it is not 'null'.
             sqlx::query!(
                 "
-                insert or ignore into ProductRelatedHashedFiles (
-                    collect_nr,
+                insert into ProductRelatedHashedFiles (
+                    latest_collection,
                     product_id,
                     filepath,
                     file_hash
@@ -181,6 +217,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     $3,
                     $4
                 )
+                on conflict (
+                    product_id,
+                    filepath
+                ) do update
+                set
+                    latest_collection = excluded.latest_collection,
+                    file_hash = excluded.file_hash
                 ",
                 collect_nr,
                 product_id,
@@ -268,49 +311,56 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id();
 
-        let cfg_nr = sqlx::query!(
+        let cfg_entry = sqlx::query!(
             "
-            select count(*) as nr
+            select count(*) as entry_number
             from CollectConfigs
-            where collect_nr = $1 and product_id = $2
+            where latest_collection = $1 and product_id = $2
             ",
             collect_nr,
             product_id
         )
         .fetch_one(self.connection_mut())
         .await
-        .context("Failed querying nr of collected configs")?
-        .nr + 1; // +1, because the newly added will become the new maximum
+        .context("Failed querying entry_number of collected configs")?
+        .entry_number
+            + 1; // +1, because the newly added will become the new maximum
 
         let product_id = self.product_id();
 
         sqlx::query!(
             "
             insert into CollectConfigs (
-                collect_nr,
+                latest_collection,
                 product_id,
-                nr
+                entry_number
             )
             values (
                 $1,
                 $2,
                 $3
             )
+            on conflict (
+                product_id,
+                entry_number
+            ) do update
+            set
+                latest_collection = excluded.latest_collection
             ",
             collect_nr,
             product_id,
-            cfg_nr
+            cfg_entry
         )
         .execute(self.connection_mut())
         .await
         .context("Failed inserting a collect config")?;
 
-        Ok(cfg_nr)
+        Ok(cfg_entry)
     }
 
     async fn insert_cfg_collected_schema(
         &mut self,
-        cfg_nr: i64,
+        cfg_entry: i64,
         schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
@@ -318,11 +368,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         sqlx::query!(
             "
-            insert or ignore into ConfigCollectedSchemas (
-                collect_nr,
+            insert into ConfigCollectedSchemas (
+                latest_collection,
                 product_id,
                 schema_hash,
-                cfg_nr
+                cfg_entry
             )
             values (
                 $1,
@@ -330,11 +380,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $3,
                 $4
             )
+            on conflict (
+                product_id,
+                schema_hash,
+                cfg_entry
+            ) do update
+            set
+                latest_collection = excluded.latest_collection
             ",
             collect_nr,
             product_id,
             schema_hash,
-            cfg_nr
+            cfg_entry
         )
         .execute(self.connection_mut())
         .await

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Products (\n                latest_collection,\n                id,\n                name,\n                base,\n                version,\n                homepage,\n                repository,\n                license,\n                media_type,\n                description_hash,\n                data_hash\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                $11\n            )\n            on conflict (\n                id\n            ) do update\n            set\n                latest_collection = excluded.latest_collection,\n                name = excluded.name,\n                base = excluded.base,\n                version = excluded.version,\n                homepage = excluded.homepage,\n                repository = excluded.repository,\n                license = excluded.license,\n                media_type = excluded.media_type,\n                description_hash = excluded.description_hash,\n                data_hash = excluded.data_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "f542feee5f9b987b864380940e4a486b1b13f51a936ea4fcc9b87186caf1f2bb"
+}

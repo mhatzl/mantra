@@ -3,7 +3,7 @@ use std::{collections::HashSet, path::PathBuf};
 use anyhow::{Context, bail};
 use mantra_schema::{
     FmtHash, Schema,
-    media_type::{self, MediaType},
+    media_type::MediaType,
     path::{RelativePath, RelativePathBuf},
     time::OffsetDateTime,
 };
@@ -21,7 +21,7 @@ pub(crate) struct Collection<'db> {
     transaction: MantraTransaction<'db>,
     cfg_filepath: PathBuf,
     abs_cfg_file_parent_path: PathBuf,
-    nr: i64,
+    id: i64,
     collected_at_utc: OffsetDateTime,
     replace_hashed: bool,
 }
@@ -52,20 +52,27 @@ impl<'db> Collection<'db> {
         .await
         .context("Failed to create a new collection")?;
 
-        let nr = sqlx::query!(r#"select max(nr) as "nr!" from Collections"#)
+        let id = sqlx::query!(r#"select max(id) as "id!" from Collections"#)
             .fetch_one(&mut *transaction.as_mut())
             .await
             .context("Failed to get the latest collection")?
-            .nr;
+            .id;
 
-        Ok(Self {
+        let mut collection = Self {
             transaction,
             cfg_filepath: cfg.cfg_filepath().to_path_buf(),
             abs_cfg_file_parent_path: crate::io::abs_parent_path(cfg.cfg_filepath())?,
-            nr,
+            id,
             collected_at_utc,
             replace_hashed: cfg.args().replace_hashed,
-        })
+        };
+
+        collection
+            .reset_changes()
+            .await
+            .context("Resetting history")?;
+
+        Ok(collection)
     }
 
     pub(super) async fn collect(&mut self, cfg: CollectConfig) -> Result<(), anyhow::Error> {
@@ -158,7 +165,7 @@ impl<'db> Collection<'db> {
     }
 
     pub(super) fn collect_nr(&self) -> i64 {
-        self.nr
+        self.id
     }
 
     pub(super) async fn commit(self) -> Result<(), anyhow::Error> {
@@ -229,31 +236,7 @@ impl<'db> Collection<'db> {
         &mut self,
         filepath: &RelativePath,
     ) -> Result<(), anyhow::Error> {
-        let filepath = filepath.as_str();
-        let collect_nr = self.collect_nr();
-
-        // Ignoring insert to not overwrite potentially existhing hashes
-        sqlx::query!(
-            "
-            insert or ignore into CollectedFiles (
-                collect_nr,
-                filepath,
-                file_hash
-            )
-            values (
-                $1,
-                $2,
-                null
-            )
-            ",
-            collect_nr,
-            filepath
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to update collected files")?;
-
-        Ok(())
+        self.insert_collected_file(filepath, None, None).await
     }
 
     pub(super) async fn insert_collected_file(
@@ -329,7 +312,7 @@ impl<'db> Collection<'db> {
                 "
                 select file_hash
                 from CollectedFiles
-                where collect_nr = $1 and filepath = $2
+                where latest_collection = $1 and filepath = $2
                 and file_hash is not null and file_hash != $3
                 ",
                 collect_nr,
@@ -352,7 +335,7 @@ impl<'db> Collection<'db> {
                 sqlx::query!(
                     "
                     insert into ConflictingCollectedFiles (
-                        collect_nr,
+                        latest_collection,
                         filepath,
                         file_hash
                     )
@@ -361,6 +344,12 @@ impl<'db> Collection<'db> {
                         $2,
                         $3
                     )
+                    on conflict (
+                        filepath,
+                        file_hash
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection
                     ",
                     collect_nr,
                     filepath,
@@ -375,7 +364,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into CollectedFiles (
-                collect_nr,
+                latest_collection,
                 filepath,
                 file_hash,
                 media_type
@@ -386,10 +375,15 @@ impl<'db> Collection<'db> {
                 $3,
                 $4
             )
-            on conflict (collect_nr, filepath) do update
+            on conflict (filepath) do update
             set
-                -- use the non-null value
-                file_hash = coalesce(CollectedFiles.file_hash, excluded.file_hash),
+                latest_collection = excluded.latest_collection,
+                -- use the non-null value in case file collected in same collection, otherwise overwrite
+                file_hash = case
+                    when CollectedFiles.latest_collection = excluded.latest_collection
+                        then coalesce(CollectedFiles.file_hash, excluded.file_hash)
+                    else excluded.file_hash
+                end,
                 -- always use the latest media-type representation we created above
                 -- in case media types based on file extensions changed
                 media_type = excluded.file_hash
@@ -413,29 +407,7 @@ impl<'db> Collection<'db> {
     ) -> Result<FmtHash, anyhow::Error> {
         let schema_hash = self.insert_schema(schema).await?;
 
-        let collect_nr = self.collect_nr();
-        let filepath = filepath.as_str();
-
-        sqlx::query!(
-            "
-            insert or ignore into SchemaSources (
-                collect_nr,
-                schema_hash,
-                filepath
-            )
-            values (
-                $1,
-                $2,
-                $3
-            )
-            ",
-            collect_nr,
-            schema_hash,
-            filepath
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Failed to update collected schema sources")?;
+        self.insert_schema_source(&schema_hash, filepath).await?;
 
         Ok(schema_hash)
     }
@@ -447,31 +419,8 @@ impl<'db> Collection<'db> {
     ) -> Result<FmtHash, anyhow::Error> {
         let schema_hash = self.insert_schema(schema).await?;
 
-        let collect_nr = self.collect_nr();
-
         for filepath in filepaths {
-            let filepath = filepath.as_str();
-
-            sqlx::query!(
-                "
-                insert or ignore into SchemaSources (
-                    collect_nr,
-                    schema_hash,
-                    filepath
-                )
-                values (
-                    $1,
-                    $2,
-                    $3
-                )
-                ",
-                collect_nr,
-                schema_hash,
-                filepath
-            )
-            .execute(self.connection_mut())
-            .await
-            .context("Failed to update collected schema sources")?;
+            self.insert_schema_source(&schema_hash, filepath).await?;
         }
 
         Ok(schema_hash)
@@ -494,8 +443,8 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into SchemaSources (
-                collect_nr,
+            insert into SchemaSources (
+                latest_collection,
                 schema_hash,
                 filepath
             )
@@ -504,6 +453,12 @@ impl<'db> Collection<'db> {
                 $2,
                 $3
             )
+            on conflict (
+                schema_hash,
+                filepath
+            ) do update
+            set
+                latest_collection = excluded.latest_collection
             ",
             collect_nr,
             schema_hash,
@@ -511,7 +466,7 @@ impl<'db> Collection<'db> {
         )
         .execute(self.connection_mut())
         .await
-        .context("Failed to update collected schema sources")?;
+        .with_context(|| format!("Inserting schema source file: {}", filepath))?;
 
         Ok(())
     }
@@ -586,6 +541,16 @@ impl<'db> Collection<'db> {
         .context("Failed to update collected schemas")?;
 
         Ok(schema_hash)
+    }
+
+    /// Deletes changes made by a previous collection.
+    /// The "history" tables can only track the changes made by the new collection.
+    async fn reset_changes(&mut self) -> Result<(), anyhow::Error> {
+        self.reset_requirement_changes()
+            .await
+            .context("Resetting requirement history")?;
+
+        Ok(())
     }
 
     /// Returns the absolute path to the directory the used mantra config file is located in.

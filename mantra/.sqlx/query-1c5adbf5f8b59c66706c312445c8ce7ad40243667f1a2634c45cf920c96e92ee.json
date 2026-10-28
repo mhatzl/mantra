@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select file_hash\n                from CollectedFiles\n                where latest_collection = $1 and filepath = $2\n                and file_hash is not null and file_hash != $3\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "file_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "CollectedFiles",
+            "name": "file_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "1c5adbf5f8b59c66706c312445c8ce7ad40243667f1a2634c45cf920c96e92ee"
+}

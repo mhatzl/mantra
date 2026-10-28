@@ -70,7 +70,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let records = sqlx::query!(
             "
                 select id from Requirements
-                where collect_nr = $1
+                where latest_collection = $1
                 and product_id = $2
                 and instr(id, '.') > 0
             ",
@@ -87,22 +87,24 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(parent_id) = self
                 .get_dot_parent(
                     &product_id,
-                    collect_nr,
                     &ReqId::from_str(&record.id).with_context(|| {
                         format!("Received invalid requirement ID '{}'", record.id)
                     })?,
                 )
                 .await
             {
+                let Some((_, aspect)) = record.id.rsplit_once('.') else {
+                    unreachable!("Only requirements with at least one dot are iterated")
+                };
+
                 // dot-parent may have been set explicitly
-                //
-                // TODO: could maybe be a lint to state that the explicit one is not needed
-                // in case optional = false and no aspect is set
-                if sqlx::query!(
+                // => check if "optional" and "aspect" match
+
+                let explicitly_set = sqlx::query!(
                     "
-                        select req_id
+                        select optional, aspect
                         from RequirementParents
-                        where collect_nr = $1
+                        where latest_collection = $1
                         and product_id = $2
                         and req_id = $3
                         and parent_product_id = $2
@@ -115,18 +117,35 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 )
                 .fetch_optional(self.connection_mut())
                 .await
-                .context("Checking if dot-parent relation already exists")?
-                .is_none()
-                {
+                .context("Checking if dot-parent relation already exists")?;
+
+                if let Some(explicit_record) = explicitly_set {
+                    // TODO: add to log-store of collection
+
+                    if explicit_record.aspect.as_deref() != Some(aspect) {
+                        log::warn!(
+                            "Explicit dot-relationship of requirement '{}' has differing aspects. The last dot-part is an implicit aspect",
+                            record.id
+                        )
+                    }
+
+                    if explicit_record.optional == Some(true) {
+                        log::error!(
+                            "Explicit dot-relationship of requirement '{}' is set as 'optional=true', which contradicts the convention of mantra!",
+                            record.id
+                        )
+                    }
+                } else {
                     sqlx::query!(
                         "
                     insert into RequirementParents (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         req_id,
                         parent_product_id,
                         parent_req_id,
-                        optional
+                        optional,
+                        aspect
                     )
                     values (
                         $1,
@@ -134,14 +153,27 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $3,
                         $4,
                         $5,
-                        false
+                        false,
+                        $6
                     )
+                    on conflict (
+                        product_id,
+                        req_id,
+                        parent_product_id,
+                        parent_req_id
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        optional = excluded.optional,
+                        aspect = excluded.aspect
+
                     ",
                         collect_nr,
                         product_id,
                         record.id,
                         product_id,
-                        parent_id
+                        parent_id,
+                        aspect
                     )
                     .execute(self.connection_mut())
                     .await
@@ -179,7 +211,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             "
                 select r.id, gj.content
                 from Requirements r, GeneralJson gj
-                where r.collect_nr = $1 and r.product_id = $2
+                where r.latest_collection = $1 and r.product_id = $2
                 and r.id = $3 and r.origin_hash = gj.hash
                 ",
             collect_nr,
@@ -216,13 +248,15 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into Requirements (
-                collect_nr,
+                latest_collection,
                 id,
                 product_id,
+                kind,
                 manual_verification,
                 deprecated,
                 exclude,
                 optional,
+                draft,
                 title,
                 origin_hash,
                 description_hash,
@@ -243,16 +277,38 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $10,
                 $11,
                 $12,
-                $13
+                $13,
+                $14,
+                $15
             )
+            on conflict (
+                id,
+                product_id
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                kind = excluded.kind,
+                manual_verification = excluded.manual_verification,
+                deprecated = excluded.deprecated,
+                exclude = excluded.exclude,
+                optional = excluded.optional,
+                draft = excluded.draft,
+                title = excluded.title,
+                origin_hash = excluded.origin_hash,
+                description_hash = excluded.description_hash,
+                data_hash = excluded.data_hash,
+                schema_hash = excluded.schema_hash,
+                media_type = excluded.media_type
             ",
             collect_nr,
             req.id,
             product_id,
+            req.kind,
             req.manual_verification,
             req.deprecated,
             req.exclude,
             req.optional,
+            req.draft,
             req.title,
             origin_hash,
             description_hash,
@@ -275,7 +331,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into RequirementProperties (
-                        collect_nr,
+                        latest_collection,
                         req_id,
                         product_id,
                         property_key,
@@ -288,6 +344,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $4,
                         $5
                     )
+                    on conflict (
+                        req_id,
+                        product_id,
+                        property_key
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     req.id,
@@ -310,7 +374,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into RequirementParents (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         req_id,
                         parent_product_id,
@@ -327,6 +391,16 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $6,
                         $7
                     )
+                    on conflict (
+                        product_id,
+                        req_id,
+                        parent_product_id,
+                        parent_req_id
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        optional = excluded.optional,
+                        aspect = excluded.aspect
                     ",
                     collect_nr,
                     product_id,
@@ -356,7 +430,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into RequirementChildren (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         req_id,
                         child_product_id,
@@ -373,6 +447,16 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $6,
                         $7
                     )
+                    on conflict (
+                        product_id,
+                        req_id,
+                        child_product_id,
+                        child_req_id
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        optional = excluded.optional,
+                        aspect = excluded.aspect
                     ",
                     collect_nr,
                     product_id,
@@ -398,7 +482,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into RequirementReplacements (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         req_id,
                         replaced_req_id
@@ -409,6 +493,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $3,
                         $4
                     )
+                    on conflict (
+                        product_id,
+                        req_id,
+                        replaced_req_id
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection
                     ",
                     collect_nr,
                     product_id,
@@ -429,16 +520,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         Ok(())
     }
 
-    async fn get_dot_parent(
-        &mut self,
-        product_id: &ProductId,
-        collect_nr: i64,
-        req_id: &ReqId,
-    ) -> Option<ReqId> {
+    async fn get_dot_parent(&mut self, product_id: &ProductId, req_id: &ReqId) -> Option<ReqId> {
         let mut req_id = req_id.as_str();
         while let Some((parent, _)) = req_id.rsplit_once('.') {
             let parent_exists = self
-                .req_exists(product_id, collect_nr, &ReqId::from_str(parent).ok()?)
+                .req_exists(product_id, &ReqId::from_str(parent).ok()?)
                 .await;
 
             if parent_exists {
@@ -451,21 +537,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         None
     }
 
-    async fn req_exists(
-        &mut self,
-        product_id: &ProductId,
-        collect_nr: i64,
-        req_id: &ReqId,
-    ) -> bool {
+    async fn req_exists(&mut self, product_id: &ProductId, req_id: &ReqId) -> bool {
         sqlx::query!(
             "
             select id from Requirements
             where product_id = $1 and id = $2
-            and collect_nr = $3
             ",
             product_id,
-            req_id,
-            collect_nr
+            req_id
         )
         .fetch_one(self.connection_mut())
         .await

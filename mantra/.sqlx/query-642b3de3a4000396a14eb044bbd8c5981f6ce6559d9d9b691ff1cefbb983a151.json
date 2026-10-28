@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into SchemaSources (\n                latest_collection,\n                schema_hash,\n                filepath\n            )\n            values (\n                $1,\n                $2,\n                $3\n            )\n            on conflict (\n                schema_hash,\n                filepath\n            ) do update\n            set\n                latest_collection = excluded.latest_collection\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "642b3de3a4000396a14eb044bbd8c5981f6ce6559d9d9b691ff1cefbb983a151"
+}

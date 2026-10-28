@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select count(*) as entry_number\n            from CollectConfigs\n            where latest_collection = $1 and product_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "entry_number",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6cc402c2142e3a14f5c347b0868e914bd61b9c901679f95379af3f9114317ea6"
+}

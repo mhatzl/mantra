@@ -191,9 +191,8 @@ create table ValidReviews (
 create table ValidTestRuns (
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
-    primary key (agg_collect_nr, test_collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (test_collect_nr, product_id, test_run_name, test_run_date) references TestRuns(collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, test_run_name),
+    foreign key (product_id, test_run_name) references TestRuns(product_id, name) on delete cascade
 );
 
 -- Contains the resolved state of test cases considering potential overrides from reviews.
@@ -426,7 +425,7 @@ create table TraceCoveragePerTestRuns (
     traced_line integer not null,
     cov_line integer not null,
     hits integer not null,
-    primary key (product_id, test_run_name, test_run_date, filepath, traced_line, cov_line),
+    primary key (product_id, test_run_name, filepath, traced_line, cov_line),
     foreign key (product_id, test_run_name, filepath, cov_line)
         references TestRunLineCoverage(product_id, test_run_name, cov_filepath, cov_line) on delete cascade,
     foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade,

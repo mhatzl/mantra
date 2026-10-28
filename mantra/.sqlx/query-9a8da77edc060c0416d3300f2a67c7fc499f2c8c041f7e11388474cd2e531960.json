@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into CollectedFiles (\n                latest_collection,\n                filepath,\n                file_hash,\n                media_type\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4\n            )\n            on conflict (filepath) do update\n            set\n                latest_collection = excluded.latest_collection,\n                -- use the non-null value in case file collected in same collection, otherwise overwrite\n                file_hash = case\n                    when CollectedFiles.latest_collection = excluded.latest_collection\n                        then coalesce(CollectedFiles.file_hash, excluded.file_hash)\n                    else excluded.file_hash\n                end,\n                -- always use the latest media-type representation we created above\n                -- in case media types based on file extensions changed\n                media_type = excluded.file_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "9a8da77edc060c0416d3300f2a67c7fc499f2c8c041f7e11388474cd2e531960"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select id from Requirements\n                where latest_collection = $1\n                and product_id = $2\n                and instr(id, '.') > 0\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ab7eeb3994f2b113bf4bbc75cedd926ef25d67e0169abfafcc114b48b7acaa2a"
+}

@@ -60,7 +60,6 @@ create table ReviewAuthors (
     latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
     author text not null,
     primary key (product_id, review_name, author),
     foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
@@ -159,9 +158,7 @@ create table TestCaseOverrides (
         product_id,
         test_run_name,
         name
-    ),
-    -- ensure the test run happened before the review
-    constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
+    )
 );
 
 -- Table to store overrides from reviews for line coverage entries of test runs.
@@ -189,7 +186,6 @@ create table TestRunLineCoverageOverrides (
     primary key (
         product_id,
         review_name,
-        test_collect_nr,
         test_run_name,
         cov_filepath,
         cov_line
@@ -205,9 +201,7 @@ create table TestRunLineCoverageOverrides (
         test_run_name,
         cov_filepath,
         cov_line
-    ),
-    -- ensure the test run happened before the review
-    constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
+    )
 );
 
 -- Table to store overrides from reviews for line coverage entries of test cases.
@@ -255,9 +249,7 @@ create table TestCaseLineCoverageOverrides (
         test_case_name,
         cov_filepath,
         cov_line
-    ),
-    -- ensure the test run happened before the review
-    constraint future_date check (unixepoch(test_run_date) < unixepoch(review_date))
+    )
 );
 
 -- Contains collected entries that could not be mapped to existing data.

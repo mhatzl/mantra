@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into RequirementParents (\n                        latest_collection,\n                        product_id,\n                        req_id,\n                        parent_product_id,\n                        parent_req_id,\n                        optional,\n                        aspect\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5,\n                        false,\n                        $6\n                    )\n                    on conflict (\n                        product_id,\n                        req_id,\n                        parent_product_id,\n                        parent_req_id\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection,\n                        optional = excluded.optional,\n                        aspect = excluded.aspect\n\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "5a374a996ae6d93d3585e6494046cb8d17b40fe2595e8c8841285163ef837b56"
+}

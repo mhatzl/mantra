@@ -27,7 +27,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into Products (
-                collect_nr,
+                latest_collection,
                 id,
                 name,
                 base,
@@ -52,6 +52,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $10,
                 $11
             )
+            on conflict (
+                id
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                name = excluded.name,
+                base = excluded.base,
+                version = excluded.version,
+                homepage = excluded.homepage,
+                repository = excluded.repository,
+                license = excluded.license,
+                media_type = excluded.media_type,
+                description_hash = excluded.description_hash,
+                data_hash = excluded.data_hash
             ",
             collect_nr,
             product_id,
@@ -84,7 +98,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into ProductProperties (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         property_key,
                         value_hash
@@ -95,6 +109,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $3,
                         $4
                     )
+                    on conflict (
+                        product_id,
+                        property_key
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     product_id,

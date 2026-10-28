@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into CollectConfigs (\n                latest_collection,\n                product_id,\n                entry_number\n            )\n            values (\n                $1,\n                $2,\n                $3\n            )\n            on conflict (\n                product_id,\n                entry_number\n            ) do update\n            set\n                latest_collection = excluded.latest_collection\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "fd89a78d765808bcfc5c4cccbd76e303c126cf04811c0281b7d7f4441d689068"
+}

@@ -34,6 +34,7 @@ create table Requirements (
     latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     id text not null,
+    kind text,
     -- Flag indicating whether the requirement requires manual verification.
     -- `true`: The requirement requires manual verification.
     -- [req("req.manual")]
@@ -52,6 +53,7 @@ create table Requirements (
     -- `true`: The requirement is optional.
     -- [req("req.optional")]
     optional bool,
+    draft bool,
     -- The title of the requirement.
     -- [req("req.title")]
     title text not null,
@@ -156,11 +158,39 @@ create table AddedRequirements (
     foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
 );
 
+create trigger RequirementInsertions
+after insert on Requirements
+for each row
+begin
+    insert into AddedRequirements (
+        product_id,
+        req_id
+    )
+    values (
+        new.product_id,
+        new.id
+    );
+end;
+
 create table RemovedRequirements (
     product_id text not null,
     req_id text not null,
     primary key (product_id, req_id)
 );
+
+create trigger RequirementDeletions
+after delete on Requirements
+for each row
+begin
+    insert into RemovedRequirements (
+        product_id,
+        req_id
+    )
+    values (
+        old.product_id,
+        old.id
+    );
+end;
 
 create table ChangedRequirements (
     product_id text not null,

@@ -234,7 +234,7 @@ create table TestCases (
     ),
     foreign key (
         product_id,
-        test_run_name,
+        test_run_name
     ) references TestRuns (product_id, name) on delete cascade
 );
 

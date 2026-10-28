@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ConflictingCollectedFiles (\n                        latest_collection,\n                        filepath,\n                        file_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3\n                    )\n                    on conflict (\n                        filepath,\n                        file_hash\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "786d677f3a33f4d322949a0921ed8ffb51310071d4a82b24ed2da9ecf728c510"
+}

@@ -116,6 +116,7 @@ pub struct Requirement {
     /// Title of the requirement.
     /// [req("req.title")]
     pub title: String,
+    pub kind: Option<String>,
     /// Optional description of the requirement.
     /// [req("req.description")]
     pub description: Option<String>,
@@ -143,6 +144,7 @@ pub struct Requirement {
     /// **Note:** All potential children of such a requirement are also marked as optional.
     /// [req("req.optional")]
     pub optional: Option<bool>,
+    pub draft: Option<bool>,
     /// Optional list of requirements that this requirement replaces.
     /// Replacing a requirement is only possible inside the same product and marks replaced requirements as *deprecated*.
     pub replaces: Option<Vec<ReqId>>,
@@ -159,12 +161,14 @@ impl Requirement {
             parents: None,
             children: None,
             title,
+            kind: None,
             description: None,
             origin,
             manual_verification: None,
             deprecated: None,
             exclude: None,
             optional: None,
+            draft: None,
             replaces: None,
             properties: None,
             media_type: None,
