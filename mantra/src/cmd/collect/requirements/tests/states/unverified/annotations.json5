@@ -19,6 +19,22 @@
                 ids: ["req-satisfy-verify"],
                 line: 120,
                 kind: "verifies",
+            },{
+                ids: ["req-zero-hits-case"],
+                line: 210,
+                kind: "satisfies",
+            },{
+                ids: ["req-zero-hits-case"],
+                line: 220,
+                kind: "verifies",
+            },{
+                ids: ["req-zero-hits-run"],
+                line: 310,
+                kind: "satisfies",
+            },{
+                ids: ["req-zero-hits-run"],
+                line: 320,
+                kind: "verifies",
             }]
         }
     }]

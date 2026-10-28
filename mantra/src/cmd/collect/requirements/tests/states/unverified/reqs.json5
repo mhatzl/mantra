@@ -36,5 +36,13 @@
         id: "req-mult-satisfy",
         title: "Unverified Satisfy Traced Requirement (Not all traces covered)",
         origin: "Unverified state test",
+    },{
+        id: "req-zero-hits-case",
+        title: "Unverified Satisfy and Verify Traced Requirement (Satisfy trace not hit by test case)",
+        origin: "Unverified state test",
+    },{
+        id: "req-zero-hits-run",
+        title: "Unverified Satisfy and Verify Traced Requirement (Satisfy trace not hit by test run)",
+        origin: "Unverified state test",
     }]
 }

@@ -1010,7 +1010,7 @@ impl<'db> Collection<'db> {
             from ResolvedTestRunLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
-            and sc.hits not null and sc.cov_filepath = pf.filepath
+            and sc.hits > 0 and sc.cov_filepath = pf.filepath
             and pf.file_hash = ts.file_hash
             and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)
             and sc.cov_line >= ts.start_line
@@ -1075,7 +1075,7 @@ impl<'db> Collection<'db> {
             from ResolvedTestCaseLineCoverage sc, ProductRelatedFiles pf, TraceSpans ts
             where sc.last_collect_nr = $1 and sc.last_collect_nr = pf.last_collect_nr
             and sc.product_id = $2 and sc.product_id = pf.product_id
-            and sc.hits not null and sc.cov_filepath = pf.filepath
+            and sc.hits > 0 and sc.cov_filepath = pf.filepath
             and pf.file_hash = ts.file_hash
             and (sc.cov_file_hash is null or sc.cov_file_hash = ts.file_hash)
             and sc.cov_line >= ts.start_line and sc.cov_line <= ts.end_line

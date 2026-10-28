@@ -1587,6 +1587,16 @@ mod states {
             "Expected req-mult-satisfy to have unverified state,
             because not all satisfy traces are covered by tests."
         );
+        assert!(
+            unverified_reqs.contains(&"req-zero-hits-case".to_string()),
+            "Expected req-zero-hits-case to have unverified state,
+            because the test case covering the verify trace reports zero hits for the satisfy trace."
+        );
+        assert!(
+            unverified_reqs.contains(&"req-zero-hits-run".to_string()),
+            "Expected req-zero-hits-run to have unverified state,
+            because the test run covering the verify trace reports zero hits for the satisfy trace."
+        );
     }
 
     #[sqlx::test]

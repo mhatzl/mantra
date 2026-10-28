@@ -2,7 +2,17 @@
     test_runs: [{
         name: "test-run-1",
         utc_date: "2026-02-19T11:16:58Z",
-        nr_of_test_cases: 3,
+        nr_of_test_cases: 4,
+        covered_files: [{
+            filepath: "test.rs",
+            lines: [{
+                nr: 310,
+                hits: 0,
+            },{
+                nr: 320,
+                hits: 1,
+            }]
+        }],
         test_cases: [{
             name: "verifying-case",
             state: "passed",
@@ -31,6 +41,19 @@
                 filepath: "test.rs",
                 lines: [{
                     nr: 120,
+                    hits: 1,
+                }]
+            }]
+        },{
+            name: "zero-hits-satisfy-case",
+            state: "passed",
+            covered_files: [{
+                filepath: "test.rs",
+                lines: [{
+                    nr: 210,
+                    hits: 0,
+                },{
+                    nr: 220,
                     hits: 1,
                 }]
             }]
