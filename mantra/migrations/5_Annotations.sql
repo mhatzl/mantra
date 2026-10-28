@@ -1,48 +1,31 @@
 
 create table ProductAnnotationSources (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     schema_hash text not null references Schemas (content_hash) on delete cascade,
     filepath text not null,
-    file_hash text not null,
-    primary key (collect_nr, product_id, schema_hash, filepath),
-    foreign key (collect_nr, product_id, filepath, file_hash) references ProductRelatedHashedFiles (collect_nr, product_id, filepath, file_hash) on delete cascade
+    primary key (product_id, schema_hash, filepath),
+    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade
 );
 
 create table AddedAnnotationSources (
-    first_collect_nr integer not null,
-    product_id text not null,
-    filepath text not null,
-    primary key (first_collect_nr, product_id, filepath),
-    foreign key (first_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
-);
-
-create table RemovedAnnotationSources (
-    removed_collect_nr integer not null references Collections (nr) on delete restrict,
-    last_collect_nr integer not null,
-    product_id text not null,
-    filepath text not null,
-    primary key (last_collect_nr, product_id, filepath),
-    foreign key (last_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
-);
-
-create table ChangedAnnotationSources (
-    new_collect_nr integer not null,
-    old_collect_nr integer not null,
-    product_id text not null,
-    filepath text not null,
-    primary key (new_collect_nr, product_id, filepath),
-    foreign key (new_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
-    foreign key (old_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
-);
-
-create table ExistingAnnotationSources (
-    -- latest collection in which the annotation source was collected
-    latest_collect_nr integer not null,
     product_id text not null,
     filepath text not null,
     primary key (product_id, filepath),
-    foreign key (latest_collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade
+    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade
+);
+
+create table RemovedAnnotationSources (
+    product_id text not null,
+    filepath text not null,
+    primary key (product_id, filepath)
+);
+
+create table ChangedAnnotationSources (
+    product_id text not null,
+    filepath text not null,
+    primary key (product_id, filepath),
+    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade
 );
 
 create table SchemaTraceProperties (
@@ -53,32 +36,32 @@ create table SchemaTraceProperties (
 );
 
 create table AnnotationCollectConfigs (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     path text not null,
     source_hash text not null references GeneralJson (hash) on delete restrict,
     origin_hash text references GeneralJson (hash) on delete restrict,
     pattern text,
-    primary key (collect_nr, product_id, cfg_nr),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 create table ConfigTraceProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, cfg_nr, property_key),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry, property_key),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 -- Table to store all traces.
 -- [req("trace.origin", "changes.track")]
 create table Traces (
     -- Used to detect duplicate trace entries in one collection for the same line
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- Line the trace was detected at in the file.
@@ -93,7 +76,7 @@ create table Traces (
 -- [req("trace.properties")]
 create table TraceProperties (
     -- Used to detect duplicate property keys in one collection for the same trace
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace was detected at.
@@ -112,7 +95,7 @@ create table TraceProperties (
 -- [req("trace.id", "trace.mult_reqs")]
 create table DetectedReqTraces (
     -- Used to detect duplicate requirement entries in one collection for the same trace
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Requirement ID that is directly set on the trace.
     req_id text not null,
     -- Hash of the file content.
@@ -129,7 +112,7 @@ create table DetectedReqTraces (
 -- [req("trace.id", "trace.mult_reqs")]
 create table DetectedProductReqTraces (
     -- Used to detect duplicate requirement entries in one collection for the same trace
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Product ID set explicitly for the requirement trace.
     --
     -- **Note:** Not referencing the Products table, because the set product might not be collected.
@@ -151,7 +134,7 @@ create table DetectedProductReqTraces (
 -- [req("trace.element")]
 create table Elements (
     -- Used to detect duplicate entries in one collection for the same element
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Name of the element.
     --
     -- **Note:** The fully qualified identifier is stored in ElementIdents.
@@ -177,7 +160,7 @@ create table Elements (
 );
 
 create table ElementIdents (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     -- File the element is defined in.
     filepath text not null,
@@ -189,8 +172,8 @@ create table ElementIdents (
     -- Source for the ident name
     -- e.g. directly in schema or language server index format
     source_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, filepath, file_hash, definition_line, source_hash),
-    foreign key (collect_nr, product_id, filepath) references ProductRelatedFiles (collect_nr, product_id, filepath) on delete cascade,
+    primary key (product_id, filepath, file_hash, definition_line, source_hash),
+    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, definition_line) references Elements (file_hash, definition_line) on delete cascade
 );
 
@@ -198,7 +181,7 @@ create table ElementIdents (
 -- [req("trace.code_block")]
 create table TracedCodeBlocks (
     -- Used to detect duplicate code block entries in one collection
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the code block is set.
@@ -231,7 +214,7 @@ create table TracedCodeBlocks (
 -- [req("trace.element")]
 create table DirectTracedElements (
     -- Used to detect duplicate traced element entries in one collection
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     file_hash text not null,
     -- Line the trace related to the element was detected at.
@@ -252,7 +235,7 @@ create table DirectTracedElements (
 -- TODO: add req trace
 create table CoverageBlockExcludes (
     -- Used to detect duplicate entries in one collection
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- First line that must be excluded from code coverage analysis until the `end_line`.
@@ -272,7 +255,7 @@ create table CoverageBlockExcludes (
 -- TODO: add req trace
 create table CoverageLineExcludes (
     -- Used to detect duplicate entries in one collection
-    last_collect_nr integer not null references Collections (nr) on delete restrict,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     file_hash text not null references FileHashes (hash) on delete restrict,
     -- Line that must be excluded from code coverage analysis.
@@ -286,25 +269,25 @@ create table CoverageLineExcludes (
 
 create view ExcludedLineRanges as
 select
-    pf.last_collect_nr,
+    pf.latest_collection,
     pf.product_id,
     pf.filepath,
     pf.file_hash,
     cbe.start_line,
     cbe.end_line
 from CoverageBlockExcludes cbe, ProductRelatedFiles pf
-where cbe.last_collect_nr = pf.last_collect_nr
+where cbe.latest_collection = pf.latest_collection
 and cbe.file_hash = pf.file_hash
 
 union
 
 select
-    pf.last_collect_nr,
+    pf.latest_collection,
     pf.product_id,
     pf.filepath,
     pf.file_hash,
     cle.line as start_line,
     cle.line as end_line
 from CoverageLineExcludes cle, ProductRelatedFiles pf
-where cle.last_collect_nr = pf.last_collect_nr
+where cle.latest_collection = pf.latest_collection
 and cle.file_hash = pf.file_hash;

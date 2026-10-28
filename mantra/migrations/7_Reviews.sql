@@ -7,31 +7,31 @@ create table SchemaReviewProperties (
 );
 
 create table ReviewCollectConfigs (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     path text not null,
     source_hash text not null references GeneralJson (hash) on delete restrict,
     origin_hash text references GeneralJson (hash) on delete restrict,
     pattern text,
-    primary key (collect_nr, product_id, cfg_nr),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 create table ConfigReviewProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, cfg_nr, property_key),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry, property_key),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 -- Table to store reviews.
 -- [req("review", "changes.track")]
 create table Reviews (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
    -- The product ID that maps to the product that got reviewed.
     product_id text not null,
     -- Name of the review
@@ -50,107 +50,93 @@ create table Reviews (
     schema_hash text not null references Schemas (content_hash) on delete restrict,
     -- Optional MIME/media type of review related general texts (e.g. description).
     media_type text,
-    primary key (collect_nr, product_id, name, utc_date),
-    foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
+    primary key (product_id, name),
+    foreign key (product_id) references Products (id) on delete cascade
 );
 
 -- Table to store authors of a review.
 -- [req("review.authors")]
 create table ReviewAuthors (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     review_name text not null,
     review_date text not null,
     author text not null,
-    primary key (collect_nr, product_id, review_name, review_date, author),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, review_name, author),
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
 );
 
 -- Table to store optional metadata of a review.
 create table ReviewProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, review_name, review_date, property_key),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, review_name, property_key),
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
 );
 
 create table ReviewRevisions (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
     -- Indicates the revision
     revision integer not null,
     -- Comment for the revision.
     -- [req("changes.comment")]
     comment text not null,
-    primary key (collect_nr, product_id, review_name, review_date, revision),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, review_name, revision),
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
 );
 
 -- Names of authors of a review revision.
 -- [req("changes.authors")]
 create table ReviewRevisionAuthors (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
     -- Indicates the revision
     revision integer not null,
     -- Names of an author of the revision.
     -- [req("changes.authors")]
     author text not null,
-    primary key (collect_nr, product_id, review_name, review_date, revision, author),
-    foreign key (collect_nr, product_id, review_name, review_date, revision) references ReviewRevisions (collect_nr, product_id, review_name, review_date, revision) on delete cascade
+    primary key (product_id, review_name, revision, author),
+    foreign key (product_id, review_name, revision) references ReviewRevisions (product_id, review_name, revision) on delete cascade
 );
 
 -- Table to store requirement IDs that were manually verified in a review,
 -- and the IDs could be mapped to requirements stored in the database.
 -- [req("review.verify_req")]
 create table ManuallyVerifiedRequirements (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Product ID that maps to the product that got reviewed.
     product_id text not null,
     -- Name of the review.
     review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_date text not null,
-    req_collect_nr integer not null,
    -- ID of the requirement that is manually verified.
     req_id text not null,
     -- Hash of the comment for the manual verification.
     comment_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
-        collect_nr,
         product_id,
         review_name,
-        review_date,
-        req_collect_nr,
         req_id
     ),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
-    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade,
+    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
 );
 
 -- Table to store test case overrides from reviews.
 -- [req("review.test_case_state")]
 create table TestCaseOverrides (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
     -- Name of the review.
     review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_date text not null,
-    test_collect_nr text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- State that must be used instead of the one stored in the TestCase table.
@@ -159,27 +145,19 @@ create table TestCaseOverrides (
     -- Hash of the comment explaining why the state must be overriden.
     comment_hash text not null references GeneralTexts(hash) on delete cascade,
     primary key (
-        collect_nr,
         product_id,
         review_name,
-        review_date,
-        test_collect_nr,
         test_run_name,
-        test_run_date,
         test_case_name
     ),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade,
     foreign key (
-        test_collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name
     ) references TestCases (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         name
     ),
     -- ensure the test run happened before the review
@@ -192,18 +170,13 @@ create table TestCaseOverrides (
 --
 -- [req("review.coverage", "testcov.cov.lines")]
 create table TestRunLineCoverageOverrides (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
     -- Name of the review.
     review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_date text not null,
-    test_collect_nr integer not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- File that was covered.
     cov_filepath text not null,
     -- Line that was covered.
@@ -214,29 +187,22 @@ create table TestRunLineCoverageOverrides (
     -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
-        collect_nr,
         product_id,
         review_name,
-        review_date,
         test_collect_nr,
         test_run_name,
-        test_run_date,
         cov_filepath,
         cov_line
     ),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade,
     foreign key (
-        test_collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         cov_filepath,
         cov_line
     ) references TestRunLineCoverage (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         cov_filepath,
         cov_line
     ),
@@ -250,18 +216,13 @@ create table TestRunLineCoverageOverrides (
 --
 -- [req("review.coverage", "testcov.cov.lines")]
 create table TestCaseLineCoverageOverrides (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
    -- The product ID that maps to the product that got reviewed and tested.
     product_id text not null,
     -- Name of the review.
     review_name text not null,
-    -- UTC date and time at which the review was held.
-    review_date text not null,
-    test_collect_nr text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- File that was covered.
@@ -274,31 +235,23 @@ create table TestCaseLineCoverageOverrides (
     -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
-        collect_nr,
         product_id,
         review_name,
-        review_date,
-        test_collect_nr,
         test_run_name,
-        test_run_date,
         test_case_name,
         cov_filepath,
         cov_line
     ),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade,
     foreign key (
-        test_collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name,
         cov_filepath,
         cov_line
     ) references TestCaseLineCoverage (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name,
         cov_filepath,
         cov_line
@@ -310,75 +263,37 @@ create table TestCaseLineCoverageOverrides (
 -- Contains collected entries that could not be mapped to existing data.
 -- e.g. verified requirements, test case state or code coverage overrides
 create table IgnoredReviewEntries (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
     -- Hash of the content of the entry in the review that got ignored.
     entry_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, review_name, review_date, entry_hash),
-    foreign key (collect_nr, product_id, review_name, review_date) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, review_name, entry_hash),
+    foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
 );
 
 create table AddedReviews (
-    first_collect_nr integer not null,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
-    primary key (first_collect_nr, product_id, review_name, review_date),
+    primary key (product_id, review_name),
     foreign key (
-        first_collect_nr,
         product_id,
-        review_name,
-        review_date
-    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+        review_name
+    ) references Reviews (product_id, name) on delete cascade
 );
 
 create table RemovedReviews (
-    removed_collect_nr integer not null references Collections (nr) on delete restrict,
-    last_collect_nr integer not null,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
-    primary key (last_collect_nr, product_id, review_name, review_date),
-    foreign key (
-        last_collect_nr,
-        product_id,
-        review_name,
-        review_date
-    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, review_name)
 );
 
 create table ChangedReviews (
-    new_collect_nr integer not null,
-    old_collect_nr integer not null,
     product_id text not null,
     review_name text not null,
-    review_date text not null,
-    primary key (new_collect_nr, product_id, review_name, review_date),
+    primary key (product_id, review_name),
     foreign key (
-        new_collect_nr,
         product_id,
-        review_name,
-        review_date
-    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade,
-    foreign key (old_collect_nr,
-        product_id,
-        review_name,
-        review_date
-    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
-);
-
-create table ExistingReviews (
-    latest_collect_nr integer not null,
-    product_id text not null,
-    review_name text not null,
-    review_date text not null,
-    primary key (product_id, review_name, review_date),
-    foreign key (
-        latest_collect_nr,
-        product_id,
-        review_name,
-        review_date
-    ) references Reviews (collect_nr, product_id, name, utc_date) on delete cascade
+        review_name
+    ) references Reviews (product_id, name) on delete cascade
 );

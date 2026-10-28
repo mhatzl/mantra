@@ -7,25 +7,25 @@ create table SchemaTestRunProperties (
 );
 
 create table TestRunCollectConfigs (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     path text not null,
     source_hash text not null references GeneralJson (hash) on delete restrict,
     origin_hash text references GeneralJson (hash) on delete restrict,
     pattern text,
-    primary key (collect_nr, product_id, cfg_nr),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 create table ConfigTestRunProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, cfg_nr, property_key),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry, property_key),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 create table SchemaTestCaseProperties (
@@ -36,19 +36,19 @@ create table SchemaTestCaseProperties (
 );
 
 create table ConfigTestCaseProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
-    cfg_nr integer not null,
+    cfg_entry integer not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, cfg_nr, property_key),
-    foreign key (collect_nr, product_id, cfg_nr) references CollectConfigs (collect_nr, product_id, nr) on delete restrict
+    primary key (product_id, cfg_entry, property_key),
+    foreign key (product_id, cfg_entry) references CollectConfigs (product_id, entry_number) on delete restrict
 );
 
 -- Base table for test runs.
 -- [req("testcov.test_run")]
 create table TestRuns (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     -- The name of the test run.
     name text not null,
@@ -73,51 +73,48 @@ create table TestRuns (
     schema_hash text not null references Schemas (content_hash) on delete restrict,
     -- Optional MIME/media type of test run related general texts (e.g. description).
     media_type text,
-    primary key (collect_nr, product_id, name, utc_date),
-    foreign key (collect_nr, product_id) references Products (collect_nr, id) on delete cascade
+    primary key (product_id, name),
+    foreign key (product_id) references Products (id) on delete cascade
 );
 
 -- Table to store optional metadata of a test run.
 -- [req("testcov.test_run.metadata")]
 create table TestRunProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, property_key),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, test_run_name, property_key),
+    foreign key (product_id, test_run_name) references TestRuns (product_id, name) on delete cascade
 );
 
 create table TestRunRevisions (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
     -- Indicates the revision
     revision integer not null,
     -- Comment for the revision.
     -- [req("changes.comment")]
     comment text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, revision),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, test_run_name, revision),
+    foreign key (product_id, test_run_name) references TestRuns (product_id, name) on delete cascade
 );
 
 -- Names of authors of a test run revision.
 -- [req("changes.authors")]
 create table TestRunRevisionAuthors (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
     -- Indicates the revision
     revision integer not null,
     -- Names of an author of the revision.
     -- [req("changes.authors")]
     author text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, revision, author),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, revision) references TestRunRevisions (collect_nr, product_id, test_run_name, test_run_date, revision) on delete cascade
+    primary key (product_id, test_run_name, revision, author),
+    foreign key (product_id, test_run_name, revision) references TestRunRevisions (product_id, test_run_name, revision) on delete cascade
 );
 
 -- Table to store test run hierarchies.
@@ -128,27 +125,20 @@ create table TestRunRevisionAuthors (
 -- because test results should not span across products.
 -- [req("testcov.test_run.nested")]
 create table TestRunHierarchies (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID of both test runs.
     product_id text not null,
     -- The name of the parent test run.
     parent_name text not null,
-    -- The UTC date and time of the parent test run.
-    parent_date text not null,
     -- The name of the child test run.
     child_name text not null,
-    -- The UTC date and time of the child test run.
-    child_date text not null,
     primary key (
-        collect_nr,
         product_id,
         parent_name,
-        parent_date,
-        child_name,
-        child_date
+        child_name
     ),
-    foreign key (collect_nr, product_id, parent_name, parent_date) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade deferrable initially deferred,
-    foreign key (collect_nr, product_id, child_name, child_date) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade deferrable initially deferred
+    foreign key (product_id, parent_name) references TestRuns (product_id, name) on delete cascade deferrable initially deferred,
+    foreign key (product_id, child_name) references TestRuns (product_id, name) on delete cascade deferrable initially deferred
 );
 
 -- Table to store logs that were captured during test run execution.
@@ -158,42 +148,34 @@ create table TestRunHierarchies (
 --
 -- [req("testcov.test_case.metadata")]
 create table TestRunLogs (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- Date and time of the test run.
-    test_run_date text not null,
     -- stdout = 0, stderr = 1
     log_src integer not null,
     -- Hash of the log content captured during the test run execution.
     log_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         log_src
     ),
     foreign key (
-        collect_nr,
         product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+        test_run_name
+    ) references TestRuns (product_id, name) on delete cascade
 );
 
 -- Table to store line coverage per test run.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
 create table TestRunLineCoverage (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- File that was covered.
     cov_filepath text not null,
     -- Optional hash of the file content when the coverage was captured.
@@ -205,25 +187,19 @@ create table TestRunLineCoverage (
     -- Unless it is not null for test cases or child test runs of this test run.
     hits integer,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         cov_filepath,
         cov_line
     ),
     foreign key (
-        collect_nr,
         product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade,
+        test_run_name
+    ) references TestRuns (product_id, name) on delete cascade,
     foreign key (
-        collect_nr,
         product_id,
         cov_filepath
     ) references ProductRelatedFiles (
-        collect_nr,
         product_id,
         filepath
     ) on delete cascade
@@ -232,13 +208,11 @@ create table TestRunLineCoverage (
 -- Table to store test case results.
 -- [req("testcov.test_case")]
 create table TestCases (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     name text not null,
     -- State of the test case.
@@ -254,46 +228,39 @@ create table TestCases (
     -- Optional MIME/media type of test case related general texts (e.g. description).
     media_type text,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         name
     ),
     foreign key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+    ) references TestRuns (product_id, name) on delete cascade
 );
 
 -- Stores requirements that are explicitely verified by the test case.
 create table TestCaseVerifiedRequirements (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
     test_case_name text not null,
-    req_collect_nr text not null,
     req_id text not null,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, req_collect_nr, req_id),
-    foreign key (req_collect_nr, product_id, req_id) references Requirements (collect_nr, product_id, id) on delete cascade,
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name) references TestCases (collect_nr, product_id, test_run_name, test_run_date, name) on delete cascade
+    primary key (product_id, test_run_name, test_case_name, req_id),
+    foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade,
+    foreign key (product_id, test_run_name, test_case_name) references TestCases (product_id, test_run_name, name) on delete cascade
 );
 
 -- Table to store optional metadata of a test case.
 -- [req("testcov.test_case.metadata")]
 create table TestCaseProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
     test_case_name text not null,
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (collect_nr, product_id, test_run_name, test_run_date, test_case_name, property_key),
-    foreign key (collect_nr, product_id, test_run_name, test_run_date, test_case_name) references TestCases (collect_nr, product_id, test_run_name, test_run_date, name) on delete cascade
+    primary key (product_id, test_run_name, test_case_name, property_key),
+    foreign key (product_id, test_run_name, test_case_name) references TestCases (product_id, test_run_name, name) on delete cascade
 );
 
 -- Table to link log output to a test case.
@@ -303,13 +270,11 @@ create table TestCaseProperties (
 --
 -- [req("testcov.test_case.metadata")]
 create table TestCaseLogs (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- stdout = 0, stderr = 1
@@ -317,24 +282,18 @@ create table TestCaseLogs (
     -- Hash of the log content that was captured during the execution of the test case.
     log_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name,
         log_src
     ),
     foreign key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name
     ) references TestCases (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         name
     ) on delete cascade
 );
@@ -342,13 +301,11 @@ create table TestCaseLogs (
 -- Table to store the optional location of test cases.
 -- [req("testcov.test_case.origin")]
 create table TestCaseLocations (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- File the test case is defined in.
@@ -358,31 +315,23 @@ create table TestCaseLocations (
     -- Line the test case is defined at.
     line integer not null,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name
     ),
     foreign key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name
     ) references TestCases (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         name
     ) on delete cascade,
     foreign key (
-        collect_nr,
         product_id,
         filepath
     ) references ProductRelatedFiles (
-        collect_nr,
         product_id,
         filepath
     ) on delete cascade
@@ -392,37 +341,29 @@ create table TestCaseLocations (
 -- This is mostly needed for *skipped* or *failed* test cases.
 -- [req("testcov.test_case.state")]
 create table TestCaseStateProperties (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
    -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- The key of the additional property for the state of a test case.
     property_key text not null,
     value_hash text not null references GeneralJson (hash) on delete restrict,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name,
         property_key
     ),
     foreign key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name
     ) references TestCases (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         name
     ) on delete cascade
 );
@@ -430,13 +371,11 @@ create table TestCaseStateProperties (
 -- Table to store line coverage per test case.
 -- [req("testcov.cov.lines", "testcov.cov.trace_mapping.use_hash"])
 create table TestCaseLineCoverage (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
    -- The product ID that maps to the product that got tested with this test run.
     product_id text not null,
     -- Name of the test run.
     test_run_name text not null,
-    -- UTC date and time of the test run.
-    test_run_date text not null,
     -- Name of the test case.
     test_case_name text not null,
     -- File that was covered.
@@ -449,97 +388,52 @@ create table TestCaseLineCoverage (
     -- If null, the line is ignored from line coverage analysis for this test case.
     hits integer,
     primary key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name,
         cov_filepath,
         cov_line
     ),
     foreign key (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         test_case_name
     ) references TestCases (
-        collect_nr,
         product_id,
         test_run_name,
-        test_run_date,
         name
     ) on delete cascade,
     foreign key (
-        collect_nr,
         product_id,
         cov_filepath
     ) references ProductRelatedFiles (
-        collect_nr,
         product_id,
         filepath
     ) on delete cascade
 );
 
 create table AddedTestRuns (
-    first_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
-    primary key (first_collect_nr, product_id, test_run_name, test_run_date),
+    primary key (product_id, test_run_name),
     foreign key (
-        first_collect_nr,
         product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+        test_run_name
+    ) references TestRuns (product_id, name) on delete cascade
 );
 
 create table RemovedTestRuns (
-    removed_collect_nr integer not null references Collections (nr) on delete restrict,
-    last_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
-    primary key (last_collect_nr, product_id, test_run_name, test_run_date),
-    foreign key (
-        last_collect_nr,
-        product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+    primary key (product_id, test_run_name)
 );
 
 create table ChangedTestRuns (
-    new_collect_nr integer not null,
-    old_collect_nr integer not null,
     product_id text not null,
     test_run_name text not null,
-    test_run_date text not null,
-    primary key (new_collect_nr, product_id, test_run_name, test_run_date),
+    primary key (product_id, test_run_name),
     foreign key (
-        new_collect_nr,
         product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade,
-    foreign key (old_collect_nr,
-        product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
-);
-
-create table ExistingTestRuns (
-    latest_collect_nr integer not null,
-    product_id text not null,
-    test_run_name text not null,
-    test_run_date text not null,
-    primary key (product_id, test_run_name, test_run_date),
-    foreign key (
-        latest_collect_nr,
-        product_id,
-        test_run_name,
-        test_run_date
-    ) references TestRuns (collect_nr, product_id, name, utc_date) on delete cascade
+        test_run_name
+    ) references TestRuns (product_id, name) on delete cascade
 );

@@ -33,7 +33,7 @@ create table FileHashes (
 -- Base table used to track changes over multiple `mantra collect` runs.
 -- [req("lifecycle.product", "changes.track")]
 create table Collections (
-    nr integer primary key autoincrement,
+    id integer primary key autoincrement,
     collected_at_utc text not null,
     -- Optional hash of the arguments set when calling `mantra collect`.
     arguments_hash text references GeneralJson (hash) on delete restrict,
@@ -43,33 +43,33 @@ create table Collections (
 );
 
 create table CollectedFiles (
-    collect_nr integer not null references Collections (nr) on delete cascade,
+    latest_collection integer not null references Collections (id) on delete cascade,
     filepath text not null,
     -- Optional reference to the hash of the file content
     file_hash text references FileHashes (hash) on delete restrict,
     -- Optional MIME/media type of the stored content.
     media_type text,
-    primary key (collect_nr, filepath)
+    primary key (filepath)
 );
 
 -- In case a file was collected with different hash values in one collection.
 -- This may happen if annotations or requirements are collected from a file,
 -- and test runs contain coverage data for the same file but with a different file hash.
 create table ConflictingCollectedFiles (
-    collect_nr integer not null,
+    latest_collection integer not null references Collections (id) on delete cascade,
     filepath text not null,
     file_hash text not null,
-    primary key (collect_nr, filepath, file_hash),
-    foreign key (collect_nr, filepath) references CollectedFiles (collect_nr, filepath) on delete cascade
+    primary key (filepath, file_hash),
+    foreign key (filepath) references CollectedFiles (filepath) on delete cascade
 );
 
 -- Table to store logs that were encountered while executing `mantra collect`.
 -- e.g. review mentions unknown requirement ID
 create table CollectionLogs (
-    collect_nr integer not null references Collections (nr) on delete cascade,
+    latest_collection integer not null references Collections (id) on delete cascade,
+    entry_number integer primary key autoincrement,
     timestamp text not null,
     -- null=print, 0=trace, 1=debug, 2=info, 3=warning, 4=error
     level integer,
-    msg_hash text not null references GeneralTexts (hash) on delete restrict,
-    primary key (collect_nr, timestamp)
+    msg_hash text not null references GeneralTexts (hash) on delete restrict
 );
