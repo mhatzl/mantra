@@ -274,11 +274,39 @@ create table AddedReviews (
     ) references Reviews (product_id, name) on delete cascade
 );
 
+create trigger ReviewInsertions
+after insert on Reviews
+for each row
+begin
+    insert into AddedReviews (
+        product_id,
+        review_name
+    )
+    values (
+        new.product_id,
+        new.name
+    );
+end;
+
 create table RemovedReviews (
     product_id text not null,
     review_name text not null,
     primary key (product_id, review_name)
 );
+
+create trigger ReviewDeletions
+after delete on Reviews
+for each row
+begin
+    insert into RemovedReviews (
+        product_id,
+        review_name
+    )
+    values (
+        old.product_id,
+        old.name
+    );
+end;
 
 create table ChangedReviews (
     product_id text not null,
@@ -289,3 +317,20 @@ create table ChangedReviews (
         review_name
     ) references Reviews (product_id, name) on delete cascade
 );
+
+create trigger ReviewChanges
+after update on Reviews
+for each row
+when (
+    old.data_hash is distinct from new.data_hash
+)
+begin
+    insert into ChangedReviews (
+        product_id,
+        review_name
+    )
+    values (
+        old.product_id,
+        old.name
+    );
+end;

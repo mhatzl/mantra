@@ -422,11 +422,39 @@ create table AddedTestRuns (
     ) references TestRuns (product_id, name) on delete cascade
 );
 
+create trigger TestRunInsertions
+after insert on TestRuns
+for each row
+begin
+    insert into AddedTestRuns (
+        product_id,
+        test_run_name
+    )
+    values (
+        new.product_id,
+        new.name
+    );
+end;
+
 create table RemovedTestRuns (
     product_id text not null,
     test_run_name text not null,
     primary key (product_id, test_run_name)
 );
+
+create trigger TestRunDeletions
+after delete on TestRuns
+for each row
+begin
+    insert into RemovedTestRuns (
+        product_id,
+        test_run_name
+    )
+    values (
+        old.product_id,
+        old.name
+    );
+end;
 
 create table ChangedTestRuns (
     product_id text not null,
@@ -437,3 +465,20 @@ create table ChangedTestRuns (
         test_run_name
     ) references TestRuns (product_id, name) on delete cascade
 );
+
+create trigger TestRunChanges
+after update on TestRuns
+for each row
+when (
+    old.data_hash is distinct from new.data_hash
+)
+begin
+    insert into ChangedTestRuns (
+        product_id,
+        test_run_name
+    )
+    values (
+        old.product_id,
+        old.name
+    );
+end;

@@ -65,10 +65,49 @@ create table AddedProducts (
     foreign key (product_id) references Products (id) on delete cascade
 );
 
-create table ChangedProducts (
-    product_id text not null primary key references Products (id) on delete cascade
-);
+create trigger ProductInsertions
+after insert on Products
+for each row
+begin
+    insert into AddedProducts (
+        product_id
+    )
+    values (
+        new.id
+    );
+end;
 
 create table RemovedProducts (
     product_id text not null primary key
 );
+
+create trigger ProductDeletions
+after delete on Products
+for each row
+begin
+    insert into RemovedProducts (
+        product_id
+    )
+    values (
+        old.id
+    );
+end;
+
+create table ChangedProducts (
+    product_id text not null primary key references Products (id) on delete cascade
+);
+
+create trigger ProductChanges
+after update on Products
+for each row
+when (
+    old.data_hash is distinct from new.data_hash
+)
+begin
+    insert into ChangedProducts (
+        product_id
+    )
+    values (
+        old.id
+    );
+end;

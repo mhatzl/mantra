@@ -285,3 +285,33 @@ create table UnknownRequirements (
     foreign key (product_id, req_id)
         references RequirementVerificationStates(product_id, req_id) on delete cascade
 );
+
+create table ChangedRequirementVerificationStates (
+    product_id text not null,
+    req_id text not null,
+    old_state integer not null,
+    primary key (product_id, req_id),
+    foreign key (
+        product_id,
+        req_id
+    ) references RequirementVerificationStates (product_id, req_id) on delete cascade
+);
+
+create trigger RequirementVerificationStateChanges
+after update on RequirementVerificationStates
+for each row
+when (
+    old.data_hash is distinct from new.data_hash
+)
+begin
+    insert into ChangedRequirementVerificationStates (
+        product_id,
+        req_id,
+        old_state
+    )
+    values (
+        old.product_id,
+        old.req_id,
+        old.state
+    );
+end;

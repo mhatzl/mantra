@@ -10,23 +10,50 @@ create table ProductAnnotationSources (
 
 create table AddedAnnotationSources (
     product_id text not null,
+    schema_hash text not null,
     filepath text not null,
-    primary key (product_id, filepath),
-    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade
+    primary key (product_id, schema_hash, filepath),
+    foreign key (product_id, schema_hash, filepath) references ProductAnnotationSources (product_id, schema_hash, filepath) on delete cascade
 );
+
+create trigger AnnotationSourceInsertions
+after insert on ProductAnnotationSources
+for each row
+begin
+    insert into AddedAnnotationSources (
+        product_id,
+        schema_hash,
+        filepath
+    )
+    values (
+        new.product_id,
+        new.schema_hash,
+        new.filepath
+    );
+end;
 
 create table RemovedAnnotationSources (
     product_id text not null,
+    schema_hash text not null,
     filepath text not null,
-    primary key (product_id, filepath)
+    primary key (product_id, schema_hash, filepath)
 );
 
-create table ChangedAnnotationSources (
-    product_id text not null,
-    filepath text not null,
-    primary key (product_id, filepath),
-    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade
-);
+create trigger AnnotationSourceDeletions
+after delete on ProductAnnotationSources
+for each row
+begin
+    insert into RemovedAnnotationSources (
+        product_id,
+        schema_hash,
+        filepath
+    )
+    values (
+        old.product_id,
+        old.schema_hash,
+        old.filepath
+    );
+end;
 
 create table SchemaTraceProperties (
     schema_hash text not null references Schemas (content_hash) on delete cascade,

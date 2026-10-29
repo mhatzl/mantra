@@ -198,3 +198,20 @@ create table ChangedRequirements (
     primary key (product_id, req_id),
     foreign key (product_id, req_id) references Requirements (product_id, id) on delete cascade
 );
+
+create trigger RequirementChanges
+after update on Requirements
+for each row
+when (
+    old.data_hash is distinct from new.data_hash
+)
+begin
+    insert into ChangedRequirements (
+        product_id,
+        req_id
+    )
+    values (
+        old.product_id,
+        old.id
+    );
+end;

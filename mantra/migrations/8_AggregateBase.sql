@@ -404,6 +404,43 @@ create table ResolvedLineCoverageStates (
     )
 );
 
+create table ChangedLineCoverage (
+    product_id text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line integer not null,
+    old_state integer not null,
+    primary key (
+        product_id,
+        cov_filepath,
+        cov_line
+    ),
+    foreign key (product_id, cov_filepath, cov_line) references ResolvedLineCoverageStates (product_id, cov_filepath, cov_line) on delete cascade
+);
+
+create trigger LineCoverageChanges
+after update on ResolvedLineCoverageStates
+for each row
+when (
+    old.state is distinct from new.state
+)
+begin
+    insert into ChangedLineCoverage (
+        product_id,
+        cov_filepath,
+        cov_file_hash,
+        cov_line,
+        old_state
+    )
+    values (
+        old.product_id,
+        old.cov_filepath,
+        old.cov_file_hash,
+        old.cov_line,
+        old.state
+    );
+end;
+
 create table ResolvedLineCoverageTestStates (
     product_id text not null,
     cov_filepath text not null,
