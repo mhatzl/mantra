@@ -163,14 +163,26 @@
       }
     },
     "RequirementState": {
-      "type": "string",
-      "enum": [
-        "failed",
-        "verified",
-        "skipped",
-        "unverified",
-        "deprecated",
-        "excluded"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "failed",
+            "verified",
+            "satisfied",
+            "skipped",
+            "deprecated",
+            "excluded",
+            "unknown"
+          ]
+        },
+        {
+          "description": "Requirement may be directly or indirectly verified by children, but not all verified conditions have been fulfilled.",
+          "type": "string",
+          "enum": [
+            "partially_verified"
+          ]
+        }
       ]
     },
     "RequirementsSummary": {

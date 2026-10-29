@@ -83,6 +83,26 @@
       ],
       "additionalProperties": true
     },
+    "replaced_by": {
+      "description": "Optional list of requirements that this requirement is replaced by.\n\n**Note:** If a requirement is replaced by others, it is automatically marked as deprecated.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/RequirementReference"
+      }
+    },
+    "replaces": {
+      "description": "Optional list of requirements that this requirement replaces.",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/RequirementReference"
+      }
+    },
     "reviewed_in": {
       "type": [
         "array",
@@ -331,14 +351,26 @@
       }
     },
     "RequirementState": {
-      "type": "string",
-      "enum": [
-        "failed",
-        "verified",
-        "skipped",
-        "unverified",
-        "deprecated",
-        "excluded"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "failed",
+            "verified",
+            "satisfied",
+            "skipped",
+            "deprecated",
+            "excluded",
+            "unknown"
+          ]
+        },
+        {
+          "description": "Requirement may be directly or indirectly verified by children, but not all verified conditions have been fulfilled.",
+          "type": "string",
+          "enum": [
+            "partially_verified"
+          ]
+        }
       ]
     },
     "RequirementTracesOverview": {
