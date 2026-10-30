@@ -178,9 +178,11 @@ create table TestRunLineCoverageOverrides (
     cov_filepath text not null,
     -- Line that was covered.
     cov_line integer not null,
-    -- Number of how often the line was covered/hit during test run execution.
-    -- If null, the line is ignored from line coverage analysis for this test run.
-    hits integer,
+    -- Indicates if a line is covered `true`, uncovered `false`,
+    -- or unknown `null` indicating that the line has no executable code at this line.
+    --
+    -- If `null`, the line is ignored from line coverage analysis for this test run.
+    covered bool,
     -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
@@ -223,9 +225,11 @@ create table TestCaseLineCoverageOverrides (
     cov_filepath text not null,
     -- Line that was covered.
     cov_line integer not null,
-    -- Number of how often the line was covered/hit during test run execution.
-    -- If null, the line is ignored from line coverage analysis for this test case.
-    hits integer,
+    -- Indicates if a line is covered `true`, uncovered `false`,
+    -- or unknown `null` indicating that the line has no executable code at this line.
+    --
+    -- If `null`, the line is ignored from line coverage analysis for this test run.
+    covered bool,
     -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (

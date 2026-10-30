@@ -67,7 +67,7 @@ pub trait Schema: serde::Serialize {
 )]
 #[serde(deny_unknown_fields)]
 pub struct Revision {
-    pub nr: i64,
+    pub number: i64,
     pub authors: Vec<String>,
     pub comment: String,
 }

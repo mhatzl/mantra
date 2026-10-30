@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                                select * from TestCaseLineCoverage tc\n                                where product_id = $1\n                                    and test_run_name = $2\n                                    and test_case_name = $4\n                                    and cov_filepath = $5 and cov_line = $6\n                                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "latest_collection",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "latest_collection"
+          }
+        }
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_run_name"
+          }
+        }
+      },
+      {
+        "name": "test_case_name",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "test_case_name"
+          }
+        }
+      },
+      {
+        "name": "cov_filepath",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_filepath"
+          }
+        }
+      },
+      {
+        "name": "cov_file_hash",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_file_hash"
+          }
+        }
+      },
+      {
+        "name": "cov_line",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "cov_line"
+          }
+        }
+      },
+      {
+        "name": "covered",
+        "ordinal": 7,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "covered"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "bbae3af0a3c356e1c538986352e8e47aecc394256c4a6abda2b1de22a6ae6030"
+}

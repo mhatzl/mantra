@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select name\n            from Reviews\n            where latest_collection = $1 and product_id = $2\n            and name = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Reviews",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6b97a89e488fec4c61f01dbc2a19d6fd4dcceba575838affd179c56197315ee2"
+}

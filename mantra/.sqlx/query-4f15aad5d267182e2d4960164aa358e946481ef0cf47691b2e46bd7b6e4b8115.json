@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TestRunRevisionAuthors (\n                            latest_collection,\n                            product_id,\n                            test_run_name,\n                            revision,\n                            author\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5\n                        )\n                        on conflict (\n                            product_id,\n                            test_run_name,\n                            revision,\n                            author\n                        ) do update\n                        set\n                            latest_collection = excluded.latest_collection\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "4f15aad5d267182e2d4960164aa358e946481ef0cf47691b2e46bd7b6e4b8115"
+}

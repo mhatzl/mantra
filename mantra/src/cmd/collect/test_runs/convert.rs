@@ -238,7 +238,7 @@ fn cobertura_to_well_known_coverage(
                             .lines
                             .iter()
                             .map(|l| CoveredLine {
-                                nr: l.number.cast_signed(),
+                                number: l.number.cast_signed(),
                                 hits: l.hits.map(|h| h.cast_signed()),
                             })
                             .collect(),

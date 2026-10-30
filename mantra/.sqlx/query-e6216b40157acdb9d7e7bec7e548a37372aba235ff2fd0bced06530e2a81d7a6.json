@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into DirectTracedElements (\n                            latest_collection,\n                            file_hash,\n                            traced_line,\n                            element_definition_line\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4\n                        )\n                        on conflict (file_hash, traced_line, element_definition_line)\n                        do update set\n                            latest_collection = excluded.latest_collection\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "e6216b40157acdb9d7e7bec7e548a37372aba235ff2fd0bced06530e2a81d7a6"
+}

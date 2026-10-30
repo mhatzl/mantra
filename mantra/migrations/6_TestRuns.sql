@@ -182,10 +182,12 @@ create table TestRunLineCoverage (
     cov_file_hash text,
     -- Line that was covered.
     cov_line integer not null,
-    -- Number of how often the line was covered/hit during test run execution.
-    -- If null, the line is ignored from line coverage analysis.
-    -- Unless it is not null for test cases or child test runs of this test run.
-    hits integer,
+    -- Indicates if a line is covered `true`, uncovered `false`,
+    -- or unknown `null` indicating that the line has no executable code at this line.
+    --
+    -- Those three states are enough for mantra, because the number of hits is not relevant
+    -- to verify if a line got covered or not.
+    covered bool,
     primary key (
         product_id,
         test_run_name,
@@ -384,9 +386,12 @@ create table TestCaseLineCoverage (
     cov_file_hash text,
     -- Line that was covered.
     cov_line integer not null,
-    -- Number of how often the line was covered/hit during the test case execution.
-    -- If null, the line is ignored from line coverage analysis for this test case.
-    hits integer,
+    -- Indicates if a line is covered `true`, uncovered `false`,
+    -- or unknown `null` indicating that the line has no executable code at this line.
+    --
+    -- Those three states are enough for mantra, because the number of hits is not relevant
+    -- to verify if a line got covered or not.
+    covered bool,
     primary key (
         product_id,
         test_run_name,

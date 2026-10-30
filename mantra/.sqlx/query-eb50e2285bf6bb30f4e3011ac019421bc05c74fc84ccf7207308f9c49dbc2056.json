@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        select * from TestCases tc\n                        where product_id = $1\n                            and test_run_name = $2\n                            and name = $4\n                        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "latest_collection",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "latest_collection"
+          }
+        }
+      },
+      {
+        "name": "product_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "test_run_name"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 4,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "name": "description_hash",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "description_hash"
+          }
+        }
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "utc_date"
+          }
+        }
+      },
+      {
+        "name": "duration_sec",
+        "ordinal": 7,
+        "type_info": "Float",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "duration_sec"
+          }
+        }
+      },
+      {
+        "name": "media_type",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "media_type"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "eb50e2285bf6bb30f4e3011ac019421bc05c74fc84ccf7207308f9c49dbc2056"
+}

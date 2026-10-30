@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TestRuns (\n                latest_collection,\n                product_id,\n                name,\n                utc_date,\n                description_hash,\n                duration_sec,\n                nr_of_test_cases,\n                origin_hash,\n                data_hash,\n                schema_hash,\n                media_type\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8,\n                $9,\n                $10,\n                $11\n            )\n            on conflict (\n                product_id,\n                name\n            ) do update\n            set\n                latest_collection = excluded.latest_collection,\n                utc_date = excluded.utc_date,\n                description_hash = excluded.description_hash,\n                duration_sec = excluded.duration_sec,\n                nr_of_test_cases = excluded.nr_of_test_cases,\n                origin_hash = excluded.origin_hash,\n                data_hash = excluded.data_hash,\n                schema_hash = excluded.schema_hash,\n                media_type = excluded.media_type\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "664eb9639e7ca7b46734113c93b1658f55a8ccaadefce22341d9e0934cf04f93"
+}

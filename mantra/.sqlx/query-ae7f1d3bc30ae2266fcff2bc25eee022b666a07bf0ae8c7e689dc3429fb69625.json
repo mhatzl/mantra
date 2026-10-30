@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select pa.product_id, pa.filepath\n            from ProductAnnotationSources pa, ProductRelatedHashedFiles hf\n            where pa.latest_collection = $1\n            and hf.latest_collection = $1\n            and pa.product_id = hf.product_id\n            and pa.filepath = hf.filepath\n            and hf.file_hash = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ProductAnnotationSources",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "filepath",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ProductAnnotationSources",
+            "name": "filepath"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "ae7f1d3bc30ae2266fcff2bc25eee022b666a07bf0ae8c7e689dc3429fb69625"
+}

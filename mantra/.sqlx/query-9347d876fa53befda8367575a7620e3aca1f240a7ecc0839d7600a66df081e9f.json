@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Elements (\n                latest_collection,\n                name,\n                file_hash,\n                definition_line,\n                start_line,\n                end_line,\n                kind,\n                content_hash\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7,\n                $8\n            )\n            on conflict (file_hash, definition_line)\n            do update set\n                latest_collection = excluded.latest_collection,\n                start_line = excluded.start_line,\n                end_line = excluded.end_line,\n                kind = excluded.kind,\n                content_hash = excluded.content_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "9347d876fa53befda8367575a7620e3aca1f240a7ecc0839d7600a66df081e9f"
+}

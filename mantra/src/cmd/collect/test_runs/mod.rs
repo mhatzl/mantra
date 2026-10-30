@@ -241,6 +241,7 @@ async fn collect_well_known<'db, 'c>(
         test_run_properties: None,
         test_case_properties: None,
         origin: None,
+        parent: None,
     };
 
     let schema_hash = collection

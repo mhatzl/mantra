@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TracedCodeBlocks (\n                            latest_collection,\n                            file_hash,\n                            traced_line,\n                            start_line,\n                            end_line,\n                            kind,\n                            content_hash\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5,\n                            $6,\n                            $7\n                        )\n                        on conflict (file_hash, traced_line)\n                        do update set\n                            latest_collection = excluded.latest_collection,\n                            start_line = excluded.start_line,\n                            end_line = excluded.end_line,\n                            kind = excluded.kind,\n                            content_hash = excluded.content_hash\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "41d84979f7b77dce5b33d404ef9fc1cb5d73c80d417ee34cad02bbfbab976709"
+}

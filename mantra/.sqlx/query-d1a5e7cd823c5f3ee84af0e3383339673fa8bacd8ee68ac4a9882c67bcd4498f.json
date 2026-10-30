@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select data_hash\n            from TestRuns\n            where latest_collection = $1 and product_id = $2\n            and name = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "data_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRuns",
+            "name": "data_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d1a5e7cd823c5f3ee84af0e3383339673fa8bacd8ee68ac4a9882c67bcd4498f"
+}

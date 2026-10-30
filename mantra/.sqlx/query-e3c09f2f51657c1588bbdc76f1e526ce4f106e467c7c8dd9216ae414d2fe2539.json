@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select line\n            from Traces\n            where latest_collection = $1\n            and file_hash = $2 and line = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "line",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "Traces",
+            "name": "line"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e3c09f2f51657c1588bbdc76f1e526ce4f106e467c7c8dd9216ae414d2fe2539"
+}

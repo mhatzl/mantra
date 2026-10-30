@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        insert into TestCaseLogs (\n                            latest_collection,\n                            product_id,\n                            test_run_name,\n                            test_case_name,\n                            log_src,\n                            log_hash\n                        )\n                        values (\n                            $1,\n                            $2,\n                            $3,\n                            $4,\n                            $5,\n                            $6\n                        )\n                        on conflict (\n                            product_id,\n                            test_run_name,\n                            test_case_name,\n                            log_src\n                        ) do update\n                        set\n                            latest_collection = excluded.latest_collection,\n                            log_hash = excluded.log_hash\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "c9f8b72d837b7dd7c810891a724dadeb040406e1936db286e655a48ef009a977"
+}

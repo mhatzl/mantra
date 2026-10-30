@@ -13,6 +13,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         test_run_schema: &TestRunSchema,
         schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
+        let collect_nr = self.collect_nr();
+        let product_id = self.product_id().clone();
+
         let schema_collected = self.schema_collected(schema_hash).await?;
 
         if !schema_collected {
@@ -90,9 +93,46 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
             // Note: Passing the media type of the top-level test run,
             // so nested ones can use it as fallback
-            self.update_per_test_run(test_run, schema_hash, test_run.media_type.as_ref())
+            self.update_per_test_run(
+                test_run,
+                schema_hash,
+                test_run.media_type.as_ref(), // top-level test run gets it's own media type
+            )
+            .await
+            .with_context(|| format!("Failed to update test run '{}'", name))?;
+
+            if let Some(parent) = &test_run_schema.parent {
+                sqlx::query!(
+                    "
+                    insert into TestRunHierarchies (
+                        latest_collection,
+                        product_id,
+                        parent_name,
+                        child_name
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (
+                        product_id,
+                        parent_name,
+                        child_name
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection
+                    ",
+                    collect_nr,
+                    product_id,
+                    parent,
+                    test_run.name
+                )
+                .execute(self.connection_mut())
                 .await
-                .with_context(|| format!("Failed to update test run '{}'", name))?;
+                .context("Inserting test run parent into TestRunHierarchies")?;
+            }
         }
 
         Ok(())
@@ -113,13 +153,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             "
             select data_hash
             from TestRuns
-            where collect_nr = $1 and product_id = $2
-            and name = $3 and utc_date = $4
+            where latest_collection = $1 and product_id = $2
+            and name = $3
             ",
             collect_nr,
             product_id,
             test_run.name,
-            test_run.utc_date,
         )
         .fetch_optional(self.connection_mut())
         .await
@@ -161,7 +200,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into TestRuns (
-                collect_nr,
+                latest_collection,
                 product_id,
                 name,
                 utc_date,
@@ -186,6 +225,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $10,
                 $11
             )
+            on conflict (
+                product_id,
+                name
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                utc_date = excluded.utc_date,
+                description_hash = excluded.description_hash,
+                duration_sec = excluded.duration_sec,
+                nr_of_test_cases = excluded.nr_of_test_cases,
+                origin_hash = excluded.origin_hash,
+                data_hash = excluded.data_hash,
+                schema_hash = excluded.schema_hash,
+                media_type = excluded.media_type
             ",
             collect_nr,
             product_id,
@@ -211,10 +264,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TestRunProperties (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         property_key,
                         value_hash
                     )
@@ -223,14 +275,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $2,
                         $3,
                         $4,
-                        $5,
-                        $6
+                        $5
                     )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        property_key
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
                     prop.0,
                     value_hash
                 )
@@ -245,10 +303,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TestRunRevisions (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         revision,
                         comment
                     )
@@ -257,15 +314,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $2,
                         $3,
                         $4,
-                        $5,
-                        $6
+                        $5
                     )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        revision
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        revision = excluded.revision
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
-                    revision.nr,
+                    revision.number,
                     revision.comment
                 )
                 .execute(self.connection_mut())
@@ -276,10 +339,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                         "
                         insert into TestRunRevisionAuthors (
-                            collect_nr,
+                            latest_collection,
                             product_id,
                             test_run_name,
-                            test_run_date,
                             revision,
                             author
                         )
@@ -288,15 +350,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             $2,
                             $3,
                             $4,
-                            $5,
-                            $6
+                            $5
                         )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            revision,
+                            author
+                        ) do update
+                        set
+                            latest_collection = excluded.latest_collection
                         ",
                         collect_nr,
                         product_id,
                         test_run.name,
-                        test_run.utc_date,
-                        revision.nr,
+                        revision.number,
                         author
                     )
                     .execute(self.connection_mut())
@@ -310,28 +378,29 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             sqlx::query!(
                 "
                 insert into TestRunHierarchies (
-                    collect_nr,
+                    latest_collection,
                     product_id,
                     parent_name,
-                    parent_date,
-                    child_name,
-                    child_date
+                    child_name
                 )
                 values (
                     $1,
                     $2,
                     $3,
-                    $4,
-                    $5,
-                    $6
+                    $4
                 )
+                on conflict (
+                    product_id,
+                    parent_name,
+                    child_name
+                ) do update
+                set
+                    latest_collection = excluded.latest_collection
                 ",
                 collect_nr,
                 product_id,
                 test_run.name,
-                test_run.utc_date,
-                child_test_run.name,
-                child_test_run.utc_date
+                child_test_run.name
             )
             .execute(self.connection_mut())
             .await
@@ -359,10 +428,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TestRunLogs (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         log_src,
                         log_hash
                     )
@@ -371,14 +439,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $2,
                         $3,
                         $4,
-                        $5,
-                        $6
+                        $5
                     )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        log_src
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        log_hash = excluded.log_hash
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
                     log_src,
                     log_hash
                 )
@@ -403,14 +477,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TestRunLineCoverage (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         cov_filepath,
                         cov_file_hash,
                         cov_line,
-                        hits
+                        covered
                     )
                     values (
                         $1,
@@ -419,17 +492,25 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $4,
                         $5,
                         $6,
-                        $7,
-                        $8
+                        $7
                     )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        cov_filepath,
+                        cov_line
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        cov_file_hash = excluded = cov_file_hash,
+                        covered = excluded.covered
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
                     filepath,
                     covered_file.file_hash,
-                    line.nr,
+                    line.number,
                     line.hits
                 )
                 .execute(self.connection_mut())
@@ -437,7 +518,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 .with_context(|| {
                     format!(
                         "Failed to update test run line coverage for line '{}' in file '{}'",
-                        line.nr, filepath
+                        line.number, filepath
                     )
                 })?;
             }
@@ -458,10 +539,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             sqlx::query!(
                 "
                 insert into TestCases (
-                    collect_nr,
+                    latest_collection,
                     product_id,
                     test_run_name,
-                    test_run_date,
                     name,
                     state,
                     description_hash,
@@ -476,14 +556,23 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     $5,
                     $6,
                     $7,
-                    $8,
-                    $9
+                    $8
                 )
+                on conflict (
+                    product_id,
+                    test_run_name,
+                    name
+                ) do update
+                set
+                    latest_collection = excluded.latest_collection,
+                    state = excluded.state,
+                    description_hash = excluded.description_hash,
+                    utc_date = excluded.utc_date,
+                    duration_sec = excluded.duration_sec
                 ",
                 collect_nr,
                 product_id,
                 test_run.name,
-                test_run.utc_date,
                 test_case.name,
                 state,
                 description_hash,
@@ -503,35 +592,31 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TestCaseVerifiedRequirements (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         test_case_name,
-                        req_collect_nr,
                         req_id
                     )
-                    select
+                    values (
                         $1,
                         $2,
                         $3,
                         $4,
-                        $5,
-                        r.collect_nr,
-                        $6
-                    from Requirements r
-                    where r.collect_nr = (
-                        select max(cr.collect_nr)
-                        from Requirements cr
-                        where cr.product_id = r.product_id
+                        $5
                     )
-                    and r.product_id = $2
-                    and r.id = $6
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        test_case_name,
+                        req_id
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
                     test_case.name,
                     verified_req
                 )
@@ -562,10 +647,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                         "
                         insert into TestCaseProperties (
-                            collect_nr,
+                            latest_collection,
                             product_id,
                             test_run_name,
-                            test_run_date,
                             test_case_name,
                             property_key,
                             value_hash
@@ -576,14 +660,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             $3,
                             $4,
                             $5,
-                            $6,
-                            $7
+                            $6
                         )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            test_case_name,
+                            property_key
+                        ) do update
+                        set
+                            latest_collection = excluded.latest_collection,
+                            value_hash = excluded.value_hash
                         ",
                         collect_nr,
                         product_id,
                         test_run.name,
-                        test_run.utc_date,
                         test_case.name,
                         property.0,
                         value_hash
@@ -616,10 +707,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                         "
                         insert into TestCaseLogs (
-                            collect_nr,
+                            latest_collection,
                             product_id,
                             test_run_name,
-                            test_run_date,
                             test_case_name,
                             log_src,
                             log_hash
@@ -630,14 +720,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             $3,
                             $4,
                             $5,
-                            $6,
-                            $7
+                            $6
                         )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            test_case_name,
+                            log_src
+                        ) do update
+                        set
+                            latest_collection = excluded.latest_collection,
+                            log_hash = excluded.log_hash
                         ",
                         collect_nr,
                         product_id,
                         test_run.name,
-                        test_run.utc_date,
                         test_case.name,
                         log_src,
                         log_hash
@@ -665,10 +762,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TestCaseLocations (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         test_case_name,
                         filepath,
                         file_hash,
@@ -681,14 +777,22 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $4,
                         $5,
                         $6,
-                        $7,
-                        $8
+                        $7
                     )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        test_case_name
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        filepath = excluded.filepath,
+                        file_hash = excluded.file_hash,
+                        line = excluded.line
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
                     test_case.name,
                     filepath,
                     location.file_hash,
@@ -721,10 +825,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                         "
                         insert into TestCaseStateProperties (
-                            collect_nr,
+                            latest_collection,
                             product_id,
                             test_run_name,
-                            test_run_date,
                             test_case_name,
                             property_key,
                             value_hash
@@ -735,14 +838,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             $3,
                             $4,
                             $5,
-                            $6,
-                            $7
+                            $6
                         )
+                        on conflict (
+                            product_id,
+                            test_run_name,
+                            test_case_name,
+                            property_key
+                        ) do update
+                        set
+                            latest_collection = excluded.latest_collection,
+                            value_hash = excluded.value_hash
                         ",
                         collect_nr,
                         product_id,
                         test_run.name,
-                        test_run.utc_date,
                         test_case.name,
                         property.0,
                         value_hash
@@ -773,15 +883,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                     "
                     insert into TestCaseLineCoverage (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         test_run_name,
-                        test_run_date,
                         test_case_name,
                         cov_filepath,
                         cov_file_hash,
                         cov_line,
-                        hits
+                        covered
                     )
                     values (
                         $1,
@@ -791,14 +900,23 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $5,
                         $6,
                         $7,
-                        $8,
-                        $9
+                        $8
                     )
+                    on conflict (
+                        product_id,
+                        test_run_name,
+                        test_case_name,
+                        cov_filepath,
+                        cov_line
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        file_hash = excluded.file_hash,
+                        covered = excluded.covered
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
-                    test_run.utc_date,
                     test_case.name,
                     filepath,
                     covered_file.file_hash,
@@ -810,7 +928,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 .with_context(|| {
                     format!(
                         "Failed to update coverage for line '{}' in file '{}' for test case '{}'",
-                        line.nr, filepath, test_case.name
+                        line.number, filepath, test_case.name
                     )
                 })?;
                 }

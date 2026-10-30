@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into TestCases (\n                    latest_collection,\n                    product_id,\n                    test_run_name,\n                    name,\n                    state,\n                    description_hash,\n                    utc_date,\n                    duration_sec\n                )\n                values (\n                    $1,\n                    $2,\n                    $3,\n                    $4,\n                    $5,\n                    $6,\n                    $7,\n                    $8\n                )\n                on conflict (\n                    product_id,\n                    test_run_name,\n                    name\n                ) do update\n                set\n                    latest_collection = excluded.latest_collection,\n                    state = excluded.state,\n                    description_hash = excluded.description_hash,\n                    utc_date = excluded.utc_date,\n                    duration_sec = excluded.duration_sec\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "2995fc0c3cf17b71ad95a58c650c024931b0f3401b37f97283dafafd24d3eeec"
+}

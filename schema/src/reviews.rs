@@ -168,10 +168,6 @@ impl std::fmt::Display for OneOrMultRequirementIds {
 pub struct OverrideTestRun {
     /// Name of the test run.
     pub name: String,
-    /// The UTC date the test run execution started.
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
     /// List of test case state overrides.
     /// [req("review.test_case_state")]
     #[serde(alias = "test", default)]

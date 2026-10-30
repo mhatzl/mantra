@@ -29,6 +29,9 @@ pub struct TestRunSchema {
     /// Optional product ID to specify the product the test runs are part of.
     /// If this field is not set, the ID of the product whose configuration included this schema is used.
     pub product_id: Option<ProductId>,
+    /// Optional name of the parent test run that test runs in this schema should be grouped under.
+    /// Allows to split larger test results into multiple files, while preserving test run grouping.
+    pub parent: Option<String>,
     /// List of test runs containing test and coverage information.
     pub test_runs: Vec<TestRun>,
     /// Optional properties related to all test runs in this entry.
@@ -88,10 +91,6 @@ pub struct TestRun {
     /// Optional origin of the test run.
     /// [req("testcov.test_run.origin")]
     pub origin: Option<Origin>,
-    /// Optional name of the parent test run this run should be grouped under.
-    /// Allows to split larger test results into multiple files, while preserving test run grouping.
-    #[serde(default)]
-    pub parent: Option<String>,
     /// Nr of test cases that are part of the test run.
     ///
     /// **Note:** Must match with the number of entries in the `test_cases` field,
@@ -270,7 +269,7 @@ pub struct CoveredFile {
 #[serde(deny_unknown_fields)]
 pub struct CoveredLine {
     /// The line number.
-    pub nr: Line,
+    pub number: Line,
     /// The number of times this line has been reached during execution of a test run or test case.
     /// If None, the line is marked to be ignored from line coverage analysis.
     ///
@@ -287,7 +286,7 @@ impl std::cmp::PartialOrd for CoveredLine {
 
 impl std::cmp::Ord for CoveredLine {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.nr.cmp(&other.nr) {
+        match self.number.cmp(&other.number) {
             std::cmp::Ordering::Equal => self.hits.cmp(&other.hits),
             cmp => cmp,
         }

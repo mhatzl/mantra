@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ProductAnnotationSources (\n                        latest_collection,\n                        product_id,\n                        schema_hash,\n                        filepath\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    on conflict (\n                        product_id,\n                        schema_hash,\n                        filepath\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "5670648d17a4b071d381121bc5687693deb5ce98edcc78372673f48d2a9214ec"
+}

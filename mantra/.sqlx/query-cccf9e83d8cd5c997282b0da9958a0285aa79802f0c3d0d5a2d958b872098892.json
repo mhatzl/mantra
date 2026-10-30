@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TestRunCollectConfigs (\n                latest_collection,\n                product_id,\n                cfg_entry,\n                path,\n                source_hash,\n                origin_hash,\n                pattern\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4,\n                $5,\n                $6,\n                $7\n            )\n            on conflict (\n                product_id,\n                cfg_entry\n            ) do update\n            set\n                latest_collection = excluded.latest_collection,\n                path = excluded.path,\n                source_hash = excluded.source_hash,\n                origin_hash = excluded.origin_hash,\n                pattern = excluded.pattern\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "cccf9e83d8cd5c997282b0da9958a0285aa79802f0c3d0d5a2d958b872098892"
+}

@@ -139,11 +139,11 @@ impl<'db> Collection<'db> {
             }
         }
 
-        // Note: Since products may still exist even if no data was collected,
-        // we base existence on the product configuration entries.
-        self.update_product_changes(product_map.iter(), &args.mode)
-            .await
-            .context("Updating product changes")?;
+        if &args.mode == &CollectMode::RemoveMissing {
+            self.remove_outdated_products()
+                .await
+                .context("Remove outdated products")?;
+        }
 
         Ok(())
     }

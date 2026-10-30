@@ -199,7 +199,7 @@ create table ElementIdents (
     -- Source for the ident name
     -- e.g. directly in schema or language server index format
     source_hash text not null references GeneralJson (hash) on delete restrict,
-    primary key (product_id, filepath, file_hash, definition_line, source_hash),
+    primary key (product_id, filepath, definition_line, source_hash),
     foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade,
     foreign key (file_hash, definition_line) references Elements (file_hash, definition_line) on delete cascade
 );

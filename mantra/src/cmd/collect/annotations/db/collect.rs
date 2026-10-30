@@ -55,7 +55,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             "
             select filepath
             from ProductAnnotationSources
-            where collect_nr = $1 and product_id = $2
+            where latest_collection = $1 and product_id = $2
             and schema_hash = $3
             ",
             collect_nr,
@@ -99,25 +99,29 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into ProductAnnotationSources (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         schema_hash,
-                        filepath,
-                        file_hash
+                        filepath
                     )
                     values (
                         $1,
                         $2,
                         $3,
-                        $4,
-                        $5
+                        $4
                     )
+                    on conflict (
+                        product_id,
+                        schema_hash,
+                        filepath
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection
                     ",
                     collect_nr,
                     product_id,
                     schema_hash,
-                    filepath,
-                    file_annotations.file_hash
+                    filepath
                 )
                 .execute(self.connection_mut())
                 .await
@@ -142,9 +146,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         let file_hash_collected = sqlx::query!(
             "
-            select product_id, filepath
-            from ProductAnnotationSources
-            where collect_nr = $1 and file_hash = $2
+            select pa.product_id, pa.filepath
+            from ProductAnnotationSources pa, ProductRelatedHashedFiles hf
+            where pa.latest_collection = $1
+            and hf.latest_collection = $1
+            and pa.product_id = hf.product_id
+            and pa.filepath = hf.filepath
+            and hf.file_hash = $2
             ",
             collect_nr,
             file_hash
@@ -171,7 +179,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into ElementIdents (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         filepath,
                         file_hash,
@@ -188,11 +196,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $6,
                         $7
                     )
+                    on conflict (
+                        product_id,
+                        filepath,
+                        definition_line,
+                        source_hash
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        file_hash = excluded.file_hash,
+                        ident = excluded.ident
                     ",
                     collect_nr,
                     product_id,
                     filepath,
-                    file_hash,
+                    file_annotations.file_hash,
                     element.definition_line,
                     ident,
                     element_source_hash
@@ -242,7 +260,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into Elements (
-                last_collect_nr,
+                latest_collection,
                 name,
                 file_hash,
                 definition_line,
@@ -263,7 +281,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             )
             on conflict (file_hash, definition_line)
             do update set
-                last_collect_nr = excluded.last_collect_nr,
+                latest_collection = excluded.latest_collection,
                 start_line = excluded.start_line,
                 end_line = excluded.end_line,
                 kind = excluded.kind,
@@ -297,7 +315,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             "
             select line
             from Traces
-            where last_collect_nr = $1
+            where latest_collection = $1
             and file_hash = $2 and line = $3
             ",
             collect_nr,
@@ -325,7 +343,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into Traces (
-                last_collect_nr,
+                latest_collection,
                 file_hash,
                 line,
                 kind
@@ -338,7 +356,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             )
             on conflict (file_hash, line)
             do update set
-                last_collect_nr = excluded.last_collect_nr,
+                latest_collection = excluded.latest_collection,
                 kind = excluded.kind
             ",
             collect_nr,
@@ -362,7 +380,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into TraceProperties (
-                        last_collect_nr,
+                        latest_collection,
                         file_hash,
                         line,
                         property_key,
@@ -377,7 +395,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     )
                     on conflict (file_hash, line, property_key)
                     do update set
-                        last_collect_nr = excluded.last_collect_nr,
+                        latest_collection = excluded.latest_collection,
                         value_hash = excluded.value_hash
                     ",
                     collect_nr,
@@ -397,7 +415,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into DetectedProductReqTraces (
-                        last_collect_nr,
+                        latest_collection,
                         product_id,
                         req_id,
                         file_hash,
@@ -412,7 +430,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     )
                     on conflict (product_id, req_id, file_hash, line)
                     do update set
-                        last_collect_nr = excluded.last_collect_nr
+                        latest_collection = excluded.latest_collection
                     ",
                     collect_nr,
                     pid,
@@ -429,7 +447,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into DetectedReqTraces (
-                        last_collect_nr,
+                        latest_collection,
                         req_id,
                         file_hash,
                         line
@@ -442,7 +460,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     )
                     on conflict (req_id, file_hash, line)
                     do update set
-                        last_collect_nr = excluded.last_collect_nr
+                        latest_collection = excluded.latest_collection
                     ",
                     collect_nr,
                     traced_req.id,
@@ -463,7 +481,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                         "
                         insert into TracedCodeBlocks (
-                            last_collect_nr,
+                            latest_collection,
                             file_hash,
                             traced_line,
                             start_line,
@@ -482,7 +500,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         )
                         on conflict (file_hash, traced_line)
                         do update set
-                            last_collect_nr = excluded.last_collect_nr,
+                            latest_collection = excluded.latest_collection,
                             start_line = excluded.start_line,
                             end_line = excluded.end_line,
                             kind = excluded.kind,
@@ -509,7 +527,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     sqlx::query!(
                         "
                         insert into DirectTracedElements (
-                            last_collect_nr,
+                            latest_collection,
                             file_hash,
                             traced_line,
                             element_definition_line
@@ -522,7 +540,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         )
                         on conflict (file_hash, traced_line, element_definition_line)
                         do update set
-                            last_collect_nr = excluded.last_collect_nr
+                            latest_collection = excluded.latest_collection
                         ",
                         collect_nr,
                         file_hash,
@@ -560,7 +578,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into CoverageBlockExcludes (
-                        last_collect_nr,
+                        latest_collection,
                         file_hash,
                         start_line,
                         end_line,
@@ -575,7 +593,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     )
                     on conflict (file_hash, start_line)
                     do update set
-                        last_collect_nr = excluded.last_collect_nr,
+                        latest_collection = excluded.latest_collection,
                         end_line = excluded.end_line,
                         comment_hash = excluded.comment_hash
                     ",
@@ -593,7 +611,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into CoverageLineExcludes (
-                        last_collect_nr,
+                        latest_collection,
                         file_hash,
                         line,
                         comment_hash
@@ -606,7 +624,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     )
                     on conflict (file_hash, line)
                     do update set
-                        last_collect_nr = excluded.last_collect_nr,
+                        latest_collection = excluded.latest_collection,
                         comment_hash = excluded.comment_hash
                     ",
                     collect_nr,

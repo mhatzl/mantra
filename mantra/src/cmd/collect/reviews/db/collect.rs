@@ -74,15 +74,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(_record) = sqlx::query!(
             "
-            select name, utc_date
+            select name
             from Reviews
-            where collect_nr = $1 and product_id = $2
-            and name = $3 and utc_date = $4
+            where latest_collection = $1 and product_id = $2
+            and name = $3
             ",
             collect_nr,
             product_id,
-            review.name,
-            review.utc_date
+            review.name
         )
         .fetch_optional(self.connection_mut())
         .await
@@ -113,7 +112,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into Reviews (
-                collect_nr,
+                latest_collection,
                 product_id,
                 name,
                 utc_date,
@@ -134,6 +133,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $8,
                 $9
             )
+            on conflict (
+                product_id,
+                name
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                utc_date = excluded.utc_date,
+                origin_hash = excluded.origin_hash,
+                description_hash = excluded.description_hash,
+                data_hash = excluded.data_hash,
+                schema_hash = excluded.schema_hash,
+                media_type = excluded.media_type
             ",
             collect_nr,
             product_id,
@@ -153,24 +164,28 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             sqlx::query!(
                 "
                 insert into ReviewAuthors (
-                    collect_nr,
+                    latest_collection,
                     product_id,
                     review_name,
-                    review_date,
                     author
                 )
                 values (
                     $1,
                     $2,
                     $3,
-                    $4,
-                    $5
+                    $4
                 )
+                on conflict (
+                    product_id,
+                    review_name,
+                    author
+                ) do update
+                set
+                    latest_collection = excluded.latest_collection
                 ",
                 collect_nr,
                 product_id,
                 review.name,
-                review.utc_date,
                 author
             )
             .execute(self.connection_mut())
@@ -189,10 +204,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into ReviewProperties (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         review_name,
-                        review_date,
                         property_key,
                         value_hash
                     )
@@ -201,14 +215,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $2,
                         $3,
                         $4,
-                        $5,
-                        $6
+                        $5
                     )
+                    on conflict (
+                        product_id,
+                        review_name,
+                        property_key
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        value_hash = excluded.value_hash
                     ",
                     collect_nr,
                     product_id,
                     review.name,
-                    review.utc_date,
                     key,
                     value_hash
                 )
@@ -223,10 +243,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 sqlx::query!(
                     "
                     insert into ReviewRevisions (
-                        collect_nr,
+                        latest_collection,
                         product_id,
                         review_name,
-                        review_date,
                         revision,
                         comment
                     )
@@ -235,29 +254,34 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         $2,
                         $3,
                         $4,
-                        $5,
-                        $6
+                        $5
                     )
+                    on conflict (
+                        product_id,
+                        review_name,
+                        revision
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        comment = excluded.comment
                     ",
                     collect_nr,
                     product_id,
                     review.name,
-                    review.utc_date,
-                    revision.nr,
+                    revision.number,
                     revision.comment
                 )
                 .execute(self.connection_mut())
                 .await
-                .with_context(|| format!("Failed to insert revision '{}'", revision.nr))?;
+                .with_context(|| format!("Failed to insert revision '{}'", revision.number))?;
 
                 for author in &revision.authors {
                     sqlx::query!(
                         "
                         insert into ReviewRevisionAuthors (
-                            collect_nr,
+                            latest_collection,
                             product_id,
                             review_name,
-                            review_date,
                             revision,
                             author
                         )
@@ -266,15 +290,21 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             $2,
                             $3,
                             $4,
-                            $5,
-                            $6
+                            $5
                         )
+                        on conflict (
+                            product_id,
+                            review_name,
+                            revision,
+                            author
+                        ) do update
+                        set
+                            latest_collection = excluded.latest_collection
                         ",
                         collect_nr,
                         product_id,
                         review.name,
-                        review.utc_date,
-                        revision.nr,
+                        revision.number,
                         author
                     )
                     .execute(self.connection_mut())
@@ -282,7 +312,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     .with_context(|| {
                         format!(
                             "Failed to insert revision author '{}' for revision '{}'",
-                            author, revision.nr
+                            author, revision.number
                         )
                     })?;
                 }
@@ -344,20 +374,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     let test_case_exists = sqlx::query!(
                         "
                         select * from TestCases tc
-                        where
-                            collect_nr = (
-                                select max(ctc.collect_nr)
-                                from TestCases ctc
-                                where ctc.product_id = tc.product_id
-                            )
-                            and product_id = $1
+                        where product_id = $1
                             and test_run_name = $2
-                            and test_run_date = $3
                             and name = $4
                         ",
                         product_id,
                         test_run_override.name,
-                        test_run_override.utc_date,
                         test_case_override.name
                     )
                     .fetch_optional(self.connection_mut())
@@ -369,46 +391,39 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         sqlx::query!(
                             "
                             insert into TestCaseOverrides (
-                                collect_nr,
+                                latest_collection,
                                 product_id,
-                                test_collect_nr,
                                 test_run_name,
-                                test_run_date,
                                 test_case_name,
                                 review_name,
-                                review_date,
                                 state,
                                 comment_hash
                             )
-                            select
+                            values(
                                 $1,
                                 $2,
-                                tc.collect_nr,
                                 $3,
                                 $4,
                                 $5,
                                 $6,
-                                $7,
-                                $8,
-                                $9
-                            from TestCases tc
-                            where collect_nr = (
-                                select max(ctc.collect_nr)
-                                from TestCases ctc
-                                where ctc.product_id = tc.product_id
+                                $7
                             )
-                            and product_id = $2
-                            and test_run_name = $3
-                            and test_run_date = $4
-                            and name = $5
+                            on conflict (
+                                product_id,
+                                test_run_name,
+                                test_case_name,
+                                review_name
+                            ) do update
+                            set
+                                latest_collection = excluded.latest_collection,
+                                state = excluded.state,
+                                comment_hash = excluded.comment_hash
                             ",
                             collect_nr,
                             product_id,
                             test_run_override.name,
-                            test_run_override.utc_date,
                             test_case_override.name,
                             review.name,
-                            review.utc_date,
                             state,
                             comment_hash
                         )
@@ -430,7 +445,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
                         let entry = DbIgnoredEntry::from_test_case_state(
                             test_run_override.name.clone(),
-                            test_run_override.utc_date,
                             test_case_override.name.clone(),
                             override_state.new,
                             comment_hash,
@@ -469,20 +483,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             let covered_line_exists = sqlx::query!(
                                 "
                                 select * from TestCaseLineCoverage tc
-                                where
-                                    collect_nr = (
-                                        select max(ctc.collect_nr)
-                                        from TestCaseLineCoverage ctc
-                                        where ctc.product_id = tc.product_id
-                                    )
-                                    and product_id = $1
+                                where product_id = $1
                                     and test_run_name = $2
-                                    and test_run_date = $3 and test_case_name = $4
+                                    and test_case_name = $4
                                     and cov_filepath = $5 and cov_line = $6
                                 ",
                                 product_id,
                                 test_run_override.name,
-                                test_run_override.utc_date,
                                 test_case_override.name,
                                 filepath,
                                 line_nr
@@ -496,23 +503,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 sqlx::query!(
                                 "
                                 insert into TestCaseLineCoverageOverrides (
-                                    collect_nr,
+                                    latest_collection,
                                     product_id,
                                     test_collect_nr,
                                     test_run_name,
-                                    test_run_date,
                                     test_case_name,
                                     review_name,
-                                    review_date,
                                     cov_filepath,
                                     cov_line,
-                                    hits,
+                                    covered,
                                     comment_hash
                                 )
-                                select
+                                values(
                                     $1,
                                     $2,
-                                    tc.collect_nr,
                                     $3,
                                     $4,
                                     $5,
@@ -522,16 +526,10 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                     $9,
                                     $10,
                                     $11
-                                from TestCases tc
-                                where tc.collect_nr = (
-                                    select max(ctc.collect_nr)
-                                    from TestCases ctc
-                                    where ctc.product_id = tc.product_id
                                 )
-                                and tc.product_id = $2
-                                and tc.test_run_name = $3
-                                and tc.test_run_date = $4
-                                and tc.name = $5
+                                on conflict (
+
+                                )
                                 ",
                                 collect_nr,
                                 product_id,

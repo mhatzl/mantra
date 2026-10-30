@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Traces (\n                latest_collection,\n                file_hash,\n                line,\n                kind\n            )\n            values (\n                $1,\n                $2,\n                $3,\n                $4\n            )\n            on conflict (file_hash, line)\n            do update set\n                latest_collection = excluded.latest_collection,\n                kind = excluded.kind\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "331a1dc89cd94b56e6bcfd118a070b978ebc5b5bbdba00ab9f3071b6b8182588"
+}
