@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into SatisfiedRequirements (\n                product_id,\n                req_id\n            )\n            select\n                rs.product_id,\n                rs.req_id\n            from RequirementVerificationStates rs\n            where rs.state == $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "999172b1bb765c6c473ccc567a855ff16105ac6757c6efd622b513f3ef8d7da4"
+}

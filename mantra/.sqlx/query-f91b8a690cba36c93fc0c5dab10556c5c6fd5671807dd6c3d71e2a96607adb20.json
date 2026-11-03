@@ -1,16 +1,16 @@
 {
   "db_name": "SQLite",
-  "query": "\n            select name\n            from Reviews\n            where latest_collection = $1 and product_id = $2\n            and name = $3\n            ",
+  "query": "\n            select data_hash\n            from Reviews\n            where latest_collection = $1 and product_id = $2\n            and name = $3\n            ",
   "describe": {
     "columns": [
       {
-        "name": "name",
+        "name": "data_hash",
         "ordinal": 0,
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "Reviews",
-            "name": "name"
+            "name": "data_hash"
           }
         }
       }
@@ -22,5 +22,5 @@
       false
     ]
   },
-  "hash": "6b97a89e488fec4c61f01dbc2a19d6fd4dcceba575838affd179c56197315ee2"
+  "hash": "f91b8a690cba36c93fc0c5dab10556c5c6fd5671807dd6c3d71e2a96607adb20"
 }

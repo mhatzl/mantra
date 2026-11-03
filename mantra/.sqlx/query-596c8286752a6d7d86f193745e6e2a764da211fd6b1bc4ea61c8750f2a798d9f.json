@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into UsableManualRequirements (\n                product_id,\n                req_id\n            )\n            select ur.product_id, ur.req_id\n            from UsableRequirements ur, ManualRequirements mr\n            where ur.product_id = mr.product_id\n            and ur.req_id = mr.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "596c8286752a6d7d86f193745e6e2a764da211fd6b1bc4ea61c8750f2a798d9f"
+}

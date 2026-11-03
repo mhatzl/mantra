@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            insert into TestRunLineCoverageOverrides (\n                                latest_collection,\n                                product_id,\n                                test_run_name,\n                                review_name,\n                                cov_filepath,\n                                cov_line,\n                                covered,\n                                comment_hash\n                            )\n                            values(\n                                $1,\n                                $2,\n                                $3,\n                                $4,\n                                $5,\n                                $6,\n                                $7,\n                                $8\n                            )\n                            on conflict (\n                                product_id,\n                                test_run_name,\n                                review_name,\n                                cov_filepath,\n                                cov_line\n                            ) do update\n                            set\n                                latest_collection = excluded.latest_collection,\n                                covered = excluded.covered,\n                                comment_hash = excluded.comment_hash\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "103e5068996ff8f1b465cd09c76f616ff3f1dc6ccc6b3b0593a8e68e2a45b80b"
+}

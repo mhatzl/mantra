@@ -182,12 +182,11 @@ create table TestRunLineCoverage (
     cov_file_hash text,
     -- Line that was covered.
     cov_line integer not null,
-    -- Indicates if a line is covered `true`, uncovered `false`,
+    -- Indicates if a line is covered `>0`, uncovered `0`,
     -- or unknown `null` indicating that the line has no executable code at this line.
     --
-    -- Those three states are enough for mantra, because the number of hits is not relevant
-    -- to verify if a line got covered or not.
-    covered bool,
+    -- Keeping raw counter, because bool in SQLite is internally same size like an integer.
+    hits integer,
     primary key (
         product_id,
         test_run_name,
@@ -386,12 +385,11 @@ create table TestCaseLineCoverage (
     cov_file_hash text,
     -- Line that was covered.
     cov_line integer not null,
-    -- Indicates if a line is covered `true`, uncovered `false`,
+    -- Indicates if a line is covered `>0`, uncovered `0`,
     -- or unknown `null` indicating that the line has no executable code at this line.
     --
-    -- Those three states are enough for mantra, because the number of hits is not relevant
-    -- to verify if a line got covered or not.
-    covered bool,
+    -- Keeping raw counter, because bool in SQLite is internally same size like an integer.
+    hits integer,
     primary key (
         product_id,
         test_run_name,

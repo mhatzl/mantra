@@ -144,8 +144,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         schema_hash: &FmtHash,
         parent_media_type: Option<&MediaType>,
     ) -> Result<(), anyhow::Error> {
-        // TODO: optimize by checking data-hash first and skip if unchanged
-
         let collect_nr = self.collect_nr();
         let product_id = self.product_id().clone();
 
@@ -483,7 +481,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         cov_filepath,
                         cov_file_hash,
                         cov_line,
-                        covered
+                        hits
                     )
                     values (
                         $1,
@@ -502,8 +500,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     ) do update
                     set
                         latest_collection = excluded.latest_collection,
-                        cov_file_hash = excluded = cov_file_hash,
-                        covered = excluded.covered
+                        cov_file_hash = excluded.cov_file_hash,
+                        hits = excluded.hits
                     ",
                     collect_nr,
                     product_id,
@@ -525,7 +523,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         }
 
         for test_case in &test_run.test_cases {
-            let state = test_case.state.as_nr();
+            let state = test_case.state.as_number();
             let description_hash = test_case.description.as_ref().map(|d| FmtHash::new(d));
             if let Some(hash) = &description_hash
                 && let Some(description) = &test_case.description
@@ -890,7 +888,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         cov_filepath,
                         cov_file_hash,
                         cov_line,
-                        covered
+                        hits
                     )
                     values (
                         $1,
@@ -911,8 +909,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     ) do update
                     set
                         latest_collection = excluded.latest_collection,
-                        file_hash = excluded.file_hash,
-                        covered = excluded.covered
+                        cov_file_hash = excluded.cov_file_hash,
+                        hits = excluded.hits
                     ",
                     collect_nr,
                     product_id,
@@ -920,7 +918,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     test_case.name,
                     filepath,
                     covered_file.file_hash,
-                    line.nr,
+                    line.number,
                     line.hits
                 )
                 .execute(self.connection_mut())

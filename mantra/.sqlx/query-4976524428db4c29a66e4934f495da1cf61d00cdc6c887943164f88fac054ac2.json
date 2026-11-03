@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select rc.product_id, rc.req_id, rc.child_product_id, rc.child_req_id\n            from RequirementChildren rc\n            where not exists (\n                select r.id\n                from Requirements r\n                where rc.child_product_id = r.product_id\n                and rc.child_req_id = r.id\n            )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementChildren",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "req_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementChildren",
+            "name": "req_id"
+          }
+        }
+      },
+      {
+        "name": "child_product_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementChildren",
+            "name": "child_product_id"
+          }
+        }
+      },
+      {
+        "name": "child_req_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementChildren",
+            "name": "child_req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4976524428db4c29a66e4934f495da1cf61d00cdc6c887943164f88fac054ac2"
+}

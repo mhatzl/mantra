@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into RequirementHierarchies (\n                child_product_id,\n                child_req_id,\n                parent_product_id,\n                parent_req_id,\n                optional\n            )\n            select\n                product_id as child_product_id,\n                req_id as child_req_id,\n                parent_product_id,\n                parent_req_id,\n                (optional is not null and optional = true) as optional\n            from RequirementParents\n\n            union\n\n            select\n                child_product_id,\n                child_req_id,\n                product_id as parent_product_id,\n                req_id as parent_req_id,\n                (optional is not null and optional = true) as optional\n            from RequirementChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "1edf80fb9212a277bc0e77abf9419162e54208a459c2cf8eadb90e302e09e905"
+}

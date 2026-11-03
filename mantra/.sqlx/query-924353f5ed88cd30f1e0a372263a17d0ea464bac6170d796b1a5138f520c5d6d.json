@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into ValidTestRuns (\n                product_id,\n                test_run_name\n            )\n            select product_id, name\n            from TestRuns\n\n            except\n\n            select product_id, test_run_name\n            from ObsoleteTestRuns\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "924353f5ed88cd30f1e0a372263a17d0ea464bac6170d796b1a5138f520c5d6d"
+}

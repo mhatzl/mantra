@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into FailedRequirements (\n                product_id,\n                req_id\n            )\n            select\n                ur.product_id,\n                ur.req_id\n            from UsableRequirements ur\n                left join DirectRequirementVerificationStates ds\n                    on ur.product_id = ds.product_id\n                    and ur.req_id = ds.req_id\n            where\n            -- directly failed\n            (ds.state not null and ds.state = $1)\n            -- at least one descendant failed\n            or exists (\n                select rd.req_id\n                from RequirementDescendants rd, DirectRequirementVerificationStates dsi\n                where ur.product_id = rd.product_id\n                and ur.req_id = rd.req_id\n                and rd.descendant_product_id = dsi.product_id\n                and rd.descendant_req_id = dsi.req_id\n                and dsi.state = $1\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "37b3e032d2cbcea7529225167288a54c6039f5b9b96d5715a174743c0b18aa4b"
+}

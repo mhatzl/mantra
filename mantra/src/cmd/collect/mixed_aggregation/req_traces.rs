@@ -12,81 +12,45 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into DirectProductReqTraces (
-                agg_collect_nr,
                 product_id,
-                req_collect_nr,
                 req_id,
-                file_collect_nr,
                 filepath,
                 file_hash,
                 line
             )
             select
-                $1 as agg_collect_nr,
-                $2 as product_id,
-                r.collect_nr as req_collect_nr,
+                $1 as product_id,
                 rt.req_id,
-                pas.collect_nr as file_collect_nr,
-                pas.filepath,
+                prh.filepath,
                 rt.file_hash,
                 rt.line
-            from DetectedReqTraces rt, Requirements r, ProductAnnotationSources pas
-            where rt.last_collect_nr >= pas.collect_nr
-            and pas.collect_nr = (
-                select max(cpas.collect_nr)
-                from ProductAnnotationSources cpas
-                where cpas.product_id = $2
-            )
-            and r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = $2
-            )
-            and r.product_id = $2 and pas.product_id = $2
-            and rt.file_hash = pas.file_hash
+            from DetectedReqTraces rt, Requirements r, ProductRelatedHashedFiles prh
+            where r.product_id = $1 and prh.product_id = $1
+            and rt.file_hash = prh.file_hash
             and r.id = rt.req_id
 
             union all
 
             select
-                $1 as agg_collect_nr,
-                $2 as product_id,
-                r.collect_nr as req_collect_nr,
+                $1 as product_id,
                 rt.req_id,
-                pas.collect_nr as file_collect_nr,
-                pas.filepath,
+                prh.filepath,
                 rt.file_hash,
                 rt.line
-            from DetectedProductReqTraces rt, Requirements r, ProductAnnotationSources pas
-            where rt.last_collect_nr >= pas.collect_nr
-            and pas.collect_nr = (
-                select max(cpas.collect_nr)
-                from ProductAnnotationSources cpas
-                where cpas.product_id = $2
-            )
-            and r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = $2
-            )
-            and r.product_id = $2 and pas.product_id = $2
-            and rt.product_id = $2
-            and rt.file_hash = pas.file_hash
+            from DetectedProductReqTraces rt, Requirements r, ProductRelatedHashedFiles prh
+            where r.product_id = $1 and prh.product_id = $1
+            and rt.product_id = $1
+            and rt.file_hash = prh.file_hash
             and r.id = rt.req_id
-
             on conflict (
                 product_id,
-                req_collect_nr,
                 req_id,
-                file_collect_nr,
                 filepath,
                 line
             ) do update
             set
-                agg_collect_nr = excluded.agg_collect_nr,
                 file_hash = excluded.file_hash
             ",
-            collect_nr,
             product_id
         )
         .execute(self.connection_mut())

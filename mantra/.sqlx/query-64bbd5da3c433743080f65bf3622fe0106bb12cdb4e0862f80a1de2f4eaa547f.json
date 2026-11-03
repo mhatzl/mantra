@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert or ignore into SkippedTestRuns (\n                product_id,\n                test_run_name\n            )\n            with TestRunsWithSkippedTestCase (\n                product_id,\n                test_run_name\n            ) as (\n                select\n                    product_id,\n                    test_run_name\n                from ResolvedTestCaseStates\n                where state = $1\n            ), IndirectSkippedTestRun (\n                product_id,\n                test_run_name\n            ) as (\n                select\n                    d.product_id,\n                    d.test_run_name\n                from TestRunDescendants d, TestRunsWithSkippedTestCase s\n                where d.product_id = s.product_id\n                and d.descendant_test_run_name = s.test_run_name\n            )\n            select\n                product_id,\n                test_run_name\n            from (\n                select\n                    product_id,\n                    test_run_name\n                from TestRunsWithSkippedTestCase\n\n                union all\n\n                select\n                    product_id,\n                    test_run_name\n                from IndirectSkippedTestRun\n            )\n\n            except\n\n            select\n                product_id,\n                test_run_name\n            from FailedTestRuns\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "64bbd5da3c433743080f65bf3622fe0106bb12cdb4e0862f80a1de2f4eaa547f"
+}

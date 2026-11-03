@@ -181,7 +181,7 @@ create table TestRunLineCoverageOverrides (
     -- Indicates if a line is covered `true`, uncovered `false`,
     -- or unknown `null` indicating that the line has no executable code at this line.
     --
-    -- If `null`, the line is ignored from line coverage analysis for this test run.
+    -- If `null`, the line is considered excluded from line coverage analysis for this test run.
     covered bool,
     -- Hash of the comment explaining why this line coverage must be overriden.
     comment_hash text not null references GeneralTexts (hash) on delete cascade,

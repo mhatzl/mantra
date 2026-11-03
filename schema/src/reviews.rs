@@ -232,11 +232,11 @@ pub struct OverrideFileCoverage {
 #[serde(deny_unknown_fields)]
 pub struct OverrideCoveredLineInfo {
     /// The number of lines affected by this override.
-    #[serde(alias = "nr")]
-    pub nrs: Vec<Line>,
-    /// The new number of times the set lines are reached during a test run or test case execution.
+    #[serde(alias = "number")]
+    pub numbers: Vec<Line>,
+    /// Override if the lines were covered during a test run or test case execution.
     /// If None, the line is marked to be ignored from line coverage analysis.
-    pub hits: Option<i64>,
+    pub covered: Option<bool>,
     /// Mandatory comment explaining the change to the code coverage information.
     pub comment: String,
 }

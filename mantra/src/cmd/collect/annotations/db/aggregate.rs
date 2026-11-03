@@ -8,14 +8,14 @@ impl<'db> Collection<'db> {
 
         let latest_collected_annotations_nr = sqlx::query!(
             r#"
-            select max(collect_nr) as "latest_collect_nr:i64"
+            select max(latest_collection) as "latest_collection:i64"
             from ProductAnnotationSources
             "#
         )
         .fetch_optional(self.connection_mut())
         .await
         .context("Querying latest collection updating annotations")?
-        .and_then(|r| r.latest_collect_nr);
+        .and_then(|r| r.latest_collection);
 
         if latest_collected_annotations_nr != Some(collect_nr) {
             log::info!("No annotation data collected, skipping annotation aggregation");

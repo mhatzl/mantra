@@ -27,36 +27,33 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into ObsoleteTestRuns (
-                agg_collect_nr,
-                test_collect_nr,
                 product_id,
-                test_run_name,
-                test_run_date
+                test_run_name
             )
-            select $1 as agg_collect_nr, collect_nr, product_id, name, utc_date
+            select product_id, name
             from TestRuns tr
             where
-            -- requirements collected since test was added
-            tr.collect_nr < (
-                select max(r.collect_nr)
-                from Requirements r
-                where r.product_id = tr.product_id
+            -- covered file hashes in conflicting hashes
+            exists (
+                select trc.cov_file_hash
+                from TestRunLineCoverage trc, ProductRelatedHashedFiles phf
+                where trc.product_id = tr.product_id
+                and trc.test_run_name = tr.name
+                and trc.cov_file_hash not null
+                and trc.product_id = phf.product_id
+                and trc.cov_filepath = phf.filepath
+                and trc.cov_file_hash != phf.file_hash
+            ) or exists (
+                select trc.cov_file_hash
+                from TestCaseLineCoverage trc, ProductRelatedHashedFiles phf
+                where trc.product_id = tr.product_id
+                and trc.test_run_name = tr.name
+                and trc.cov_file_hash not null
+                and trc.product_id = phf.product_id
+                and trc.cov_filepath = phf.filepath
+                and trc.cov_file_hash != phf.file_hash
             )
-            -- annotations collected since test was added
-            or tr.collect_nr < (
-                select max(a.collect_nr)
-                from ProductAnnotationSources a
-                where a.product_id = tr.product_id
-            )
-            -- test run with same name has been collected in later collection
-            or tr.collect_nr < (
-                select max(ctr.collect_nr)
-                from TestRuns ctr
-                where ctr.product_id = tr.product_id
-                and ctr.name = tr.name
-            )
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -70,24 +67,17 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into ValidTestRuns (
-                agg_collect_nr,
-                test_collect_nr,
                 product_id,
-                test_run_name,
-                test_run_date
+                test_run_name
             )
-            select $1 as agg_collect_nr, collect_nr, product_id, name, utc_date
-            from TestRuns tr
-            where not exists (
-                select otr.test_run_name
-                from ObsoleteTestRuns otr
-                where otr.test_collect_nr = tr.collect_nr
-                and otr.product_id = tr.product_id
-                and otr.test_run_name = tr.name
-                and otr.test_run_date = tr.utc_date
-            )
-            ",
-            collect_nr
+            select product_id, name
+            from TestRuns
+
+            except
+
+            select product_id, test_run_name
+            from ObsoleteTestRuns
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -100,77 +90,53 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            with TestLineCoverageOverrides (collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date) as (
-                select collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date
+            with TestLineCoverageOverrides (product_id, review_name, test_run_name) as (
+                select product_id, review_name, test_run_name
                 from TestRunLineCoverageOverrides
 
                 union all
 
-                select collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date
+                select product_id, review_name, test_run_name
                 from TestCaseLineCoverageOverrides
-            ), TestOverrides (collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date) as (
-                select collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date
+            ), TestOverrides (product_id, review_name, test_run_name) as (
+                select product_id, review_name, test_run_name
                 from TestCaseOverrides
 
                 union all
 
-                select collect_nr, product_id, review_name, review_date, test_collect_nr, test_run_name, test_run_date
+                select product_id, review_name, test_run_name
                 from TestLineCoverageOverrides
             )
             insert or ignore into ObsoleteReviews (
-                agg_collect_nr,
-                review_collect_nr,
                 product_id,
-                review_name,
-                review_date
+                review_name
             )
             select
-                $1 as agg_collect_nr,
-                collect_nr,
                 product_id,
-                name,
-                utc_date
+                name
             from Reviews rv
             where
-            -- requirements collected since review was added
-            rv.collect_nr < (
-                select max(r.collect_nr)
-                from Requirements r
-                where r.product_id = rv.product_id
-            )
-            -- review with same name has been collected in later collection
-            or rv.collect_nr < (
-                select max(crv.collect_nr)
-                from Reviews crv
-                where crv.product_id = rv.product_id
-                and crv.name = rv.name
+            -- contains ignored review entries
+            exists (
+                select ie.review_name
+                from IgnoredReviewEntries ie
+                where ie.product_id = rv.product_id
+                and ie.review_name = rv.name
             )
 
             union all
 
             select
-                $1 as agg_collect_nr,
-                o.collect_nr,
                 o.product_id,
-                o.review_name,
-                o.review_date
+                o.review_name
             from TestOverrides o
-            where o.test_collect_nr < (
-                select max(tr.collect_nr)
-                from TestRuns tr
-                where tr.product_id = o.product_id
-                and tr.name = o.test_run_name
-            )
-            or exists (
+            where exists (
                 select otr.test_run_name
                 from ObsoleteTestRuns otr
-                where otr.test_collect_nr = o.test_collect_nr
-                and otr.product_id = o.product_id
+                where otr.product_id = o.product_id
                 and otr.test_run_name = o.test_run_name
-                and otr.test_run_date = o.test_run_date
             )
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -184,24 +150,18 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into ValidReviews (
-                agg_collect_nr,
-                review_collect_nr,
                 product_id,
-                review_name,
-                review_date
+                review_name
             )
-            select $1 as agg_collect_nr, collect_nr, product_id, name, utc_date
+            select product_id, name
             from Reviews rv
             where not exists (
                 select orv.review_name
                 from ObsoleteReviews orv
-                where orv.review_collect_nr = rv.collect_nr
-                and orv.product_id = rv.product_id
+                where orv.product_id = rv.product_id
                 and orv.review_name = rv.name
-                and orv.review_date = rv.utc_date
             )
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;

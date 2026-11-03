@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ManualRequirements (\n                product_id,\n                req_id\n            )\n            with recursive NonManual(product_id, id) as (\n                select product_id, id\n                from (\n                    select r.product_id, r.id\n                    from Requirements r, RootRequirements rr\n                    where r.product_id = rr.product_id\n                    and r.id = rr.req_id\n                    -- means not explicitly requires manual verification\n                    and (r.manual_verification is null or r.manual_verification = false)\n\n                    union all\n\n                    -- include reqs explicitly set to 'manual_verification = false' in case related root requires manual verification\n                    select r.product_id, r.id\n                    from Requirements r\n                    where r.manual_verification is not null and r.manual_verification = false\n                )\n\n                union all\n\n                select rh.child_product_id, rh.child_req_id\n                from NonManual nm, RequirementHierarchies rh, Requirements r\n                where nm.product_id = rh.parent_product_id\n                and nm.id = rh.parent_req_id\n                and rh.child_product_id = r.product_id\n                and rh.child_req_id = r.id\n                and (r.manual_verification is null or r.manual_verification = false)\n            ),\n            IsManual(product_id, id) as (\n                select product_id, id\n                from Requirements r\n                where not exists (\n                    select *\n                    from NonManual nm\n                    where nm.product_id = r.product_id\n                    and nm.id = r.id\n                )\n            )\n            select distinct product_id, id\n            from IsManual\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "b819c3c4d566a3638c7abc018a2e61666ccc3390848a209607d8e8936d842f06"
+}

@@ -3,7 +3,6 @@ use mantra_schema::{
     FmtHash,
     requirements::ReqId,
     reviews::{OneOrMultRequirementIds, Review, ReviewSchema},
-    time::OffsetDateTime,
 };
 
 use crate::cmd::collect::{products::collection::ProductCollection, reviews::db::DbIgnoredEntry};
@@ -67,14 +66,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         review: &Review,
         schema_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
-        // TODO: optimize by checking src-hash first and skip if unchanged
-
         let collect_nr = self.collect_nr();
         let product_id = self.product_id().clone();
 
-        if let Some(_record) = sqlx::query!(
+        let collected_review_hash = sqlx::query!(
             "
-            select name
+            select data_hash
             from Reviews
             where latest_collection = $1 and product_id = $2
             and name = $3
@@ -86,11 +83,18 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .fetch_optional(self.connection_mut())
         .await
         .context("Failed to get collected reviews")?
-        {
-            anyhow::bail!("Duplicate review entry found in the same collection!");
-        }
+        .map(|r| r.data_hash);
 
         let data_hash = FmtHash::new_serialized(&review);
+
+        if let Some(collected_data) = collected_review_hash {
+            if FmtHash::with_inner(collected_data) != data_hash {
+                anyhow::bail!("Duplicate review entry found in the same collection!");
+            } else {
+                log::info!("Skipping already collected review '{}'", review.name);
+                return Ok(());
+            }
+        }
 
         let origin_hash = review.origin.as_ref().map(FmtHash::new_serialized);
         if let Some(hash) = &origin_hash
@@ -332,7 +336,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
             match &verified_req.id {
                 OneOrMultRequirementIds::One(id) => {
-                    self.update_verified_req(&review.name, &review.utc_date, id, &comment_hash)
+                    self.update_verified_req(&review.name, id, &comment_hash)
                         .await
                         .with_context(|| {
                             format!(
@@ -343,7 +347,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 }
                 OneOrMultRequirementIds::Mult(ids) => {
                     for id in ids {
-                        self.update_verified_req(&review.name, &review.utc_date, id, &comment_hash)
+                        self.update_verified_req(&review.name, id, &comment_hash)
                             .await
                             .with_context(|| {
                                 format!(
@@ -369,7 +373,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             test_run_override.name
                         )
                     )?;
-                    let state = override_state.new.as_nr();
+                    let state = override_state.new.as_number();
 
                     let test_case_exists = sqlx::query!(
                         "
@@ -450,7 +454,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             comment_hash,
                         );
 
-                        self.insert_ignored_entry(&review.name, &review.utc_date, entry)
+                        self.insert_ignored_entry(&review.name, entry)
                         .await
                         .with_context(||
                             format!(
@@ -472,14 +476,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         .with_context(||
                             format!(
                                 "Failed to insert line coverage override comment for lines '{}' in file '{}' for test case '{}' from test run '{}'",
-                                line_info.nrs.iter().map(|l| l.to_string()).collect::<Vec<String>>().join(","),
+                                line_info.numbers.iter().map(|l| l.to_string()).collect::<Vec<String>>().join(","),
                                 coverage_override.filepath,
                                 test_case_override.name,
                                 test_run_override.name
                             )
                         )?;
 
-                        for line_nr in &line_info.nrs {
+                        for line_number in &line_info.numbers {
                             let covered_line_exists = sqlx::query!(
                                 "
                                 select * from TestCaseLineCoverage tc
@@ -492,7 +496,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 test_run_override.name,
                                 test_case_override.name,
                                 filepath,
-                                line_nr
+                                line_number
                             )
                             .fetch_optional(self.connection_mut())
                             .await
@@ -505,7 +509,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 insert into TestCaseLineCoverageOverrides (
                                     latest_collection,
                                     product_id,
-                                    test_collect_nr,
                                     test_run_name,
                                     test_case_name,
                                     review_name,
@@ -523,24 +526,29 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                     $6,
                                     $7,
                                     $8,
-                                    $9,
-                                    $10,
-                                    $11
+                                    $9
                                 )
                                 on conflict (
-
-                                )
+                                    product_id,
+                                    test_run_name,
+                                    test_case_name,
+                                    review_name,
+                                    cov_filepath,
+                                    cov_line
+                                ) do update
+                                set
+                                    latest_collection = excluded.latest_collection,
+                                    covered = excluded.covered,
+                                    comment_hash = excluded.comment_hash
                                 ",
                                 collect_nr,
                                 product_id,
                                 test_run_override.name,
-                                test_run_override.utc_date,
                                 test_case_override.name,
                                 review.name,
-                                review.utc_date,
                                 filepath,
-                                line_nr,
-                                line_info.hits,
+                                line_number,
+                                line_info.covered,
                                 comment_hash
                             )
                             .execute(self.connection_mut())
@@ -548,7 +556,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             .with_context(||
                                 format!(
                                     "Failed to insert line coverage override for line '{}' in file '{}' for test case '{}' from test run '{}'",
-                                    line_nr,
+                                    line_number,
                                     coverage_override.filepath,
                                     test_case_override.name,
                                     test_run_override.name
@@ -557,7 +565,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             } else {
                                 log::warn!(
                                     "Ignoring line coverage override for unknown line '{}' in file '{}' for test case '{}' from test run '{}'",
-                                    line_nr,
+                                    line_number,
                                     coverage_override.filepath,
                                     test_case_override.name,
                                     test_run_override.name
@@ -565,20 +573,19 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
                                 let entry = DbIgnoredEntry::from_test_case_line_coverage(
                                     test_run_override.name.clone(),
-                                    test_run_override.utc_date,
                                     test_case_override.name.clone(),
                                     coverage_override.filepath.clone(),
-                                    *line_nr,
-                                    line_info.hits,
+                                    *line_number,
+                                    line_info.covered,
                                     comment_hash.clone(),
                                 );
 
-                                self.insert_ignored_entry(&review.name, &review.utc_date, entry)
+                                self.insert_ignored_entry(&review.name, entry)
                                 .await
                                 .with_context(||
                                     format!(
                                         "Failed to insert ignore entry for line coverage override for line '{}' in file '{}' for test case '{}' from test run '{}'",
-                                        line_nr,
+                                        line_number,
                                         coverage_override.filepath,
                                         test_case_override.name,
                                         test_run_override.name
@@ -600,30 +607,23 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     .with_context(||
                         format!(
                             "Failed to insert line coverage override comment for lines '{}' in file '{}' for test run '{}'",
-                            line_info.nrs.iter().map(|l| l.to_string()).collect::<Vec<String>>().join(","),
+                            line_info.numbers.iter().map(|l| l.to_string()).collect::<Vec<String>>().join(","),
                             coverage_override.filepath,
                             test_run_override.name
                         )
                     )?;
 
-                    for line_nr in &line_info.nrs {
+                    for line_nr in &line_info.numbers {
                         let covered_line_exists = sqlx::query!(
                             "
                             select * from TestRunLineCoverage tc
-                            where
-                                collect_nr = (
-                                    select max(ctc.collect_nr)
-                                    from TestRunLineCoverage ctc
-                                    where ctc.product_id = tc.product_id
-                                )
-                                and product_id = $1
-                                and test_run_name = $2
-                                and test_run_date = $3 and cov_filepath = $4
-                                and cov_line = $5
+                            where product_id = $1
+                            and test_run_name = $2
+                            and cov_filepath = $4
+                            and cov_line = $5
                             ",
                             product_id,
                             test_run_override.name,
-                            test_run_override.utc_date,
                             filepath,
                             line_nr
                         )
@@ -636,49 +636,44 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             sqlx::query!(
                             "
                             insert into TestRunLineCoverageOverrides (
-                                collect_nr,
+                                latest_collection,
                                 product_id,
-                                test_collect_nr,
                                 test_run_name,
-                                test_run_date,
                                 review_name,
-                                review_date,
                                 cov_filepath,
                                 cov_line,
-                                hits,
+                                covered,
                                 comment_hash
                             )
-                            select
+                            values(
                                 $1,
                                 $2,
-                                tr.collect_nr,
                                 $3,
                                 $4,
                                 $5,
                                 $6,
                                 $7,
-                                $8,
-                                $9,
-                                $10
-                            from TestRuns tr
-                            where tr.collect_nr = (
-                                select max(ctr.collect_nr)
-                                from TestRuns ctr
-                                where ctr.product_id = tr.product_id
+                                $8
                             )
-                            and tr.product_id = $2
-                            and tr.name = $3
-                            and tr.utc_date = $4
+                            on conflict (
+                                product_id,
+                                test_run_name,
+                                review_name,
+                                cov_filepath,
+                                cov_line
+                            ) do update
+                            set
+                                latest_collection = excluded.latest_collection,
+                                covered = excluded.covered,
+                                comment_hash = excluded.comment_hash
                             ",
                             collect_nr,
                             product_id,
                             test_run_override.name,
-                            test_run_override.utc_date,
                             review.name,
-                            review.utc_date,
                             filepath,
                             line_nr,
-                            line_info.hits,
+                            line_info.covered,
                             comment_hash
                         )
                         .execute(self.connection_mut())
@@ -701,14 +696,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
                             let entry = DbIgnoredEntry::from_test_run_line_coverage(
                                 test_run_override.name.clone(),
-                                test_run_override.utc_date,
                                 coverage_override.filepath.clone(),
                                 *line_nr,
-                                line_info.hits,
+                                line_info.covered,
                                 comment_hash.clone(),
                             );
 
-                            self.insert_ignored_entry(&review.name, &review.utc_date, entry)
+                            self.insert_ignored_entry(&review.name, entry)
                             .await
                             .with_context(||
                                 format!(
@@ -730,7 +724,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     async fn update_verified_req(
         &mut self,
         review_name: &str,
-        review_date: &OffsetDateTime,
         req_id: &ReqId,
         comment_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
@@ -740,11 +733,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let req_available = sqlx::query!(
             "
             select id from Requirements r
-            where collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = r.product_id
-            ) and product_id = $1 and id = $2
+            where product_id = $1 and id = $2
             ",
             product_id,
             req_id
@@ -758,35 +747,31 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             sqlx::query!(
                 "
                 insert into ManuallyVerifiedRequirements (
-                    collect_nr,
+                    latest_collection,
                     product_id,
                     review_name,
-                    review_date,
-                    req_collect_nr,
                     req_id,
                     comment_hash
                 )
-                select
+                values(
                     $1,
                     $2,
                     $3,
                     $4,
-                    r.collect_nr,
-                    $5,
-                    $6
-                from Requirements r
-                where r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
+                    $5
                 )
-                and r.product_id = $2
-                and r.id = $5
+                on conflict (
+                    product_id,
+                    review_name,
+                    req_id
+                ) do update
+                set
+                    latest_collection = excluded.latest_collection,
+                    comment_hash = excluded.comment_hash
                 ",
                 collect_nr,
                 product_id,
                 review_name,
-                review_date,
                 req_id,
                 comment_hash
             )
@@ -801,7 +786,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             let ignored_entry =
                 DbIgnoredEntry::from_verified_req(req_id.clone(), comment_hash.clone());
 
-            self.insert_ignored_entry(review_name, review_date, ignored_entry)
+            self.insert_ignored_entry(review_name, ignored_entry)
                 .await
                 .context(
                     "Failed to insert ignore entry for manual verification of unknown requirement",
@@ -814,7 +799,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     async fn insert_ignored_entry(
         &mut self,
         review_name: &str,
-        review_date: &OffsetDateTime,
         entry: DbIgnoredEntry,
     ) -> Result<(), anyhow::Error> {
         let entry_value = serde_json::to_value(&entry)?;
@@ -830,24 +814,28 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         sqlx::query!(
             "
             insert into IgnoredReviewEntries (
-                collect_nr,
+                latest_collection,
                 product_id,
                 review_name,
-                review_date,
                 entry_hash
             )
             values (
                 $1,
                 $2,
                 $3,
-                $4,
-                $5
+                $4
             )
+            on conflict (
+                product_id,
+                review_name,
+                entry_hash
+            ) do update
+            set
+                latest_collection = excluded.latest_collection
         ",
             collect_nr,
             product_id,
             review_name,
-            review_date,
             entry_hash
         )
         .execute(self.connection_mut())

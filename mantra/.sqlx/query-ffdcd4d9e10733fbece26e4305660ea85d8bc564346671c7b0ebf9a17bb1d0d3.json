@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into RootRequirements (\n                product_id,\n                req_id\n            )\n            select r.product_id, r.id\n            from Requirements r\n            where not exists (\n                select *\n                from RequirementHierarchies rh\n                where rh.child_product_id = r.product_id\n                and rh.child_req_id = r.id\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "ffdcd4d9e10733fbece26e4305660ea85d8bc564346671c7b0ebf9a17bb1d0d3"
+}

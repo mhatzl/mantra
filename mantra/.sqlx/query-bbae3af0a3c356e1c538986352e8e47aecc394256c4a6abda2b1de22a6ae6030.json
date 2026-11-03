@@ -81,13 +81,13 @@
         }
       },
       {
-        "name": "covered",
+        "name": "hits",
         "ordinal": 7,
-        "type_info": "Bool",
+        "type_info": "Integer",
         "origin": {
           "Table": {
             "table": "TestCaseLineCoverage",
-            "name": "covered"
+            "name": "hits"
           }
         }
       }

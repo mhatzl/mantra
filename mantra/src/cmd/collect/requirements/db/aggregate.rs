@@ -6,18 +6,18 @@ impl<'db> Collection<'db> {
     pub(crate) async fn aggregate_requirements_data(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
 
-        let latest_collected_requirements_nr = sqlx::query!(
+        let latest_requirements_collection = sqlx::query!(
             r#"
-            select max(collect_nr) as "latest_collect_nr:i64"
+            select max(latest_collection) as "latest_collection:i64"
             from Requirements
             "#
         )
         .fetch_optional(self.connection_mut())
         .await
         .context("Querying latest collection updating requirements")?
-        .and_then(|r| r.latest_collect_nr);
+        .and_then(|r| r.latest_collection);
 
-        if latest_collected_requirements_nr != Some(collect_nr) {
+        if latest_requirements_collection != Some(collect_nr) {
             log::info!("No requirement data collected, skipping requirement aggregation");
 
             return Ok(());
@@ -69,72 +69,17 @@ impl<'db> Collection<'db> {
     async fn update_requirement_hierarchies(&mut self) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
 
-        sqlx::query!(
-            "
-            insert into RequirementHierarchies (
-                agg_collect_nr,
-                child_collect_nr,
-                child_product_id,
-                child_req_id,
-                parent_collect_nr,
-                parent_product_id,
-                parent_req_id,
-                optional
-            )
-            select
-                $1 as agg_collect_nr,
-                $1 as child_collect_nr,
-                rp.product_id as child_product_id,
-                rp.req_id as child_req_id,
-                r.collect_nr as parent_collect_nr,
-                rp.parent_product_id,
-                rp.parent_req_id,
-                (rp.optional is not null and rp.optional = true) as optional
-            from Requirements r, RequirementParents rp
-            where rp.collect_nr = $1 and r.product_id = rp.parent_product_id
-            and r.id = rp.parent_req_id and r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = r.product_id
-            )
-
-            union
-
-            select
-                $1 as agg_collect_nr,
-                r.collect_nr as child_collect_nr,
-                rc.child_product_id,
-                rc.child_req_id,
-                $1 as parent_collect_nr,
-                rc.product_id as parent_product_id,
-                rc.req_id as parent_req_id,
-                (rc.optional is not null and rc.optional = true) as optional
-            from Requirements r, RequirementChildren rc
-            where rc.collect_nr = $1 and r.product_id = rc.child_product_id
-            and r.id = rc.child_req_id and r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = r.product_id
-            )
-            ",
-            collect_nr
-        )
-        .execute(self.connection_mut())
-        .await?;
-
         let missing_parents = sqlx::query!(
             "
             select rp.product_id, rp.req_id, rp.parent_product_id, rp.parent_req_id
             from RequirementParents rp
-            where rp.collect_nr = $1 and not exists (
-                select rh.parent_req_id
-                from RequirementHierarchies rh
-                where rh.child_collect_nr = $1
-                and rp.product_id = rh.child_product_id
-                and rp.req_id = rh.child_req_id
+            where not exists (
+                select r.id
+                from Requirements r
+                where rp.parent_product_id = r.product_id
+                and rp.parent_req_id = r.id
             )
-            ",
-            collect_nr
+            "
         )
         .fetch_all(self.connection_mut())
         .await
@@ -155,15 +100,13 @@ impl<'db> Collection<'db> {
             "
             select rc.product_id, rc.req_id, rc.child_product_id, rc.child_req_id
             from RequirementChildren rc
-            where rc.collect_nr = $1 and not exists (
-                select rh.child_req_id
-                from RequirementHierarchies rh
-                where rh.parent_collect_nr = $1
-                and rc.product_id = rh.parent_product_id
-                and rc.req_id = rh.parent_req_id
+            where not exists (
+                select r.id
+                from Requirements r
+                where rc.child_product_id = r.product_id
+                and rc.child_req_id = r.id
             )
-            ",
-            collect_nr
+            "
         )
         .fetch_all(self.connection_mut())
         .await
@@ -180,47 +123,58 @@ impl<'db> Collection<'db> {
             )
         }
 
+        sqlx::query!(
+            "
+            insert into RequirementHierarchies (
+                child_product_id,
+                child_req_id,
+                parent_product_id,
+                parent_req_id,
+                optional
+            )
+            select
+                product_id as child_product_id,
+                req_id as child_req_id,
+                parent_product_id,
+                parent_req_id,
+                (optional is not null and optional = true) as optional
+            from RequirementParents
+
+            union
+
+            select
+                child_product_id,
+                child_req_id,
+                product_id as parent_product_id,
+                req_id as parent_req_id,
+                (optional is not null and optional = true) as optional
+            from RequirementChildren
+            "
+        )
+        .execute(self.connection_mut())
+        .await?;
+
         Ok(())
     }
 
     async fn update_root_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-
         // We have to consider all requirements, also those not collected in this collection,
         // so we check that we only consider requirements that were last collected for their product.
         sqlx::query!(
             "
             insert into RootRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            select $1 as agg_collect_nr, r.collect_nr, r.product_id, r.id
+            select r.product_id, r.id
             from Requirements r
-            where r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = r.product_id
-            )
-            and not exists (
+            where not exists (
                 select *
                 from RequirementHierarchies rh
                 where rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
-                and rh.child_collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = rh.child_product_id
-                )
-                and rh.parent_collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = rh.parent_product_id
-                )
             )
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -238,85 +192,55 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             with recursive TransitiveChildren(
-                collect_nr,
                 product_id,
                 req_id,
-                descendant_collect_nr,
                 descendant_product_id,
                 descendant_req_id,
                 optional
             ) as
             (
                 select
-                    parent_collect_nr as collect_nr,
                     parent_product_id as product_id,
                     parent_req_id as req_id,
-                    child_collect_nr as descendant_collect_nr,
                     child_product_id as descendant_product_id,
                     child_req_id as descendant_req_id,
                     optional
                 from RequirementHierarchies rh
-                where rh.child_collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = rh.child_product_id
-                )
-                and rh.parent_collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = rh.parent_product_id
-                )
 
                 union all
 
                 select
-                    tc.collect_nr,
                     tc.product_id,
                     tc.req_id,
-                    rh.child_collect_nr as descendant_collect_nr,
                     rh.child_product_id as descendant_product_id,
                     rh.child_req_id as descendant_req_id,
                     rh.optional or tc.optional
                 from RequirementHierarchies rh, TransitiveChildren tc
-                where tc.descendant_collect_nr = rh.parent_collect_nr
-                and tc.descendant_product_id = rh.parent_product_id
+                where tc.descendant_product_id = rh.parent_product_id
                 and tc.descendant_req_id = rh.parent_req_id
-                and rh.child_collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = rh.child_product_id
-                )
                 -- prevents endless recursion in case of requirement cycles
                 -- match on parent to have the cycle entry in the descendants,
                 -- which is then detected in a separate query.
                 and (
-                    tc.collect_nr != rh.parent_collect_nr
-                    or tc.product_id != rh.parent_product_id
+                    tc.product_id != rh.parent_product_id
                     or tc.req_id != rh.parent_req_id
                 )
             )
             insert into RequirementDescendants (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id,
-                descendant_collect_nr,
                 descendant_product_id,
                 descendant_req_id,
                 optional
             )
             select distinct
-                $1 as agg_collect_nr,
-                collect_nr,
                 product_id,
                 req_id,
-                descendant_collect_nr,
                 descendant_product_id,
                 descendant_req_id,
                 optional
             from TransitiveChildren
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -327,13 +251,9 @@ impl<'db> Collection<'db> {
                 rd.product_id,
                 rd.req_id
             from RequirementDescendants rd
-            where
-                rd.agg_collect_nr = $1
-                and rd.req_collect_nr = rd.descendant_collect_nr
-                and rd.product_id = rd.descendant_product_id
-                and rd.req_id = rd.descendant_req_id
-            ",
-            collect_nr
+            where rd.product_id = rd.descendant_product_id
+            and rd.req_id = rd.descendant_req_id
+            "
         )
         .fetch_all(self.connection_mut())
         .await
@@ -360,15 +280,11 @@ impl<'db> Collection<'db> {
             "
             select rr.product_id, rr.req_id, rr.replaced_req_id
             from RequirementReplacements rr, RequirementDescendants rd
-            where rd.agg_collect_nr = $1
-                and rr.collect_nr = rd.req_collect_nr
-                and rr.collect_nr = rd.descendant_collect_nr
-                and rr.product_id = rd.product_id
-                and rr.product_id = rd.descendant_product_id
-                and rr.replaced_req_id = rd.req_id
-                and rr.req_id = rd.descendant_req_id
-            ",
-            collect_nr
+            where rr.product_id = rd.product_id
+            and rr.product_id = rd.descendant_product_id
+            and rr.replaced_req_id = rd.req_id
+            and rr.req_id = rd.descendant_req_id
+            "
         )
         .fetch_all(self.connection_mut())
         .await?;
@@ -395,32 +311,18 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into LeafRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            select $1 as agg_collect_nr, collect_nr, product_id, id
+            select product_id, id
             from Requirements r
-            where r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = r.product_id
-            )
-            and not exists (
+            where not exists (
                 select *
                 from RequirementHierarchies rh
-                where r.collect_nr = rh.parent_collect_nr
-                and r.product_id = rh.parent_product_id
+                where r.product_id = rh.parent_product_id
                 and r.id = rh.parent_req_id
-                and rh.child_collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = rh.child_product_id
-                )
             )
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -433,104 +335,70 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert into DeprecatedRequirements (
-                agg_collect_nr,
-                req_collect_nr,
+            insert or ignore into DeprecatedRequirements (
                 product_id,
                 req_id
             )
-            with recursive IsIncluded(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            with recursive IsIncluded(product_id, id) as (
+                select product_id, id
                 from (
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r, RootRequirements rr
-                    where rr.agg_collect_nr = $1
-                    -- no need to check that requirement is from latest product collection,
-                    -- because otherwise it would not be listed as latest aggregated root requirement
-                    and r.collect_nr = rr.req_collect_nr
-                    and r.product_id = rr.product_id
+                    where r.product_id = rr.product_id
                     and r.id = rr.req_id
                     -- means not explicitly deprecated
                     and (r.deprecated is null or r.deprecated = false)
                     and not exists (
                         select rp.req_id
                         from RequirementReplacements rp
-                        where rp.collect_nr = r.collect_nr
-                        and rp.product_id = r.product_id
+                        where rp.product_id = r.product_id
                         and rp.replaced_req_id = r.id
                     )
 
                     union all
 
                     -- include reqs explicitly set to 'deprecated = false' in case related root is deprecated
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r
-                    where r.collect_nr = (
-                        select max(cr.collect_nr)
-                        from Requirements cr
-                        where cr.product_id = r.product_id
-                    )
-                    and r.deprecated is not null and r.deprecated = false
+                    where r.deprecated is not null and r.deprecated = false
                     -- being replaced always deprecates a requirement
                     and not exists (
                         select rp.req_id
                         from RequirementReplacements rp
-                        where rp.collect_nr = r.collect_nr
-                        and rp.product_id = r.product_id
+                        where rp.product_id = r.product_id
                         and rp.replaced_req_id = r.id
                     )
                 )
 
                 union all
 
-                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                select rh.child_product_id, rh.child_req_id
                 from IsIncluded ii, RequirementHierarchies rh, Requirements r
-                where rh.agg_collect_nr = (
-                    select max(crh.agg_collect_nr)
-                    from RequirementHierarchies crh
-                    where crh.child_product_id = rh.child_product_id
-                    and crh.parent_product_id = rh.parent_product_id
-                )
-                and ii.collect_nr = rh.parent_collect_nr
-                and ii.product_id = rh.parent_product_id
+                where ii.product_id = rh.parent_product_id
                 and ii.id = rh.parent_req_id
-                and r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.deprecated is null or r.deprecated = false)
                 and not exists (
                     select rp.req_id
                     from RequirementReplacements rp
-                    where rp.collect_nr = r.collect_nr
-                    and rp.product_id = r.product_id
+                    where rp.product_id = r.product_id
                     and rp.replaced_req_id = r.id
                 )
             ),
-            IsDeprecated(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            IsDeprecated(product_id, id) as (
+                select product_id, id
                 from Requirements r
-                where r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and not exists (
+                where not exists (
                     select *
                     from IsIncluded ii
-                    where ii.collect_nr = r.collect_nr
-                    and ii.product_id = r.product_id
+                    where ii.product_id = r.product_id
                     and ii.id = r.id
                 )
             )
-            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
+            select distinct product_id, id
             from IsDeprecated
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -544,21 +412,15 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into ExcludedRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            with recursive IsIncluded(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            with recursive IsIncluded(product_id, id) as (
+                select product_id, id
                 from (
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r, RootRequirements rr
-                    where rr.agg_collect_nr = $1
-                    -- no need to check that requirement is from latest product collection,
-                    -- because otherwise it would not be listed as latest aggregated root requirement
-                    and r.collect_nr = rr.req_collect_nr
-                    and r.product_id = rr.product_id
+                    where r.product_id = rr.product_id
                     and r.id = rr.req_id
                     -- means not explicitly excluded
                     and (r.exclude is null or r.exclude = false)
@@ -566,58 +428,34 @@ impl<'db> Collection<'db> {
                     union all
 
                     -- include reqs explicitly set to 'exclude = false' in case related root is excluded
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r
-                    where r.collect_nr = (
-                        select max(cr.collect_nr)
-                        from Requirements cr
-                        where cr.product_id = r.product_id
-                    ) and r.exclude is not null and r.exclude = false
+                    where r.exclude is not null and r.exclude = false
                 )
 
                 union all
 
-                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                select rh.child_product_id, rh.child_req_id
                 from IsIncluded nm, RequirementHierarchies rh, Requirements r
-                where rh.agg_collect_nr = (
-                    select max(crh.agg_collect_nr)
-                    from RequirementHierarchies crh
-                    where crh.child_product_id = rh.child_product_id
-                    and crh.parent_product_id = rh.parent_product_id
-                )
-                and nm.collect_nr = rh.parent_collect_nr
-                and nm.product_id = rh.parent_product_id
+                where nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
-                and r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.exclude is null or r.exclude = false)
             ),
-            IsExcluded(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            IsExcluded(product_id, id) as (
+                select product_id, id
                 from Requirements r
-                where r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and not exists (
+                where not exists (
                     select *
                     from IsIncluded nm
-                    where nm.collect_nr = r.collect_nr
-                    and nm.product_id = r.product_id
+                    where nm.product_id = r.product_id
                     and nm.id = r.id
                 )
             )
-            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
+            select distinct product_id, id
             from IsExcluded
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -631,21 +469,15 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into OptionalRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            with recursive IsMandatory(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            with recursive IsMandatory(product_id, id) as (
+                select product_id, id
                 from (
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r, RootRequirements rr
-                    where rr.agg_collect_nr = $1
-                    -- no need to check that requirement is from latest product collection,
-                    -- because otherwise it would not be listed as latest aggregated root requirement
-                    and r.collect_nr = rr.req_collect_nr
-                    and r.product_id = rr.product_id
+                    where r.product_id = rr.product_id
                     and r.id = rr.req_id
                     -- means not explicitly optional
                     and (r.optional is null or r.optional = false)
@@ -653,59 +485,35 @@ impl<'db> Collection<'db> {
                     union all
 
                     -- include reqs explicitly set to 'optional = false' in case related root is optional
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r
-                    where r.collect_nr = (
-                        select max(cr.collect_nr)
-                        from Requirements cr
-                        where cr.product_id = r.product_id
-                    ) and r.optional is not null and r.optional = false
+                    where r.optional is not null and r.optional = false
                 )
 
                 union all
 
-                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                select rh.child_product_id, rh.child_req_id
                 from IsMandatory nm, RequirementHierarchies rh, Requirements r
-                where rh.agg_collect_nr = (
-                    select max(crh.agg_collect_nr)
-                    from RequirementHierarchies crh
-                    where crh.child_product_id = rh.child_product_id
-                    and crh.parent_product_id = rh.parent_product_id
-                )
-                and nm.collect_nr = rh.parent_collect_nr
-                and nm.product_id = rh.parent_product_id
+                where nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
-                and r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.optional is null or r.optional = false)
                 and rh.optional = false
             ),
-            IsOptional(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            IsOptional(product_id, id) as (
+                select product_id, id
                 from Requirements r
-                where r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and not exists (
+                where not exists (
                     select *
                     from IsMandatory nm
-                    where nm.collect_nr = r.collect_nr
-                    and nm.product_id = r.product_id
+                    where nm.product_id = r.product_id
                     and nm.id = r.id
                 )
             )
-            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
+            select distinct product_id, id
             from IsOptional
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -719,21 +527,15 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into ManualRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            with recursive NonManual(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            with recursive NonManual(product_id, id) as (
+                select product_id, id
                 from (
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r, RootRequirements rr
-                    where rr.agg_collect_nr = $1
-                    -- no need to check that requirement is from latest product collection,
-                    -- because otherwise it would not be listed as latest aggregated root requirement
-                    and r.collect_nr = rr.req_collect_nr
-                    and r.product_id = rr.product_id
+                    where r.product_id = rr.product_id
                     and r.id = rr.req_id
                     -- means not explicitly requires manual verification
                     and (r.manual_verification is null or r.manual_verification = false)
@@ -741,58 +543,34 @@ impl<'db> Collection<'db> {
                     union all
 
                     -- include reqs explicitly set to 'manual_verification = false' in case related root requires manual verification
-                    select r.collect_nr, r.product_id, r.id
+                    select r.product_id, r.id
                     from Requirements r
-                    where r.collect_nr = (
-                        select max(cr.collect_nr)
-                        from Requirements cr
-                        where cr.product_id = r.product_id
-                    ) and r.manual_verification is not null and r.manual_verification = false
+                    where r.manual_verification is not null and r.manual_verification = false
                 )
 
                 union all
 
-                select rh.child_collect_nr, rh.child_product_id, rh.child_req_id
+                select rh.child_product_id, rh.child_req_id
                 from NonManual nm, RequirementHierarchies rh, Requirements r
-                where rh.agg_collect_nr = (
-                    select max(crh.agg_collect_nr)
-                    from RequirementHierarchies crh
-                    where crh.child_product_id = rh.child_product_id
-                    and crh.parent_product_id = rh.parent_product_id
-                )
-                and nm.collect_nr = rh.parent_collect_nr
-                and nm.product_id = rh.parent_product_id
+                where nm.product_id = rh.parent_product_id
                 and nm.id = rh.parent_req_id
-                and r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and rh.child_collect_nr = r.collect_nr
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.manual_verification is null or r.manual_verification = false)
             ),
-            IsManual(collect_nr, product_id, id) as (
-                select collect_nr, product_id, id
+            IsManual(product_id, id) as (
+                select product_id, id
                 from Requirements r
-                where r.collect_nr = (
-                    select max(cr.collect_nr)
-                    from Requirements cr
-                    where cr.product_id = r.product_id
-                )
-                and not exists (
+                where not exists (
                     select *
                     from NonManual nm
-                    where nm.collect_nr = r.collect_nr
-                    and nm.product_id = r.product_id
+                    where nm.product_id = r.product_id
                     and nm.id = r.id
                 )
             )
-            select distinct $1 as agg_collect_nr, collect_nr, product_id, id
+            select distinct product_id, id
             from IsManual
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -806,36 +584,26 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into UsableRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            select $1 as agg_collect_nr, collect_nr, product_id, id
+            select product_id, id
             from Requirements r
-            where r.collect_nr = (
-                select max(cr.collect_nr)
-                from Requirements cr
-                where cr.product_id = r.product_id
-            )
 
             except
 
-            select $1 as agg_collect_nr, req_collect_nr, product_id, req_id
+            select product_id, req_id
             from
             (
-                select req_collect_nr, product_id, req_id
+                select product_id, req_id
                 from DeprecatedRequirements
-                where agg_collect_nr = $1
 
                 union all
 
-                select req_collect_nr, product_id, req_id
+                select product_id, req_id
                 from ExcludedRequirements
-                where agg_collect_nr = $1
             )
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -849,22 +617,17 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into UsableNonManualRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            select agg_collect_nr, req_collect_nr, product_id, req_id
+            select product_id, req_id
             from UsableRequirements
-            where agg_collect_nr = $1
 
             except
 
-            select agg_collect_nr, req_collect_nr, product_id, req_id
+            select product_id, req_id
             from ManualRequirements
-            where agg_collect_nr = $1
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;
@@ -878,19 +641,14 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert or ignore into UsableManualRequirements (
-                agg_collect_nr,
-                req_collect_nr,
                 product_id,
                 req_id
             )
-            select $1 as agg_collect_nr, ur.req_collect_nr, ur.product_id, ur.req_id
+            select ur.product_id, ur.req_id
             from UsableRequirements ur, ManualRequirements mr
-            where ur.agg_collect_nr = $1 and mr.agg_collect_nr = $1
-            and ur.req_collect_nr = mr.req_collect_nr
-            and ur.product_id = mr.product_id
+            where ur.product_id = mr.product_id
             and ur.req_id = mr.req_id
-            ",
-            collect_nr
+            "
         )
         .execute(self.connection_mut())
         .await?;

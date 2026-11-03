@@ -6,6 +6,7 @@ use crate::{
         Aggregated, annotations::TraceReference, requirement::RequirementReference,
         test_case::TestCaseReference, test_run::TestRunReference,
     },
+    test_runs::TestCaseState,
 };
 
 #[derive(
@@ -82,8 +83,18 @@ pub enum TestState {
     Obsolete = 4,
 }
 
+/// ensure that the test states remain identically numbered
+const _: () = {
+    assert!(
+        TestState::Failed.as_number() == TestCaseState::Failed.as_number()
+            && TestState::Passed.as_number() == TestCaseState::Passed.as_number()
+            && TestState::Skipped.as_number() == TestCaseState::Skipped.as_number()
+            && TestState::Unknown.as_number() == TestCaseState::Unknown.as_number()
+    )
+};
+
 impl TestState {
-    pub fn as_nr(&self) -> i32 {
+    pub const fn as_number(&self) -> i32 {
         *self as i32
     }
 }
@@ -92,15 +103,15 @@ impl TryFrom<i64> for TestState {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        if value == TestState::Failed.as_nr() as i64 {
+        if value == TestState::Failed.as_number() as i64 {
             Ok(TestState::Failed)
-        } else if value == TestState::Skipped.as_nr() as i64 {
+        } else if value == TestState::Skipped.as_number() as i64 {
             Ok(TestState::Skipped)
-        } else if value == TestState::Passed.as_nr() as i64 {
+        } else if value == TestState::Passed.as_number() as i64 {
             Ok(TestState::Passed)
-        } else if value == TestState::Unknown.as_nr() as i64 {
+        } else if value == TestState::Unknown.as_number() as i64 {
             Ok(TestState::Unknown)
-        } else if value == TestState::Obsolete.as_nr() as i64 {
+        } else if value == TestState::Obsolete.as_number() as i64 {
             Ok(TestState::Obsolete)
         } else {
             Err(ConversionError::UnknownState)
@@ -205,34 +216,44 @@ pub enum TestReference {
     schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum ResolvedLineCoverageState {
-    Covered = 0,
-    Excluded = 1,
-    OverriddenCovered = 2,
-    OverriddenUncovered = 3,
-    Uncovered = 4,
+pub enum ResolvedCoverageState {
+    Uncovered = 0,
+    Covered = 1,
+    /// Coverage excluded by at least one exclude annotation.
+    Excluded = 2,
+    /// Indicates a section is not part of the resulting executable.
+    /// e.g code behind disabled feature flags
+    Unknown = 3,
+    OverriddenUncovered = 4,
+    OverriddenCovered = 5,
+    /// Coverage explicitly excluded by at least one valid review.
+    OverriddenExcluded = 6,
 }
 
-impl ResolvedLineCoverageState {
-    pub fn as_nr(&self) -> i32 {
+impl ResolvedCoverageState {
+    pub fn as_number(&self) -> i32 {
         *self as i32
     }
 }
 
-impl TryFrom<i64> for ResolvedLineCoverageState {
+impl TryFrom<i64> for ResolvedCoverageState {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        if value == ResolvedLineCoverageState::Covered.as_nr() as i64 {
-            Ok(ResolvedLineCoverageState::Covered)
-        } else if value == ResolvedLineCoverageState::Excluded.as_nr() as i64 {
-            Ok(ResolvedLineCoverageState::Excluded)
-        } else if value == ResolvedLineCoverageState::OverriddenCovered.as_nr() as i64 {
-            Ok(ResolvedLineCoverageState::OverriddenCovered)
-        } else if value == ResolvedLineCoverageState::OverriddenUncovered.as_nr() as i64 {
-            Ok(ResolvedLineCoverageState::OverriddenUncovered)
-        } else if value == ResolvedLineCoverageState::Uncovered.as_nr() as i64 {
-            Ok(ResolvedLineCoverageState::Uncovered)
+        if value == ResolvedCoverageState::Uncovered.as_number() as i64 {
+            Ok(ResolvedCoverageState::Uncovered)
+        } else if value == ResolvedCoverageState::Covered.as_number() as i64 {
+            Ok(ResolvedCoverageState::Covered)
+        } else if value == ResolvedCoverageState::Excluded.as_number() as i64 {
+            Ok(ResolvedCoverageState::Excluded)
+        } else if value == ResolvedCoverageState::Unknown.as_number() as i64 {
+            Ok(ResolvedCoverageState::Unknown)
+        } else if value == ResolvedCoverageState::OverriddenUncovered.as_number() as i64 {
+            Ok(ResolvedCoverageState::OverriddenUncovered)
+        } else if value == ResolvedCoverageState::OverriddenCovered.as_number() as i64 {
+            Ok(ResolvedCoverageState::OverriddenCovered)
+        } else if value == ResolvedCoverageState::OverriddenExcluded.as_number() as i64 {
+            Ok(ResolvedCoverageState::OverriddenExcluded)
         } else {
             Err(ConversionError::UnknownState)
         }

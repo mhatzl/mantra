@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select rp.product_id, rp.req_id, rp.parent_product_id, rp.parent_req_id\n            from RequirementParents rp\n            where not exists (\n                select r.id\n                from Requirements r\n                where rp.parent_product_id = r.product_id\n                and rp.parent_req_id = r.id\n            )\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "req_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "req_id"
+          }
+        }
+      },
+      {
+        "name": "parent_product_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "parent_product_id"
+          }
+        }
+      },
+      {
+        "name": "parent_req_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementParents",
+            "name": "parent_req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6967b11014726591ae9cd9ab7d149d6012babdfb83d84f3193aa5e9cc849fda2"
+}

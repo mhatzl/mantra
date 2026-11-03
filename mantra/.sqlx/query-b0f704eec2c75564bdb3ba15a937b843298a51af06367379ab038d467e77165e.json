@@ -1,0 +1,21 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select max(latest_collection) as \"latest_collection:i64\"\n            from Reviews\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "latest_collection:i64",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "b0f704eec2c75564bdb3ba15a937b843298a51af06367379ab038d467e77165e"
+}

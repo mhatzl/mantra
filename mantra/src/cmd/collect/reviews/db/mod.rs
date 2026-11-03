@@ -25,14 +25,14 @@ pub(crate) enum DbIgnoredEntry {
         test_case_name: String,
         cov_filepath: RelativePathBuf,
         cov_line: Line,
-        hits: Option<i64>,
+        covered: Option<bool>,
         comment_hash: FmtHash,
     },
     TestRunLineCoverageOverride {
         test_run_name: String,
         cov_filepath: RelativePathBuf,
         cov_line: Line,
-        hits: Option<i64>,
+        covered: Option<bool>,
         comment_hash: FmtHash,
     },
 }
@@ -64,7 +64,7 @@ impl DbIgnoredEntry {
         test_case_name: String,
         cov_filepath: RelativePathBuf,
         cov_line: Line,
-        hits: Option<i64>,
+        covered: Option<bool>,
         comment_hash: FmtHash,
     ) -> Self {
         Self::TestCaseLineCoverageOverride {
@@ -72,7 +72,7 @@ impl DbIgnoredEntry {
             test_case_name,
             cov_filepath,
             cov_line,
-            hits,
+            covered,
             comment_hash,
         }
     }
@@ -81,14 +81,14 @@ impl DbIgnoredEntry {
         test_run_name: String,
         cov_filepath: RelativePathBuf,
         cov_line: Line,
-        hits: Option<i64>,
+        covered: Option<bool>,
         comment_hash: FmtHash,
     ) -> Self {
         Self::TestRunLineCoverageOverride {
             test_run_name,
             cov_filepath,
             cov_line,
-            hits,
+            covered,
             comment_hash,
         }
     }

@@ -139,8 +139,19 @@ create table TraceMappedLinesOnlyCoveredByPassedTests (
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
--- Contains traces that have no mapped line that was covered by a failed test.
-create table TracesOnlyCoveredByPassedTests (
+-- Contains traces that are covered by at least one test with "unknown" state
+create table TracesCoveredByUnknownTests (
+    product_id text not null,
+    filepath text not null,
+    file_hash text not null,
+    traced_line integer not null,
+    primary key (product_id, filepath, traced_line),
+    foreign key (product_id, filepath) references ProductRelatedHashedFiles (product_id, filepath) on delete cascade,
+    foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
+);
+
+-- Contains traces that are covered by at least one passed test
+create table TracesCoveredByPassedTests (
     product_id text not null,
     filepath text not null,
     file_hash text not null,
@@ -301,7 +312,7 @@ create trigger RequirementVerificationStateChanges
 after update on RequirementVerificationStates
 for each row
 when (
-    old.data_hash is distinct from new.data_hash
+    old.state is distinct from new.state
 )
 begin
     insert into ChangedRequirementVerificationStates (

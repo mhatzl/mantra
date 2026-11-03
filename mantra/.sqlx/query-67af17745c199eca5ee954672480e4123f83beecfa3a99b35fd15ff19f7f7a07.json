@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select id from Requirements r\n            where product_id = $1 and id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "67af17745c199eca5ee954672480e4123f83beecfa3a99b35fd15ff19f7f7a07"
+}

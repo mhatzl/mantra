@@ -219,7 +219,7 @@ pub enum TestCaseState {
 }
 
 impl TestCaseState {
-    pub fn as_nr(&self) -> i32 {
+    pub const fn as_number(&self) -> i32 {
         *self as i32
     }
 }
@@ -228,13 +228,13 @@ impl TryFrom<i64> for TestCaseState {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        if value == TestCaseState::Failed.as_nr() as i64 {
+        if value == TestCaseState::Failed.as_number() as i64 {
             Ok(TestCaseState::Failed)
-        } else if value == TestCaseState::Skipped.as_nr() as i64 {
+        } else if value == TestCaseState::Skipped.as_number() as i64 {
             Ok(TestCaseState::Skipped)
-        } else if value == TestCaseState::Passed.as_nr() as i64 {
+        } else if value == TestCaseState::Passed.as_number() as i64 {
             Ok(TestCaseState::Passed)
-        } else if value == TestCaseState::Unknown.as_nr() as i64 {
+        } else if value == TestCaseState::Unknown.as_number() as i64 {
             Ok(TestCaseState::Unknown)
         } else {
             Err(ConversionError::UnknownState)

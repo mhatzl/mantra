@@ -338,8 +338,7 @@ create table ResolvedTestRunLineCoverage (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
-    state integer not null,
-    hits integer not null,
+    cov_state integer not null,
     primary key (
         product_id,
         test_run_name,
@@ -367,8 +366,7 @@ create table ResolvedTestCaseLineCoverage (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
-    state integer not null,
-    hits integer not null,
+    cov_state integer not null,
     primary key (
         product_id,
         test_run_name,
@@ -396,7 +394,7 @@ create table ResolvedLineCoverageStates (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
-    state integer not null,
+    cov_state integer not null,
     primary key (
         product_id,
         cov_filepath,
@@ -409,7 +407,7 @@ create table ChangedLineCoverage (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
-    old_state integer not null,
+    old_cov_state integer not null,
     primary key (
         product_id,
         cov_filepath,
@@ -422,7 +420,7 @@ create trigger LineCoverageChanges
 after update on ResolvedLineCoverageStates
 for each row
 when (
-    old.state is distinct from new.state
+    old.cov_state is distinct from new.cov_state
 )
 begin
     insert into ChangedLineCoverage (
@@ -430,14 +428,14 @@ begin
         cov_filepath,
         cov_file_hash,
         cov_line,
-        old_state
+        old_cov_state
     )
     values (
         old.product_id,
         old.cov_filepath,
         old.cov_file_hash,
         old.cov_line,
-        old.state
+        old.cov_state
     );
 end;
 
@@ -446,7 +444,7 @@ create table ResolvedLineCoverageTestStates (
     cov_filepath text not null,
     cov_file_hash text,
     cov_line integer not null,
-    state integer not null,
+    test_state integer not null,
     primary key (
         product_id,
         cov_filepath,
@@ -461,7 +459,7 @@ create table TraceCoveragePerTestRuns (
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    hits integer not null,
+    cov_state integer not null,
     primary key (product_id, test_run_name, filepath, traced_line, cov_line),
     foreign key (product_id, test_run_name, filepath, cov_line)
         references TestRunLineCoverage(product_id, test_run_name, cov_filepath, cov_line) on delete cascade,
@@ -486,7 +484,7 @@ create table TraceCoveragePerTestCases (
     file_hash text not null,
     traced_line integer not null,
     cov_line integer not null,
-    hits integer not null,
+    cov_state integer not null,
     primary key (product_id, test_run_name, test_case_name, filepath, traced_line, cov_line),
     foreign key (product_id, test_run_name, test_case_name, filepath, cov_line)
         references TestCaseLineCoverage(product_id, test_run_name, test_case_name, cov_filepath, cov_line) on delete cascade,
@@ -504,32 +502,33 @@ select distinct
     traced_line
 from TraceCoveragePerTestCases;
 
--- Contains traces covered by tests.
-create view TracesCoveredByTests as
+create view TracedLineCoveredByTests as
 select
     product_id,
     filepath,
     file_hash,
-    traced_line
+    traced_line,
+    cov_line
 from TraceCoveragePerTestCases
 union
 select
     product_id,
     filepath,
     file_hash,
-    traced_line
+    traced_line,
+    cov_line
 from TraceCoveragePerTestRuns;
 
+-- Contains traces covered by tests.
+create view TracesCoveredByTests as
+select distinct
+    product_id,
+    filepath,
+    file_hash,
+    traced_line
+from TracedLineCoveredByTests;
+
 create view CoverableLinesPerFilepath as
-with CoveredLinesPerFilepath (product_id, filepath, line) as (
-	select product_id, cov_filepath, cov_line
-	from ResolvedTestRunLineCoverage
-
-	union
-
-	select product_id, cov_filepath, cov_line
-	from ResolvedTestCaseLineCoverage
-)
-select product_id, filepath, count(line) as coverable_lines
-from CoveredLinesPerFilepath
+select product_id, filepath, count(cov_line) as coverable_lines
+from ResolvedLineCoverageTestStates
 group by product_id, filepath;

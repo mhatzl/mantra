@@ -32,23 +32,20 @@ async fn detect_hierarchy_cycles(pool: MantraPool) {
         .await
         .expect("Collecting test data must not fail");
 
-    let collect_nr = collection.collect_nr();
-    let test_run_date = "2026-03-28T13:00:00Z";
-
     // now we need to manually insert a test run, because the schema does not allow cyclical test runs
     // by construction
     sqlx::query!(
         "
-        insert into TestRunHierarchies (collect_nr, product_id, parent_name, parent_date, child_name, child_date)
-        values ($1, $2, $3, $4, $5, $6)
+        insert into TestRunHierarchies (product_id, parent_name, child_name)
+        values ($1, $2, $3)
         ",
-        collect_nr,
         product_id,
         "tr-1.sub",
-        test_run_date,
         "tr-1",
-        test_run_date
-    ).execute(collection.connection_mut()).await.expect("Failed to insert intentionally bad hierarchy cycle");
+    )
+    .execute(collection.connection_mut())
+    .await
+    .expect("Failed to insert intentionally bad hierarchy cycle");
 
     let tr_res = collection.aggregate().await;
 
