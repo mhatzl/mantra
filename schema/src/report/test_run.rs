@@ -81,12 +81,6 @@ pub struct TestRunReportSchema {
     /// [req("testcov.test_run.origin")]
     pub origin: Option<Origin>,
     pub base_origin: Option<Origin>,
-    /// Nr of test cases that are part of the test run.
-    ///
-    /// **Note:** Must match with the number of entries in the `test_cases` field,
-    /// plus the number of entries in the `test_cases` fields of all child test runs.
-    /// In case this differs, it indicates that not all test cases have finished execution.
-    pub nr_of_test_cases: i64,
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,

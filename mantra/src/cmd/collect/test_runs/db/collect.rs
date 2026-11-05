@@ -198,7 +198,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 utc_date,
                 description_hash,
                 duration_sec,
-                nr_of_test_cases,
                 origin_hash,
                 data_hash,
                 schema_hash,
@@ -214,8 +213,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $7,
                 $8,
                 $9,
-                $10,
-                $11
+                $10
             )
             on conflict (
                 product_id,
@@ -226,7 +224,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 utc_date = excluded.utc_date,
                 description_hash = excluded.description_hash,
                 duration_sec = excluded.duration_sec,
-                nr_of_test_cases = excluded.nr_of_test_cases,
                 origin_hash = excluded.origin_hash,
                 data_hash = excluded.data_hash,
                 schema_hash = excluded.schema_hash,
@@ -238,7 +235,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             test_run.utc_date,
             description_hash,
             duration,
-            test_run.nr_of_test_cases,
             origin_hash,
             data_hash,
             schema_hash,

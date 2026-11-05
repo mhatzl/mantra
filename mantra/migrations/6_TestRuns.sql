@@ -58,10 +58,6 @@ create table TestRuns (
     description_hash text references GeneralTexts (hash) on delete restrict,
     -- Optional duration in seconds about how long the test run took.
     duration_sec real,
-    -- The number of expected test cases mapped to the test run.
-    -- Meaning, if there are fewer associated test cases in the `TestCases` table,
-    -- not all test cases were executed.
-    nr_of_test_cases integer not null,
     -- Optional hash of the origin data of the test run.
     -- [req("testcov.test_run.origin")]
     origin_hash text references GeneralJson (hash) on delete restrict,

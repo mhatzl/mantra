@@ -30,12 +30,6 @@ pub struct ShallowTestRun {
     /// Optional origin of the test run.
     /// [req("testcov.test_run.origin")]
     pub origin: Option<Origin>,
-    /// Nr of test cases that are part of the test run.
-    ///
-    /// **Note:** Must match with the number of entries in the `test_cases` field,
-    /// plus the number of entries in the `test_cases` fields of all child test runs.
-    /// In case this differs, it indicates that not all test cases have finished execution.
-    pub nr_of_test_cases: u32,
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,
@@ -78,7 +72,6 @@ impl ShallowTestRun {
             description: self.description,
             revisions: self.revisions,
             origin: self.origin,
-            nr_of_test_cases: self.nr_of_test_cases,
             properties: self.properties,
             duration_sec: self.duration_sec,
             logs: self.logs,
@@ -153,7 +146,6 @@ fn junit_to_shallow_test_run(
         utc_date,
         revisions: None,
         origin: None,
-        nr_of_test_cases: junit.tests.try_into()?,
         properties: None,
         duration_sec: junit.time.and_then(|d| Duration::try_from(d).ok()),
         logs: None,
@@ -314,7 +306,6 @@ fn get_inner_test_run(
             .or(timestamp),
         revisions: None,
         origin: None,
-        nr_of_test_cases: testsuite.tests.try_into()?,
         properties: None,
         duration_sec: testsuite.time.and_then(|d| Duration::try_from(d).ok()),
         logs: None,

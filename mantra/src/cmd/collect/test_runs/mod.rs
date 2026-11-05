@@ -214,7 +214,7 @@ async fn collect_well_known<'db, 'c>(
         test_run
     } else {
         // unclear which test run maps to which coverage data => create new test run whith the collected ones as children
-        let (name, utc_date, nr_test_cases, test_runs) =
+        let (name, utc_date, test_runs) =
             to_sub_test_runs(shallow_test_run_data, coverage_timestamp);
 
         TestRun {
@@ -223,7 +223,6 @@ async fn collect_well_known<'db, 'c>(
             description: None,
             revisions: None,
             origin: None,
-            nr_of_test_cases: nr_test_cases,
             properties: None,
             duration_sec: None,
             logs: None,
@@ -259,16 +258,14 @@ async fn collect_well_known<'db, 'c>(
 fn to_sub_test_runs(
     shallow_test_run_data: Vec<Box<ShallowTestRun>>,
     coverage_timestamp: Option<OffsetDateTime>,
-) -> (String, OffsetDateTime, u32, Vec<TestRun>) {
+) -> (String, OffsetDateTime, Vec<TestRun>) {
     let mut test_run_names = Vec::new();
     let mut earliest_utc_date = None;
-    let mut nr_test_cases = 0;
 
     let test_run_data = shallow_test_run_data
         .into_iter()
         .map(|s| {
             test_run_names.push(s.name.clone());
-            nr_test_cases += s.nr_of_test_cases;
 
             if s.utc_date.is_some()
                 && (earliest_utc_date.is_none() || earliest_utc_date > s.utc_date)
@@ -291,7 +288,7 @@ fn to_sub_test_runs(
         }
     };
 
-    (name, utc_date, nr_test_cases, test_run_data)
+    (name, utc_date, test_run_data)
 }
 
 fn merge_well_known_coverage_data(
