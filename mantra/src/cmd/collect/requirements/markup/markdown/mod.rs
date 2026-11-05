@@ -276,6 +276,8 @@ fn fill_req_body(
         requirement.children = req_fields.children;
         requirement.properties = req_fields.properties;
         requirement.replaces = req_fields.replaces;
+        requirement.kind = req_fields.kind;
+        requirement.draft = req_fields.draft;
     }
 
     let mut description: Option<String> = None;
@@ -313,6 +315,8 @@ struct ReqFields {
     exclude: Option<bool>,
     optional: Option<bool>,
     replaces: Option<Vec<ReqId>>,
+    kind: Option<String>,
+    draft: Option<bool>,
     properties: Option<Properties>,
 }
 
@@ -326,6 +330,8 @@ enum FieldKey {
     Optional,
     Replaces,
     Properties,
+    Kind,
+    Draft,
 }
 
 impl FieldKey {
@@ -338,6 +344,8 @@ impl FieldKey {
             "exclude" => FieldKey::Exclude,
             "optional" => FieldKey::Optional,
             "replaces" => FieldKey::Replaces,
+            "kind" => FieldKey::Kind,
+            "draft" => FieldKey::Draft,
             _ => FieldKey::Properties,
         }
     }
@@ -353,6 +361,8 @@ impl std::fmt::Display for FieldKey {
             FieldKey::Exclude => write!(f, "Exclude"),
             FieldKey::Optional => write!(f, "Optional"),
             FieldKey::Replaces => write!(f, "Replaces"),
+            FieldKey::Kind => write!(f, "Kind"),
+            FieldKey::Draft => write!(f, "Draft"),
             FieldKey::Properties => write!(f, "Properties"),
         }
     }
@@ -408,7 +418,6 @@ fn extract_req_fields(
 
         match field_key {
             FieldKey::Parents | FieldKey::Children => {
-                // TODO: extract on underlying raw value instead of parsed Markdown
                 let relations: Vec<RequirementRelation> = json5::from_str(&raw_value)
                     .map_err(|err| anyhow!(err).context(format!("Property key: '{}'", raw_key)))?;
 
@@ -448,6 +457,16 @@ fn extract_req_fields(
                     fields.replaces = Some(req_ids);
                 }
             }
+            FieldKey::Kind => {
+                let kind: String = json5::from_str(&raw_value)?;
+
+                if fields.kind.is_some() {
+                    bail!("Duplicate entry! Key 'Kind' has been set more than once");
+                } else {
+                    fields.kind = Some(kind);
+                }
+            }
+            FieldKey::Draft => update_bool(&mut fields.draft, &raw_value).context("Key: Draft")?,
             FieldKey::Properties => {
                 let value: serde_json::Value = json5::from_str(&raw_value)?;
 

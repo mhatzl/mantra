@@ -94,8 +94,8 @@ async fn multiple_products(pool: MantraPool) {
 
     assert_eq!(
         product_a_req_2_hierarchy.len(),
-        1,
-        "Product A req-2 must have exactly one child"
+        2,
+        "Product A req-2 must have exactly two children"
     );
     assert!(
         product_a_req_2_hierarchy.contains(&RequirementPk {
@@ -103,6 +103,13 @@ async fn multiple_products(pool: MantraPool) {
             product_id: Some(ProductId::new("B".to_string()).unwrap())
         }),
         "Product B req-2 must be a child of Product A req-2"
+    );
+    assert!(
+        product_a_req_2_hierarchy.contains(&RequirementPk {
+            id: ReqId::new("req-3".to_string()).unwrap(),
+            product_id: Some(ProductId::new("A".to_string()).unwrap())
+        }),
+        "Product A req-3 must be a child of Product A req-2"
     );
 
     let product_b_req_1_hierarchy = hierarchy
@@ -125,12 +132,23 @@ async fn multiple_products(pool: MantraPool) {
         "Product B req-2 must be a child of Product B req-1"
     );
 
-    assert_eq!(
-        hierarchy.get(&RequirementPk {
+    let product_b_req_2_hierarchy = hierarchy
+        .get(&RequirementPk {
             id: ReqId::new("req-2".to_string()).unwrap(),
             product_id: Some(ProductId::new("B".to_string()).unwrap()),
+        })
+        .expect("Product B req-2 must contain req-3 from product A");
+
+    assert_eq!(
+        product_b_req_2_hierarchy.len(),
+        1,
+        "Product B req-2 must have one child"
+    );
+    assert!(
+        product_b_req_2_hierarchy.contains(&RequirementPk {
+            id: ReqId::new("req-3".to_string()).unwrap(),
+            product_id: Some(ProductId::new("A".to_string()).unwrap())
         }),
-        None,
-        "Product B req-2 must have no children"
+        "Product A req-3 must be a child of Product B req-2"
     );
 }

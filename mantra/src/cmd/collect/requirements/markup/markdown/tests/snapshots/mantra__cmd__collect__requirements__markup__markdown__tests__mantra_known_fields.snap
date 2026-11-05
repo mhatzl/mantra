@@ -78,6 +78,32 @@ RequirementSchema(
       properties: None,
       media_type: None,
     ),
+    Requirement(
+      id: "req-4",
+      parents: Some([
+        RequirementRelation(
+          id: "req-3",
+          product_id: None,
+          optional: Some(true),
+          aspect: Some("some-aspect"),
+        ),
+      ]),
+      children: None,
+      title: "Title",
+      kind: Some("riks"),
+      description: None,
+      origin: {
+        "line": 20,
+      },
+      manual_verification: None,
+      deprecated: None,
+      exclude: None,
+      optional: None,
+      draft: Some(true),
+      replaces: None,
+      properties: None,
+      media_type: None,
+    ),
   ],
   properties: None,
   origin: Some({

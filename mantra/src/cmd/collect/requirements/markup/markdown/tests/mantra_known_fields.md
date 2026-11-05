@@ -16,3 +16,9 @@ Some description for the requirement.
 - **Deprecated:** true
 - **Exclude:** true
 - **Replaces:** ["req-2"]
+
+# `req-4`: Title
+
+- **Parents:** [{ id: "req-3", optional: true, aspect: "some-aspect" }]
+- **Kind:** "riks"
+- **Draft:** true
