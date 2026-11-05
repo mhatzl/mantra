@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from CollectConfigs\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "5f2ee2d32be752aae92ef11a91b358eb7cc2e009a62607f430b3f3d3e009ca1f"
+}

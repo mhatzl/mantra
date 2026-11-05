@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RequirementReplacements\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c9983116c0a3a49c44a5c7a5fcbc7f3c47bbc822d850c6cea0343e6348dd659c"
+}

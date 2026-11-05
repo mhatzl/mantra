@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableLeafRequirements (\n                product_id,\n                req_id\n            )\n            select distinct\n                ur.product_id,\n                ur.req_id\n            from UsableRequirements ur, LeafRequirements lr\n            where ur.product_id = lr.product_id\n            and ur.req_id = lr.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "31e41088bc43c6442065ddfbf3e8257d41a1c711e0d76cec5f0bfd04448c60cc"
+}

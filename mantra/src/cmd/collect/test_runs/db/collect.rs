@@ -21,13 +21,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if !schema_collected {
             if let Some(props) = &test_run_schema.test_run_properties {
                 for (key, value) in props {
-                    let value_hash = FmtHash::new_serialized(&value);
-
-                    self.insert_general_json(&value_hash, value)
-                        .await
-                        .with_context(|| {
-                            format!("Inserting value for test run schema property '{key}'")
-                        })?;
+                    let value_hash = self.insert_general_json(value).await.with_context(|| {
+                        format!("Inserting value for test run schema property '{key}'")
+                    })?;
 
                     sqlx::query!(
                         "
@@ -54,13 +50,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
             if let Some(props) = &test_run_schema.test_case_properties {
                 for (key, value) in props {
-                    let value_hash = FmtHash::new_serialized(&value);
-
-                    self.insert_general_json(&value_hash, value)
-                        .await
-                        .with_context(|| {
-                            format!("Inserting value for test case schema property '{key}'")
-                        })?;
+                    let value_hash = self.insert_general_json(value).await.with_context(|| {
+                        format!("Inserting value for test case schema property '{key}'")
+                    })?;
 
                     sqlx::query!(
                         "
@@ -174,23 +166,25 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             }
         }
 
-        let origin_hash = test_run.origin.as_ref().map(FmtHash::new_serialized);
-        if let Some(hash) = &origin_hash
-            && let Some(origin) = &test_run.origin
-        {
-            self.insert_general_json(hash, origin)
-                .await
-                .context("Failed to insert the test run origin")?;
-        }
+        let origin_hash = if let Some(origin) = &test_run.origin {
+            Some(
+                self.insert_general_json(origin)
+                    .await
+                    .context("Failed to insert the test run origin")?,
+            )
+        } else {
+            None
+        };
 
-        let description_hash = test_run.description.as_ref().map(|d| FmtHash::new(d));
-        if let Some(hash) = &description_hash
-            && let Some(description) = &test_run.description
-        {
-            self.insert_general_text(hash, description)
-                .await
-                .context("Failed to insert the test run description")?;
-        }
+        let description_hash = if let Some(description) = &test_run.description {
+            Some(
+                self.insert_general_text(description)
+                    .await
+                    .context("Failed to insert the test run description")?,
+            )
+        } else {
+            None
+        };
 
         let duration = test_run.duration_sec.map(|d| d.as_seconds_f64());
         let media_type = test_run.media_type.as_ref().or(parent_media_type);
@@ -256,8 +250,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(props) = &test_run.properties {
             for prop in props {
-                let value_hash = FmtHash::new_serialized(&prop.1);
-                self.insert_general_json(&value_hash, prop.1).await?;
+                let value_hash = self.insert_general_json(prop.1).await?;
 
                 sqlx::query!(
                     "
@@ -417,9 +410,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             // TODO: ensure that log srcs only appear once
             for log in logs {
                 let log_src = log.source.as_nr();
-                let log_hash = FmtHash::new(&log.content);
-
-                self.insert_general_text(&log_hash, &log.content)
+                let log_hash = self
+                    .insert_general_text(&log.content)
                     .await
                     .context("Failed to insert the log content")?;
 
@@ -524,14 +516,15 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         for test_case in &test_run.test_cases {
             let state = test_case.state.as_number();
-            let description_hash = test_case.description.as_ref().map(|d| FmtHash::new(d));
-            if let Some(hash) = &description_hash
-                && let Some(description) = &test_case.description
-            {
-                self.insert_general_text(hash, description)
-                    .await
-                    .context("Failed to insert the test case description")?;
-            }
+            let description_hash = if let Some(description) = &test_case.description {
+                Some(
+                    self.insert_general_text(description)
+                        .await
+                        .context("Failed to insert the test case description")?,
+                )
+            } else {
+                None
+            };
             let duration = test_case.duration_sec.map(|d| d.as_seconds_f64());
 
             sqlx::query!(
@@ -631,16 +624,15 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(properties) = &test_case.properties {
                 for property in properties {
                     let key = &property.0;
-                    let value_hash = FmtHash::new_serialized(&property.1);
-
-                    self.insert_general_json(&value_hash, property.1)
-                        .await
-                        .with_context(|| {
-                            format!(
-                                "Failed to insert content for property '{}' of test case '{}'",
-                                key, test_case.name
-                            )
-                        })?;
+                    let value_hash =
+                        self.insert_general_json(property.1)
+                            .await
+                            .with_context(|| {
+                                format!(
+                                    "Failed to insert content for property '{}' of test case '{}'",
+                                    key, test_case.name
+                                )
+                            })?;
 
                     sqlx::query!(
                         "
@@ -692,15 +684,15 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 // TODO: ensure that log srcs only appear once
                 for log in logs {
                     let log_src = log.source.as_nr();
-                    let log_hash = FmtHash::new(&log.content);
-                    self.insert_general_text(&log_hash, &log.content)
-                        .await
-                        .with_context(|| {
-                            format!(
-                                "Failed to insert content for '{}' log of test case '{}'",
-                                log.source, test_case.name
-                            )
-                        })?;
+                    let log_hash =
+                        self.insert_general_text(&log.content)
+                            .await
+                            .with_context(|| {
+                                format!(
+                                    "Failed to insert content for '{}' log of test case '{}'",
+                                    log.source, test_case.name
+                                )
+                            })?;
 
                     sqlx::query!(
                         "
@@ -809,9 +801,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(state_props) = &test_case.state_properties {
                 for property in state_props {
                     let key = &property.0;
-                    let value_hash = FmtHash::new_serialized(&property.1);
-
-                    self.insert_general_json(&value_hash, property.1)
+                    let value_hash = self.insert_general_json(property.1)
                     .await
                     .with_context(|| {
                         format!(

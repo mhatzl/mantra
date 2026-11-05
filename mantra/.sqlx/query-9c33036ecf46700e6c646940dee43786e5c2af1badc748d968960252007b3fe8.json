@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from TestRunHierarchies\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9c33036ecf46700e6c646940dee43786e5c2af1badc748d968960252007b3fe8"
+}

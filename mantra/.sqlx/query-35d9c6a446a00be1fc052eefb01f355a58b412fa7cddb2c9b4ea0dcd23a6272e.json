@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from UsableNonManualRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "35d9c6a446a00be1fc052eefb01f355a58b412fa7cddb2c9b4ea0dcd23a6272e"
+}

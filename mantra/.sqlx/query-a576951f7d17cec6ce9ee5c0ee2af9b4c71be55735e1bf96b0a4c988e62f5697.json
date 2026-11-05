@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from GeneralTexts\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a576951f7d17cec6ce9ee5c0ee2af9b4c71be55735e1bf96b0a4c988e62f5697"
+}

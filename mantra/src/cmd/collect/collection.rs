@@ -23,7 +23,6 @@ pub(crate) struct Collection<'db> {
     abs_cfg_file_parent_path: PathBuf,
     id: i64,
     collected_at_utc: OffsetDateTime,
-    replace_hashed: bool,
 }
 
 impl<'db> Collection<'db> {
@@ -31,19 +30,13 @@ impl<'db> Collection<'db> {
         let collected_at_utc = OffsetDateTime::now_utc();
         let mut transaction = db.start_transaction().await?;
 
-        // TODO: add args and env data to table
-
         sqlx::query!(
             "
             insert into Collections (
-                collected_at_utc,
-                arguments_hash,
-                env_vars_hash
+                collected_at_utc
             )
             values (
-                $1,
-                null,
-                null
+                $1
             )
             ",
             collected_at_utc
@@ -64,7 +57,6 @@ impl<'db> Collection<'db> {
             abs_cfg_file_parent_path: crate::io::abs_parent_path(cfg.cfg_filepath())?,
             id,
             collected_at_utc,
-            replace_hashed: cfg.args().replace_hashed,
         };
 
         collection
@@ -72,13 +64,23 @@ impl<'db> Collection<'db> {
             .await
             .context("Resetting history")?;
 
+        // TODO: add args and env data to table
+
         Ok(collection)
     }
 
     pub(super) async fn collect(&mut self, cfg: CollectConfig) -> Result<(), anyhow::Error> {
         self.collect_products(&cfg.args, cfg.product_cfgs).await?;
 
-        self.aggregate().await
+        if cfg.args.mode == CollectMode::RemoveOutdated {
+            self.remove_outdated_content()
+                .await
+                .context("Deleting outdated content")?;
+        }
+
+        self.aggregate().await?;
+
+        Ok(())
     }
 
     pub(super) async fn aggregate(&mut self) -> Result<(), anyhow::Error> {
@@ -95,6 +97,111 @@ impl<'db> Collection<'db> {
         self.aggregate_mixed()
             .await
             .context("Aggregating interleaved data")?;
+
+        Ok(())
+    }
+
+    pub(super) async fn remove_outdated_content(&mut self) -> Result<(), anyhow::Error> {
+        let collection_id = self.collect_nr();
+
+        sqlx::query!(
+            "
+            delete from SchemaSources
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated SchemaSources")?;
+
+        sqlx::query!(
+            "
+            delete from Schemas
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated Schemas")?;
+
+        sqlx::query!(
+            "
+            delete from CollectionLogs
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated CollectionLogs")?;
+
+        sqlx::query!(
+            "
+            delete from ConflictingCollectedFiles
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated ConflictingCollectedFiles")?;
+
+        sqlx::query!(
+            "
+            delete from CollectedFiles
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated CollectedFiles")?;
+
+        sqlx::query!(
+            "
+            delete from CollectionMetadata
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated CollectionMetadata")?;
+
+        sqlx::query!(
+            "
+            delete from FileHashes
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated FileHashes")?;
+
+        sqlx::query!(
+            "
+            delete from GeneralJson
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated GeneralJson")?;
+
+        sqlx::query!(
+            "
+            delete from GeneralTexts
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated GeneralTexts")?;
 
         Ok(())
     }
@@ -139,7 +246,7 @@ impl<'db> Collection<'db> {
             }
         }
 
-        if &args.mode == &CollectMode::RemoveMissing {
+        if args.mode == CollectMode::RemoveOutdated {
             self.remove_outdated_products()
                 .await
                 .context("Remove outdated products")?;
@@ -174,68 +281,75 @@ impl<'db> Collection<'db> {
 
     pub(super) async fn insert_general_json(
         &mut self,
-        hash: &FmtHash,
         content: &serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        insert_general_json(&mut self.transaction, hash, content, self.replace_hashed).await
+    ) -> Result<FmtHash, anyhow::Error> {
+        let collection_id = self.collect_nr();
+        let hash = FmtHash::new_serialized(content);
+
+        sqlx::query!(
+            "
+            insert into GeneralJson (
+                latest_collection,
+                hash,
+                content
+            )
+            values (
+                $1,
+                $2,
+                $3
+            )
+            on conflict (hash) do update
+            set
+                latest_collection = excluded.latest_collection,
+                content = excluded.content
+            ",
+            collection_id,
+            hash,
+            content
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(hash)
     }
 
     pub(super) async fn insert_general_text(
         &mut self,
-        hash: &FmtHash,
         content: &str,
-    ) -> Result<(), anyhow::Error> {
-        // Content hash computed internally, so should always be correct
-        //debug_assert_eq!(hash, &FmtHash::new(content));
-        let expected = FmtHash::new(content);
-        if hash != &expected {
-            bail!("Unexpected hash '{}'. Expected: {}", hash, expected);
-        }
+    ) -> Result<FmtHash, anyhow::Error> {
+        let collection_id = self.collect_nr();
+        let hash = FmtHash::new(content);
 
-        if self.replace_hashed {
-            sqlx::query!(
-                "
-                insert into GeneralTexts (
-                    hash,
-                    content
-                )
-                values (
-                    $1,
-                    $2
-                ) on conflict (hash) do update
-                set content = excluded.content
-                ",
+        sqlx::query!(
+            "
+            insert into GeneralTexts (
+                latest_collection,
                 hash,
                 content
             )
-            .execute(self.connection_mut())
-            .await?;
-        } else {
-            sqlx::query!(
-                "
-                insert or ignore into GeneralTexts (
-                    hash,
-                    content
-                )
-                values (
-                    $1,
-                    $2
-                )
-                ",
-                hash,
-                content
-            )
-            .execute(self.connection_mut())
-            .await?;
-        }
+            values (
+                $1,
+                $2,
+                $3
+            ) on conflict (hash) do update
+            set
+                latest_collection = excluded.latest_collection,
+                content = excluded.content
+            ",
+            collection_id,
+            hash,
+            content
+        )
+        .execute(self.connection_mut())
+        .await?;
 
-        Ok(())
+        Ok(hash)
     }
 
     pub(super) async fn collect_unhashed_file(
         &mut self,
         filepath: &RelativePath,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<MediaType, anyhow::Error> {
         self.insert_collected_file(filepath, None, None).await
     }
 
@@ -244,7 +358,7 @@ impl<'db> Collection<'db> {
         filepath: &RelativePath,
         file_hash: Option<&FmtHash>,
         content: Option<&str>,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<MediaType, anyhow::Error> {
         let media_type = MediaType::new(filepath);
         let filepath = filepath.as_str();
         let collect_nr = self.collect_nr();
@@ -264,49 +378,32 @@ impl<'db> Collection<'db> {
         }
 
         if let Some(hash) = file_hash.as_ref() {
-            if self.replace_hashed
-                && let Some(some_content) = content
-            {
-                sqlx::query!(
-                    "
-                    insert into FileHashes (
-                        hash,
-                        content
-                    )
-                    values (
-                        $1,
-                        $2
-                    )
-                    on conflict (hash) do update
-                    set content = excluded.content
-                    ",
-                    hash,
-                    some_content
-                )
-                .execute(self.connection_mut())
-                .await?;
-            } else {
-                // either
-                sqlx::query!(
-                    "
-                    insert into FileHashes (
-                        hash,
-                        content
-                    )
-                    values (
-                        $1,
-                        $2
-                    )
-                    on conflict (hash) do update
-                    -- we take the one that is not null
-                    set content = coalesce(FileHashes.content, excluded.content)
-                    ",
+            sqlx::query!(
+                "
+                insert into FileHashes (
+                    latest_collection,
                     hash,
                     content
                 )
-                .execute(self.connection_mut())
-                .await?;
-            }
+                values (
+                    $1,
+                    $2,
+                    $3
+                )
+                on conflict (
+                    hash
+                ) do update
+                set
+                    latest_collection = excluded.latest_collection,
+                    -- we take the one that is not null
+                    content = coalesce(excluded.content, FileHashes.content)
+                ",
+                collect_nr,
+                hash,
+                content
+            )
+            .execute(self.connection_mut())
+            .await?;
 
             if let Some(collected_hash) = sqlx::query!(
                 "
@@ -397,7 +494,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Failed to insert collected file")?;
 
-        Ok(())
+        Ok(media_type)
     }
 
     pub(super) async fn insert_schema_single_source<S: Schema>(
@@ -475,12 +572,15 @@ impl<'db> Collection<'db> {
         &mut self,
         schema_hash: &FmtHash,
     ) -> Result<bool, anyhow::Error> {
+        let collection_id = self.collect_nr();
+
         Ok(sqlx::query!(
             "
             select *
             from Schemas
-            where content_hash = $1
+            where latest_collection = $1 and content_hash = $2
             ",
+            collection_id,
             schema_hash
         )
         .fetch_optional(self.connection_mut())
@@ -490,11 +590,11 @@ impl<'db> Collection<'db> {
     }
 
     async fn insert_schema<S: Schema>(&mut self, schema: &S) -> Result<FmtHash, anyhow::Error> {
+        let collection_id = self.collect_nr();
         let schema_hash = FmtHash::new_serialized(schema);
 
         let origin_hash = if let Some(origin_value) = schema.origin() {
-            let origin_hash = FmtHash::new_serialized(origin_value);
-            self.insert_general_json(&origin_hash, origin_value).await?;
+            let origin_hash = self.insert_general_json(origin_value).await?;
             Some(origin_hash)
         } else {
             None
@@ -504,8 +604,9 @@ impl<'db> Collection<'db> {
             "
             select origin_hash
             from Schemas
-            where content_hash = $1
+            where latest_collection = $1 and content_hash = $2
             ",
+            collection_id,
             schema_hash
         )
         .fetch_optional(self.connection_mut())
@@ -525,14 +626,23 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into Schemas (
+                latest_collection,
                 content_hash,
                 origin_hash
             )
             values (
                 $1,
-                $2
+                $2,
+                $3
             )
+            on conflict (
+                content_hash
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                origin_hash = excluded.origin_hash
             ",
+            collection_id,
             schema_hash,
             origin_hash
         )
@@ -546,9 +656,25 @@ impl<'db> Collection<'db> {
     /// Deletes changes made by a previous collection.
     /// The "history" tables can only track the changes made by the new collection.
     async fn reset_changes(&mut self) -> Result<(), anyhow::Error> {
+        self.reset_product_changes()
+            .await
+            .context("Resetting product history")?;
+
         self.reset_requirement_changes()
             .await
             .context("Resetting requirement history")?;
+
+        self.reset_annotation_changes()
+            .await
+            .context("Resetting annotation history")?;
+
+        self.reset_test_run_changes()
+            .await
+            .context("Resetting test run history")?;
+
+        self.reset_review_changes()
+            .await
+            .context("Resetting review history")?;
 
         Ok(())
     }
@@ -557,58 +683,4 @@ impl<'db> Collection<'db> {
     pub(super) fn abs_cfg_file_parent_path(&self) -> PathBuf {
         self.abs_cfg_file_parent_path.clone()
     }
-}
-
-async fn insert_general_json<'db>(
-    transaction: &mut MantraTransaction<'db>,
-    hash: &FmtHash,
-    content: &serde_json::Value,
-    replace_hashed: bool,
-) -> Result<(), anyhow::Error> {
-    // Content hash computed internally, so should always be correct
-    //debug_assert_eq!(hash, &FmtHash::from(content));
-    let expected = FmtHash::new_serialized(content);
-    if hash != &expected {
-        bail!("Unexpected hash '{}'. Expected: {}", hash, expected);
-    }
-
-    if replace_hashed {
-        sqlx::query!(
-            "
-            insert into GeneralJson (
-                hash,
-                content
-            )
-            values (
-                $1,
-                $2
-            )
-            on conflict (hash) do update
-            set content = excluded.content
-            ",
-            hash,
-            content
-        )
-        .execute(&mut *transaction.as_mut())
-        .await?;
-    } else {
-        sqlx::query!(
-            "
-            insert or ignore into GeneralJson (
-                hash,
-                content
-            )
-            values (
-                $1,
-                $2
-            )
-            ",
-            hash,
-            content
-        )
-        .execute(&mut *transaction.as_mut())
-        .await?;
-    }
-
-    Ok(())
 }

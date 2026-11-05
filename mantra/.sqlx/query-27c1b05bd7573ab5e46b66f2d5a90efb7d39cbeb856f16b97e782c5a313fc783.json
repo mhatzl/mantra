@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with TestLineCoverageOverrides (product_id, review_name, test_run_name) as (\n                select product_id, review_name, test_run_name\n                from TestRunLineCoverageOverrides\n\n                union all\n\n                select product_id, review_name, test_run_name\n                from TestCaseLineCoverageOverrides\n            ), TestOverrides (product_id, review_name, test_run_name) as (\n                select product_id, review_name, test_run_name\n                from TestCaseOverrides\n\n                union all\n\n                select product_id, review_name, test_run_name\n                from TestLineCoverageOverrides\n            )\n            insert into ObsoleteReviews (\n                product_id,\n                review_name\n            )\n            select\n                product_id,\n                name\n            from Reviews rv\n            where\n            -- contains ignored review entries\n            exists (\n                select ie.review_name\n                from IgnoredReviewEntries ie\n                where ie.product_id = rv.product_id\n                and ie.review_name = rv.name\n            )\n\n            union all\n\n            select\n                o.product_id,\n                o.review_name\n            from TestOverrides o\n            where exists (\n                select otr.test_run_name\n                from ObsoleteTestRuns otr\n                where otr.product_id = o.product_id\n                and otr.test_run_name = o.test_run_name\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "27c1b05bd7573ab5e46b66f2d5a90efb7d39cbeb856f16b97e782c5a313fc783"
+}

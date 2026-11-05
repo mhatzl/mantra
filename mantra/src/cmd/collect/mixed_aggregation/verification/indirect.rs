@@ -7,7 +7,6 @@ impl<'db> Collection<'db> {
     pub(super) async fn update_indirect_req_verification_states(
         &mut self,
     ) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
         let req_verified_nr = RequirementState::Verified.as_nr();
         let req_failed_nr = RequirementState::Failed.as_nr();
         let req_skipped_nr = RequirementState::Skipped.as_nr();
@@ -17,7 +16,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into UsableLeafRequirements (
+            delete from UsableLeafRequirements
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableLeafRequirements")?;
+
+        sqlx::query!(
+            "
+            insert into UsableLeafRequirements (
                 product_id,
                 req_id
             )
@@ -35,7 +43,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into UsableNonLeafRequirements (
+            delete from UsableNonLeafRequirements
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableNonLeafRequirements")?;
+
+        sqlx::query!(
+            "
+            insert into UsableNonLeafRequirements (
                 product_id,
                 req_id
             )
@@ -58,8 +75,17 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            delete from RequirementsWithOnlyOptionalChildren
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RequirementsWithOnlyOptionalChildren")?;
+
+        sqlx::query!(
+            "
             -- Note: Includes leaf requirements needed for indirect check later
-            insert or ignore into RequirementsWithOnlyOptionalChildren (
+            insert into RequirementsWithOnlyOptionalChildren (
                 product_id,
                 req_id
             )
@@ -106,11 +132,20 @@ impl<'db> Collection<'db> {
         .await
         .context("Failed to update RequirementsWithOnlyOptionalChildren")?;
 
+        sqlx::query!(
+            "
+            delete from StatesOfRequirementsWithOnlyOptionalChildren
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing StatesOfRequirementsWithOnlyOptionalChildren")?;
+
         // Note: The table may contain multiple state entries per requirement
         // This will be considered when updating IndirectRequirementVerificationStates below
         sqlx::query!(
             "
-            insert or ignore into StatesOfRequirementsWithOnlyOptionalChildren (
+            insert into StatesOfRequirementsWithOnlyOptionalChildren (
                 product_id,
                 req_id,
                 child_product_id,
@@ -193,7 +228,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into VerifiedRequirementsWithOnlyOptionalChildren (
+            delete from VerifiedRequirementsWithOnlyOptionalChildren
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing VerifiedRequirementsWithOnlyOptionalChildren")?;
+
+        sqlx::query!(
+            "
+            insert into VerifiedRequirementsWithOnlyOptionalChildren (
                 product_id,
                 req_id
             )
@@ -223,7 +267,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into RequirementsWithNonOptionalChildrenHavingSkippedState (
+            delete from RequirementsWithNonOptionalChildrenHavingSkippedState
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RequirementsWithNonOptionalChildrenHavingSkippedState")?;
+
+        sqlx::query!(
+            "
+            insert into RequirementsWithNonOptionalChildrenHavingSkippedState (
                 product_id,
                 req_id
             )
@@ -320,7 +373,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState (
+            delete from RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState")?;
+
+        sqlx::query!(
+            "
+            insert into RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState (
                 product_id,
                 req_id
             )
@@ -442,7 +504,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            insert or ignore into IndirectRequirementVerificationStates (
+            delete from IndirectRequirementVerificationStates
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing IndirectRequirementVerificationStates")?;
+
+        sqlx::query!(
+            "
+            insert into IndirectRequirementVerificationStates (
                 product_id,
                 req_id,
                 state

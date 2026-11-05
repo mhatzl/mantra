@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                                select review_name\n                                from TestRunLineCoverageOverrides\n                                where latest_collection = $1\n                                and product_id = $2\n                                and test_run_name = $3\n                                and cov_filepath = $4\n                                and cov_line = $5\n                                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "review_name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "review_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e20eaa20d7dbe12798c0db019b05ea68454ed791f16cd3736659c1508da73307"
+}

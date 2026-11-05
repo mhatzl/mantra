@@ -17,7 +17,8 @@ impl<'db> Collection<'db> {
         .context("Querying latest collection updating test runs")?
         .and_then(|r| r.latest_collection);
 
-        if latest_collected_tests_nr != Some(collect_nr) {
+        // if there is no test run data, we still must ensure that aggragation tables get cleared
+        if latest_collected_tests_nr.is_some() && latest_collected_tests_nr != Some(collect_nr) {
             log::info!("No test data collected, skipping test aggregation");
 
             return Ok(());
@@ -34,7 +35,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_test_run_descendants(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TestRunDescendants
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TestRunDescendants")?;
 
         sqlx::query!(
             "
@@ -65,12 +73,12 @@ impl<'db> Collection<'db> {
                     tc.test_run_name != th.parent_name
                 )
             )
-            insert or ignore into TestRunDescendants (
+            insert into TestRunDescendants (
                 product_id,
                 test_run_name,
                 descendant_test_run_name
             )
-            select
+            select distinct
                 product_id,
                 test_run_name,
                 descendant_test_run_name
@@ -108,11 +116,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_leaf_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from LeafTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing LeafTestRuns")?;
 
         sqlx::query!(
             "
-            insert or ignore into LeafTestRuns (
+            insert into LeafTestRuns (
                 product_id,
                 test_run_name
             )

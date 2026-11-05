@@ -5,6 +5,7 @@ use mantra_schema::requirements::ReqId;
 use mantra_schema::test_runs::TestCaseState;
 
 pub mod cfg;
+pub mod changes;
 pub mod collect;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

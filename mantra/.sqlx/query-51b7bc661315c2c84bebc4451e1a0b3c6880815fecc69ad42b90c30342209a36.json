@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ConflictingCollectedFiles\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "51b7bc661315c2c84bebc4451e1a0b3c6880815fecc69ad42b90c30342209a36"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from TestCaseLineCoverageOverrides\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "63bfc883ff17e91f1f4fe9d68d38a6b5e9fd2b4cb91ec8932ecde17be43d7b90"
+}

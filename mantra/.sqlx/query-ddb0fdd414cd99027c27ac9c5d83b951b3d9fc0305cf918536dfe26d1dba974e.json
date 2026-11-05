@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            -- Note: Includes leaf requirements needed for indirect check later\n            insert into RequirementsWithOnlyOptionalChildren (\n                product_id,\n                req_id\n            )\n            with RequirementsWithNonOptionalChild (\n                product_id,\n                req_id\n            ) as (\n                select\n                    ur.product_id,\n                    ur.req_id\n                from UsableNonLeafRequirements ur\n                where exists (\n                    select rh.child_req_id\n                    from\n                        RequirementHierarchies rh,\n                        UsableRequirements uri\n                    where ur.product_id = rh.parent_product_id\n                    and ur.req_id = rh.parent_req_id\n                    and uri.product_id = rh.child_product_id\n                    and uri.req_id = rh.child_req_id\n                    and rh.optional = false\n                    and not exists (\n                        select op.req_id\n                        from OptionalRequirements op\n                        where op.product_id = rh.child_product_id\n                        and op.req_id = rh.child_req_id\n                    )\n                )\n            )\n            select\n                product_id,\n                req_id\n            from UsableRequirements ur\n\n            except\n\n            select\n                product_id,\n                req_id\n            from RequirementsWithNonOptionalChild\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "ddb0fdd414cd99027c27ac9c5d83b951b3d9fc0305cf918536dfe26d1dba974e"
+}

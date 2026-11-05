@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into TracesCoveredByFailedTests (\n                product_id,\n                filepath,\n                file_hash,\n                traced_line\n            )\n            select\n                tlt.product_id,\n                tlt.filepath,\n                tlt.file_hash,\n                tlt.traced_line\n            from TracedLineCoveredByTests tlt\n            where exists (\n                select rlts.test_state\n                from ResolvedLineCoverageTestStates rlts\n                where rlts.product_id = tlt.product_id\n                and rlts.cov_filepath = tlt.filepath\n                and rlts.cov_file_hash = tlt.file_hash\n                and rlts.cov_line = tlt.cov_line\n                and rlts.test_state = $1\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a3d5423d318da5b4e6122ae6add1f45ba464c0d4b3f08509b829ff1c673cf826"
+}

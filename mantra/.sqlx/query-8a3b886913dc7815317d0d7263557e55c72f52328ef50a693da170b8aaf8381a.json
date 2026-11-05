@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableNonLeafRequirements (\n                product_id,\n                req_id\n            )\n            select distinct\n                product_id,\n                req_id\n            from UsableRequirements\n\n            except\n\n            select distinct\n                product_id,\n                req_id\n            from UsableLeafRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "8a3b886913dc7815317d0d7263557e55c72f52328ef50a693da170b8aaf8381a"
+}

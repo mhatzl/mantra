@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from IgnoredReviewEntries\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "8c094a11fa4f2c58a19c308b338a4fbb4a2d460bfd13994aada68d6c7d3b7398"
+}

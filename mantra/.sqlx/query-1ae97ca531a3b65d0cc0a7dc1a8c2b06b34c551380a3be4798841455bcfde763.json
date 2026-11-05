@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into FileHashes (\n                    latest_collection,\n                    hash,\n                    content\n                )\n                values (\n                    $1,\n                    $2,\n                    $3\n                )\n                on conflict (\n                    hash\n                ) do update\n                set\n                    latest_collection = excluded.latest_collection,\n                    -- we take the one that is not null\n                    content = coalesce(excluded.content, FileHashes.content)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "1ae97ca531a3b65d0cc0a7dc1a8c2b06b34c551380a3be4798841455bcfde763"
+}

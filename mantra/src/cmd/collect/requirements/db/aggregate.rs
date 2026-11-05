@@ -17,7 +17,10 @@ impl<'db> Collection<'db> {
         .context("Querying latest collection updating requirements")?
         .and_then(|r| r.latest_collection);
 
-        if latest_requirements_collection != Some(collect_nr) {
+        // if there is no requirement data, we still must ensure that aggragation tables get cleared
+        if latest_requirements_collection.is_some()
+            && latest_requirements_collection != Some(collect_nr)
+        {
             log::info!("No requirement data collected, skipping requirement aggregation");
 
             return Ok(());
@@ -67,8 +70,6 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_requirement_hierarchies(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-
         let missing_parents = sqlx::query!(
             "
             select rp.product_id, rp.req_id, rp.parent_product_id, rp.parent_req_id
@@ -125,6 +126,15 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            delete from RequirementHierarchies
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RequirementHierarchies")?;
+
+        sqlx::query!(
+            "
             insert into RequirementHierarchies (
                 child_product_id,
                 child_req_id,
@@ -158,6 +168,15 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_root_requirements(&mut self) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "
+            delete from RootRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RootRequirements")?;
+
         // We have to consider all requirements, also those not collected in this collection,
         // so we check that we only consider requirements that were last collected for their product.
         sqlx::query!(
@@ -183,7 +202,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_requirement_descendants(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from RequirementDescendants
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RequirementDescendants")?;
 
         // We have to consider all requirements, also those not collected in this collection,
         // so we check that we only consider requirements that were last collected for their product.
@@ -274,8 +300,6 @@ impl<'db> Collection<'db> {
     }
 
     async fn check_replacing_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
-
         let bad_replacements = sqlx::query!(
             "
             select rr.product_id, rr.req_id, rr.replaced_req_id
@@ -306,11 +330,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_leaf_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from LeafRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing LeafRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into LeafRequirements (
+            insert into LeafRequirements (
                 product_id,
                 req_id
             )
@@ -331,11 +362,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_deprecated_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from DeprecatedRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing DeprecatedRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into DeprecatedRequirements (
+            insert into DeprecatedRequirements (
                 product_id,
                 req_id
             )
@@ -407,11 +445,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_excluded_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ExcludedRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ExcludedRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into ExcludedRequirements (
+            insert into ExcludedRequirements (
                 product_id,
                 req_id
             )
@@ -464,11 +509,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_optional_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from OptionalRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing OptionalRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into OptionalRequirements (
+            insert into OptionalRequirements (
                 product_id,
                 req_id
             )
@@ -522,7 +574,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_manual_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ManualRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ManualRequirements")?;
 
         sqlx::query!(
             "
@@ -579,11 +638,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_usable_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from UsableRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into UsableRequirements (
+            insert into UsableRequirements (
                 product_id,
                 req_id
             )
@@ -612,11 +678,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_usable_non_manual_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from UsableNonManualRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableNonManualRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into UsableNonManualRequirements (
+            insert into UsableNonManualRequirements (
                 product_id,
                 req_id
             )
@@ -636,11 +709,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_usable_manual_requirements(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from UsableManualRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableManualRequirements")?;
 
         sqlx::query!(
             "
-            insert or ignore into UsableManualRequirements (
+            insert into UsableManualRequirements (
                 product_id,
                 req_id
             )

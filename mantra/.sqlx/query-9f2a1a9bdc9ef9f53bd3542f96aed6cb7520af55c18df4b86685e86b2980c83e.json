@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select *\n            from Schemas\n            where latest_collection = $1 and content_hash = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "latest_collection",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "Schemas",
+            "name": "latest_collection"
+          }
+        }
+      },
+      {
+        "name": "content_hash",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Schemas",
+            "name": "content_hash"
+          }
+        }
+      },
+      {
+        "name": "origin_hash",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Schemas",
+            "name": "origin_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "9f2a1a9bdc9ef9f53bd3542f96aed6cb7520af55c18df4b86685e86b2980c83e"
+}

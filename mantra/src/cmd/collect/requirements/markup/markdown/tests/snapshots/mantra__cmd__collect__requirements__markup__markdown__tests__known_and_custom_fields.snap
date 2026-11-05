@@ -10,6 +10,7 @@ RequirementSchema(
       parents: None,
       children: None,
       title: "Title",
+      kind: None,
       description: None,
       origin: {
         "line": 1,
@@ -18,6 +19,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: Some({
         "mantra_unknown": "Some custom property value",
@@ -36,6 +38,7 @@ RequirementSchema(
       ]),
       children: None,
       title: "Title",
+      kind: None,
       description: None,
       origin: {
         "line": 6,
@@ -44,6 +47,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: Some(true),
+      draft: None,
       replaces: None,
       properties: Some({
         "Custom-List": [
@@ -68,6 +72,7 @@ RequirementSchema(
       ]),
       children: None,
       title: "Title",
+      kind: None,
       description: None,
       origin: {
         "line": 18,
@@ -76,6 +81,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: Some({
         "some_flag": false,
@@ -101,6 +107,7 @@ RequirementSchema(
         ),
       ]),
       title: "Title",
+      kind: None,
       description: None,
       origin: {
         "line": 23,
@@ -109,6 +116,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: None,
       media_type: None,
@@ -131,6 +139,7 @@ RequirementSchema(
       ]),
       children: None,
       title: "Title",
+      kind: None,
       description: None,
       origin: {
         "line": 28,
@@ -139,6 +148,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: None,
       media_type: None,

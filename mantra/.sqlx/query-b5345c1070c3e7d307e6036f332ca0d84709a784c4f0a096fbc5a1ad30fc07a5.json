@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ConfigTestRunProperties\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b5345c1070c3e7d307e6036f332ca0d84709a784c4f0a096fbc5a1ad30fc07a5"
+}

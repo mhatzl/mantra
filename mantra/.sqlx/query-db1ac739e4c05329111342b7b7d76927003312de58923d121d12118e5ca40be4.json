@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from OptionalRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "db1ac739e4c05329111342b7b7d76927003312de58923d121d12118e5ca40be4"
+}

@@ -17,13 +17,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected && let Some(props) = &review_schema.properties {
             for (key, value) in props {
-                let value_hash = FmtHash::new_serialized(&value);
-
-                self.insert_general_json(&value_hash, value)
-                    .await
-                    .with_context(|| {
-                        format!("Inserting value for review schema property '{key}'")
-                    })?;
+                let value_hash = self.insert_general_json(value).await.with_context(|| {
+                    format!("Inserting value for review schema property '{key}'")
+                })?;
 
                 sqlx::query!(
                     "
@@ -96,22 +92,24 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             }
         }
 
-        let origin_hash = review.origin.as_ref().map(FmtHash::new_serialized);
-        if let Some(hash) = &origin_hash
-            && let Some(origin) = &review.origin
-        {
-            self.insert_general_json(hash, origin)
-                .await
-                .context("Failed to insert the review origin")?;
-        }
-        let description_hash = review.description.as_ref().map(|d| FmtHash::new(d));
-        if let Some(hash) = &description_hash
-            && let Some(description) = &review.description
-        {
-            self.insert_general_text(hash, description)
-                .await
-                .context("Failed to insert the review description")?;
-        }
+        let origin_hash = if let Some(origin) = &review.origin {
+            Some(
+                self.insert_general_json(origin)
+                    .await
+                    .context("Failed to insert the review origin")?,
+            )
+        } else {
+            None
+        };
+        let description_hash = if let Some(description) = &review.description {
+            Some(
+                self.insert_general_text(description)
+                    .await
+                    .context("Failed to insert the review description")?,
+            )
+        } else {
+            None
+        };
 
         sqlx::query!(
             "
@@ -200,8 +198,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if let Some(props) = &review.properties {
             for prop in props {
                 let key = &prop.0;
-                let value_hash = FmtHash::new_serialized(&prop.1);
-                self.insert_general_json(&value_hash, prop.1)
+                let value_hash = self
+                    .insert_general_json(prop.1)
                     .await
                     .with_context(|| format!("Failed to insert content for property '{}'", key))?;
 
@@ -324,8 +322,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         }
 
         for verified_req in &review.requirements {
-            let comment_hash = FmtHash::new(&verified_req.comment);
-            self.insert_general_text(&comment_hash, &verified_req.comment)
+            let comment_hash = self
+                .insert_general_text(&verified_req.comment)
                 .await
                 .with_context(|| {
                     format!(
@@ -363,8 +361,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         for test_run_override in &review.test_run_overrides {
             for test_case_override in &test_run_override.test_cases {
                 if let Some(override_state) = &test_case_override.state {
-                    let comment_hash = FmtHash::new(&override_state.comment);
-                    self.insert_general_text(&comment_hash, &override_state.comment)
+                    let comment_hash = self.insert_general_text(&override_state.comment)
                     .await
                     .with_context(||
                         format!(
@@ -373,7 +370,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             test_run_override.name
                         )
                     )?;
-                    let state = override_state.new.as_number();
 
                     let test_case_exists = sqlx::query!(
                         "
@@ -392,6 +388,34 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     .is_some();
 
                     if test_case_exists {
+                        let state = override_state.new.as_number();
+
+                        if let Some(conflicting_override) = sqlx::query!(
+                            "
+                            select review_name
+                            from TestCaseOverrides
+                            where latest_collection = $1
+                            and product_id = $2
+                            and test_run_name = $3
+                            and test_case_name = $4
+                            ",
+                            collect_nr,
+                            product_id,
+                            test_run_override.name,
+                            test_case_override.name,
+                        )
+                        .fetch_optional(self.connection_mut())
+                        .await
+                        .context("Checking for conflicting TestCaseOverrides")?
+                        {
+                            anyhow::bail!(
+                                "Conflicting state override for test case '{}' of test run '{}'. Previous override in review: '{}'",
+                                test_case_override.name,
+                                test_run_override.name,
+                                conflicting_override.review_name
+                            );
+                        }
+
                         sqlx::query!(
                             "
                             insert into TestCaseOverrides (
@@ -470,8 +494,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     let filepath = coverage_override.filepath.as_str();
 
                     for line_info in &coverage_override.lines {
-                        let comment_hash = FmtHash::new(&line_info.comment);
-                        self.insert_general_text(&comment_hash, &line_info.comment)
+                        let comment_hash = self.insert_general_text(&line_info.comment)
                         .await
                         .with_context(||
                             format!(
@@ -504,6 +527,38 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             .is_some();
 
                             if covered_line_exists {
+                                if let Some(conflicting_override) = sqlx::query!(
+                                    "
+                                    select review_name
+                                    from TestCaseLineCoverageOverrides
+                                    where latest_collection = $1
+                                    and product_id = $2
+                                    and test_run_name = $3
+                                    and test_case_name = $4
+                                    and cov_filepath = $5
+                                    and cov_line = $6
+                                    ",
+                                    collect_nr,
+                                    product_id,
+                                    test_run_override.name,
+                                    test_case_override.name,
+                                    filepath,
+                                    line_number,
+                                )
+                                .fetch_optional(self.connection_mut())
+                                .await
+                                .context("Checking for conflicting TestCaseLineCoverageOverrides")?
+                                {
+                                    anyhow::bail!(
+                                        "Conflicting coverage override for line '{}' in file '{}' of test case '{}' in test run '{}'. Previous override in review: '{}'",
+                                        line_number,
+                                        filepath,
+                                        test_case_override.name,
+                                        test_run_override.name,
+                                        conflicting_override.review_name
+                                    );
+                                }
+
                                 sqlx::query!(
                                 "
                                 insert into TestCaseLineCoverageOverrides (
@@ -601,8 +656,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 let filepath = coverage_override.filepath.as_str();
 
                 for line_info in &coverage_override.lines {
-                    let comment_hash = FmtHash::new(&line_info.comment);
-                    self.insert_general_text(&comment_hash, &line_info.comment)
+                    let comment_hash = self.insert_general_text(&line_info.comment)
                     .await
                     .with_context(||
                         format!(
@@ -613,7 +667,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         )
                     )?;
 
-                    for line_nr in &line_info.numbers {
+                    for line_number in &line_info.numbers {
                         let covered_line_exists = sqlx::query!(
                             "
                             select * from TestRunLineCoverage tc
@@ -625,7 +679,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             product_id,
                             test_run_override.name,
                             filepath,
-                            line_nr
+                            line_number
                         )
                         .fetch_optional(self.connection_mut())
                         .await
@@ -633,6 +687,35 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         .is_some();
 
                         if covered_line_exists {
+                            if let Some(conflicting_override) = sqlx::query!(
+                                "
+                                select review_name
+                                from TestRunLineCoverageOverrides
+                                where latest_collection = $1
+                                and product_id = $2
+                                and test_run_name = $3
+                                and cov_filepath = $4
+                                and cov_line = $5
+                                ",
+                                collect_nr,
+                                product_id,
+                                test_run_override.name,
+                                filepath,
+                                line_number,
+                            )
+                            .fetch_optional(self.connection_mut())
+                            .await
+                            .context("Checking for conflicting TestRunLineCoverageOverrides")?
+                            {
+                                anyhow::bail!(
+                                    "Conflicting coverage override for line '{}' in file '{}' and test run '{}'. Previous override in review: '{}'",
+                                    line_number,
+                                    filepath,
+                                    test_run_override.name,
+                                    conflicting_override.review_name
+                                );
+                            }
+
                             sqlx::query!(
                             "
                             insert into TestRunLineCoverageOverrides (
@@ -672,7 +755,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             test_run_override.name,
                             review.name,
                             filepath,
-                            line_nr,
+                            line_number,
                             line_info.covered,
                             comment_hash
                         )
@@ -681,7 +764,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         .with_context(||
                             format!(
                                 "Failed to insert line coverage override for line '{}' in file '{}' for test run '{}'",
-                                line_nr,
+                                line_number,
                                 coverage_override.filepath,
                                 test_run_override.name
                             )
@@ -689,7 +772,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         } else {
                             log::warn!(
                                 "Ignoring line coverage override for unknown line '{}' in file '{}' for test run '{}'",
-                                line_nr,
+                                line_number,
                                 coverage_override.filepath,
                                 test_run_override.name
                             );
@@ -697,7 +780,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             let entry = DbIgnoredEntry::from_test_run_line_coverage(
                                 test_run_override.name.clone(),
                                 coverage_override.filepath.clone(),
-                                *line_nr,
+                                *line_number,
                                 line_info.covered,
                                 comment_hash.clone(),
                             );
@@ -707,7 +790,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             .with_context(||
                                 format!(
                                     "Failed to insert ignore entry for line coverage override for line '{}' in file '{}' for test run '{}'",
-                                    line_nr,
+                                    line_number,
                                     coverage_override.filepath,
                                     test_run_override.name
                                 )
@@ -802,9 +885,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         entry: DbIgnoredEntry,
     ) -> Result<(), anyhow::Error> {
         let entry_value = serde_json::to_value(&entry)?;
-        let entry_hash = FmtHash::new_serialized(&entry_value);
-
-        self.insert_general_json(&entry_hash, &entry_value)
+        let entry_hash = self
+            .insert_general_json(&entry_value)
             .await
             .context("Failed to insert ignore content")?;
 

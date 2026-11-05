@@ -19,9 +19,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected && let Some(props) = &annotation_schema.trace_properties {
             for (key, value) in props {
-                let value_hash = FmtHash::new_serialized(&value);
-
-                self.insert_general_json(&value_hash, value)
+                let value_hash = self
+                    .insert_general_json(value)
                     .await
                     .with_context(|| format!("Inserting value for trace property '{key}'"))?;
 
@@ -69,13 +68,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected_for_product {
             let element_source = ElementIdentSource::Schema(schema_hash.clone());
-            let element_source_hash = FmtHash::new_serialized(&element_source);
             let source_value = serde_json::to_value(&element_source)?;
 
             // Note: This may insert an unused JSON blob in case no element ident is defined in this schema,
             // but this is acceptable
-            self.insert_general_json(&element_source_hash, &source_value)
-                .await?;
+            let element_source_hash = self.insert_general_json(&source_value).await?;
 
             // TODO: do not stop at first collect error
 
@@ -370,12 +367,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(props) = &trace.properties {
             for prop in props {
-                let value_hash = FmtHash::new_serialized(&prop.1);
-                self.insert_general_json(&value_hash, prop.1)
-                    .await
-                    .with_context(|| {
-                        format!("Failed to insert trace content for property '{}'", &prop.0)
-                    })?;
+                let value_hash = self.insert_general_json(prop.1).await.with_context(|| {
+                    format!("Failed to insert trace content for property '{}'", &prop.0)
+                })?;
 
                 sqlx::query!(
                     "
@@ -568,8 +562,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         coverage_exclude: &CoverageExclude,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let comment_hash = FmtHash::new(&coverage_exclude.comment);
-        self.insert_general_text(&comment_hash, &coverage_exclude.comment)
+        let comment_hash = self
+            .insert_general_text(&coverage_exclude.comment)
             .await
             .context("Failed to insert coverage exclusion comment")?;
 

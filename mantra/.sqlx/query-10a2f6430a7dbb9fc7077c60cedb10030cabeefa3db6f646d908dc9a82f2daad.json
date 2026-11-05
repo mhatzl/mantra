@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableNonManualRequirements (\n                product_id,\n                req_id\n            )\n            select product_id, req_id\n            from UsableRequirements\n\n            except\n\n            select product_id, req_id\n            from ManualRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "10a2f6430a7dbb9fc7077c60cedb10030cabeefa3db6f646d908dc9a82f2daad"
+}

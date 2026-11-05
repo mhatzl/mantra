@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with ValidTestCaseOverrides (\n                product_id,\n                test_run_name,\n                test_case_name,\n                state\n            ) as (\n                select\n                    tco.product_id,\n                    tco.test_run_name,\n                    tco.test_case_name,\n                    tco.state\n                from TestCaseOverrides tco, ValidReviews vr\n                where vr.product_id = tco.product_id\n                and vr.review_name = tco.review_name\n            )\n            insert into ResolvedTestCaseStates (\n                product_id,\n                test_run_name,\n                test_case_name,\n                state\n            )\n            select\n                o.product_id,\n                o.test_run_name,\n                o.test_case_name,\n                o.state\n            from ValidTestCaseOverrides o, ValidTestRuns vt\n            where o.product_id = vt.product_id\n            and o.test_run_name = vt.test_run_name\n\n            union all\n\n            select\n                product_id,\n                test_run_name,\n                test_case_name,\n                state\n            from (\n                -- valid non-overridden\n                select\n                    t.product_id,\n                    t.test_run_name,\n                    t.name as test_case_name,\n                    t.state\n                from TestCases t, ValidTestRuns vt\n                where t.product_id = vt.product_id\n                and t.test_run_name = vt.test_run_name\n                and not exists (\n                    select\n                        o.test_case_name\n                    from ValidTestCaseOverrides o\n                    where t.product_id = o.product_id\n                    and t.test_run_name = o.test_run_name\n                    and t.name = o.test_case_name\n                )\n\n                union all\n\n                -- obsolete\n                select\n                    t.product_id,\n                    t.test_run_name,\n                    t.name as test_case_name,\n                    $1\n                from TestCases t, ObsoleteTestRuns ot\n                where t.product_id = ot.product_id\n                and t.test_run_name = ot.test_run_name\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "1e82ed386e62db4bdc5a8dc08f23ef45742e99d95bae9181b1ad0b80cef1c62b"
+}

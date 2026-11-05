@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableTestRuns (\n                product_id,\n                test_run_name\n            )\n            select\n                ptr.product_id,\n                ptr.test_run_name\n            from PassedTestRuns ptr, ValidTestRuns vtr\n            where ptr.product_id = vtr.product_id\n            and ptr.test_run_name = vtr.test_run_name\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "c3ba9488a50d335e42adef2d4721592fe2ced70b92d4ae390929d28fe3bdad80"
+}

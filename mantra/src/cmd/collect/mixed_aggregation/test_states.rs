@@ -43,16 +43,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn resolve_test_case_states(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ResolvedTestCaseStates
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ResolvedTestCaseStates")?;
 
-        // TODO: detect and flag multiple overrides for the same test case
-        //
-        // TODO: set obsolete test cases based on test runs being obsolete
-        // (obsolete test runs must also be obsolete if test case related information indicates data being obsolete)
+        let obsolete = TestState::Obsolete.as_number();
 
         sqlx::query!(
             "
-            with LatestTestCaseOverrides (
+            with ValidTestCaseOverrides (
                 product_id,
                 test_run_name,
                 test_case_name,
@@ -78,36 +82,50 @@ impl<'db> Collection<'db> {
                 o.test_run_name,
                 o.test_case_name,
                 o.state
-            from LatestTestCaseOverrides o, ValidTestRuns vt
+            from ValidTestCaseOverrides o, ValidTestRuns vt
             where o.product_id = vt.product_id
             and o.test_run_name = vt.test_run_name
 
             union all
 
             select
-                t.product_id,
-                t.test_run_name,
-                t.name as test_case_name,
-                t.state
-            from TestCases t, ValidTestRuns vt
-            where t.product_id = vt.product_id
-            and t.test_run_name = vt.test_run_name
-            and not exists (
-                select
-                    o.test_case_name
-                from LatestTestCaseOverrides o
-                where t.product_id = o.product_id
-                and t.test_run_name = o.test_run_name
-                and t.name = o.test_case_name
-            )
-            on conflict (
                 product_id,
                 test_run_name,
-                test_case_name
-            ) do update
-            set
-                state = excluded.state
-            "
+                test_case_name,
+                state
+            from (
+                -- valid non-overridden
+                select
+                    t.product_id,
+                    t.test_run_name,
+                    t.name as test_case_name,
+                    t.state
+                from TestCases t, ValidTestRuns vt
+                where t.product_id = vt.product_id
+                and t.test_run_name = vt.test_run_name
+                and not exists (
+                    select
+                        o.test_case_name
+                    from ValidTestCaseOverrides o
+                    where t.product_id = o.product_id
+                    and t.test_run_name = o.test_run_name
+                    and t.name = o.test_case_name
+                )
+
+                union all
+
+                -- obsolete
+                select
+                    t.product_id,
+                    t.test_run_name,
+                    t.name as test_case_name,
+                    $1
+                from TestCases t, ObsoleteTestRuns ot
+                where t.product_id = ot.product_id
+                and t.test_run_name = ot.test_run_name
+            )
+            ",
+            obsolete
         )
         .execute(self.connection_mut())
         .await?;
@@ -116,11 +134,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_usable_test_cases(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from UsableTestCases
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableTestCases")?;
 
         sqlx::query!(
             "
-            insert or ignore into UsableTestCases (
+            insert into UsableTestCases (
                 product_id,
                 test_run_name,
                 test_case_name
@@ -141,7 +166,16 @@ impl<'db> Collection<'db> {
     }
 
     async fn resolve_line_coverage(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        let collection_id = self.collect_nr();
+
+        sqlx::query!(
+            "
+            delete from ResolvedTestRunLineCoverage
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ResolvedTestRunLineCoverage")?;
 
         let uncovered_state = ResolvedCoverageState::Uncovered.as_number();
         let covered_state = ResolvedCoverageState::Covered.as_number();
@@ -213,15 +247,6 @@ impl<'db> Collection<'db> {
                 and tro.cov_filepath = t.cov_filepath
                 and tro.cov_line = t.cov_line
             )
-            on conflict (
-                product_id,
-                test_run_name,
-                cov_filepath,
-                cov_line
-            ) do update
-            set
-                cov_file_hash = excluded.cov_file_hash,
-                cov_state = excluded.cov_state
             ",
             uncovered_state,
             covered_state,
@@ -234,6 +259,15 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Failed to update ResolvedTestRunLineCoverage")?;
+
+        sqlx::query!(
+            "
+            delete from ResolvedTestCaseLineCoverage
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ResolvedTestCaseLineCoverage")?;
 
         sqlx::query!(
             "
@@ -301,16 +335,6 @@ impl<'db> Collection<'db> {
                 and tco.cov_filepath = t.cov_filepath
                 and tco.cov_line = t.cov_line
             )
-            on conflict (
-                product_id,
-                test_run_name,
-                test_case_name,
-                cov_filepath,
-                cov_line
-            ) do update
-            set
-                cov_file_hash = excluded.cov_file_hash,
-                cov_state = excluded.cov_state
             ",
             uncovered_state,
             covered_state,
@@ -327,6 +351,7 @@ impl<'db> Collection<'db> {
         sqlx::query!(
             "
             insert into ResolvedLineCoverageStates (
+                latest_collection,
                 product_id,
                 cov_filepath,
                 cov_file_hash,
@@ -353,6 +378,7 @@ impl<'db> Collection<'db> {
                 from CombinedResolvedLineCoverageStates
             )
             select
+                $1 as latest_collection,
                 rl.product_id,
                 rl.cov_filepath,
                 rl.cov_file_hash,
@@ -366,8 +392,8 @@ impl<'db> Collection<'db> {
                     and cls.cov_filepath = rl.cov_filepath
                     and cls.cov_file_hash = rl.cov_file_hash
                     and cls.cov_line = rl.cov_line
-                    and cls.cov_state = $2
-                ) then $2
+                    and cls.cov_state = $3
+                ) then $3
                 -- excluded is next, because it must have been set explicitly.
                 -- either via annotation or review
                 when exists (
@@ -377,8 +403,8 @@ impl<'db> Collection<'db> {
                     and cls.cov_filepath = rl.cov_filepath
                     and cls.cov_file_hash = rl.cov_file_hash
                     and cls.cov_line = rl.cov_line
-                    and cls.cov_state = $3
-                ) then $3
+                    and cls.cov_state = $4
+                ) then $4
                 -- uncovered is next, because it leaves actual code that was not covered or excluded
                 when exists (
                     select cls.cov_line
@@ -387,13 +413,13 @@ impl<'db> Collection<'db> {
                     and cls.cov_filepath = rl.cov_filepath
                     and cls.cov_file_hash = rl.cov_file_hash
                     and cls.cov_line = rl.cov_line
-                    and cls.cov_state = $1
-                ) then $1
+                    and cls.cov_state = $2
+                ) then $2
                 -- anything else is unknown
-                else $4
+                else $5
                 end as cov_state
             from ResolvedCoveredLines rl
-            where true -- hack to get 'on conflict' to not be taken as join
+            where true
 
             on conflict (
                 product_id,
@@ -401,9 +427,11 @@ impl<'db> Collection<'db> {
                 cov_line
             ) do update
             set
+                latest_collection = excluded.latest_collection,
                 cov_file_hash = excluded.cov_file_hash,
                 cov_state = excluded.cov_state
             ",
+            collection_id,
             uncovered_state,
             covered_state,
             excluded_state,
@@ -413,18 +441,37 @@ impl<'db> Collection<'db> {
         .await
         .context("Failed to update ResolvedLineCoverageStates")?;
 
+        sqlx::query!(
+            "
+            delete from ResolvedLineCoverageStates
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ResolvedLineCoverageStates")?;
+
         Ok(())
     }
 
     async fn update_failed_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from FailedTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing FailedTestRuns")?;
+
         let passed_test_nr = TestState::Passed.as_number();
         let skipped_test_nr = TestState::Skipped.as_number();
         let obsolete_test_nr = TestState::Obsolete.as_number();
 
         sqlx::query!(
             "
-            insert or ignore into FailedTestRuns (
+            insert into FailedTestRuns (
                 product_id,
                 test_run_name
             )
@@ -436,7 +483,8 @@ impl<'db> Collection<'db> {
                     product_id,
                     test_run_name
                 from ResolvedTestCaseStates
-                where state != $2 and state != $3
+                -- neither passed, skipped, or obsolete
+                where state != $2 and state != $3 and state != $4
             ), IndirectFailedTestRun (
                 product_id,
                 test_run_name
@@ -461,7 +509,8 @@ impl<'db> Collection<'db> {
             from IndirectFailedTestRun
             ",
             passed_test_nr,
-            skipped_test_nr
+            skipped_test_nr,
+            obsolete_test_nr
         )
         .execute(self.connection_mut())
         .await?;
@@ -470,12 +519,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_skipped_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from SkippedTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing SkippedTestRuns")?;
+
         let skipped_test_nr = TestCaseState::Skipped.as_number();
 
         sqlx::query!(
             "
-            insert or ignore into SkippedTestRuns (
+            insert into SkippedTestRuns (
                 product_id,
                 test_run_name
             )
@@ -532,12 +589,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_passed_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from PassedTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing PassedTestRuns")?;
+
         let passed_test_nr = TestCaseState::Passed.as_number();
 
         sqlx::query!(
             "
-            insert or ignore into PassedTestRuns (
+            insert into PassedTestRuns (
                 product_id,
                 test_run_name
             )
@@ -606,11 +671,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_usable_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from UsableTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UsableTestRuns")?;
 
         sqlx::query!(
             "
-            insert or ignore into UsableTestRuns (
+            insert into UsableTestRuns (
                 product_id,
                 test_run_name
             )
@@ -629,7 +701,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn resolve_line_coverage_test_states(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ResolvedLineCoverageTestStates
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ResolvedLineCoverageTestStates")?;
 
         let failed = TestState::Failed.as_number();
         let passed = TestState::Passed.as_number();
@@ -732,13 +811,20 @@ impl<'db> Collection<'db> {
         )
         .execute(self.connection_mut())
         .await
-        .context("Failed to update ResolvedLineCoverageStates")?;
+        .context("Failed to update ResolvedLineCoverageTestStates")?;
 
         Ok(())
     }
 
     async fn update_test_run_trace_coverage(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TraceCoveragePerTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TraceCoveragePerTestRuns")?;
 
         sqlx::query!(
             "
@@ -764,17 +850,6 @@ impl<'db> Collection<'db> {
         and rc.cov_file_hash = ts.file_hash
         and rc.cov_line >= ts.start_line
         and rc.cov_line <= ts.end_line
-
-        on conflict (
-            product_id,
-            test_run_name,
-            filepath,
-            traced_line,
-            cov_line
-        ) do update
-        set
-            file_hash = excluded.file_hash,
-            cov_state = excluded.cov_state
         "
         )
         .execute(self.connection_mut())
@@ -784,7 +859,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_test_case_trace_coverage(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TraceCoveragePerTestCases
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TraceCoveragePerTestCases")?;
 
         sqlx::query!(
             "
@@ -812,18 +894,6 @@ impl<'db> Collection<'db> {
             and rc.cov_file_hash = ts.file_hash
             and rc.cov_line >= ts.start_line
             and rc.cov_line <= ts.end_line
-
-            on conflict (
-                product_id,
-                test_run_name,
-                test_case_name,
-                filepath,
-                traced_line,
-                cov_line
-            ) do update
-            set
-                file_hash = excluded.file_hash,
-                cov_state = excluded.cov_state
             "
         )
         .execute(self.connection_mut())

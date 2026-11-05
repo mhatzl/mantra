@@ -14,8 +14,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         let data_hash = FmtHash::new_serialized(product);
 
         let description_hash = if let Some(description) = &product.description {
-            let hash = FmtHash::new(&description);
-            self.insert_general_text(&hash, description)
+            let hash = self
+                .insert_general_text(description)
                 .await
                 .context("Failed to insert the product description")?;
             Some(hash)
@@ -87,13 +87,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             for property in properties {
                 let key = property.0;
                 let value = property.1;
-                let hash = FmtHash::new_serialized(&value);
-
-                self.insert_general_json(&hash, value)
-                    .await
-                    .with_context(|| {
-                        format!("Failed to insert the content for property '{}'", key)
-                    })?;
+                let hash = self.insert_general_json(value).await.with_context(|| {
+                    format!("Failed to insert the content for property '{}'", key)
+                })?;
 
                 sqlx::query!(
                     "

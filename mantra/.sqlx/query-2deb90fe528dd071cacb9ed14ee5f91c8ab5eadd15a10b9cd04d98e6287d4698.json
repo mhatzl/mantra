@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            with recursive TransitiveChildren(\n                product_id,\n                test_run_name,\n                descendant_test_run_name\n            ) as\n            (\n                select\n                    product_id,\n                    parent_name,\n                    child_name\n                from TestRunHierarchies\n\n                union all\n\n                select\n                    tc.product_id,\n                    tc.test_run_name,\n                    th.child_name\n                from TestRunHierarchies th, TransitiveChildren tc\n                where tc.product_id = th.product_id\n                and tc.descendant_test_run_name = th.parent_name\n                -- prevents endless recursion in case of test run cycles\n                -- but includes self-references to detect a cycle\n                and (\n                    tc.test_run_name != th.parent_name\n                )\n            )\n            insert into TestRunDescendants (\n                product_id,\n                test_run_name,\n                descendant_test_run_name\n            )\n            select distinct\n                product_id,\n                test_run_name,\n                descendant_test_run_name\n            from TransitiveChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "2deb90fe528dd071cacb9ed14ee5f91c8ab5eadd15a10b9cd04d98e6287d4698"
+}

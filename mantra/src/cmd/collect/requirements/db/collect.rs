@@ -19,13 +19,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if !schema_collected && let Some(props) = &req_schema.properties {
             for (key, value) in props {
-                let value_hash = FmtHash::new_serialized(&value);
-
-                self.insert_general_json(&value_hash, value)
-                    .await
-                    .with_context(|| {
-                        format!("Inserting value for requirement schema property '{key}'")
-                    })?;
+                let value_hash = self.insert_general_json(value).await.with_context(|| {
+                    format!("Inserting value for requirement schema property '{key}'")
+                })?;
 
                 sqlx::query!(
                     "
@@ -231,19 +227,20 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         let data_hash = FmtHash::new_serialized(&req);
 
-        let origin_hash = FmtHash::new_serialized(&req.origin);
-        self.insert_general_json(&origin_hash, &req.origin)
+        let origin_hash = self
+            .insert_general_json(&req.origin)
             .await
             .context("Failed to insert the requirement origin")?;
 
-        let description_hash = req.description.as_ref().map(|d| FmtHash::new(d));
-        if let Some(hash) = &description_hash
-            && let Some(description) = &req.description
-        {
-            self.insert_general_text(hash, description)
-                .await
-                .context("Failed to insert the requirement description")?;
-        }
+        let description_hash = if let Some(description) = &req.description {
+            Some(
+                self.insert_general_text(description)
+                    .await
+                    .context("Failed to insert the requirement description")?,
+            )
+        } else {
+            None
+        };
 
         sqlx::query!(
             "
@@ -323,8 +320,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if let Some(props) = &req.properties {
             for prop in props {
                 let key = &prop.0;
-                let value_hash = FmtHash::new_serialized(&prop.1);
-                self.insert_general_json(&value_hash, prop.1)
+                let value_hash = self
+                    .insert_general_json(prop.1)
                     .await
                     .with_context(|| format!("Failed to insert content for property '{}'", key))?;
 

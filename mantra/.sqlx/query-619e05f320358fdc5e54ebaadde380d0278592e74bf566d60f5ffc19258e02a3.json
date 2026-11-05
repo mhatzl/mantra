@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from DirectProductReqTraces\n            where product_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "619e05f320358fdc5e54ebaadde380d0278592e74bf566d60f5ffc19258e02a3"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                            select review_name\n                            from TestCaseOverrides\n                            where latest_collection = $1\n                            and product_id = $2\n                            and test_run_name = $3\n                            and test_case_name = $4\n                            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "review_name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseOverrides",
+            "name": "review_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "35d61b5710491c5319d66e0242d0519fcc027f1b74043283f97ecc0c6ef3c493"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ObsoleteTestRuns (\n                product_id,\n                test_run_name\n            )\n            select product_id, name\n            from TestRuns tr\n            where\n            -- covered file hashes in conflicting hashes\n            exists (\n                select trc.cov_file_hash\n                from TestRunLineCoverage trc, ProductRelatedHashedFiles phf\n                where trc.product_id = tr.product_id\n                and trc.test_run_name = tr.name\n                and trc.cov_file_hash not null\n                and trc.product_id = phf.product_id\n                and trc.cov_filepath = phf.filepath\n                and trc.cov_file_hash != phf.file_hash\n            ) or exists (\n                select trc.cov_file_hash\n                from TestCaseLineCoverage trc, ProductRelatedHashedFiles phf\n                where trc.product_id = tr.product_id\n                and trc.test_run_name = tr.name\n                and trc.cov_file_hash not null\n                and trc.product_id = phf.product_id\n                and trc.cov_filepath = phf.filepath\n                and trc.cov_file_hash != phf.file_hash\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "d25108d12755cd59d03e46d8b6f7037abb6e2801f6e784c5713eb54688f34ebd"
+}

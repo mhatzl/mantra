@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into VerifiedRequirementsWithOnlyOptionalChildren (\n                product_id,\n                req_id\n            )\n            -- If requirement itself and no child failed, having at least one verifying state\n            -- is sufficient for requirements with only optional children,\n            -- because either it is verified directly or by at least one child\n            select sr.product_id, sr.req_id\n            from StatesOfRequirementsWithOnlyOptionalChildren sr\n            where exists (\n                select isr.req_id\n                from StatesOfRequirementsWithOnlyOptionalChildren isr\n                where isr.product_id = sr.product_id\n                and isr.req_id = sr.req_id\n                and isr.state = $1\n            )\n\n            except\n\n            select product_id, req_id\n            from FailedRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c05f8f49ffb683a7dbb105c2ab26f09a7652f2f5c384c0fdf6bb0a2e5cc684bc"
+}

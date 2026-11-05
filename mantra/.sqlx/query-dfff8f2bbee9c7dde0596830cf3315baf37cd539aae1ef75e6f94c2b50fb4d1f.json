@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from UsableLeafRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "dfff8f2bbee9c7dde0596830cf3315baf37cd539aae1ef75e6f94c2b50fb4d1f"
+}

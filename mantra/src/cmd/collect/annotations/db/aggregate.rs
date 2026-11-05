@@ -17,7 +17,10 @@ impl<'db> Collection<'db> {
         .context("Querying latest collection updating annotations")?
         .and_then(|r| r.latest_collection);
 
-        if latest_collected_annotations_nr != Some(collect_nr) {
+        // if there is no annotation data, we still must ensure that aggragation tables get cleared
+        if latest_collected_annotations_nr.is_some()
+            && latest_collected_annotations_nr != Some(collect_nr)
+        {
             log::info!("No annotation data collected, skipping annotation aggregation");
 
             return Ok(());
@@ -34,6 +37,15 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_trace_spans(&mut self) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "
+            delete from TraceSpans
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TraceSpans")?;
+
         sqlx::query!(
             "
             insert into TraceSpans (
@@ -80,6 +92,15 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_coverage_exclude_lines(&mut self) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "
+            delete from ExcludedCoverageLines
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ExcludedCoverageLines")?;
+
         sqlx::query!(
             "
             with recursive block_line as (

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from AddedReviews\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "645b89c60d046c3e33eace050ad3acfc8054b2f4694dae873c8a38fd3ce11bab"
+}

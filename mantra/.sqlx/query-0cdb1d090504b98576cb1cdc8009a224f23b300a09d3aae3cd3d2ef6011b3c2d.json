@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into LeafRequirements (\n                product_id,\n                req_id\n            )\n            select product_id, id\n            from Requirements r\n            where not exists (\n                select *\n                from RequirementHierarchies rh\n                where r.product_id = rh.parent_product_id\n                and r.id = rh.parent_req_id\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "0cdb1d090504b98576cb1cdc8009a224f23b300a09d3aae3cd3d2ef6011b3c2d"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from TracesCoveredByFailedTests\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "17d88e5aa4eb219638e62630cafbb7efbd87bb2ad15a444a0fae410fed2a4c22"
+}

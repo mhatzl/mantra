@@ -1,5 +1,4 @@
 use anyhow::Context;
-use mantra_schema::FmtHash;
 
 use crate::cmd::collect::{cfg::CollectAnnotationsConfig, products::collection::ProductCollection};
 
@@ -29,14 +28,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         cfg_nr: i64,
     ) -> Result<(), anyhow::Error> {
         let source_value = serde_json::to_value(annotation_cfg.source)?;
-        let source_hash = FmtHash::new_serialized(&source_value);
-        self.insert_general_json(&source_hash, &source_value)
+        let source_hash = self
+            .insert_general_json(&source_value)
             .await
             .context("Inserting source config")?;
 
         let origin_hash = if let Some(origin) = annotation_cfg.origin.as_ref() {
-            let hash = FmtHash::new_serialized(origin);
-            self.insert_general_json(&hash, origin)
+            let hash = self
+                .insert_general_json(origin)
                 .await
                 .context("Inserting origin")?;
 
@@ -94,8 +93,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(properties) = &annotation_cfg.trace_properties {
             for (key, value) in properties {
-                let value_hash = FmtHash::new_serialized(value);
-                self.insert_general_json(&value_hash, value)
+                let value_hash = self
+                    .insert_general_json(value)
                     .await
                     .with_context(|| format!("Inserting value for property '{key}'"))?;
 

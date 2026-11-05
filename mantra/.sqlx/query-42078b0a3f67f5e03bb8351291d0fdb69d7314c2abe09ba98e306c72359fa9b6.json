@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from SkippedRequirements\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "42078b0a3f67f5e03bb8351291d0fdb69d7314c2abe09ba98e306c72359fa9b6"
+}

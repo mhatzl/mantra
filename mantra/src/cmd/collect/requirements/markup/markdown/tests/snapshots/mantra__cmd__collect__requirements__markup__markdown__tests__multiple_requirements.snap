@@ -10,6 +10,7 @@ RequirementSchema(
       parents: None,
       children: None,
       title: "First Requirement Title",
+      kind: None,
       description: Some("Description for the first requirement.\n"),
       origin: {
         "line": 1,
@@ -18,6 +19,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: None,
       media_type: None,
@@ -27,6 +29,7 @@ RequirementSchema(
       parents: None,
       children: None,
       title: "Second Requirement Title",
+      kind: None,
       description: Some("Description for the second requirement.\n"),
       origin: {
         "line": 5,
@@ -35,6 +38,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: None,
       media_type: None,
@@ -44,6 +48,7 @@ RequirementSchema(
       parents: None,
       children: None,
       title: "Third Requirement Title",
+      kind: None,
       description: Some("Description for the third requirement.\n"),
       origin: {
         "line": 9,
@@ -52,6 +57,7 @@ RequirementSchema(
       deprecated: None,
       exclude: None,
       optional: None,
+      draft: None,
       replaces: None,
       properties: None,
       media_type: None,

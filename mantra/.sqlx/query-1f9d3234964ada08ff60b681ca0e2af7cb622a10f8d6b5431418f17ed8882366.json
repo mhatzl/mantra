@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RemovedAnnotationSources\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "1f9d3234964ada08ff60b681ca0e2af7cb622a10f8d6b5431418f17ed8882366"
+}

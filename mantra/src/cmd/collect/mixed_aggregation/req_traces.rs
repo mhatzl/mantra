@@ -4,11 +4,19 @@ use crate::cmd::collect::products::collection::ProductCollection;
 
 impl<'db, 'c> ProductCollection<'db, 'c> {
     pub(crate) async fn update_direct_req_traces(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
         let product_id = self.product_id().clone();
 
-        // "on conflict update" at the end because PK may remain unchanged for new collections,
-        // but we want "agg_collect_nr" to be the latest that updated an entry.
+        sqlx::query!(
+            "
+            delete from DirectProductReqTraces
+            where product_id = $1
+            ",
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing DirectProductReqTraces")?;
+
         sqlx::query!(
             "
             insert into DirectProductReqTraces (
@@ -42,14 +50,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             and rt.product_id = $1
             and rt.file_hash = prh.file_hash
             and r.id = rt.req_id
-            on conflict (
-                product_id,
-                req_id,
-                filepath,
-                line
-            ) do update
-            set
-                file_hash = excluded.file_hash
             ",
             product_id
         )

@@ -22,11 +22,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_obsolete_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ObsoleteTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ObsoleteTestRuns")?;
 
         sqlx::query!(
             "
-            insert or ignore into ObsoleteTestRuns (
+            insert into ObsoleteTestRuns (
                 product_id,
                 test_run_name
             )
@@ -62,11 +69,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_valid_test_runs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ValidTestRuns
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ValidTestRuns")?;
 
         sqlx::query!(
             "
-            insert or ignore into ValidTestRuns (
+            insert into ValidTestRuns (
                 product_id,
                 test_run_name
             )
@@ -86,7 +100,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_obsolete_reviews(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ObsoleteReviews
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ObsoleteReviews")?;
 
         sqlx::query!(
             "
@@ -107,7 +128,7 @@ impl<'db> Collection<'db> {
                 select product_id, review_name, test_run_name
                 from TestLineCoverageOverrides
             )
-            insert or ignore into ObsoleteReviews (
+            insert into ObsoleteReviews (
                 product_id,
                 review_name
             )
@@ -145,11 +166,18 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_valid_reviews(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from ValidReviews
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ValidReviews")?;
 
         sqlx::query!(
             "
-            insert or ignore into ValidReviews (
+            insert into ValidReviews (
                 product_id,
                 review_name
             )

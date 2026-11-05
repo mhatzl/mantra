@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ReviewAuthors\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "8fc2a2da4ad3dd318a99cf3d134f76f1c8622f4c0272d94af86b6b8691a6a76c"
+}

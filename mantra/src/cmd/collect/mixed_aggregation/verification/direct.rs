@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mantra_schema::{
     annotations::TraceKind, report::requirement::RequirementState, test_runs::TestCaseState,
 };
@@ -8,7 +9,15 @@ impl<'db> Collection<'db> {
     pub(super) async fn update_direct_req_verification_states(
         &mut self,
     ) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from DirectRequirementVerificationStates
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing DirectRequirementVerificationStates")?;
+
         let satisfies_trace_nr = TraceKind::Satisfies.as_nr();
         let verifies_trace_nr = TraceKind::Verifies.as_nr();
         let req_verified_nr = RequirementState::Verified.as_nr();
@@ -22,7 +31,7 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
         "
-        insert or ignore into DirectRequirementVerificationStates (
+        insert into DirectRequirementVerificationStates (
             product_id,
             req_id,
             state

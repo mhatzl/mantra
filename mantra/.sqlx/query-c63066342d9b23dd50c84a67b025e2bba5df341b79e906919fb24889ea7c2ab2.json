@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ObsoleteReviews\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "c63066342d9b23dd50c84a67b025e2bba5df341b79e906919fb24889ea7c2ab2"
+}

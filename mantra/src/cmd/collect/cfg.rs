@@ -60,10 +60,6 @@ impl CollectConfig {
     Debug, Default, Clone, clap::Args, PartialEq, Eq, serde::Serialize, serde::Deserialize,
 )]
 pub struct CollectArguments {
-    /// `true`: tells mantra to replace previously collected content
-    /// even if the stored hash is equal to the new one.
-    #[arg(long)]
-    pub replace_hashed: bool,
     /// Mantra will only collect data for this product ID.
     #[arg(long)]
     pub product_id: Option<ProductId>,
@@ -93,12 +89,11 @@ pub struct CollectArguments {
 #[serde(rename_all = "snake_case")]
 pub enum CollectMode {
     /// Assumes that all relevant information is collected in one collection.
-    /// Data from previous collections that is not present in this collection
-    /// will be considered removed and not used for further analysis.
+    /// Data that is not present in this collection will be deleted from the database.
     ///
     /// This is the default mode.
     #[default]
-    RemoveMissing,
+    RemoveOutdated,
     /// Assumes that newly collected data only adds new information,
     /// and therefore previous collected data remains valid for further analysis.
     ///

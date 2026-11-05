@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from AddedProducts\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "9dec67100daf09c9b38da019e2546b1effa5a8cb6f1c397cbb30e5f2b860c1f7"
+}

@@ -390,6 +390,7 @@ create table ResolvedTestCaseLineCoverage (
 );
 
 create table ResolvedLineCoverageStates (
+    latest_collection integer not null references Collections (id) on delete cascade,
     product_id text not null,
     cov_filepath text not null,
     cov_file_hash text,
@@ -401,6 +402,73 @@ create table ResolvedLineCoverageStates (
         cov_line
     )
 );
+
+create table AddedLineCoverage (
+    product_id text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line integer not null,
+    cov_state integer not null,
+    primary key (
+        product_id,
+        cov_filepath,
+        cov_line
+    ),
+    foreign key (product_id, cov_filepath, cov_line) references ResolvedLineCoverageStates (product_id, cov_filepath, cov_line) on delete cascade
+);
+
+create trigger LineCoverageInsertions
+after insert on ResolvedLineCoverageStates
+for each row
+begin
+    insert into AddedLineCoverage (
+        product_id,
+        cov_filepath,
+        cov_file_hash,
+        cov_line,
+        cov_state
+    )
+    values (
+        new.product_id,
+        new.cov_filepath,
+        new.cov_file_hash,
+        new.cov_line,
+        new.cov_state
+    );
+end;
+
+create table RemovedLineCoverage (
+    product_id text not null,
+    cov_filepath text not null,
+    cov_file_hash text,
+    cov_line integer not null,
+    cov_state integer not null,
+    primary key (
+        product_id,
+        cov_filepath,
+        cov_line
+    )
+);
+
+create trigger LineCoverageDeletions
+after delete on ResolvedLineCoverageStates
+for each row
+begin
+    insert into RemovedLineCoverage (
+        product_id,
+        cov_filepath,
+        cov_file_hash,
+        cov_line,
+        cov_state
+    )
+    values (
+        old.product_id,
+        old.cov_filepath,
+        old.cov_file_hash,
+        old.cov_line,
+        old.cov_state
+    );
+end;
 
 create table ChangedLineCoverage (
     product_id text not null,

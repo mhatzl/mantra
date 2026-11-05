@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from VerifiedRequirementsWithOnlyOptionalChildren\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "2c9acda86be47225fb7784ed5e55f73a8d41ec66ea278bd85daae4d4eb2674a0"
+}

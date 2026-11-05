@@ -1,8 +1,17 @@
+
+-- Base table used to track changes over multiple `mantra collect` runs.
+-- [req("lifecycle.product", "changes.track")]
+create table Collections (
+    id integer primary key autoincrement,
+    collected_at_utc text not null
+);
+
 -- Table to store plain text and the related hash.
 -- This reduces duplication of unchanged content.
 --
 -- [req("changes.show", "changes.compact_content")]
 create table GeneralTexts (
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the content
     hash text not null primary key,
     -- Content that in general has no structure that is queryable by a regular SQL database.
@@ -14,6 +23,7 @@ create table GeneralTexts (
 --
 -- TODO: map requirement
 create table GeneralJson (
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the content
     hash text not null primary key,
     -- JSON content that may contain user defined information.
@@ -23,6 +33,7 @@ create table GeneralJson (
 -- Table to store hashes of file contents from which data was collected.
 -- [req("changes.track.traces.files")]
 create table FileHashes (
+    latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
     hash text not null primary key,
     -- Optional content that resulted in the hash.
@@ -30,11 +41,8 @@ create table FileHashes (
     content text
 );
 
--- Base table used to track changes over multiple `mantra collect` runs.
--- [req("lifecycle.product", "changes.track")]
-create table Collections (
-    id integer primary key autoincrement,
-    collected_at_utc text not null,
+create table CollectionMetadata (
+    latest_collection integer not null primary key references Collections (id) on delete cascade,
     -- Optional hash of the arguments set when calling `mantra collect`.
     arguments_hash text references GeneralJson (hash) on delete restrict,
     -- Optional hash of the environmental variables set that are relevant for mantra

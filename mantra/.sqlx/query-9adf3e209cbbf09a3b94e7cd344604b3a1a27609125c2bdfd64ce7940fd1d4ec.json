@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RequirementsWithNonOptionalChildrenHavingStatisfiedOrUnknownState\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "9adf3e209cbbf09a3b94e7cd344604b3a1a27609125c2bdfd64ce7940fd1d4ec"
+}

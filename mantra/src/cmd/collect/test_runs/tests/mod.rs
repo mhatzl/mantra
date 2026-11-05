@@ -32,13 +32,16 @@ async fn detect_hierarchy_cycles(pool: MantraPool) {
         .await
         .expect("Collecting test data must not fail");
 
+    let collection_id = collection.collect_nr();
+
     // now we need to manually insert a test run, because the schema does not allow cyclical test runs
     // by construction
     sqlx::query!(
         "
-        insert into TestRunHierarchies (product_id, parent_name, child_name)
-        values ($1, $2, $3)
+        insert into TestRunHierarchies (latest_collection, product_id, parent_name, child_name)
+        values ($1, $2, $3, $4)
         ",
+        collection_id,
         product_id,
         "tr-1.sub",
         "tr-1",

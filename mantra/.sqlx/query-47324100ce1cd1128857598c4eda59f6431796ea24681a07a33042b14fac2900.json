@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ResolvedTestRunLineCoverage (\n                product_id,\n                test_run_name,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                cov_state\n            )\n            select\n                tro.product_id,\n                tro.test_run_name,\n                tro.cov_filepath,\n                cf.file_hash as cov_file_hash,\n                tro.cov_line,\n                case\n                    when tro.covered is null then $7\n                    when tro.covered = true then $6\n                    else $5\n                end as cov_state\n            from TestRunLineCoverageOverrides tro\n                left join CollectedFiles cf on\n                    tro.cov_filepath = cf.filepath,\n                ValidReviews vr\n            where vr.product_id = tro.product_id\n            and vr.review_name = tro.review_name\n\n            union all\n\n            select\n                t.product_id,\n                t.test_run_name,\n                t.cov_filepath,\n                cf.file_hash as cov_file_hash,\n                t.cov_line,\n                case\n                    when exists (\n                        select el.line\n                        from ExcludedCoverageLines el\n                        where cf.file_hash is not null\n                        and cf.file_hash = el.file_hash\n                        and t.cov_line = el.line\n                    ) then $3\n                    when t.hits is null then $4\n                    when t.hits > 0 then $2\n                    else $1\n                end as cov_state\n            from TestRunLineCoverage t\n                left join CollectedFiles cf on\n                    t.cov_filepath = cf.filepath\n            where not exists (\n                select\n                    cov_line\n                from TestRunLineCoverageOverrides tro, ValidReviews vr\n                where vr.product_id = tro.product_id\n                and vr.review_name = tro.review_name\n                and tro.product_id = t.product_id\n                and tro.test_run_name = t.test_run_name\n                and tro.cov_filepath = t.cov_filepath\n                and tro.cov_line = t.cov_line\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "47324100ce1cd1128857598c4eda59f6431796ea24681a07a33042b14fac2900"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ValidReviews\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "9afb26bce89b09a248fd1eefafce15f93a93b442372300c95fc3faffcf55eb17"
+}

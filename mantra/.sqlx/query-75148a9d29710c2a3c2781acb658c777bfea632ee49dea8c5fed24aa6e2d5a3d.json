@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ObsoleteTestRuns\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "75148a9d29710c2a3c2781acb658c777bfea632ee49dea8c5fed24aa6e2d5a3d"
+}

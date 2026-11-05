@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from CollectionMetadata\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "79c5bbca282f16b348400dceb7db2a20a73c17bfc6ad3530acdf0de11e349c87"
+}

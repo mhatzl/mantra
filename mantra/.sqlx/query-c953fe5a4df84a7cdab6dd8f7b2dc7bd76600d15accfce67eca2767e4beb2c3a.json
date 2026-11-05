@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into LeafTestRuns (\n                product_id,\n                test_run_name\n            )\n            select product_id, name\n            from TestRuns\n\n            except\n\n            select product_id, parent_name\n            from TestRunHierarchies\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "c953fe5a4df84a7cdab6dd8f7b2dc7bd76600d15accfce67eca2767e4beb2c3a"
+}

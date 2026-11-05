@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableManualRequirements (\n                product_id,\n                req_id\n            )\n            select ur.product_id, ur.req_id\n            from UsableRequirements ur, ManualRequirements mr\n            where ur.product_id = mr.product_id\n            and ur.req_id = mr.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "876bdc64ae57cd16604140626ff32bcaee689a00d269a147604c0d4a84a03281"
+}

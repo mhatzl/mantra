@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into Schemas (\n                latest_collection,\n                content_hash,\n                origin_hash\n            )\n            values (\n                $1,\n                $2,\n                $3\n            )\n            on conflict (\n                content_hash\n            ) do update\n            set\n                latest_collection = excluded.latest_collection,\n                origin_hash = excluded.origin_hash\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "04ed0b499acd424c68c7dee51c46d9fc459aa17b9dcda372f589df1d1b9bb479"
+}

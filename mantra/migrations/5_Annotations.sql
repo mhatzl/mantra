@@ -90,7 +90,7 @@ create table Traces (
     -- Used to detect duplicate trace entries in one collection for the same line
     latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
-    file_hash text not null references FileHashes (hash) on delete restrict,
+    file_hash text not null references FileHashes (hash) on delete cascade,
     -- Line the trace was detected at in the file.
     line integer not null,
     -- Trace kind (0 = clarifies, 1 = satisfies, 2 = verifies, 3 = links).
@@ -167,7 +167,7 @@ create table Elements (
     -- **Note:** The fully qualified identifier is stored in ElementIdents.
     name text not null,
     -- Hash of the file content.
-    file_hash text not null references FileHashes (hash) on delete restrict,
+    file_hash text not null references FileHashes (hash) on delete cascade,
     -- Line the element is defined at.
     definition_line integer not null,
     -- Line the element span starts.
@@ -264,7 +264,7 @@ create table CoverageBlockExcludes (
     -- Used to detect duplicate entries in one collection
     latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
-    file_hash text not null references FileHashes (hash) on delete restrict,
+    file_hash text not null references FileHashes (hash) on delete cascade,
     -- First line that must be excluded from code coverage analysis until the `end_line`.
     start_line integer not null,
     -- Last line that must be excluded (inclusive) from code coverage analysis.
@@ -284,7 +284,7 @@ create table CoverageLineExcludes (
     -- Used to detect duplicate entries in one collection
     latest_collection integer not null references Collections (id) on delete cascade,
     -- Hash of the file content.
-    file_hash text not null references FileHashes (hash) on delete restrict,
+    file_hash text not null references FileHashes (hash) on delete cascade,
     -- Line that must be excluded from code coverage analysis.
     line integer not null,
     -- Hash of the comment explaining why the line must be excluded from code coverage analysis.

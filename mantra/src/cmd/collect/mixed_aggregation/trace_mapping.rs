@@ -230,12 +230,16 @@ impl<'db> Collection<'db> {
     // }
 
     async fn update_traces_covered_by_failed_tests(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TracesCoveredByFailedTests
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TracesCoveredByFailedTests")?;
 
         let failed = TestState::Failed.as_number();
-        let passed = TestState::Passed.as_number();
-        let skipped = TestState::Skipped.as_number();
-        let unknown = TestState::Unknown.as_number();
 
         sqlx::query!(
             "
@@ -260,14 +264,6 @@ impl<'db> Collection<'db> {
                 and rlts.cov_line = tlt.cov_line
                 and rlts.test_state = $1
             )
-
-            on conflict (
-                product_id,
-                filepath,
-                traced_line
-            ) do update
-            set
-                file_hash = excluded.file_hash
             ",
             failed
         )
@@ -278,7 +274,14 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_traces_covered_by_unknown_tests(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TracesCoveredByUnknownTests
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TracesCoveredByUnknownTests")?;
 
         let unknown = TestState::Unknown.as_number();
 
@@ -305,14 +308,6 @@ impl<'db> Collection<'db> {
                 and rlts.cov_line = tlt.cov_line
                 and rlts.test_state = $1
             )
-
-            on conflict (
-                product_id,
-                filepath,
-                traced_line
-            ) do update
-            set
-                file_hash = excluded.file_hash
             ",
             unknown
         )
@@ -406,7 +401,14 @@ impl<'db> Collection<'db> {
     // }
 
     async fn update_traces_covered_by_skipped_tests(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TracesCoveredBySkippedTests
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TracesCoveredBySkippedTests")?;
 
         let skipped = TestState::Skipped.as_number();
 
@@ -433,14 +435,6 @@ impl<'db> Collection<'db> {
                 and rlts.cov_line = tlt.cov_line
                 and rlts.test_state = $1
             )
-
-            on conflict (
-                product_id,
-                filepath,
-                traced_line
-            ) do update
-            set
-                file_hash = excluded.file_hash
             ",
             skipped
         )
@@ -649,7 +643,14 @@ impl<'db> Collection<'db> {
     // }
 
     async fn update_traces_covered_by_passed_tests(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from TracesCoveredByPassedTests
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing TracesCoveredByPassedTests")?;
 
         let passed = TestState::Passed.as_number();
 
@@ -676,14 +677,6 @@ impl<'db> Collection<'db> {
                 and rlts.cov_line = tlt.cov_line
                 and rlts.test_state = $1
             )
-
-            on conflict (
-                product_id,
-                filepath,
-                traced_line
-            ) do update
-            set
-                file_hash = excluded.file_hash
             ",
             passed
         )

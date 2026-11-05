@@ -1,4 +1,5 @@
 create table Schemas (
+    latest_collection integer not null references Collections (id) on delete cascade,
     content_hash text not null primary key,
     origin_hash text references GeneralJson (hash) on delete restrict
 );

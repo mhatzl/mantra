@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into DirectProductReqTraces (\n                product_id,\n                req_id,\n                filepath,\n                file_hash,\n                line\n            )\n            select\n                $1 as product_id,\n                rt.req_id,\n                prh.filepath,\n                rt.file_hash,\n                rt.line\n            from DetectedReqTraces rt, Requirements r, ProductRelatedHashedFiles prh\n            where r.product_id = $1 and prh.product_id = $1\n            and rt.file_hash = prh.file_hash\n            and r.id = rt.req_id\n\n            union all\n\n            select\n                $1 as product_id,\n                rt.req_id,\n                prh.filepath,\n                rt.file_hash,\n                rt.line\n            from DetectedProductReqTraces rt, Requirements r, ProductRelatedHashedFiles prh\n            where r.product_id = $1 and prh.product_id = $1\n            and rt.product_id = $1\n            and rt.file_hash = prh.file_hash\n            and r.id = rt.req_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "f5a73e2a207d58fcca0f37e1436723bbcf87a5938986bc2338274662c9c28e9f"
+}

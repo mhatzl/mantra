@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from SchemaSources\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "d59ed26757b36fe3dc6b44ae2b3c4b86942b3623ad9753a73e69c5310297ae9c"
+}

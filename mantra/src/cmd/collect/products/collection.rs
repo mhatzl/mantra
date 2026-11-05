@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use mantra_schema::{
     FmtHash, Schema,
+    media_type::MediaType,
     path::{RelativePath, RelativePathBuf},
     product::{Product, ProductId},
 };
@@ -50,7 +51,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .context("Failed to collect requirements")?;
 
         // Note: Done before updating dot-parents, so only existing requirements are checked for potential parents
-        if collect_mode == &CollectMode::RemoveMissing {
+        if collect_mode == &CollectMode::RemoveOutdated {
             self.remove_outdated_requirement_parts()
                 .await
                 .context("Removing outdated requirement parts")?;
@@ -70,7 +71,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .await
             .context("Failed to collect annotations")?;
 
-        if collect_mode == &CollectMode::RemoveMissing {
+        if collect_mode == &CollectMode::RemoveOutdated {
             self.remove_outdated_annotation_parts()
                 .await
                 .context("Removing outdated annotation parts")?;
@@ -99,7 +100,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .await
             .context("Failed to collect test runs")?;
 
-        if collect_mode == &CollectMode::RemoveMissing {
+        if collect_mode == &CollectMode::RemoveOutdated {
             self.remove_outdated_test_run_parts()
                 .await
                 .context("Removing outdated test run parts")?;
@@ -115,10 +116,17 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             .await
             .context("Failed to collect reviews")?;
 
-        if collect_mode == &CollectMode::RemoveMissing {
+        if collect_mode == &CollectMode::RemoveOutdated {
             self.remove_outdated_review_parts()
                 .await
                 .context("Removing outdated review parts")?;
+        }
+
+        // ----- Collect Config Cleanup -----
+        if collect_mode == &CollectMode::RemoveOutdated {
+            self.remove_outdated_collect_configs()
+                .await
+                .context("Removing outdated collect configurations")?;
         }
 
         Ok(())
@@ -138,24 +146,22 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
     pub(crate) async fn insert_general_json(
         &mut self,
-        hash: &FmtHash,
         content: &serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        self.collection.insert_general_json(hash, content).await
+    ) -> Result<FmtHash, anyhow::Error> {
+        self.collection.insert_general_json(content).await
     }
 
     pub(crate) async fn insert_general_text(
         &mut self,
-        hash: &FmtHash,
         content: &str,
-    ) -> Result<(), anyhow::Error> {
-        self.collection.insert_general_text(hash, content).await
+    ) -> Result<FmtHash, anyhow::Error> {
+        self.collection.insert_general_text(content).await
     }
 
     pub(crate) async fn collect_unhashed_file(
         &mut self,
         filepath: &RelativePath,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<MediaType, anyhow::Error> {
         self.collection.collect_unhashed_file(filepath).await
     }
 
@@ -164,8 +170,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         filepath: &RelativePath,
         file_hash: Option<&FmtHash>,
         content: Option<&str>,
-    ) -> Result<(), anyhow::Error> {
-        self.collection
+    ) -> Result<MediaType, anyhow::Error> {
+        let media_type = self
+            .collection
             .insert_collected_file(filepath, file_hash, content)
             .await?;
 
@@ -237,7 +244,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             })?;
         }
 
-        Ok(())
+        Ok(media_type)
     }
 
     pub(crate) async fn insert_schema_single_sources<S: Schema>(
@@ -396,6 +403,39 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         .execute(self.connection_mut())
         .await
         .context("Failed inserting a collect config")?;
+
+        Ok(())
+    }
+
+    async fn remove_outdated_collect_configs(&mut self) -> Result<(), anyhow::Error> {
+        let collection_id = self.collect_nr();
+        let product_id = self.product_id().clone();
+
+        sqlx::query!(
+            "
+            delete from ConfigCollectedSchemas
+            where latest_collection < $1
+            and product_id = $2
+            ",
+            collection_id,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated ConfigCollectedSchemas")?;
+
+        sqlx::query!(
+            "
+            delete from CollectConfigs
+            where latest_collection < $1
+            and product_id = $2
+            ",
+            collection_id,
+            product_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated CollectConfigs")?;
 
         Ok(())
     }

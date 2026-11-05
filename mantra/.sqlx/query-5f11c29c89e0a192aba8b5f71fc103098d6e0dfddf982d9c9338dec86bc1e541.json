@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ResolvedTestCaseLineCoverage\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "5f11c29c89e0a192aba8b5f71fc103098d6e0dfddf982d9c9338dec86bc1e541"
+}

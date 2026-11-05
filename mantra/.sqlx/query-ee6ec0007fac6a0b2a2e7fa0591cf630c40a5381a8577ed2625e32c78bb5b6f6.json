@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from AnnotationCollectConfigs\n            where latest_collection < $1\n            and product_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ee6ec0007fac6a0b2a2e7fa0591cf630c40a5381a8577ed2625e32c78bb5b6f6"
+}

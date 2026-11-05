@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RequirementHierarchies\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "60a8330b6b59a02aeb700d9dded1c4afedfac6818ff588208538ddc3d4cf3352"
+}

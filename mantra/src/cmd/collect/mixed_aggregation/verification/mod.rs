@@ -41,12 +41,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_failed_reqs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from FailedRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing FailedRequirements")?;
+
         let req_failed_nr = RequirementState::Failed.as_nr();
 
         sqlx::query!(
             "
-            insert or ignore into FailedRequirements (
+            insert into FailedRequirements (
                 product_id,
                 req_id
             )
@@ -80,7 +88,8 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_req_verification_states(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        let collection_id = self.collect_nr();
+
         let req_verified_nr = RequirementState::Verified.as_nr();
         let req_failed_nr = RequirementState::Failed.as_nr();
         let req_skipped_nr = RequirementState::Skipped.as_nr();
@@ -213,7 +222,7 @@ impl<'db> Collection<'db> {
                 latest_collection = excluded.latest_collection,
                 state = excluded.state
             ",
-            collect_nr,
+            collection_id,
             req_verified_nr,
             req_failed_nr,
             req_skipped_nr,
@@ -226,16 +235,35 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await?;
 
+        sqlx::query!(
+            "
+            delete from RequirementVerificationStates
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing RequirementVerificationStates")?;
+
         Ok(())
     }
 
     async fn update_verified_reqs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from VerifiedRequirements
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing VerifiedRequirements")?;
+
         let req_verified_nr = RequirementState::Verified.as_nr();
 
         sqlx::query!(
             "
-            insert or ignore into VerifiedRequirements (
+            insert into VerifiedRequirements (
                 product_id,
                 req_id
             )
@@ -254,12 +282,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_skipped_reqs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from SkippedRequirements
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing SkippedRequirements")?;
+
         let req_skipped_nr = RequirementState::Skipped.as_nr();
 
         sqlx::query!(
             "
-            insert or ignore into SkippedRequirements (
+            insert into SkippedRequirements (
                 product_id,
                 req_id
             )
@@ -278,12 +314,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_satisfied_reqs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from SatisfiedRequirements
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing SatisfiedRequirements")?;
+
         let req_satisfied_nr = RequirementState::Satisfied.as_nr();
 
         sqlx::query!(
             "
-            insert or ignore into SatisfiedRequirements (
+            insert into SatisfiedRequirements (
                 product_id,
                 req_id
             )
@@ -302,12 +346,20 @@ impl<'db> Collection<'db> {
     }
 
     async fn update_unknown_reqs(&mut self) -> Result<(), anyhow::Error> {
-        let collect_nr = self.collect_nr();
+        sqlx::query!(
+            "
+            delete from UnknownRequirements
+            ",
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing UnknownRequirements")?;
+
         let req_unknown_nr = RequirementState::Unknown.as_nr();
 
         sqlx::query!(
             "
-            insert or ignore into UnknownRequirements (
+            insert into UnknownRequirements (
                 product_id,
                 req_id
             )

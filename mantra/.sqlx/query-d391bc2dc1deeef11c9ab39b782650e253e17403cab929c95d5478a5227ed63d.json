@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select origin_hash\n            from Schemas\n            where latest_collection = $1 and content_hash = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "origin_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Schemas",
+            "name": "origin_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "d391bc2dc1deeef11c9ab39b782650e253e17403cab929c95d5478a5227ed63d"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into GeneralTexts (\n                latest_collection,\n                hash,\n                content\n            )\n            values (\n                $1,\n                $2,\n                $3\n            ) on conflict (hash) do update\n            set\n                latest_collection = excluded.latest_collection,\n                content = excluded.content\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "0b7758db7e3f0faa4f645cfe235222f9f6a17bb108cddcde3a7cbf66276a0b60"
+}

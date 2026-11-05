@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from TraceSpans\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "7b87c80842d41b13c5b041ecff4913120017b38d0723a4f1fc707b1ff0d2d9cd"
+}

@@ -241,7 +241,7 @@ impl ProductDataConfig {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub(crate) struct ResolvedProductConfig {
+pub struct ResolvedProductConfig {
     pub product: Product,
     pub requirements: Vec<CollectRequirementsConfig>,
     pub annotations: Vec<CollectAnnotationsConfig>,
