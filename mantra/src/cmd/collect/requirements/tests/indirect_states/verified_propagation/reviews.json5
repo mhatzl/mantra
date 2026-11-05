@@ -9,7 +9,7 @@
             requirements: [
                 {
                     id: "req-2",
-                    comment: "Verifying the requirement"
+                    rational: "Verifying the requirement"
                 },
             ],
         }

@@ -82,9 +82,8 @@ create table ReviewRevisions (
     review_name text not null,
     -- Indicates the revision
     revision integer not null,
-    -- Comment for the revision.
-    -- [req("changes.comment")]
-    comment text not null,
+    -- Summary for the revision.
+    summary text not null,
     primary key (product_id, review_name, revision),
     foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
 );
@@ -115,8 +114,8 @@ create table ManuallyVerifiedRequirements (
     review_name text not null,
    -- ID of the requirement that is manually verified.
     req_id text not null,
-    -- Hash of the comment for the manual verification.
-    comment_hash text not null references GeneralTexts (hash) on delete restrict,
+    -- Hash of the rational for the manual verification.
+    rational_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (
         product_id,
         review_name,
@@ -141,8 +140,8 @@ create table TestCaseOverrides (
     -- State that must be used instead of the one stored in the TestCase table.
     -- 0=failed; 1=passed; 2=skipped; 3=unknown/running/not executed
     state integer not null,
-    -- Hash of the comment explaining why the state must be overriden.
-    comment_hash text not null references GeneralTexts(hash) on delete cascade,
+    -- Hash of the rational explaining why the state must be overriden.
+    rational_hash text not null references GeneralTexts(hash) on delete cascade,
     primary key (
         product_id,
         review_name,
@@ -183,8 +182,8 @@ create table TestRunLineCoverageOverrides (
     --
     -- If `null`, the line is considered excluded from line coverage analysis for this test run.
     covered bool,
-    -- Hash of the comment explaining why this line coverage must be overriden.
-    comment_hash text not null references GeneralTexts (hash) on delete cascade,
+    -- Hash of the rational explaining why this line coverage must be overriden.
+    rational_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
         review_name,
@@ -230,8 +229,8 @@ create table TestCaseLineCoverageOverrides (
     --
     -- If `null`, the line is ignored from line coverage analysis for this test run.
     covered bool,
-    -- Hash of the comment explaining why this line coverage must be overriden.
-    comment_hash text not null references GeneralTexts (hash) on delete cascade,
+    -- Hash of the rational explaining why this line coverage must be overriden.
+    rational_hash text not null references GeneralTexts (hash) on delete cascade,
     primary key (
         product_id,
         review_name,

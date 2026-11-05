@@ -249,7 +249,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         product_id,
                         review_name,
                         revision,
-                        comment
+                        summary
                     )
                     values (
                         $1,
@@ -265,13 +265,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     ) do update
                     set
                         latest_collection = excluded.latest_collection,
-                        comment = excluded.comment
+                        summary = excluded.summary
                     ",
                     collect_nr,
                     product_id,
                     review.name,
                     revision.number,
-                    revision.comment
+                    revision.summary
                 )
                 .execute(self.connection_mut())
                 .await
@@ -322,19 +322,19 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         }
 
         for verified_req in &review.requirements {
-            let comment_hash = self
-                .insert_general_text(&verified_req.comment)
+            let rational_hash = self
+                .insert_general_text(&verified_req.rational)
                 .await
                 .with_context(|| {
                     format!(
-                        "Failed to insert verification comment for requirement '{}'",
+                        "Failed to insert verification rational for requirement '{}'",
                         verified_req.id
                     )
                 })?;
 
             match &verified_req.id {
                 OneOrMultRequirementIds::One(id) => {
-                    self.update_verified_req(&review.name, id, &comment_hash)
+                    self.update_verified_req(&review.name, id, &rational_hash)
                         .await
                         .with_context(|| {
                             format!(
@@ -345,7 +345,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 }
                 OneOrMultRequirementIds::Mult(ids) => {
                     for id in ids {
-                        self.update_verified_req(&review.name, id, &comment_hash)
+                        self.update_verified_req(&review.name, id, &rational_hash)
                             .await
                             .with_context(|| {
                                 format!(
@@ -361,7 +361,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         for test_run_override in &review.test_run_overrides {
             for test_case_override in &test_run_override.test_cases {
                 if let Some(override_state) = &test_case_override.state {
-                    let comment_hash = self.insert_general_text(&override_state.comment)
+                    let rational_hash = self.insert_general_text(&override_state.comment)
                     .await
                     .with_context(||
                         format!(
@@ -425,7 +425,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 test_case_name,
                                 review_name,
                                 state,
-                                comment_hash
+                                rational_hash
                             )
                             values(
                                 $1,
@@ -445,7 +445,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             set
                                 latest_collection = excluded.latest_collection,
                                 state = excluded.state,
-                                comment_hash = excluded.comment_hash
+                                rational_hash = excluded.rational_hash
                             ",
                             collect_nr,
                             product_id,
@@ -453,7 +453,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             test_case_override.name,
                             review.name,
                             state,
-                            comment_hash
+                            rational_hash
                         )
                         .execute(self.connection_mut())
                         .await
@@ -475,7 +475,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             test_run_override.name.clone(),
                             test_case_override.name.clone(),
                             override_state.new,
-                            comment_hash,
+                            rational_hash,
                         );
 
                         self.insert_ignored_entry(&review.name, entry)
@@ -494,7 +494,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     let filepath = coverage_override.filepath.as_str();
 
                     for line_info in &coverage_override.lines {
-                        let comment_hash = self.insert_general_text(&line_info.comment)
+                        let rational_hash = self.insert_general_text(&line_info.rational)
                         .await
                         .with_context(||
                             format!(
@@ -570,7 +570,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                     cov_filepath,
                                     cov_line,
                                     covered,
-                                    comment_hash
+                                    rational_hash
                                 )
                                 values(
                                     $1,
@@ -594,7 +594,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 set
                                     latest_collection = excluded.latest_collection,
                                     covered = excluded.covered,
-                                    comment_hash = excluded.comment_hash
+                                    rational_hash = excluded.rational_hash
                                 ",
                                 collect_nr,
                                 product_id,
@@ -604,7 +604,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 filepath,
                                 line_number,
                                 line_info.covered,
-                                comment_hash
+                                rational_hash
                             )
                             .execute(self.connection_mut())
                             .await
@@ -632,7 +632,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                     coverage_override.filepath.clone(),
                                     *line_number,
                                     line_info.covered,
-                                    comment_hash.clone(),
+                                    rational_hash.clone(),
                                 );
 
                                 self.insert_ignored_entry(&review.name, entry)
@@ -656,7 +656,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 let filepath = coverage_override.filepath.as_str();
 
                 for line_info in &coverage_override.lines {
-                    let comment_hash = self.insert_general_text(&line_info.comment)
+                    let rational_hash = self.insert_general_text(&line_info.rational)
                     .await
                     .with_context(||
                         format!(
@@ -726,7 +726,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 cov_filepath,
                                 cov_line,
                                 covered,
-                                comment_hash
+                                rational_hash
                             )
                             values(
                                 $1,
@@ -748,7 +748,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             set
                                 latest_collection = excluded.latest_collection,
                                 covered = excluded.covered,
-                                comment_hash = excluded.comment_hash
+                                rational_hash = excluded.rational_hash
                             ",
                             collect_nr,
                             product_id,
@@ -757,7 +757,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             filepath,
                             line_number,
                             line_info.covered,
-                            comment_hash
+                            rational_hash
                         )
                         .execute(self.connection_mut())
                         .await
@@ -782,7 +782,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 coverage_override.filepath.clone(),
                                 *line_number,
                                 line_info.covered,
-                                comment_hash.clone(),
+                                rational_hash.clone(),
                             );
 
                             self.insert_ignored_entry(&review.name, entry)
@@ -808,7 +808,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         &mut self,
         review_name: &str,
         req_id: &ReqId,
-        comment_hash: &FmtHash,
+        rational_hash: &FmtHash,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id().clone();
@@ -834,7 +834,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     product_id,
                     review_name,
                     req_id,
-                    comment_hash
+                    rational_hash
                 )
                 values(
                     $1,
@@ -850,13 +850,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 ) do update
                 set
                     latest_collection = excluded.latest_collection,
-                    comment_hash = excluded.comment_hash
+                    rational_hash = excluded.rational_hash
                 ",
                 collect_nr,
                 product_id,
                 review_name,
                 req_id,
-                comment_hash
+                rational_hash
             )
             .execute(self.connection_mut())
             .await?;
@@ -867,7 +867,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             );
 
             let ignored_entry =
-                DbIgnoredEntry::from_verified_req(req_id.clone(), comment_hash.clone());
+                DbIgnoredEntry::from_verified_req(req_id.clone(), rational_hash.clone());
 
             self.insert_ignored_entry(review_name, ignored_entry)
                 .await

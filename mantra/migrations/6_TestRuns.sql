@@ -91,9 +91,8 @@ create table TestRunRevisions (
     test_run_name text not null,
     -- Indicates the revision
     revision integer not null,
-    -- Comment for the revision.
-    -- [req("changes.comment")]
-    comment text not null,
+    -- Summary for the revision.
+    summary text not null,
     primary key (product_id, test_run_name, revision),
     foreign key (product_id, test_run_name) references TestRuns (product_id, name) on delete cascade
 );

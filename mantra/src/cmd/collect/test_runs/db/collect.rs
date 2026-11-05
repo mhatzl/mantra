@@ -294,7 +294,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         product_id,
                         test_run_name,
                         revision,
-                        comment
+                        summary
                     )
                     values (
                         $1,
@@ -310,13 +310,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     ) do update
                     set
                         latest_collection = excluded.latest_collection,
-                        revision = excluded.revision
+                        summary = excluded.summary
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
                     revision.number,
-                    revision.comment
+                    revision.summary
                 )
                 .execute(self.connection_mut())
                 .await

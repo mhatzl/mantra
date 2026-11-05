@@ -69,7 +69,7 @@ pub trait Schema: serde::Serialize {
 pub struct Revision {
     pub number: i64,
     pub authors: Vec<String>,
-    pub comment: String,
+    pub summary: String,
 }
 
 #[derive(

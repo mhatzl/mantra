@@ -13,13 +13,13 @@ pub mod collect;
 pub(crate) enum DbIgnoredEntry {
     Requirement {
         id: ReqId,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     },
     TestCaseStateOverride {
         test_run_name: String,
         test_case_name: String,
         state: TestCaseState,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     },
     TestCaseLineCoverageOverride {
         test_run_name: String,
@@ -27,22 +27,22 @@ pub(crate) enum DbIgnoredEntry {
         cov_filepath: RelativePathBuf,
         cov_line: Line,
         covered: Option<bool>,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     },
     TestRunLineCoverageOverride {
         test_run_name: String,
         cov_filepath: RelativePathBuf,
         cov_line: Line,
         covered: Option<bool>,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     },
 }
 
 impl DbIgnoredEntry {
-    fn from_verified_req(req_id: ReqId, comment_hash: FmtHash) -> Self {
+    fn from_verified_req(req_id: ReqId, rational_hash: FmtHash) -> Self {
         Self::Requirement {
             id: req_id,
-            comment_hash,
+            rational_hash,
         }
     }
 
@@ -50,13 +50,13 @@ impl DbIgnoredEntry {
         test_run_name: String,
         test_case_name: String,
         state: TestCaseState,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     ) -> Self {
         Self::TestCaseStateOverride {
             test_run_name,
             test_case_name,
             state,
-            comment_hash,
+            rational_hash,
         }
     }
 
@@ -66,7 +66,7 @@ impl DbIgnoredEntry {
         cov_filepath: RelativePathBuf,
         cov_line: Line,
         covered: Option<bool>,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     ) -> Self {
         Self::TestCaseLineCoverageOverride {
             test_run_name,
@@ -74,7 +74,7 @@ impl DbIgnoredEntry {
             cov_filepath,
             cov_line,
             covered,
-            comment_hash,
+            rational_hash,
         }
     }
 
@@ -83,14 +83,14 @@ impl DbIgnoredEntry {
         cov_filepath: RelativePathBuf,
         cov_line: Line,
         covered: Option<bool>,
-        comment_hash: FmtHash,
+        rational_hash: FmtHash,
     ) -> Self {
         Self::TestRunLineCoverageOverride {
             test_run_name,
             cov_filepath,
             cov_line,
             covered,
-            comment_hash,
+            rational_hash,
         }
     }
 }

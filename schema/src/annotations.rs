@@ -98,8 +98,8 @@ pub struct Annotations {
 pub struct CoverageExclude {
     /// The kind of coverage exclusion.
     pub kind: CoverageExcludeKind,
-    /// Mandatory comment on why the exclusion is acceptable.
-    pub comment: String,
+    /// Mandatory rational on why the exclusion is acceptable.
+    pub rational: String,
 }
 
 impl CoverageExclude {

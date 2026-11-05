@@ -269,8 +269,8 @@ create table CoverageBlockExcludes (
     start_line integer not null,
     -- Last line that must be excluded (inclusive) from code coverage analysis.
     end_line integer not null,
-    -- Hash of the comment explaining why the spanned lines must be excluded from code coverage calculations.
-    comment_hash text not null references GeneralTexts (hash) on delete restrict,
+    -- Hash of the rational explaining why the spanned lines must be excluded from code coverage calculations.
+    rational_hash text not null references GeneralTexts (hash) on delete restrict,
     -- Optional MIME/media type of coverage exclusion related general texts (e.g. comment).
     media_type text,
     primary key (file_hash, start_line),
@@ -287,8 +287,8 @@ create table CoverageLineExcludes (
     file_hash text not null references FileHashes (hash) on delete cascade,
     -- Line that must be excluded from code coverage analysis.
     line integer not null,
-    -- Hash of the comment explaining why the line must be excluded from code coverage analysis.
-    comment_hash text not null references GeneralTexts (hash) on delete restrict,
+    -- Hash of the rational explaining why the line must be excluded from code coverage analysis.
+    rational_hash text not null references GeneralTexts (hash) on delete restrict,
     -- Optional MIME/media type of coverage exclusion related general texts (e.g. comment).
     media_type text,
     primary key (file_hash, line)

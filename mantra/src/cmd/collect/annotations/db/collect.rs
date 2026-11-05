@@ -562,8 +562,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         coverage_exclude: &CoverageExclude,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
-        let comment_hash = self
-            .insert_general_text(&coverage_exclude.comment)
+        let rational_hash = self
+            .insert_general_text(&coverage_exclude.rational)
             .await
             .context("Failed to insert coverage exclusion comment")?;
 
@@ -576,7 +576,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         file_hash,
                         start_line,
                         end_line,
-                        comment_hash
+                        rational_hash
                     )
                     values (
                         $1,
@@ -589,13 +589,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     do update set
                         latest_collection = excluded.latest_collection,
                         end_line = excluded.end_line,
-                        comment_hash = excluded.comment_hash
+                        rational_hash = excluded.rational_hash
                     ",
                     collect_nr,
                     file_hash,
                     start,
                     end,
-                    comment_hash
+                    rational_hash
                 )
                 .execute(self.connection_mut())
                 .await
@@ -608,7 +608,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         latest_collection,
                         file_hash,
                         line,
-                        comment_hash
+                        rational_hash
                     )
                     values (
                         $1,
@@ -619,12 +619,12 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     on conflict (file_hash, line)
                     do update set
                         latest_collection = excluded.latest_collection,
-                        comment_hash = excluded.comment_hash
+                        rational_hash = excluded.rational_hash
                     ",
                     collect_nr,
                     file_hash,
                     line,
-                    comment_hash
+                    rational_hash
                 )
                 .execute(self.connection_mut())
                 .await

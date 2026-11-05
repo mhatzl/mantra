@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ReviewRevisions (\n                        latest_collection,\n                        product_id,\n                        review_name,\n                        revision,\n                        summary\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4,\n                        $5\n                    )\n                    on conflict (\n                        product_id,\n                        review_name,\n                        revision\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection,\n                        summary = excluded.summary\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "cd583554f68d269961bad677afcbea9c55634931999b90cbfba35a71038b09ac"
+}

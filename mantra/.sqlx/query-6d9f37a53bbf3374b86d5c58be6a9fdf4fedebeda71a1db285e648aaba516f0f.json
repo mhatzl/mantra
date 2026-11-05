@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into CoverageLineExcludes (\n                        latest_collection,\n                        file_hash,\n                        line,\n                        rational_hash\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    on conflict (file_hash, line)\n                    do update set\n                        latest_collection = excluded.latest_collection,\n                        rational_hash = excluded.rational_hash\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "6d9f37a53bbf3374b86d5c58be6a9fdf4fedebeda71a1db285e648aaba516f0f"
+}

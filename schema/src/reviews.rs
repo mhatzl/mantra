@@ -125,7 +125,7 @@ pub struct VerifiedRequirementGroup {
     #[serde(alias = "ids")]
     pub id: OneOrMultRequirementIds,
     /// Mandatory comment explaining the manual verification.
-    pub comment: String,
+    pub rational: String,
 }
 
 /// Variant to allow setting either one or more requirement IDs for manual verification.
@@ -238,5 +238,5 @@ pub struct OverrideCoveredLineInfo {
     /// If None, the line is marked to be ignored from line coverage analysis.
     pub covered: Option<bool>,
     /// Mandatory comment explaining the change to the code coverage information.
-    pub comment: String,
+    pub rational: String,
 }
