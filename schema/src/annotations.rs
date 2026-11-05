@@ -216,7 +216,7 @@ pub enum TraceKind {
 }
 
 impl TraceKind {
-    pub fn as_nr(&self) -> i32 {
+    pub fn as_number(&self) -> i32 {
         *self as i32
     }
 }

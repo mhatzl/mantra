@@ -69,7 +69,7 @@ create table LeafRequirements (
 
 -- Contains requirements that are marked as `deprecated`.
 --
--- **Note:** Children of explicitly marked requirements are also affected.
+-- **Note:** Propagates to child requirements if all parents are marked `exclude`.
 create table DeprecatedRequirements (
     product_id text not null,
     req_id text not null,
@@ -81,6 +81,16 @@ create table DeprecatedRequirements (
 --
 -- **Note:** Propagates to child requirements if all parents are marked `exclude`.
 create table ExcludedRequirements (
+    product_id text not null,
+    req_id text not null,
+    primary key (product_id, req_id),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade
+);
+
+-- Contains requirements that are marked as `draft`.
+--
+-- **Note:** Propagates to child requirements if all parents are marked `draft`.
+create table DraftRequirements (
     product_id text not null,
     req_id text not null,
     primary key (product_id, req_id),

@@ -138,10 +138,11 @@ pub enum RequirementState {
     /// but not all verified conditions have been fulfilled.
     PartiallyVerified = 6,
     Unknown = 7,
+    Draft = 8,
 }
 
 impl RequirementState {
-    pub fn as_nr(&self) -> i32 {
+    pub fn as_number(&self) -> i32 {
         *self as i32
     }
 
@@ -170,6 +171,8 @@ impl TryFrom<i64> for RequirementState {
             Ok(RequirementState::PartiallyVerified)
         } else if value == RequirementState::Unknown.as_i64() {
             Ok(RequirementState::Unknown)
+        } else if value == RequirementState::Draft.as_i64() {
+            Ok(RequirementState::Draft)
         } else {
             Err(ConversionError::UnknownState)
         }

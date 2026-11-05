@@ -1,0 +1,57 @@
+{
+    requirements: [
+        {
+            id: "req-1",
+            title: "Draft First Requirement",
+            origin: "Draft state test",
+            draft: true,
+        },
+        {
+            id: "req-1.sub-1",
+            title: "First Sub-Requirement (Indirectly Draft)",
+            origin: "Draft state test",
+        },
+        {
+            id: "req-1.sub-1.sub-sub-1",
+            title: "First Sub-Sub-Requirement (Explicitly Not Draft)",
+            origin: "Draft state test",
+            draft: false,
+        },
+        {
+            id: "req-1.sub-2",
+            title: "Second Sub-Requirement (Indirectly Draft)",
+            origin: "Draft state test",
+        },
+        {
+            id: "req-2",
+            title: "Regular Requirement",
+            origin: "Draft state test",
+            draft: false,
+        },
+        {
+            id: "req-2.sub-1",
+            title: "First Sub-Requirement (Directly Draft)",
+            origin: "Draft state test",
+            draft: true,
+        },
+        {
+            id: "req-2.sub-1.sub-sub-1",
+            title: "First Sub-Sub-Requirement (Indirectly Draft)",
+            origin: "Draft state test",
+        },
+        {
+            id: "req-2.sub-2",
+            title: "Second Sub-Requirement",
+            origin: "Draft state test",
+        },
+        {
+            id: "req-3",
+            parents: [
+                "req-1",
+                "req-2"
+            ],
+            title: "Requirement with 1/2 draft parents (Not Draft)",
+            origin: "Draft state test",
+        }
+    ]
+}

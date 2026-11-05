@@ -1,5 +1,9 @@
 use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
 
+mod indirect_states;
+mod replacements;
+mod states;
+
 #[sqlx::test]
 async fn detect_hierarchy_cycles(pool: MantraPool) {
     let dir = "hierarchy_cycle";
@@ -34,1809 +38,1809 @@ async fn detect_indirect_hierarchy_cycles(pool: MantraPool) {
     panic!("Failed to detect requirement cycle");
 }
 
-mod indirect_states {
-    use mantra_schema::report::requirement::RequirementState;
-
-    use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
-
-    #[sqlx::test]
-    async fn deprecated_indirect_req(pool: MantraPool) {
-        let depr_state = RequirementState::Deprecated.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/deprecated_propagation").unwrap();
-
-        let depr_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            depr_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            depr_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have deprecated state indirectly due to req-1."
-        );
-        assert!(
-            !depr_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to **not** have deprecated state due to explicit 'false'."
-        );
-        assert!(
-            depr_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to have deprecated state indirectly due to req-1."
-        );
-        assert!(
-            !depr_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to **not** have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to have deprecated state indirectly due to req-1.sub-1."
-        );
-        assert!(
-            !depr_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to **not** have deprecated state."
-        );
-        assert!(
-            !depr_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to **not** have deprecated state due to only one of two parents being deprecated."
-        );
-    }
-
-    #[sqlx::test]
-    async fn excluded_indirect_req(pool: MantraPool) {
-        let excluded_state = RequirementState::Excluded.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/excluded_propagation").unwrap();
-
-        let excluded_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            excluded_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            excluded_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have excluded state."
-        );
-        assert!(
-            !excluded_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to **not** have excluded state due to explicit 'false'."
-        );
-        assert!(
-            !excluded_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to **not** have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to have excluded state indirectly due to req-1."
-        );
-        assert!(
-            !excluded_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to **not** have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to have excluded state indirectly due to req-1.sub-1."
-        );
-        assert!(
-            !excluded_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to **not** have excluded state."
-        );
-        assert!(
-            !excluded_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to **not** have excluded state."
-        );
-    }
-
-    #[sqlx::test]
-    async fn optional_indirect_req(pool: MantraPool) {
-        let unknown_state = RequirementState::Unknown.as_nr();
-        let verified_state = RequirementState::Verified.as_nr();
-        let failed_state = RequirementState::Failed.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/optional_propagation").unwrap();
-
-        let unknown_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            unknown_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let failed_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            failed_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let optional_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from OptionalRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            verified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be indirectly verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to be indirectly verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to be directly verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be optional."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be in failed state due to indirect fail propagation."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be in failed state due to indirect fail propagation."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be optional."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be failed."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to be verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to be indirectly verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be directly verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to be indirectly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-4.sub-1".to_string()),
-            "Expected req-4.sub-1 to be directly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-4.sub-1".to_string()),
-            "Expected req-4.sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to be indirectly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5.sub-1".to_string()),
-            "Expected req-5.sub-1 to be indirectly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5.sub-1".to_string()),
-            "Expected req-5.sub-1 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be directly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to be verified."
-        );
-        assert!(
-            !optional_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to **not** be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7 to be verified."
-        );
-        assert!(
-            !optional_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7.sub-1 to **not** be optional."
-        );
-    }
-
-    #[sqlx::test]
-    async fn verified_indirect_req(pool: MantraPool) {
-        let unknown_state = RequirementState::Unknown.as_nr();
-        let verified_state = RequirementState::Verified.as_nr();
-        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/verified_propagation").unwrap();
-
-        let unknown_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            unknown_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let partially_verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            partially_verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let direct_verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from DirectRequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let optional_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from OptionalRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let manual_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from ManualRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            verified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be indirectly verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to be indirectly verified."
-        );
-        assert!(
-            direct_verified_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be directly verified."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be partially verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be verified."
-        );
-        assert!(
-            !manual_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to **not** require manual verification."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to be unknown."
-        );
-        assert!(
-            manual_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to be verified."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be partially verified."
-        );
-        assert!(
-            direct_verified_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be directly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3.sub-1.sub-sub-1".to_string()),
-            "Expected req-3.sub-1.sub-sub-1 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-3.sub-1.sub-sub-1".to_string()),
-            "Expected req-3.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
-            "Expected req-3.sub-1.sub-sub-2 to be unknown."
-        );
-        assert!(
-            !optional_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
-            "Expected req-3.sub-1.sub-sub-2 to **not** be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be verified."
-        );
-    }
-
-    #[sqlx::test]
-    async fn indirec_direct_req(pool: MantraPool) {
-        let unknown_state = RequirementState::Unknown.as_nr();
-        let verified_state = RequirementState::Verified.as_nr();
-        let skipped_state = RequirementState::Skipped.as_nr();
-        let failed_state = RequirementState::Failed.as_nr();
-        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/indirect_direct_mix").unwrap();
-
-        let unknown_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            unknown_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let partially_verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            partially_verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let skipped_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            skipped_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let failed_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            failed_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let optional_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from OptionalRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            failed_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be failed."
-        );
-        assert!(
-            failed_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to be failed."
-        );
-        assert!(
-            failed_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to be failed."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be optional."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be failed."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be failed."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be optional."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be failed."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to be verified."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to be partially verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be unknown."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be optional."
-        );
-        assert!(
-            failed_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to be failed."
-        );
-        assert!(
-            verified_reqs.contains(&"req-4.sub-1".to_string()),
-            "Expected req-4.sub-1 to be directly verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to be indirectly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5.sub-1".to_string()),
-            "Expected req-5.sub-1 to be directly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5.sub-1".to_string()),
-            "Expected req-5.sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to be directly verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to be optional."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-6.sub-1".to_string()),
-            "Expected req-6.sub-1 to be directly skipped."
-        );
-        assert!(
-            optional_reqs.contains(&"req-6.sub-1".to_string()),
-            "Expected req-6.sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
-            "Expected req-6.sub-1.sub-sub-1 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-6.sub-2".to_string()),
-            "Expected req-5.sub-2 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-6.sub-2".to_string()),
-            "Expected req-6.sub-2 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be optional."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7.sub-1 to be directly skipped."
-        );
-        assert!(
-            optional_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7.sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
-            "Expected req-7.sub-1.sub-sub-1 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
-            "Expected req-7.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            verified_reqs.contains(&"req-7.sub-2".to_string()),
-            "Expected req-7.sub-2 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-7.sub-2".to_string()),
-            "Expected req-7.sub-2 to be optional."
-        );
-    }
-
-    #[sqlx::test]
-    async fn manual_indirect_req(pool: MantraPool) {
-        let unknown_state = RequirementState::Unknown.as_nr();
-        let verified_state = RequirementState::Verified.as_nr();
-        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/manual_propagation").unwrap();
-
-        let unknown_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            unknown_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let partially_verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            partially_verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let optional_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from OptionalRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let manual_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from ManualRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            verified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to be verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to be verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be optional."
-        );
-        assert!(
-            manual_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be verified."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be optional."
-        );
-        assert!(
-            manual_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to require manual verification."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
-        );
-        assert!(
-            manual_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to be verified."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to be verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-3.sub-1".to_string()),
-            "Expected req-3.sub-1 to be verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-3.sub-2".to_string()),
-            "Expected req-3.sub-2 to be optional."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to be partially verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-4.sub-1".to_string()),
-            "Expected req-4.sub-1 to be directly verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-4.sub-1".to_string()),
-            "Expected req-4.sub-1 to require manual verification."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to be unknown."
-        );
-        assert!(
-            manual_reqs.contains(&"req-4.sub-2".to_string()),
-            "Expected req-4.sub-2 to require manual verification."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to be indirectly partially verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5.sub-1".to_string()),
-            "Expected req-5.sub-1 to be directly verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-5.sub-1".to_string()),
-            "Expected req-5.sub-1 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to be directly verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
-            "Expected req-5.sub-1.sub-sub-1 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to be verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-5.sub-2".to_string()),
-            "Expected req-5.sub-2 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to be verified."
-        );
-        assert!(
-            !manual_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to **not** require manual verification."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be partially verified."
-        );
-        assert!(
-            !manual_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to **not** require manual verification."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7.sub-1 to be partially verified."
-        );
-        assert!(
-            manual_reqs.contains(&"req-7.sub-1".to_string()),
-            "Expected req-7.sub-1 to require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
-            "Expected req-7.sub-1.sub-sub-1 to be verified."
-        );
-        assert!(
-            !manual_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
-            "Expected req-7.sub-1.sub-sub-1 to **not** require manual verification."
-        );
-        assert!(
-            verified_reqs.contains(&"req-7.sub-2".to_string()),
-            "Expected req-7.sub-2 to be verified."
-        );
-        assert!(
-            !manual_reqs.contains(&"req-7.sub-2".to_string()),
-            "Expected req-7.sub-2 to **not** require manual verification."
-        );
-    }
-
-    #[sqlx::test]
-    async fn nested_req(pool: MantraPool) {
-        let unknown_state = RequirementState::Unknown.as_nr();
-        let verified_state = RequirementState::Verified.as_nr();
-        let skipped_state = RequirementState::Skipped.as_nr();
-        let excluded_state = RequirementState::Excluded.as_nr();
-        let deprecated_state = RequirementState::Deprecated.as_nr();
-        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
-
-        let db = db_from_dir!(pool, "indirect_states/nested_propagation").unwrap();
-
-        let unknown_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            unknown_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let partially_verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            partially_verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let skipped_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            skipped_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let excluded_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            excluded_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let deprecated_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            deprecated_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let optional_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from OptionalRequirements
-            "
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            partially_verified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be partially verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to be unknown."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
-            "Expected req-1.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
-            "Expected req-1.sub-1.sub-sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
-            "Expected req-1.sub-1.sub-sub-2 to be optional."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-1.sub-1.sub-sub-3".to_string()),
-            "Expected req-1.sub-1.sub-sub-3 to be excluded."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-2".to_string()),
-            "Expected req-1.sub-2 to be verified."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-1.sub-3".to_string()),
-            "Expected req-1.sub-3 to be excluded."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be skipped."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to be skipped."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
-            "Expected req-2.sub-1.sub-sub-1 to be optional."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
-            "Expected req-2.sub-1.sub-sub-2 to be unknown."
-        );
-        assert!(
-            optional_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
-            "Expected req-2.sub-1.sub-sub-2 to be optional."
-        );
-        assert!(
-            deprecated_reqs.contains(&"req-2.sub-1.sub-sub-3".to_string()),
-            "Expected req-2.sub-1.sub-sub-3 to be deprecated."
-        );
-        assert!(
-            verified_reqs.contains(&"req-2.sub-2".to_string()),
-            "Expected req-2.sub-2 to be verified."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-2.sub-3".to_string()),
-            "Expected req-2.sub-3 to be excluded."
-        );
-    }
-}
-
-mod states {
-    use mantra_schema::report::requirement::RequirementState;
-
-    use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
-
-    #[sqlx::test]
-    async fn deprecated_req(pool: MantraPool) {
-        let depr_state = RequirementState::Deprecated.as_nr();
-
-        let db = db_from_dir!(pool, "states/deprecated").unwrap();
-
-        let depr_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            depr_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            depr_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have deprecated state indirectly due to req-1."
-        );
-        assert!(
-            !depr_reqs.contains(&"req-2".to_string()),
-            "Req-2 must not be marked as deprecated."
-        );
-        assert!(
-            depr_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to have deprecated state, even if covering test failed."
-        );
-        assert!(
-            depr_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to have deprecated state, even if covered test was skipped."
-        );
-        assert!(
-            depr_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to have deprecated state, even if covered test passed."
-        );
-        assert!(
-            depr_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to have deprecated state, even if req was manually verified."
-        );
-        assert!(
-            depr_reqs.contains(&"req-8".to_string()),
-            "Expected req-8 to have deprecated state."
-        );
-        assert!(
-            depr_reqs.contains(&"req-9".to_string()),
-            "Expected req-9 to have deprecated state."
-        );
-    }
-
-    #[sqlx::test]
-    async fn excluded_req(pool: MantraPool) {
-        let exclude_state = RequirementState::Excluded.as_nr();
-
-        let db = db_from_dir!(pool, "states/excluded").unwrap();
-
-        let excluded_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            exclude_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            excluded_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have excluded state indirectly due to req-1."
-        );
-        assert!(
-            !excluded_reqs.contains(&"req-2".to_string()),
-            "Req-2 must not be marked as excluded."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to have excluded state, even if covering test failed."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-5".to_string()),
-            "Expected req-5 to have excluded state, even if covered test was skipped."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to have excluded state, even if covered test passed."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to have excluded state, even if req was manually verified."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-8".to_string()),
-            "Expected req-8 to have excluded state."
-        );
-        assert!(
-            excluded_reqs.contains(&"req-9".to_string()),
-            "Expected req-9 to have excluded state."
-        );
-    }
-
-    #[sqlx::test]
-    async fn failed_req(pool: MantraPool) {
-        let failed_state = RequirementState::Failed.as_nr();
-
-        let db = db_from_dir!(pool, "states/failed").unwrap();
-
-        let failed_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            failed_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            failed_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have failed state."
-        );
-        assert!(
-            !failed_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to not be failed."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be failed indirectly due to req-2.sub-1."
-        );
-        assert!(
-            failed_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have failed state."
-        );
-        assert!(
-            failed_reqs.contains(&"req-skipped".to_string()),
-            "Expected req-skipped to have failed state, even if other covered test was skipped."
-        );
-        assert!(
-            failed_reqs.contains(&"req-verified".to_string()),
-            "Expected req-verified to have failed state, even if other covered test passed."
-        );
-        assert!(
-            failed_reqs.contains(&"req-manual".to_string()),
-            "Expected req-manual to have failed state, even if req was manually verified."
-        );
-    }
-
-    #[sqlx::test]
-    async fn skipped_req(pool: MantraPool) {
-        let skipped_state = RequirementState::Skipped.as_nr();
-
-        let db = db_from_dir!(pool, "states/skipped").unwrap();
-
-        let skipped_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            skipped_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            skipped_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to have skipped state."
-        );
-        assert!(
-            !skipped_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to not be skipped."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to be skipped indirectly due to req-2.sub-1."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have skipped state."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-verified".to_string()),
-            "Expected req-verified to have skipped state, even if other covered test passed."
-        );
-        assert!(
-            skipped_reqs.contains(&"req-manual".to_string()),
-            "Expected req-manual to have skipped state, even if req was manually verified."
-        );
-    }
-
-    #[sqlx::test]
-    async fn unknown_req(pool: MantraPool) {
-        let unknown_state = RequirementState::Unknown.as_nr();
-        let satisfied_state = RequirementState::Satisfied.as_nr();
-        let partially_verified_state = RequirementState::PartiallyVerified.as_nr();
-
-        let db = db_from_dir!(pool, "states/unknown").unwrap();
-
-        let partially_verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            partially_verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let unknown_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            unknown_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        let satisfied_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            satisfied_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            partially_verified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be partially verified, due to unknown child and direct verified."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have unknown state."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-2".to_string()),
-            "Expected req-2 to have unknown state."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-2.sub-1".to_string()),
-            "Expected req-2.sub-1 to have unknown state."
-        );
-        assert!(
-            partially_verified_reqs.contains(&"req-manual".to_string()),
-            "Expected req-manual to be partially verified due to verified by test, but only partial due to missing review."
-        );
-        assert!(
-            satisfied_reqs.contains(&"req-satisfy".to_string()),
-            "Expected req-satisfy to have satisfied state, because no test verifies the req, but satisfy trace exists."
-        );
-        assert!(
-            unknown_reqs.contains(&"req-verify".to_string()),
-            "Expected req-verify to have unknown state, because no test covers the verify trace."
-        );
-        assert!(
-            satisfied_reqs.contains(&"req-satisfy-verify".to_string()),
-            "Expected req-satisfy-verify to have satisfied state,
-            because the test covering the verify trace does not cover the satisfy trace and vice versa."
-        );
-        assert!(
-            satisfied_reqs.contains(&"req-mult-satisfy".to_string()),
-            "Expected req-mult-satisfy to have satisfied state, because it has no (covered) verify traces or direct test."
-        );
-    }
-
-    #[sqlx::test]
-    async fn verified_req(pool: MantraPool) {
-        let verified_state = RequirementState::Verified.as_nr();
-
-        let db = db_from_dir!(pool, "states/verified").unwrap();
-
-        let verified_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            verified_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            verified_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be indirectly verified through req-1.sub-1."
-        );
-        assert!(
-            verified_reqs.contains(&"req-1.sub-1".to_string()),
-            "Expected req-1.sub-1 to have verified state."
-        );
-        assert!(
-            verified_reqs.contains(&"req-manual".to_string()),
-            "Expected req-manual to have verified state."
-        );
-        assert!(
-            verified_reqs.contains(&"req-verify".to_string()),
-            "Expected req-verify to have verified state."
-        );
-        assert!(
-            verified_reqs.contains(&"req-satisfy-verify".to_string()),
-            "Expected req-satisfy-verify to have verified state"
-        );
-    }
-}
-
-mod replacements {
-    use mantra_schema::report::requirement::RequirementState;
-
-    use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
-
-    #[sqlx::test]
-    async fn valid_req_replacements(pool: MantraPool) {
-        let deprecated_state = RequirementState::Deprecated.as_nr();
-
-        let db = db_from_dir!(pool, "replacements/valid_replaces").unwrap();
-
-        let deprecated_reqs: Vec<String> = sqlx::query!(
-            "
-            select req_id from RequirementVerificationStates
-            where state = $1
-            ",
-            deprecated_state
-        )
-        .fetch_all(
-            db.connection()
-                .await
-                .expect("Failed to get a connection")
-                .as_mut(),
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|r| r.req_id)
-        .collect();
-
-        assert!(
-            deprecated_reqs.contains(&"req-1".to_string()),
-            "Expected req-1 to be indirectly deprecated through req-2."
-        );
-        assert!(
-            deprecated_reqs.contains(&"req-3".to_string()),
-            "Expected req-3 to be indirectly deprecated through req-4."
-        );
-        assert!(
-            deprecated_reqs.contains(&"req-4".to_string()),
-            "Expected req-4 to be indirectly deprecated through req-5."
-        );
-        assert!(
-            deprecated_reqs.contains(&"req-6".to_string()),
-            "Expected req-6 to be indirectly deprecated through req-7."
-        );
-        assert!(
-            deprecated_reqs.contains(&"req-7".to_string()),
-            "Expected req-7 to be directly deprecated."
-        );
-    }
-
-    #[sqlx::test]
-    async fn bad_req_replacements(pool: MantraPool) {
-        let db_res = db_from_dir!(pool, "replacements/bad_replaces");
-
-        let Err(db_err) = db_res else {
-            panic!("Failed to detect bad replacement relations")
-        };
-
-        for err in db_err.chain() {
-            if err.to_string() == "Requirement tried to replace its ancestor" {
-                return;
-            }
-        }
-        panic!("Failed to detect bad replacement relations in errors: {db_err:#}");
-    }
-}
+// mod indirect_states {
+//     use mantra_schema::report::requirement::RequirementState;
+
+//     use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
+
+//     #[sqlx::test]
+//     async fn deprecated_indirect_req(pool: MantraPool) {
+//         let depr_state = RequirementState::Deprecated.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/deprecated_propagation").unwrap();
+
+//         let depr_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             depr_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             depr_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to have deprecated state indirectly due to req-1."
+//         );
+//         assert!(
+//             !depr_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to **not** have deprecated state due to explicit 'false'."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to have deprecated state indirectly due to req-1."
+//         );
+//         assert!(
+//             !depr_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to **not** have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to have deprecated state indirectly due to req-1.sub-1."
+//         );
+//         assert!(
+//             !depr_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to **not** have deprecated state."
+//         );
+//         assert!(
+//             !depr_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to **not** have deprecated state due to only one of two parents being deprecated."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn excluded_indirect_req(pool: MantraPool) {
+//         let excluded_state = RequirementState::Excluded.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/excluded_propagation").unwrap();
+
+//         let excluded_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             excluded_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             excluded_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to have excluded state."
+//         );
+//         assert!(
+//             !excluded_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to **not** have excluded state due to explicit 'false'."
+//         );
+//         assert!(
+//             !excluded_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to **not** have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to have excluded state indirectly due to req-1."
+//         );
+//         assert!(
+//             !excluded_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to **not** have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to have excluded state indirectly due to req-1.sub-1."
+//         );
+//         assert!(
+//             !excluded_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to **not** have excluded state."
+//         );
+//         assert!(
+//             !excluded_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to **not** have excluded state."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn optional_indirect_req(pool: MantraPool) {
+//         let unknown_state = RequirementState::Unknown.as_number();
+//         let verified_state = RequirementState::Verified.as_number();
+//         let failed_state = RequirementState::Failed.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/optional_propagation").unwrap();
+
+//         let unknown_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             unknown_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let failed_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             failed_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let optional_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from OptionalRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             verified_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be indirectly verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to be indirectly verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to be directly verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be optional."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be in failed state due to indirect fail propagation."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be in failed state due to indirect fail propagation."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be optional."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be failed."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to be verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to be indirectly verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3.sub-1".to_string()),
+//             "Expected req-3.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to be indirectly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-4.sub-1".to_string()),
+//             "Expected req-4.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-4.sub-1".to_string()),
+//             "Expected req-4.sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-4.sub-2".to_string()),
+//             "Expected req-4.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-4.sub-2".to_string()),
+//             "Expected req-4.sub-2 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to be indirectly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5.sub-1".to_string()),
+//             "Expected req-5.sub-1 to be indirectly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5.sub-1".to_string()),
+//             "Expected req-5.sub-1 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to be directly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-5.sub-2".to_string()),
+//             "Expected req-5.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5.sub-2".to_string()),
+//             "Expected req-5.sub-2 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to be verified."
+//         );
+//         assert!(
+//             !optional_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to **not** be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-7.sub-1".to_string()),
+//             "Expected req-7 to be verified."
+//         );
+//         assert!(
+//             !optional_reqs.contains(&"req-7.sub-1".to_string()),
+//             "Expected req-7.sub-1 to **not** be optional."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn verified_indirect_req(pool: MantraPool) {
+//         let unknown_state = RequirementState::Unknown.as_number();
+//         let verified_state = RequirementState::Verified.as_number();
+//         let partially_verified_state = RequirementState::PartiallyVerified.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/verified_propagation").unwrap();
+
+//         let unknown_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             unknown_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let partially_verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             partially_verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let direct_verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from DirectRequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let optional_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from OptionalRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let manual_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from ManualRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             verified_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be indirectly verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to be indirectly verified."
+//         );
+//         assert!(
+//             direct_verified_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be directly verified."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be partially verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be verified."
+//         );
+//         assert!(
+//             !manual_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to **not** require manual verification."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to be unknown."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to be verified."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-3.sub-1".to_string()),
+//             "Expected req-3.sub-1 to be partially verified."
+//         );
+//         assert!(
+//             direct_verified_reqs.contains(&"req-3.sub-1".to_string()),
+//             "Expected req-3.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-3.sub-1".to_string()),
+//             "Expected req-3.sub-1 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3.sub-1.sub-sub-1".to_string()),
+//             "Expected req-3.sub-1.sub-sub-1 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-3.sub-1.sub-sub-1".to_string()),
+//             "Expected req-3.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
+//             "Expected req-3.sub-1.sub-sub-2 to be unknown."
+//         );
+//         assert!(
+//             !optional_reqs.contains(&"req-3.sub-1.sub-sub-2".to_string()),
+//             "Expected req-3.sub-1.sub-sub-2 to **not** be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be verified."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn indirec_direct_req(pool: MantraPool) {
+//         let unknown_state = RequirementState::Unknown.as_number();
+//         let verified_state = RequirementState::Verified.as_number();
+//         let skipped_state = RequirementState::Skipped.as_number();
+//         let failed_state = RequirementState::Failed.as_number();
+//         let partially_verified_state = RequirementState::PartiallyVerified.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/indirect_direct_mix").unwrap();
+
+//         let unknown_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             unknown_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let partially_verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             partially_verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let skipped_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             skipped_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let failed_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             failed_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let optional_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from OptionalRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             failed_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be failed."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to be failed."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to be failed."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be optional."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be failed."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be failed."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be optional."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be failed."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to be verified."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to be partially verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-3.sub-1".to_string()),
+//             "Expected req-3.sub-1 to be unknown."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be optional."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to be failed."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-4.sub-1".to_string()),
+//             "Expected req-4.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-4.sub-2".to_string()),
+//             "Expected req-4.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-4.sub-2".to_string()),
+//             "Expected req-4.sub-2 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to be indirectly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5.sub-1".to_string()),
+//             "Expected req-5.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5.sub-1".to_string()),
+//             "Expected req-5.sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-5.sub-2".to_string()),
+//             "Expected req-5.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-5.sub-2".to_string()),
+//             "Expected req-5.sub-2 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to be directly verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to be optional."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-6.sub-1".to_string()),
+//             "Expected req-6.sub-1 to be directly skipped."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-6.sub-1".to_string()),
+//             "Expected req-6.sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
+//             "Expected req-6.sub-1.sub-sub-1 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-6.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-6.sub-2".to_string()),
+//             "Expected req-5.sub-2 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-6.sub-2".to_string()),
+//             "Expected req-6.sub-2 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to be optional."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-7.sub-1".to_string()),
+//             "Expected req-7.sub-1 to be directly skipped."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-7.sub-1".to_string()),
+//             "Expected req-7.sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+//             "Expected req-7.sub-1.sub-sub-1 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+//             "Expected req-7.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-7.sub-2".to_string()),
+//             "Expected req-7.sub-2 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-7.sub-2".to_string()),
+//             "Expected req-7.sub-2 to be optional."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn manual_indirect_req(pool: MantraPool) {
+//         let unknown_state = RequirementState::Unknown.as_number();
+//         let verified_state = RequirementState::Verified.as_number();
+//         let partially_verified_state = RequirementState::PartiallyVerified.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/manual_propagation").unwrap();
+
+//         let unknown_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             unknown_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let partially_verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             partially_verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let optional_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from OptionalRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let manual_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from ManualRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             verified_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to be verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to be verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be optional."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be verified."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be optional."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to require manual verification."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be indirectly optional."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to be verified."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to be verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-3.sub-1".to_string()),
+//             "Expected req-3.sub-1 to be verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-3.sub-2".to_string()),
+//             "Expected req-3.sub-2 to be optional."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to be partially verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-4.sub-1".to_string()),
+//             "Expected req-4.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-4.sub-1".to_string()),
+//             "Expected req-4.sub-1 to require manual verification."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-4.sub-2".to_string()),
+//             "Expected req-4.sub-2 to be unknown."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-4.sub-2".to_string()),
+//             "Expected req-4.sub-2 to require manual verification."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to be indirectly partially verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5.sub-1".to_string()),
+//             "Expected req-5.sub-1 to be directly verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-5.sub-1".to_string()),
+//             "Expected req-5.sub-1 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to be directly verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-5.sub-1.sub-sub-1".to_string()),
+//             "Expected req-5.sub-1.sub-sub-1 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-5.sub-2".to_string()),
+//             "Expected req-5.sub-2 to be verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-5.sub-2".to_string()),
+//             "Expected req-5.sub-2 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to be verified."
+//         );
+//         assert!(
+//             !manual_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to **not** require manual verification."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to be partially verified."
+//         );
+//         assert!(
+//             !manual_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to **not** require manual verification."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-7.sub-1".to_string()),
+//             "Expected req-7.sub-1 to be partially verified."
+//         );
+//         assert!(
+//             manual_reqs.contains(&"req-7.sub-1".to_string()),
+//             "Expected req-7.sub-1 to require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+//             "Expected req-7.sub-1.sub-sub-1 to be verified."
+//         );
+//         assert!(
+//             !manual_reqs.contains(&"req-7.sub-1.sub-sub-1".to_string()),
+//             "Expected req-7.sub-1.sub-sub-1 to **not** require manual verification."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-7.sub-2".to_string()),
+//             "Expected req-7.sub-2 to be verified."
+//         );
+//         assert!(
+//             !manual_reqs.contains(&"req-7.sub-2".to_string()),
+//             "Expected req-7.sub-2 to **not** require manual verification."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn nested_req(pool: MantraPool) {
+//         let unknown_state = RequirementState::Unknown.as_number();
+//         let verified_state = RequirementState::Verified.as_number();
+//         let skipped_state = RequirementState::Skipped.as_number();
+//         let excluded_state = RequirementState::Excluded.as_number();
+//         let deprecated_state = RequirementState::Deprecated.as_number();
+//         let partially_verified_state = RequirementState::PartiallyVerified.as_number();
+
+//         let db = db_from_dir!(pool, "indirect_states/nested_propagation").unwrap();
+
+//         let unknown_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             unknown_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let partially_verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             partially_verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let skipped_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             skipped_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let excluded_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             excluded_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let deprecated_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             deprecated_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let optional_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from OptionalRequirements
+//             "
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             partially_verified_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be partially verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to be unknown."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-1.sub-1.sub-sub-1".to_string()),
+//             "Expected req-1.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
+//             "Expected req-1.sub-1.sub-sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-1.sub-1.sub-sub-2".to_string()),
+//             "Expected req-1.sub-1.sub-sub-2 to be optional."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-1.sub-1.sub-sub-3".to_string()),
+//             "Expected req-1.sub-1.sub-sub-3 to be excluded."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-2".to_string()),
+//             "Expected req-1.sub-2 to be verified."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-1.sub-3".to_string()),
+//             "Expected req-1.sub-3 to be excluded."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be skipped."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to be skipped."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1.sub-sub-1".to_string()),
+//             "Expected req-2.sub-1.sub-sub-1 to be optional."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
+//             "Expected req-2.sub-1.sub-sub-2 to be unknown."
+//         );
+//         assert!(
+//             optional_reqs.contains(&"req-2.sub-1.sub-sub-2".to_string()),
+//             "Expected req-2.sub-1.sub-sub-2 to be optional."
+//         );
+//         assert!(
+//             deprecated_reqs.contains(&"req-2.sub-1.sub-sub-3".to_string()),
+//             "Expected req-2.sub-1.sub-sub-3 to be deprecated."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-2.sub-2".to_string()),
+//             "Expected req-2.sub-2 to be verified."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-2.sub-3".to_string()),
+//             "Expected req-2.sub-3 to be excluded."
+//         );
+//     }
+// }
+
+// mod states {
+//     use mantra_schema::report::requirement::RequirementState;
+
+//     use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
+
+//     #[sqlx::test]
+//     async fn deprecated_req(pool: MantraPool) {
+//         let depr_state = RequirementState::Deprecated.as_number();
+
+//         let db = db_from_dir!(pool, "states/deprecated").unwrap();
+
+//         let depr_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             depr_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             depr_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to have deprecated state indirectly due to req-1."
+//         );
+//         assert!(
+//             !depr_reqs.contains(&"req-2".to_string()),
+//             "Req-2 must not be marked as deprecated."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to have deprecated state, even if covering test failed."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to have deprecated state, even if covered test was skipped."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to have deprecated state, even if covered test passed."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to have deprecated state, even if req was manually verified."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-8".to_string()),
+//             "Expected req-8 to have deprecated state."
+//         );
+//         assert!(
+//             depr_reqs.contains(&"req-9".to_string()),
+//             "Expected req-9 to have deprecated state."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn excluded_req(pool: MantraPool) {
+//         let exclude_state = RequirementState::Excluded.as_number();
+
+//         let db = db_from_dir!(pool, "states/excluded").unwrap();
+
+//         let excluded_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             exclude_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             excluded_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to have excluded state indirectly due to req-1."
+//         );
+//         assert!(
+//             !excluded_reqs.contains(&"req-2".to_string()),
+//             "Req-2 must not be marked as excluded."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to have excluded state, even if covering test failed."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-5".to_string()),
+//             "Expected req-5 to have excluded state, even if covered test was skipped."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to have excluded state, even if covered test passed."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to have excluded state, even if req was manually verified."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-8".to_string()),
+//             "Expected req-8 to have excluded state."
+//         );
+//         assert!(
+//             excluded_reqs.contains(&"req-9".to_string()),
+//             "Expected req-9 to have excluded state."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn failed_req(pool: MantraPool) {
+//         let failed_state = RequirementState::Failed.as_number();
+
+//         let db = db_from_dir!(pool, "states/failed").unwrap();
+
+//         let failed_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             failed_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             failed_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to have failed state."
+//         );
+//         assert!(
+//             !failed_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to not be failed."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be failed indirectly due to req-2.sub-1."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have failed state."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-skipped".to_string()),
+//             "Expected req-skipped to have failed state, even if other covered test was skipped."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-verified".to_string()),
+//             "Expected req-verified to have failed state, even if other covered test passed."
+//         );
+//         assert!(
+//             failed_reqs.contains(&"req-manual".to_string()),
+//             "Expected req-manual to have failed state, even if req was manually verified."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn skipped_req(pool: MantraPool) {
+//         let skipped_state = RequirementState::Skipped.as_number();
+
+//         let db = db_from_dir!(pool, "states/skipped").unwrap();
+
+//         let skipped_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             skipped_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             skipped_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to have skipped state."
+//         );
+//         assert!(
+//             !skipped_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to not be skipped."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to be skipped indirectly due to req-2.sub-1."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have skipped state."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-verified".to_string()),
+//             "Expected req-verified to have skipped state, even if other covered test passed."
+//         );
+//         assert!(
+//             skipped_reqs.contains(&"req-manual".to_string()),
+//             "Expected req-manual to have skipped state, even if req was manually verified."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn unknown_req(pool: MantraPool) {
+//         let unknown_state = RequirementState::Unknown.as_number();
+//         let satisfied_state = RequirementState::Satisfied.as_number();
+//         let partially_verified_state = RequirementState::PartiallyVerified.as_number();
+
+//         let db = db_from_dir!(pool, "states/unknown").unwrap();
+
+//         let partially_verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             partially_verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let unknown_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             unknown_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         let satisfied_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             satisfied_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             partially_verified_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be partially verified, due to unknown child and direct verified."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to have unknown state."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-2".to_string()),
+//             "Expected req-2 to have unknown state."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-2.sub-1".to_string()),
+//             "Expected req-2.sub-1 to have unknown state."
+//         );
+//         assert!(
+//             partially_verified_reqs.contains(&"req-manual".to_string()),
+//             "Expected req-manual to be partially verified due to verified by test, but only partial due to missing review."
+//         );
+//         assert!(
+//             satisfied_reqs.contains(&"req-satisfy".to_string()),
+//             "Expected req-satisfy to have satisfied state, because no test verifies the req, but satisfy trace exists."
+//         );
+//         assert!(
+//             unknown_reqs.contains(&"req-verify".to_string()),
+//             "Expected req-verify to have unknown state, because no test covers the verify trace."
+//         );
+//         assert!(
+//             satisfied_reqs.contains(&"req-satisfy-verify".to_string()),
+//             "Expected req-satisfy-verify to have satisfied state,
+//             because the test covering the verify trace does not cover the satisfy trace and vice versa."
+//         );
+//         assert!(
+//             satisfied_reqs.contains(&"req-mult-satisfy".to_string()),
+//             "Expected req-mult-satisfy to have satisfied state, because it has no (covered) verify traces or direct test."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn verified_req(pool: MantraPool) {
+//         let verified_state = RequirementState::Verified.as_number();
+
+//         let db = db_from_dir!(pool, "states/verified").unwrap();
+
+//         let verified_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             verified_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             verified_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be indirectly verified through req-1.sub-1."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-1.sub-1".to_string()),
+//             "Expected req-1.sub-1 to have verified state."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-manual".to_string()),
+//             "Expected req-manual to have verified state."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-verify".to_string()),
+//             "Expected req-verify to have verified state."
+//         );
+//         assert!(
+//             verified_reqs.contains(&"req-satisfy-verify".to_string()),
+//             "Expected req-satisfy-verify to have verified state"
+//         );
+//     }
+// }
+
+// mod replacements {
+//     use mantra_schema::report::requirement::RequirementState;
+
+//     use crate::{cmd::collect::test_setup::db_from_dir, db::MantraPool};
+
+//     #[sqlx::test]
+//     async fn valid_req_replacements(pool: MantraPool) {
+//         let deprecated_state = RequirementState::Deprecated.as_number();
+
+//         let db = db_from_dir!(pool, "replacements/valid_replaces").unwrap();
+
+//         let deprecated_reqs: Vec<String> = sqlx::query!(
+//             "
+//             select req_id from RequirementVerificationStates
+//             where state = $1
+//             ",
+//             deprecated_state
+//         )
+//         .fetch_all(
+//             db.connection()
+//                 .await
+//                 .expect("Failed to get a connection")
+//                 .as_mut(),
+//         )
+//         .await
+//         .unwrap()
+//         .into_iter()
+//         .map(|r| r.req_id)
+//         .collect();
+
+//         assert!(
+//             deprecated_reqs.contains(&"req-1".to_string()),
+//             "Expected req-1 to be indirectly deprecated through req-2."
+//         );
+//         assert!(
+//             deprecated_reqs.contains(&"req-3".to_string()),
+//             "Expected req-3 to be indirectly deprecated through req-4."
+//         );
+//         assert!(
+//             deprecated_reqs.contains(&"req-4".to_string()),
+//             "Expected req-4 to be indirectly deprecated through req-5."
+//         );
+//         assert!(
+//             deprecated_reqs.contains(&"req-6".to_string()),
+//             "Expected req-6 to be indirectly deprecated through req-7."
+//         );
+//         assert!(
+//             deprecated_reqs.contains(&"req-7".to_string()),
+//             "Expected req-7 to be directly deprecated."
+//         );
+//     }
+
+//     #[sqlx::test]
+//     async fn bad_req_replacements(pool: MantraPool) {
+//         let db_res = db_from_dir!(pool, "replacements/bad_replaces");
+
+//         let Err(db_err) = db_res else {
+//             panic!("Failed to detect bad replacement relations")
+//         };
+
+//         for err in db_err.chain() {
+//             if err.to_string() == "Requirement tried to replace its ancestor" {
+//                 return;
+//             }
+//         }
+//         panic!("Failed to detect bad replacement relations in errors: {db_err:#}");
+//     }
+// }

@@ -7,12 +7,13 @@ impl<'db> Collection<'db> {
     pub(super) async fn update_indirect_req_verification_states(
         &mut self,
     ) -> Result<(), anyhow::Error> {
-        let req_verified_nr = RequirementState::Verified.as_nr();
-        let req_failed_nr = RequirementState::Failed.as_nr();
-        let req_skipped_nr = RequirementState::Skipped.as_nr();
-        let req_satisfied_nr = RequirementState::Satisfied.as_nr();
-        let req_unknown_nr = RequirementState::Unknown.as_nr();
-        let req_partially_verified_nr = RequirementState::PartiallyVerified.as_nr();
+        let req_verified_nr = RequirementState::Verified.as_number();
+        let req_failed_nr = RequirementState::Failed.as_number();
+        let req_skipped_nr = RequirementState::Skipped.as_number();
+        let req_satisfied_nr = RequirementState::Satisfied.as_number();
+        let req_unknown_nr = RequirementState::Unknown.as_number();
+        let req_partially_verified_nr = RequirementState::PartiallyVerified.as_number();
+        let req_draft_number = RequirementState::Draft.as_number();
 
         sqlx::query!(
             "

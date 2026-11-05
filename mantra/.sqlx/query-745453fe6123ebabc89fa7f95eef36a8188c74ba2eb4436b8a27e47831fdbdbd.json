@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into UsableRequirements (\n                product_id,\n                req_id\n            )\n            select product_id, id\n            from Requirements r\n\n            except\n\n            select product_id, req_id\n            from\n            (\n                select product_id, req_id\n                from DeprecatedRequirements\n\n                union all\n\n                select product_id, req_id\n                from (\n                    select product_id, req_id\n                    from ExcludedRequirements\n\n                    union all\n\n                    select product_id, req_id\n                    from DraftRequirements\n                )\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "745453fe6123ebabc89fa7f95eef36a8188c74ba2eb4436b8a27e47831fdbdbd"
+}

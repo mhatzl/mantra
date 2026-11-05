@@ -1,0 +1,22 @@
+{
+    products: [{
+        id: "p1",
+        name: "test",
+        annotations: [{
+            path: "annotations.json5",
+            source: "schema",
+        }],
+        requirements: [{
+            path: "reqs.json5",
+            source: "schema",
+        }],
+        reviews: [{
+            path: "reviews.json5",
+            source: "schema",
+        }],
+        test_runs: [{
+            path: "test_runs.json5",
+            source: "schema",
+        }],
+    }]
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into DraftRequirements (\n                product_id,\n                req_id\n            )\n            with recursive IsAccepted(product_id, id) as (\n                select product_id, id\n                from (\n                    select r.product_id, r.id\n                    from Requirements r, RootRequirements rr\n                    where r.product_id = rr.product_id\n                    and r.id = rr.req_id\n                    -- means not explicitly draft\n                    and (r.draft is null or r.draft = false)\n\n                    union all\n\n                    -- include reqs explicitly set to 'draft = false' in case related root is draft\n                    select r.product_id, r.id\n                    from Requirements r\n                    where r.draft is not null and r.draft = false\n                )\n\n                union all\n\n                select rh.child_product_id, rh.child_req_id\n                from IsAccepted ia, RequirementHierarchies rh, Requirements r\n                where ia.product_id = rh.parent_product_id\n                and ia.id = rh.parent_req_id\n                and rh.child_product_id = r.product_id\n                and rh.child_req_id = r.id\n                and (r.draft is null or r.draft = false)\n            ),\n            IsDraft(product_id, id) as (\n                select product_id, id\n                from Requirements r\n                where not exists (\n                    select *\n                    from IsAccepted ia\n                    where ia.product_id = r.product_id\n                    and ia.id = r.id\n                )\n            )\n            select distinct product_id, id\n            from IsDraft\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "9e209289a2c2088ab6715b5c3274b44be77c525e461aa84cb0b64b8a89f1e07c"
+}

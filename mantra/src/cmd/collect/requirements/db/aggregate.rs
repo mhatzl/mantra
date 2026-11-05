@@ -39,17 +39,20 @@ impl<'db> Collection<'db> {
         self.update_leaf_requirements()
             .await
             .context("Failed to update leaf requirements")?;
+
+        self.check_replacing_requirements()
+            .await
+            .context("Failed checking requirement replacements")?;
+
         self.update_deprecated_requirements()
             .await
             .context("Failed to update deprecated requirements")?;
         self.update_excluded_requirements()
             .await
             .context("Failed to update excluded requirements")?;
-
-        self.check_replacing_requirements()
+        self.update_draft_requirements()
             .await
-            .context("Failed checking requirement replacements")?;
-
+            .context("Failed to update draft requirements")?;
         self.update_optional_requirements()
             .await
             .context("Failed to update optional requirements")?;
@@ -377,7 +380,7 @@ impl<'db> Collection<'db> {
                 product_id,
                 req_id
             )
-            with recursive IsIncluded(product_id, id) as (
+            with recursive IsActive(product_id, id) as (
                 select product_id, id
                 from (
                     select r.product_id, r.id
@@ -411,9 +414,9 @@ impl<'db> Collection<'db> {
                 union all
 
                 select rh.child_product_id, rh.child_req_id
-                from IsIncluded ii, RequirementHierarchies rh, Requirements r
-                where ii.product_id = rh.parent_product_id
-                and ii.id = rh.parent_req_id
+                from IsActive ia, RequirementHierarchies rh, Requirements r
+                where ia.product_id = rh.parent_product_id
+                and ia.id = rh.parent_req_id
                 and rh.child_product_id = r.product_id
                 and rh.child_req_id = r.id
                 and (r.deprecated is null or r.deprecated = false)
@@ -429,9 +432,9 @@ impl<'db> Collection<'db> {
                 from Requirements r
                 where not exists (
                     select *
-                    from IsIncluded ii
-                    where ii.product_id = r.product_id
-                    and ii.id = r.id
+                    from IsActive ia
+                    where ia.product_id = r.product_id
+                    and ia.id = r.id
                 )
             )
             select distinct product_id, id
@@ -500,6 +503,70 @@ impl<'db> Collection<'db> {
             )
             select distinct product_id, id
             from IsExcluded
+            "
+        )
+        .execute(self.connection_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update_draft_requirements(&mut self) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "
+            delete from DraftRequirements
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing DraftRequirements")?;
+
+        sqlx::query!(
+            "
+            insert into DraftRequirements (
+                product_id,
+                req_id
+            )
+            with recursive IsAccepted(product_id, id) as (
+                select product_id, id
+                from (
+                    select r.product_id, r.id
+                    from Requirements r, RootRequirements rr
+                    where r.product_id = rr.product_id
+                    and r.id = rr.req_id
+                    -- means not explicitly draft
+                    and (r.draft is null or r.draft = false)
+
+                    union all
+
+                    -- include reqs explicitly set to 'draft = false' in case related root is draft
+                    select r.product_id, r.id
+                    from Requirements r
+                    where r.draft is not null and r.draft = false
+                )
+
+                union all
+
+                select rh.child_product_id, rh.child_req_id
+                from IsAccepted ia, RequirementHierarchies rh, Requirements r
+                where ia.product_id = rh.parent_product_id
+                and ia.id = rh.parent_req_id
+                and rh.child_product_id = r.product_id
+                and rh.child_req_id = r.id
+                and (r.draft is null or r.draft = false)
+            ),
+            IsDraft(product_id, id) as (
+                select product_id, id
+                from Requirements r
+                where not exists (
+                    select *
+                    from IsAccepted ia
+                    where ia.product_id = r.product_id
+                    and ia.id = r.id
+                )
+            )
+            select distinct product_id, id
+            from IsDraft
             "
         )
         .execute(self.connection_mut())
@@ -667,7 +734,15 @@ impl<'db> Collection<'db> {
                 union all
 
                 select product_id, req_id
-                from ExcludedRequirements
+                from (
+                    select product_id, req_id
+                    from ExcludedRequirements
+
+                    union all
+
+                    select product_id, req_id
+                    from DraftRequirements
+                )
             )
             "
         )

@@ -18,16 +18,16 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing DirectRequirementVerificationStates")?;
 
-        let satisfies_trace_nr = TraceKind::Satisfies.as_nr();
-        let verifies_trace_nr = TraceKind::Verifies.as_nr();
-        let req_verified_nr = RequirementState::Verified.as_nr();
-        let req_failed_nr = RequirementState::Failed.as_nr();
-        let req_skipped_nr = RequirementState::Skipped.as_nr();
-        let req_satisfied_nr = RequirementState::Satisfied.as_nr();
-        let req_unknown_nr = RequirementState::Unknown.as_nr();
-        let req_partial_verified_nr = RequirementState::PartiallyVerified.as_nr();
-        let test_case_passed_nr = TestCaseState::Passed.as_number();
-        let test_case_skipped_nr = TestCaseState::Skipped.as_number();
+        let satisfies_trace_number = TraceKind::Satisfies.as_number();
+        let verifies_trace_number = TraceKind::Verifies.as_number();
+        let req_verified_number = RequirementState::Verified.as_number();
+        let req_failed_number = RequirementState::Failed.as_number();
+        let req_skipped_number = RequirementState::Skipped.as_number();
+        let req_satisfied_number = RequirementState::Satisfied.as_number();
+        let req_unknown_number = RequirementState::Unknown.as_number();
+        let req_partial_verified_number = RequirementState::PartiallyVerified.as_number();
+        let test_case_passed_number = TestCaseState::Passed.as_number();
+        let test_case_skipped_number = TestCaseState::Skipped.as_number();
 
         sqlx::query!(
         "
@@ -557,16 +557,16 @@ impl<'db> Collection<'db> {
                 on r.product_id = mr.product_id
                 and r.req_id = mr.req_id
         ",
-        satisfies_trace_nr,
-        verifies_trace_nr,
-        req_verified_nr,
-        req_failed_nr,
-        req_skipped_nr,
-        req_satisfied_nr,
-        req_unknown_nr,
-        test_case_passed_nr,
-        test_case_skipped_nr,
-        req_partial_verified_nr
+        satisfies_trace_number,
+        verifies_trace_number,
+        req_verified_number,
+        req_failed_number,
+        req_skipped_number,
+        req_satisfied_number,
+        req_unknown_number,
+        test_case_passed_number,
+        test_case_skipped_number,
+        req_partial_verified_number
      )
      .execute(self.connection_mut())
      .await?;

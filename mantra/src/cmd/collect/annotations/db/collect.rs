@@ -305,7 +305,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         file_hash: &FmtHash,
         trace: &Trace,
     ) -> Result<(), anyhow::Error> {
-        let kind = trace.kind.as_nr();
+        let kind = trace.kind.as_number();
         let collect_nr = self.collect_nr();
 
         if sqlx::query!(

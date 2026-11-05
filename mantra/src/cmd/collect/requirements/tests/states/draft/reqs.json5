@@ -1,0 +1,57 @@
+{
+    requirements: [{
+        id: "req-1",
+        title: "Draft First Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-1.sub-1",
+        title: "First Sub-Requirement (Indirectly Draft)",
+        origin: "Draft state test",
+    },{
+        id: "req-2",
+        title: "Second Requirement (Not Draft)",
+        origin: "Draft state test",
+    },{
+        id: "req-2.sub-1",
+        title: "Draft Second Sub-Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-3",
+        title: "Draft Third Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-4",
+        title: "Draft + Failed Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-5",
+        title: "Draft + Skipped Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-6",
+        title: "Draft + Verified Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-7",
+        title: "Draft + Manually Reviewed Requirement",
+        origin: "Draft state test",
+        draft: true,
+        manual_verification: true,
+    },{
+        id: "req-8",
+        title: "Draft Satisfy Traced Requirement",
+        origin: "Draft state test",
+        draft: true,
+    },{
+        id: "req-9",
+        title: "Draft Verify Traced Requirement",
+        origin: "Draft state test",
+        draft: true,
+    }]
+}

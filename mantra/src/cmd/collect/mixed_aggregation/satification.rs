@@ -16,7 +16,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing DirectlySatisfiedRequirements")?;
 
-        let satisfies_kind = TraceKind::Satisfies.as_nr();
+        let satisfies_kind = TraceKind::Satisfies.as_number();
 
         sqlx::query!(
             "

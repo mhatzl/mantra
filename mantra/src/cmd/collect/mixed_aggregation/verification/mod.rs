@@ -50,7 +50,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing FailedRequirements")?;
 
-        let req_failed_nr = RequirementState::Failed.as_nr();
+        let req_failed_nr = RequirementState::Failed.as_number();
 
         sqlx::query!(
             "
@@ -90,14 +90,15 @@ impl<'db> Collection<'db> {
     async fn update_req_verification_states(&mut self) -> Result<(), anyhow::Error> {
         let collection_id = self.collect_nr();
 
-        let req_verified_nr = RequirementState::Verified.as_nr();
-        let req_failed_nr = RequirementState::Failed.as_nr();
-        let req_skipped_nr = RequirementState::Skipped.as_nr();
-        let req_satisfied_nr = RequirementState::Satisfied.as_nr();
-        let req_unknown_nr = RequirementState::Unknown.as_nr();
-        let req_deprecated_nr = RequirementState::Deprecated.as_nr();
-        let req_excluded_nr = RequirementState::Excluded.as_nr();
-        let req_partially_verified_nr = RequirementState::PartiallyVerified.as_nr();
+        let req_verified_nr = RequirementState::Verified.as_number();
+        let req_failed_nr = RequirementState::Failed.as_number();
+        let req_skipped_nr = RequirementState::Skipped.as_number();
+        let req_satisfied_nr = RequirementState::Satisfied.as_number();
+        let req_unknown_nr = RequirementState::Unknown.as_number();
+        let req_deprecated_nr = RequirementState::Deprecated.as_number();
+        let req_excluded_nr = RequirementState::Excluded.as_number();
+        let req_partially_verified_nr = RequirementState::PartiallyVerified.as_number();
+        let req_draft_number = RequirementState::Draft.as_number();
 
         sqlx::query!(
             "
@@ -126,6 +127,12 @@ impl<'db> Collection<'db> {
                         where r.product_id = er.product_id
                         and r.id = er.req_id
                     ) then $7
+                    when exists (
+                        select dr.req_id
+                        from DraftRequirements dr
+                        where r.product_id = dr.product_id
+                        and r.id = dr.req_id
+                    ) then $10
                     -- failed
                     when exists (
                         select fr.req_id
@@ -230,7 +237,8 @@ impl<'db> Collection<'db> {
             req_deprecated_nr,
             req_excluded_nr,
             req_satisfied_nr,
-            req_partially_verified_nr
+            req_partially_verified_nr,
+            req_draft_number
         )
         .execute(self.connection_mut())
         .await?;
@@ -259,7 +267,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing VerifiedRequirements")?;
 
-        let req_verified_nr = RequirementState::Verified.as_nr();
+        let req_verified_nr = RequirementState::Verified.as_number();
 
         sqlx::query!(
             "
@@ -291,7 +299,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing SkippedRequirements")?;
 
-        let req_skipped_nr = RequirementState::Skipped.as_nr();
+        let req_skipped_nr = RequirementState::Skipped.as_number();
 
         sqlx::query!(
             "
@@ -323,7 +331,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing SatisfiedRequirements")?;
 
-        let req_satisfied_nr = RequirementState::Satisfied.as_nr();
+        let req_satisfied_nr = RequirementState::Satisfied.as_number();
 
         sqlx::query!(
             "
@@ -355,7 +363,7 @@ impl<'db> Collection<'db> {
         .await
         .context("Clearing UnknownRequirements")?;
 
-        let req_unknown_nr = RequirementState::Unknown.as_nr();
+        let req_unknown_nr = RequirementState::Unknown.as_number();
 
         sqlx::query!(
             "
