@@ -12,13 +12,13 @@
             covered_files: [{
                 filepath: "test.rs",
                 lines: [{
-                    nr: 10,
+                    number: 10,
                     hits: 1,
                 },{
-                    nr: 20,
+                    number: 20,
                     hits: 1,
                 },{
-                    nr: 120,
+                    number: 120,
                     hits: 1,
                 }]
             }]

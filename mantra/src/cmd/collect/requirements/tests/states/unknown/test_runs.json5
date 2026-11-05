@@ -10,7 +10,7 @@
             covered_files: [{
                 filepath: "test.rs",
                 lines: [{
-                    nr: 110,
+                    number: 110,
                     hits: 1,
                 }]
             }]
@@ -20,7 +20,7 @@
             covered_files: [{
                 filepath: "test.rs",
                 lines: [{
-                    nr: 110,
+                    number: 110,
                     hits: 1,
                 }]
             }]
@@ -30,7 +30,7 @@
             covered_files: [{
                 filepath: "test.rs",
                 lines: [{
-                    nr: 120,
+                    number: 120,
                     hits: 1,
                 }]
             }]
