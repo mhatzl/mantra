@@ -1,0 +1,52 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            rr.replaced_req_id,\n            rs.state,\n            exists (\n                select o.req_id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.req_id = rr.replaced_req_id\n            ) as \"optional!:bool\",\n            exists (\n                select m.req_id\n                from ManualRequirements m\n                where m.product_id = $1 and m.req_id = rr.replaced_req_id\n            ) as \"manual!:bool\"\n        from RequirementReplacements rr, RequirementVerificationStates rs\n        where rr.product_id = $1 and rr.req_id = $2\n        and rs.product_id = $1 and rs.req_id = rr.replaced_req_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "replaced_req_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementReplacements",
+            "name": "replaced_req_id"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "RequirementVerificationStates",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "manual!:bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8eaddc0d1574f81af05d53821fc260c1fc5f39f5530ed1f29831b827484f8b57"
+}

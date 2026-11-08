@@ -10,7 +10,7 @@ use mantra_schema::{
         test_run::TestRunReference,
         test_runs::{TestRunsOverview, TestRunsReportSchema},
         tests::{
-            CoverageSummary, ResolvedLineCoverageState, TestCoverage, TestCoverageSummary,
+            CoverageSummary, ResolvedCoverageState, TestCoverage, TestCoverageSummary,
             TestCoveredFile, TestState, TestsSummary,
         },
     },
@@ -21,7 +21,7 @@ use crate::db::MantraTransaction;
 pub(super) struct ResolvedLineCoverage {
     pub(super) filepath: String,
     pub(super) line: Line,
-    pub(super) state: ResolvedLineCoverageState,
+    pub(super) state: ResolvedCoverageState,
 }
 
 pub async fn generate_test_runs_schema<'db>(
@@ -30,7 +30,7 @@ pub async fn generate_test_runs_schema<'db>(
 ) -> Result<TestRunsReportSchema, anyhow::Error> {
     let test_run_records = sqlx::query!(
         r#"
-        select test_run_name, test_run_date, state as "state!:i64"
+        select test_run_name, state as "state!:i64"
         from TestRunStates
         where product_id = $1
         "#,
@@ -54,7 +54,6 @@ pub async fn generate_test_runs_schema<'db>(
         let test_run_reference = TestRunReference {
             product_id: product.id.clone(),
             name: test_run.test_run_name,
-            utc_date: mantra_schema::test_runs::test_date_from_str(&test_run.test_run_date)?,
             state: test_run.state.try_into()?,
         };
 
@@ -131,27 +130,9 @@ async fn generate_overall_test_coverage<'db>(
     transaction: &mut MantraTransaction<'db>,
     product: &ProductReportSchema,
 ) -> Result<TestCoverage, anyhow::Error> {
-    let coverable_lines_record = sqlx::query!(
-        r#"
-        select sum(coverable_lines) as "coverable_lines!:i64"
-        from CoverableLinesPerFilepath
-        where product_id = $1
-        "#,
-        product.id
-    )
-    .fetch_one(transaction.as_mut())
-    .await?;
-
-    let mut test_summary = TestCoverageSummary {
-        lines: CoverageSummary {
-            total: coverable_lines_record.coverable_lines,
-            ..Default::default()
-        },
-    };
-
     let resolved_lines: Vec<_> = sqlx::query!(
         "
-        select cov_filepath, cov_line, state
+        select cov_filepath, cov_line, cov_state
         from ResolvedLineCoverageStates
         where product_id = $1
         ",
@@ -163,7 +144,10 @@ async fn generate_overall_test_coverage<'db>(
     .map(|l| ResolvedLineCoverage {
         filepath: l.cov_filepath,
         line: l.cov_line,
-        state: l.state.try_into().expect("Valid line state in database"),
+        state: l
+            .cov_state
+            .try_into()
+            .expect("Valid line state in database"),
     })
     .collect();
 
@@ -180,8 +164,7 @@ async fn generate_overall_test_coverage<'db>(
     .await?
     .into_iter()
     .map(|t| TraceReference {
-        filepath: RelativePathBuf::from(t.filepath),
-        file_hash: FmtHash::with_inner(t.file_hash),
+        path: RelativePathBuf::from(t.filepath),
         line: t.traced_line,
         kind: TraceKind::try_from(t.kind).expect("Valid trace kind in database"),
     })
@@ -211,13 +194,31 @@ async fn generate_overall_test_coverage<'db>(
             .or_insert(resolved_line);
     }
 
+    let coverable_lines_record = sqlx::query!(
+        r#"
+        select sum(coverable_lines) as "coverable_lines!:i64"
+        from CoverableLinesPerFilepath
+        where product_id = $1
+        "#,
+        product.id
+    )
+    .fetch_one(transaction.as_mut())
+    .await?;
+
+    let mut test_summary = TestCoverageSummary {
+        lines: CoverageSummary {
+            total: coverable_lines_record.coverable_lines,
+            ..Default::default()
+        },
+    };
+
     let mut covered_files = Vec::with_capacity(resolved_files.len());
 
     for (filepath, lines_map) in resolved_files {
         let file_record = sqlx::query!(
             "
             select file_hash
-            from ProductRelatedFiles
+            from ProductRelatedHashedFiles
             where product_id = $1 and filepath = $2
             ",
             product.id,
@@ -228,24 +229,29 @@ async fn generate_overall_test_coverage<'db>(
 
         let lines: Vec<ResolvedLineCoverage> = lines_map.into_values().collect();
 
+        // intentionally left "total = 0", because the total number of coverable lines
+        // is taken from CoverableLinesPerFilepath
         let mut lines_summary = CoverageSummary::default();
 
         for line in &lines {
             match line.state {
-                ResolvedLineCoverageState::Covered => lines_summary.covered.cnt += 1,
-                ResolvedLineCoverageState::Excluded => lines_summary.excluded.cnt += 1,
-                ResolvedLineCoverageState::OverriddenCovered => {
+                ResolvedCoverageState::Covered => lines_summary.covered.cnt += 1,
+                ResolvedCoverageState::Excluded => lines_summary.excluded.cnt += 1,
+                ResolvedCoverageState::Uncovered => lines_summary.uncovered.cnt += 1,
+                ResolvedCoverageState::Unknown => lines_summary.unknown.cnt += 1,
+                ResolvedCoverageState::OverriddenCovered => {
                     lines_summary.overridden_covered.cnt += 1
                 }
-                ResolvedLineCoverageState::OverriddenUncovered => {
+                ResolvedCoverageState::OverriddenUncovered => {
                     lines_summary.overridden_uncovered.cnt += 1
                 }
-                ResolvedLineCoverageState::Uncovered => {
-                    // Note: not relevant, because a test run may not have covered all possible files, so uncovered cnt is the diff from total to all other line states
+                ResolvedCoverageState::OverriddenExcluded => {
+                    lines_summary.overridden_excluded.cnt += 1
                 }
             }
         }
 
+        // intentionally not updated line summary percentages here, because "total = 0"
         test_summary.lines.add(&lines_summary);
 
         covered_files.push(TestCoveredFile {
@@ -254,11 +260,16 @@ async fn generate_overall_test_coverage<'db>(
         })
     }
 
-    test_summary.lines.uncovered.cnt = test_summary.lines.total
+    // not every coverable line may have been reported by the test.
+    // we treat those lines as "unknown"
+    test_summary.lines.unknown.cnt += test_summary.lines.total
         - (test_summary.lines.covered.cnt
             + test_summary.lines.excluded.cnt
+            + test_summary.lines.uncovered.cnt
+            + test_summary.lines.unknown.cnt
             + test_summary.lines.overridden_covered.cnt
-            + test_summary.lines.overridden_uncovered.cnt);
+            + test_summary.lines.overridden_uncovered.cnt
+            + test_summary.lines.overridden_excluded.cnt);
 
     test_summary.lines.update_percentages();
 

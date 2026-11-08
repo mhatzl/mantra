@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select file_hash\n            from ProductRelatedHashedFiles\n            where product_id = $1 and filepath = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "file_hash",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ProductRelatedHashedFiles",
+            "name": "file_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "be4a3786c275a0503f710a8107d7c924e1baf7a2466f88bc63daf1aa85e390e7"
+}

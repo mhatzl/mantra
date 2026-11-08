@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select distinct cov_filepath\n            from TestRunLineCoverageOverrides\n            where product_id = $1\n            and test_run_name = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_filepath",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "cov_filepath"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2768b618b2a801507f2d5421e306e05e4ec42d87e67db3eb1d5d754d2ef78630"
+}

@@ -15,10 +15,13 @@ pub struct RequirementsOverview {
     pub summary: RequirementsSummary,
     pub failed: Vec<RequirementReference>,
     pub skipped: Vec<RequirementReference>,
-    pub unverified: Vec<RequirementReference>,
+    pub unknown: Vec<RequirementReference>,
+    pub satisfied: Vec<RequirementReference>,
     pub verified: Vec<RequirementReference>,
+    pub partially_verified: Vec<RequirementReference>,
     pub excluded: Vec<RequirementReference>,
     pub deprecated: Vec<RequirementReference>,
+    pub draft: Vec<RequirementReference>,
 }
 
 #[derive(
@@ -44,9 +47,12 @@ pub struct RequirementsSummary {
     pub verified: Aggregated,
     pub failed: Aggregated,
     pub skipped: Aggregated,
-    pub unverified: Aggregated,
+    pub unknown: Aggregated,
+    pub satisfied: Aggregated,
+    pub partially_verified: Aggregated,
     pub deprecated: Aggregated,
     pub excluded: Aggregated,
+    pub draft: Aggregated,
 }
 
 impl RequirementsSummary {
@@ -62,9 +68,12 @@ impl RequirementsSummary {
         self.verified.cnt += other.verified.cnt;
         self.failed.cnt += other.failed.cnt;
         self.skipped.cnt += other.skipped.cnt;
-        self.unverified.cnt += other.unverified.cnt;
+        self.unknown.cnt += other.unknown.cnt;
+        self.satisfied.cnt += other.satisfied.cnt;
+        self.partially_verified.cnt += other.partially_verified.cnt;
         self.deprecated.cnt += other.deprecated.cnt;
         self.excluded.cnt += other.excluded.cnt;
+        self.draft.cnt += other.draft.cnt;
 
         self.update_percentages();
     }
@@ -81,8 +90,11 @@ impl RequirementsSummary {
         self.verified.update_percentage(self.total);
         self.failed.update_percentage(self.total);
         self.skipped.update_percentage(self.total);
-        self.unverified.update_percentage(self.total);
+        self.unknown.update_percentage(self.total);
+        self.satisfied.update_percentage(self.total);
+        self.partially_verified.update_percentage(self.total);
         self.deprecated.update_percentage(self.total);
         self.excluded.update_percentage(self.total);
+        self.draft.update_percentage(self.total);
     }
 }

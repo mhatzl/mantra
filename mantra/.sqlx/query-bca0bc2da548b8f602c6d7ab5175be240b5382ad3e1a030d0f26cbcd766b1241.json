@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select test_run_name, state as \"state!:i64\"\n        from TestRunStates\n        where product_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_run_name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ObsoleteTestRuns",
+            "name": "test_run_name"
+          }
+        }
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "bca0bc2da548b8f602c6d7ab5175be240b5382ad3e1a030d0f26cbcd766b1241"
+}

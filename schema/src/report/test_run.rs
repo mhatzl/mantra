@@ -20,9 +20,6 @@ use crate::{
 pub struct TestRunReference {
     pub product_id: ProductId,
     pub name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
     pub state: TestState,
 }
 
@@ -42,11 +39,7 @@ impl TestRunReference {
         };
 
         let limit_name = crate::encoding::limit_str_len(&self.name);
-        let encoded_ref = format!(
-            "{}_{}",
-            super::encode_utc_date(&self.utc_date),
-            crate::encoding::encode(&limit_name, target)
-        );
+        let encoded_ref = crate::encoding::encode(&limit_name, target);
 
         product_path.join(TEST_RUNS_FOLDER_NAME).join(encoded_ref)
     }
@@ -80,10 +73,13 @@ pub struct TestRunReportSchema {
     /// Optional origin of the test run.
     /// [req("testcov.test_run.origin")]
     pub origin: Option<Origin>,
-    pub base_origin: Option<Origin>,
+    pub schema_origin: Option<Origin>,
+    pub config_origin: Option<Origin>,
     /// Optional field to store custom information per test run.
     /// [req("testcov.test_run.metadata")]
     pub properties: Option<Properties>,
+    pub schema_properties: Option<Properties>,
+    pub config_properties: Option<Properties>,
     /// Optional duration about how long the test run took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.
     #[schemars(with = "String")]

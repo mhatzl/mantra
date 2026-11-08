@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            gt.content as \"description?\",\n            og.content as \"origin?\",\n            r.utc_date\n        from Reviews r\n            left join GeneralTexts gt on r.description_hash = gt.hash\n            left join GeneralJson og on r.origin_hash = og.hash\n        where r.product_id = $1 and r.name = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "description?",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "name": "origin?",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "name": "utc_date",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Reviews",
+            "name": "utc_date"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "cd13b62e1027d1a99ac0be646c13c9caed8cb52864100981494c6eaf4b72f4fc"
+}

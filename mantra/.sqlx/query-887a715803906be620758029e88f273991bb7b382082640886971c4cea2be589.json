@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select th.parent_name, ts.state as \"state!:i64\"\n            from TestRunHierarchies th, TestRunStates ts\n            where th.product_id = $1 and ts.product_id = $1\n            and th.child_name = $2\n            and ts.test_run_name = th.parent_name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "parent_name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunHierarchies",
+            "name": "parent_name"
+          }
+        }
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "887a715803906be620758029e88f273991bb7b382082640886971c4cea2be589"
+}

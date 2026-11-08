@@ -2,10 +2,9 @@ use crate::{
     product::ProductId,
     report::{
         product::ProductMetadata,
-        requirement::{RequirementReference, RequirementState},
-        review::ReviewReference,
-        test_case::TestCaseReference,
-        test_run::TestRunReference,
+        requirement::{
+            RequirementCoverage, RequirementReference, RequirementReview, RequirementState,
+        },
     },
     requirements::ReqId,
 };
@@ -31,13 +30,6 @@ pub struct RequirementEvidence {
     pub manual_verification: bool,
     pub parents: Option<Vec<RequirementReference>>,
     pub children: Option<Vec<RequirementReference>>,
-    pub covered_by: Option<RequirementCoverageByTestsOverview>,
-    pub reviewed_in: Option<Vec<ReviewReference>>,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct RequirementCoverageByTestsOverview {
-    pub test_runs: Vec<TestRunReference>,
-    pub test_cases: Vec<TestCaseReference>,
+    pub covered_by: Option<Vec<RequirementCoverage>>,
+    pub reviewed_in: Option<Vec<RequirementReview>>,
 }

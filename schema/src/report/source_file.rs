@@ -1,10 +1,10 @@
 use relative_path::RelativePathBuf;
 
 use crate::{
-    FmtHash, Line,
+    Line,
     report::{
-        annotations::ResolvedAnnotations, product::ProductMetadata, review::ReviewReference,
-        sources::SourceProductCoverageSummary, tests::TestReference,
+        product::ProductMetadata, review::ReviewReference, sources::SourceProductCoverageSummary,
+        tests::TestReference,
     },
 };
 
@@ -17,18 +17,8 @@ pub struct SourceFileReportSchema {
     pub schema_version: Option<String>,
     #[schemars(with = "String")]
     pub filepath: RelativePathBuf,
-    pub hashed_info: Vec<HashedSourceFileInfo>,
     pub product_coverage: Option<Vec<SourceFileProductCoverage>>,
     pub collected_by: Vec<ProductMetadata>,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct HashedSourceFileInfo {
-    pub file_hash: FmtHash,
-    pub content: Option<String>,
-    pub annotations: Option<ResolvedAnnotations>,
-    pub product_coverage: Option<Vec<SourceFileProductCoverage>>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -47,7 +37,7 @@ pub struct SourceFileProductCoverage {
 #[serde(rename_all = "snake_case")]
 pub struct SourceLineInfo {
     /// The line number.
-    pub nr: Line,
+    pub number: Line,
     pub state: ResolvedLineState,
 }
 
@@ -56,21 +46,12 @@ pub struct SourceLineInfo {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum ResolvedLineState {
-    Covered(Vec<CoveredLineTestReference>),
-    /// Line was excluded from coverage analysis.
-    /// An optional reference to an exclusion annotation is given,
-    /// if the exclusion was based on a mantra annotation.
-    Excluded(Option<ExclusionAnnotationReference>),
+    Covered(Vec<TestReference>),
+    /// Line was excluded from coverage analysis by a mantra annotation.
+    Excluded(ExclusionAnnotationReference),
     Overriden(Vec<ReviewOverride>),
     Uncovered,
-}
-
-#[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
-)]
-pub struct CoveredLineTestReference {
-    pub test: TestReference,
-    pub hits: i64,
+    Unknown,
 }
 
 #[derive(
@@ -80,9 +61,9 @@ pub struct ReviewOverride {
     pub review: ReviewReference,
     /// The original hits that were collected from the tests.
     pub original_hits: Option<i64>,
-    /// The hits set by the review.
-    pub set_hits: Option<i64>,
-    pub comment: String,
+    /// The coverage set by the review.
+    pub set_coverage: Option<bool>,
+    pub rational: String,
 }
 
 #[derive(
@@ -91,5 +72,5 @@ pub struct ReviewOverride {
 pub struct ExclusionAnnotationReference {
     /// The line the exclude annotation was defined at.
     pub def_line: Line,
-    pub comment: String,
+    pub rational: String,
 }

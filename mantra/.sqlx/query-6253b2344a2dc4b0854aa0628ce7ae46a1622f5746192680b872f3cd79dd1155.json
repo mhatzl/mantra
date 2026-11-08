@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select tl.log_src, gt.content\n        from TestCaseLogs tl, GeneralTexts gt\n        where tl.product_id = $1 and tl.test_run_name = $2\n        and tl.test_case_name = $3\n        and tl.log_hash = gt.hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "log_src",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLogs",
+            "name": "log_src"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "6253b2344a2dc4b0854aa0628ce7ae46a1622f5746192680b872f3cd79dd1155"
+}

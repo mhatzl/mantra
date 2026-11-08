@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select test_run_name\n        from TestCaseOverrides\n        where product_id = $1\n        and review_name = $2\n\n        union\n\n        select test_run_name\n        from TestRunLineCoverageOverrides\n        where product_id = $1\n        and review_name = $2\n\n        union\n\n        select test_run_name\n        from TestCaseLineCoverageOverrides\n        where product_id = $1\n        and review_name = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "test_run_name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseOverrides",
+            "name": "test_run_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "076a91d4424441f172a7cc950362b0dde1a2246c85432461b3076af3a9daa5dc"
+}

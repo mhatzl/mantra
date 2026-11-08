@@ -20,9 +20,6 @@ use crate::{
 pub struct TestCaseReference {
     pub product_id: ProductId,
     pub test_run_name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub test_run_date: time::OffsetDateTime,
     pub test_case_name: String,
     pub state: TestState,
 }
@@ -40,7 +37,6 @@ impl TestCaseReference {
         let test_run = TestRunReference {
             product_id: self.product_id.clone(),
             name: self.test_run_name.clone(),
-            utc_date: self.test_run_date,
             state: TestState::Unknown,
         };
 
@@ -107,6 +103,8 @@ pub struct TestCaseReportSchema {
     /// Optional field to store custom properties per test case.
     /// [req("testcov.test_case.metadata")]
     pub properties: Option<Properties>,
+    pub schema_properties: Option<Properties>,
+    pub config_properties: Option<Properties>,
     /// Optional logs that were output during the test case execution.
     // TODO: add req
     pub logs: Option<Vec<LogOutput>>,

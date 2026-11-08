@@ -2,7 +2,7 @@ use mantra_schema::{
     SCHEMA_VERSION,
     report::{
         product::ProductReportSchema,
-        review::ReviewReference,
+        review::{ReviewReference, ReviewState},
         reviews::{ReviewsOverview, ReviewsReportSchema, ReviewsSummary},
     },
 };
@@ -15,8 +15,8 @@ pub async fn generate_reviews_schema<'db>(
 ) -> Result<ReviewsReportSchema, anyhow::Error> {
     let review_records = sqlx::query!(
         "
-        select product_id, name, utc_date
-        from Reviews
+        select product_id, review_name, state
+        from ReviewStates
         where product_id = $1
         ",
         product.id
@@ -28,18 +28,28 @@ pub async fn generate_reviews_schema<'db>(
         total: review_records.len() as i64,
         ..Default::default()
     };
-    summary.obsolete.cnt = 0;
-    summary.valid.cnt = summary.total;
 
-    let mut reviews = Vec::with_capacity(review_records.len());
+    let mut valid = Vec::with_capacity(review_records.len());
+    let mut obsolete = Vec::new();
 
     for record in review_records {
-        reviews.push(ReviewReference {
+        let state = ReviewState::try_from(record.state)?;
+        let review_ref = ReviewReference {
             product_id: product.id.clone(),
-            name: record.name,
-            utc_date: mantra_schema::reviews::date_from_str(&record.utc_date)?,
-            state: mantra_schema::report::review::ReviewState::Valid, // TODO: set correct state
-        });
+            name: record.review_name,
+            state,
+        };
+
+        match state {
+            ReviewState::Obsolete => {
+                summary.obsolete.cnt += 1;
+                obsolete.push(review_ref);
+            }
+            ReviewState::Valid => {
+                summary.valid.cnt += 1;
+                valid.push(review_ref);
+            }
+        }
     }
 
     summary.update_percentages();
@@ -49,8 +59,8 @@ pub async fn generate_reviews_schema<'db>(
         product: product.metadata(),
         reviews: ReviewsOverview {
             summary,
-            valid: reviews,
-            obsolete: Vec::new(), // TODO: split depending on state
+            valid,
+            obsolete,
         },
     })
 }

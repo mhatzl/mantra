@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select revision, summary\n        from ReviewRevisions\n        where product_id = $1 and review_name = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "revision",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ReviewRevisions",
+            "name": "revision"
+          }
+        }
+      },
+      {
+        "name": "summary",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ReviewRevisions",
+            "name": "summary"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0a4cbeaf57178d0bb5f4a7cd9969cd8b28e0d436c27813a782d02235dcfde31c"
+}

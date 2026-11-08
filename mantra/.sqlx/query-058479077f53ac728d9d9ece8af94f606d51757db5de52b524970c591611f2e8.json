@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            tr.utc_date,\n            tr.duration_sec,\n            gt.content as \"description?\",\n            og.content as \"origin?\"\n        from TestRuns tr\n        left join GeneralTexts gt on tr.description_hash = gt.hash\n        left join GeneralJson og on tr.origin_hash = og.hash\n        where tr.product_id = $1 and tr.name = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "utc_date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRuns",
+            "name": "utc_date"
+          }
+        }
+      },
+      {
+        "name": "duration_sec",
+        "ordinal": 1,
+        "type_info": "Float",
+        "origin": {
+          "Table": {
+            "table": "TestRuns",
+            "name": "duration_sec"
+          }
+        }
+      },
+      {
+        "name": "description?",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "name": "origin?",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "058479077f53ac728d9d9ece8af94f606d51757db5de52b524970c591611f2e8"
+}

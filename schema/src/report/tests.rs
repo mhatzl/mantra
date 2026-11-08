@@ -150,10 +150,12 @@ pub struct TestCoverageSummary {
 pub struct CoverageSummary {
     pub total: i64,
     pub covered: Aggregated,
+    pub uncovered: Aggregated,
     pub excluded: Aggregated,
     pub overridden_covered: Aggregated,
     pub overridden_uncovered: Aggregated,
-    pub uncovered: Aggregated,
+    pub overridden_excluded: Aggregated,
+    pub unknown: Aggregated,
 }
 
 impl CoverageSummary {
@@ -161,20 +163,24 @@ impl CoverageSummary {
         self.total += other.total;
 
         self.covered.cnt += other.covered.cnt;
+        self.uncovered.cnt += other.uncovered.cnt;
         self.excluded.cnt += other.excluded.cnt;
         self.overridden_covered.cnt += other.overridden_covered.cnt;
         self.overridden_uncovered.cnt += other.overridden_uncovered.cnt;
-        self.uncovered.cnt += other.uncovered.cnt;
+        self.overridden_excluded.cnt += other.overridden_excluded.cnt;
+        self.unknown.cnt += other.unknown.cnt;
 
         self.update_percentages();
     }
 
     pub fn update_percentages(&mut self) {
         self.covered.update_percentage(self.total);
+        self.uncovered.update_percentage(self.total);
         self.excluded.update_percentage(self.total);
         self.overridden_covered.update_percentage(self.total);
         self.overridden_uncovered.update_percentage(self.total);
-        self.uncovered.update_percentage(self.total);
+        self.overridden_excluded.update_percentage(self.total);
+        self.unknown.update_percentage(self.total);
     }
 }
 

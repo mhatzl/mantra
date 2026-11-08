@@ -8,13 +8,14 @@ use mantra_schema::{
         annotations::{TraceReference, TracesSummary},
         product::ProductReportSchema,
         requirement::{
-            RequirementCoverageByTestCases, RequirementCoverageByTestRuns,
-            RequirementCoverageByTests, RequirementReference, RequirementReportSchema,
-            RequirementReviewReference, RequirementState, RequirementTracesOverview,
+            RequirementAttributeState, RequirementCoverage, RequirementReference,
+            RequirementReportSchema, RequirementReview, RequirementState,
+            RequirementTracesOverview,
         },
+        review::{ReviewReference, ReviewState},
         test_case::TestCaseReference,
         test_run::TestRunReference,
-        tests::TestState,
+        tests::{TestReference, TestState},
     },
     requirements::ReqId,
 };
@@ -31,45 +32,45 @@ pub async fn generate_requirement_schema<'db>(
         select
             r.id,
             r.title,
+            r.kind,
             rs.state,
             gt.content as "description?",
-            bo.content as "base_origin?",
             og.content as "origin?",
-            case when exists (
-                select o.id
+            r.optional,
+            r.manual_verification,
+            r.deprecated,
+            r.exclude,
+            r.draft,
+            exists (
+                select o.req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = r.id
-            ) then true
-            else false
-            end as "optional!:bool",
-            case when exists (
-                select m.id
+                where o.product_id = $1 and o.req_id = r.id
+            ) as "inherited_optional!:bool",
+            exists (
+                select m.req_id
                 from ManualRequirements m
-                where m.product_id = $1 and m.id = r.id
-            ) then true
-            else false
-            end as "manual_verification!:bool",
-            case when exists (
-                select dr.id
+                where m.product_id = $1 and m.req_id = r.id
+            ) as "inherited_manual_verification!:bool",
+            exists (
+                select dr.req_id
                 from DeprecatedRequirements dr
-                where dr.product_id = $1 and dr.id = r.id
-            ) then true
-            else false
-            end as "deprecated!:bool",
-            case when exists (
-                select ir.id
-                from ExcludedRequirements ir
-                where ir.product_id = $1 and ir.id = r.id
-            ) then true
-            else false
-            end as "excluded!:bool"
-        from Requirements r
+                where dr.product_id = $1 and dr.req_id = r.id
+            ) as "inherited_deprecated!:bool",
+            exists (
+                select er.req_id
+                from ExcludedRequirements er
+                where er.product_id = $1 and er.req_id = r.id
+            ) as "inherited_exclude!:bool",
+            exists (
+                select dr.req_id
+                from DraftRequirements dr
+                where dr.product_id = $1 and dr.req_id = r.id
+            ) as "inherited_draft!:bool"
+        from RequirementVerificationStates rs, Requirements r
             left join GeneralTexts gt on r.description_hash = gt.hash
             left join GeneralJson og on r.origin_hash = og.hash
-            left join GeneralJson bo on r.base_origin_hash = bo.hash,
-        RequirementVerificationStates rs
         where r.product_id = $1 and rs.product_id = $1
-        and r.id = $2 and r.id = rs.id
+        and r.id = $2 and r.id = rs.req_id
         "#,
         product.id,
         req_id
@@ -105,61 +106,10 @@ pub async fn generate_requirement_schema<'db>(
     };
 
     let children = requirement_child_references(transaction, &product.id, req_id).await?;
-    let children = if children.is_empty() {
-        None
-    } else {
-        Some(children)
-    };
-
     let parents = requirement_parent_references(transaction, &product.id, req_id).await?;
-    let parents = if parents.is_empty() {
-        None
-    } else {
-        Some(parents)
-    };
-
-    let reviewed_in: Vec<RequirementReviewReference> = sqlx::query!(
-        "
-        select mr.product_id, mr.review_name, mr.review_date, gt.content
-        from ManuallyVerifiedRequirements mr, GeneralTexts gt
-        where mr.product_id = $1 and mr.req_id = $2
-        and mr.comment_hash = gt.hash
-        ",
-        product.id,
-        req_id
-    )
-    .fetch_all(transaction.as_mut())
-    .await?
-    .into_iter()
-    .map(|r| RequirementReviewReference {
-        product_id: product.id.clone(),
-        name: r.review_name,
-        utc_date: mantra_schema::reviews::date_from_str(&r.review_date)
-            .expect("Valid review date in database"),
-        state: mantra_schema::report::review::ReviewState::Valid, // TODO: replace with actual state
-        comment: r.content,
-    })
-    .collect();
-    let reviewed_in = if reviewed_in.is_empty() {
-        None
-    } else {
-        Some(reviewed_in)
-    };
-
-    let test_runs = coverage_by_test_runs(transaction, &product.id, req_id).await?;
-    let test_cases = coverage_by_test_cases(transaction, &product.id, req_id).await?;
-
-    let covered_by = if test_runs.is_empty() && test_cases.is_empty() {
-        None
-    } else {
-        Some(RequirementCoverageByTests {
-            test_runs,
-            test_cases,
-        })
-    };
-
+    let reviewed_in = requirement_reviews(transaction, &product.id, req_id).await?;
+    let covered_by = requirement_coverage(transaction, &product.id, req_id).await?;
     let traces = requirement_traces(transaction, &product.id, req_id).await?;
-
     let replaces = requirement_replacements(transaction, &product.id, req_id).await?;
     let replaced_by = requirement_replaced(transaction, &product.id, req_id).await?;
 
@@ -173,42 +123,107 @@ pub async fn generate_requirement_schema<'db>(
         reviewed_in,
         product: product.metadata(),
         id: req_id.clone(),
+        kind: req.kind,
         title: req.title,
         description: req.description,
-        base_origin: req.base_origin.and_then(|o| serde_json::from_str(&o).ok()),
-        origin: req.origin.and_then(|o| serde_json::from_str(&o).ok()),
-        manual_verification: req.manual_verification,
-        deprecated: req.deprecated,
-        excluded: req.excluded,
-        optional: req.optional,
+        manual_verification: requirement_attribute_state(
+            req.manual_verification,
+            req.inherited_manual_verification,
+        ),
+        deprecated: requirement_attribute_state(req.deprecated, req.inherited_deprecated),
+        excluded: requirement_attribute_state(req.exclude, req.inherited_exclude),
+        optional: requirement_attribute_state(req.optional, req.inherited_optional),
+        draft: requirement_attribute_state(req.draft, req.inherited_draft),
         replaces,
         replaced_by,
+        origin: req.origin.and_then(|o| serde_json::from_str(&o).ok()),
+        schema_origin: todo!(),
+        config_origin: todo!(),
         properties,
+        schema_properties: todo!(),
+        config_properties: todo!(),
     })
+}
+
+pub(super) async fn requirement_coverage<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Vec<RequirementCoverage>>, anyhow::Error> {
+    let mut tests = coverage_by_test_runs(transaction, product_id, req_id).await?;
+    tests.extend(coverage_by_test_cases(transaction, product_id, req_id).await?);
+
+    if tests.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(tests))
+    }
+}
+
+pub(super) async fn requirement_reviews<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Vec<RequirementReview>>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select mr.product_id, mr.review_name, rs.state, gt.content
+        from ManuallyVerifiedRequirements mr, ReviewStates rs, GeneralTexts gt
+        where mr.product_id = $1 and mr.req_id = $2
+        and rs.product_id = $1 and rs.review_name = mr.review_name
+        and mr.rational_hash = gt.hash
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    let mut reviews = Vec::with_capacity(records.len());
+
+    for record in records {
+        reviews.push(RequirementReview {
+            review: ReviewReference {
+                product_id: product_id.clone(),
+                name: record.review_name,
+                state: ReviewState::try_from(record.state)?,
+            },
+            rational: record.content,
+        })
+    }
+
+    if reviews.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(reviews))
+    }
 }
 
 pub(super) async fn requirement_child_references<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
-) -> Result<Vec<RequirementReference>, anyhow::Error> {
+) -> Result<Option<Vec<RequirementReference>>, anyhow::Error> {
     let child_records = sqlx::query!(
         r#"
         select
             r.product_id,
             r.id,
             rs.state,
-            case when exists (
-                select o.id
+            exists (
+                select req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = r.id
-            ) then true
-            else false
-            end as "optional!:bool"
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "optional!:bool",
+            exists (
+                select req_id
+                from ManualRequirements o
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "manual!:bool"
         from RequirementHierarchies rh, RequirementVerificationStates rs, Requirements r
         where rh.parent_product_id = $1 and rh.parent_req_id = $2
-        and rh.child_product_id = rs.product_id and rh.child_req_id = rs.id
-        and r.product_id = rs.product_id and r.id = rs.id
+        and rh.child_product_id = rs.product_id and rh.child_req_id = rs.req_id
+        and r.product_id = rs.product_id and r.id = rs.req_id
         "#,
         product_id,
         req_id
@@ -223,34 +238,42 @@ pub(super) async fn requirement_child_references<'db>(
             product_id: child.product_id.try_into()?,
             state: child.state.try_into()?,
             optional: child.optional,
+            manual: child.manual,
         })
     }
 
-    Ok(children)
+    if children.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(children))
+    }
 }
 
 pub(super) async fn requirement_parent_references<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
-) -> Result<Vec<RequirementReference>, anyhow::Error> {
+) -> Result<Option<Vec<RequirementReference>>, anyhow::Error> {
     let parent_records = sqlx::query!(
         r#"
         select
             r.product_id,
             r.id,
             rs.state,
-            case when exists (
-                select o.id
+            exists (
+                select req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = r.id
-            ) then true
-            else false
-            end as "optional!:bool"
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "optional!:bool",
+            exists (
+                select req_id
+                from ManualRequirements o
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "manual!:bool"
         from RequirementHierarchies rh, RequirementVerificationStates rs, Requirements r
         where rh.child_product_id = $1 and rh.child_req_id = $2
-        and rh.parent_product_id = rs.product_id and rh.parent_req_id = rs.id
-        and r.product_id = rs.product_id and r.id = rs.id
+        and rh.parent_product_id = rs.product_id and rh.parent_req_id = rs.req_id
+        and r.product_id = rs.product_id and r.id = rs.req_id
         "#,
         product_id,
         req_id
@@ -265,10 +288,15 @@ pub(super) async fn requirement_parent_references<'db>(
             product_id: parent.product_id.try_into()?,
             state: parent.state.try_into()?,
             optional: parent.optional,
+            manual: parent.manual,
         })
     }
 
-    Ok(parents)
+    if parents.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(parents))
+    }
 }
 
 pub(super) async fn covering_test_runs<'db>(
@@ -281,7 +309,6 @@ pub(super) async fn covering_test_runs<'db>(
         select distinct
             tr.product_id,
             tr.test_run_name,
-            tr.test_run_date,
             ts.state as "state!:i64"
         from
             TracesCoveredByTestRuns tr,
@@ -291,7 +318,6 @@ pub(super) async fn covering_test_runs<'db>(
         and tr.filepath = dt.filepath and tr.file_hash = dt.file_hash
         and tr.traced_line = dt.line and dt.req_id = $2
         and tr.test_run_name = ts.test_run_name
-        and tr.test_run_date = ts.test_run_date
         "#,
         product_id,
         req_id
@@ -302,8 +328,6 @@ pub(super) async fn covering_test_runs<'db>(
     .map(|tr| TestRunReference {
         product_id: product_id.clone(),
         name: tr.test_run_name,
-        utc_date: mantra_schema::test_runs::test_date_from_str(&tr.test_run_date)
-            .expect("Valid test date in database"),
         state: TestState::try_from(tr.state).expect("Valid test state in database"),
     })
     .collect();
@@ -321,7 +345,6 @@ pub(super) async fn covering_test_cases<'db>(
         select distinct
             tc.product_id,
             tc.test_run_name,
-            tc.test_run_date,
             tc.test_case_name,
             ts.state as "state!:i64"
         from
@@ -332,7 +355,6 @@ pub(super) async fn covering_test_cases<'db>(
         and tc.filepath = dt.filepath and tc.file_hash = dt.file_hash
         and tc.traced_line = dt.line and dt.req_id = $2
         and tc.test_run_name = ts.test_run_name
-        and tc.test_run_date = ts.test_run_date
         and tc.test_case_name = ts.test_case_name
 
         union
@@ -340,14 +362,12 @@ pub(super) async fn covering_test_cases<'db>(
         select distinct
             tv.product_id,
             tv.test_run_name,
-            tv.test_run_date,
             tv.test_case_name,
             ts.state as "state!:i64"
         from TestCaseVerifiedRequirements tv, ResolvedTestCaseStates ts
         where tv.product_id = $1 and ts.product_id = $1
         and tv.req_id = $2
         and tv.test_run_name = ts.test_run_name
-        and tv.test_run_date = ts.test_run_date
         and tv.test_case_name = ts.test_case_name
         "#,
         product_id,
@@ -359,8 +379,6 @@ pub(super) async fn covering_test_cases<'db>(
     .map(|tc| TestCaseReference {
         product_id: product_id.clone(),
         test_run_name: tc.test_run_name,
-        test_run_date: mantra_schema::test_runs::test_date_from_str(&tc.test_run_date)
-            .expect("Valid test date in database"),
         test_case_name: tc.test_case_name,
         state: TestState::try_from(tc.state).expect("Valid test state in database"),
     })
@@ -373,7 +391,7 @@ async fn coverage_by_test_runs<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
-) -> Result<Vec<RequirementCoverageByTestRuns>, anyhow::Error> {
+) -> Result<Vec<RequirementCoverage>, anyhow::Error> {
     let test_run_references = covering_test_runs(transaction, product_id, req_id).await?;
 
     let mut test_runs = Vec::with_capacity(test_run_references.len());
@@ -385,35 +403,37 @@ async fn coverage_by_test_runs<'db>(
             from TracesCoveredByTestRuns tr, DirectProductReqTraces dt, Traces t
             where tr.product_id = $1 and dt.product_id = $1
             and dt.req_id = $2
-            and tr.test_run_name = $3 and tr.test_run_date = $4
-            and dt.file_hash = t.file_hash and dt.line = t.line
+            and tr.test_run_name = $3
+            and dt.file_hash = t.file_hash
+            and dt.line = t.line
             ",
             test_run.product_id,
             req_id,
             test_run.name,
-            test_run.utc_date
         )
         .fetch_all(transaction.as_mut())
         .await?
         .into_iter()
         .map(|t| TraceReference {
-            filepath: t.filepath.into(),
-            file_hash: FmtHash::with_inner(t.file_hash),
-            line: t.line,
+            path: t.filepath.into(),
+            line: Some(t.line),
             kind: t.kind.try_into().expect("Valid trace kind in database"),
         })
         .collect();
 
-        test_runs.push(RequirementCoverageByTestRuns {
-            product_id: test_run.product_id,
-            name: test_run.name,
-            utc_date: test_run.utc_date,
-            state: test_run.state,
+        test_runs.push(RequirementCoverage {
+            test: TestReference::TestRun(TestRunReference {
+                product_id: test_run.product_id,
+                name: test_run.name,
+                state: test_run.state,
+            }),
             covered_traces: if covered_traces.is_empty() {
                 None
             } else {
                 Some(covered_traces)
             },
+            directly_verified: false, // test run cannot directly verify a requirement
+            missing_satisfy_trace: todo!(),
         });
     }
 
@@ -424,7 +444,7 @@ async fn coverage_by_test_cases<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
-) -> Result<Vec<RequirementCoverageByTestCases>, anyhow::Error> {
+) -> Result<Vec<RequirementCoverage>, anyhow::Error> {
     let test_case_references = covering_test_cases(transaction, product_id, req_id).await?;
 
     let mut test_cases = Vec::with_capacity(test_case_references.len());
@@ -436,23 +456,22 @@ async fn coverage_by_test_cases<'db>(
             from TracesCoveredByTestCases tc, DirectProductReqTraces dt, Traces t
             where tc.product_id = $1 and dt.product_id = $1
             and dt.req_id = $2
-            and tc.test_run_name = $3 and tc.test_run_date = $4
-            and tc.test_case_name = $6
-            and dt.file_hash = t.file_hash and dt.line = t.line
+            and tc.test_run_name = $3
+            and tc.test_case_name = $4
+            and dt.file_hash = t.file_hash
+            and dt.line = t.line
             ",
             test_case.product_id,
             req_id,
             test_case.test_run_name,
-            test_case.test_run_date,
             test_case.test_case_name
         )
         .fetch_all(transaction.as_mut())
         .await?
         .into_iter()
         .map(|t| TraceReference {
-            filepath: t.filepath.into(),
-            file_hash: FmtHash::with_inner(t.file_hash),
-            line: t.line,
+            path: t.filepath.into(),
+            line: Some(t.line),
             kind: t.kind.try_into().expect("Valid trace kind in database"),
         })
         .collect();
@@ -462,31 +481,32 @@ async fn coverage_by_test_cases<'db>(
             select req_id
             from TestCaseVerifiedRequirements
             where product_id = $1 and req_id = $2
-            and test_run_name = $3 and test_run_date = $4
-            and test_case_name = $5
+            and test_run_name = $3
+            and test_case_name = $4
             ",
             test_case.product_id,
             req_id,
             test_case.test_run_name,
-            test_case.test_run_date,
             test_case.test_case_name
         )
         .fetch_optional(transaction.as_mut())
         .await?
         .is_some();
 
-        test_cases.push(RequirementCoverageByTestCases {
-            product_id: test_case.product_id,
-            test_run_name: test_case.test_run_name,
-            test_run_date: test_case.test_run_date,
-            test_case_name: test_case.test_case_name,
-            state: test_case.state,
+        test_cases.push(RequirementCoverage {
+            test: TestReference::TestCase(TestCaseReference {
+                product_id: test_case.product_id,
+                test_run_name: test_case.test_run_name,
+                test_case_name: test_case.test_case_name,
+                state: test_case.state,
+            }),
             directly_verified,
             covered_traces: if covered_traces.is_empty() {
                 None
             } else {
                 Some(covered_traces)
             },
+            missing_satisfy_trace: todo!(),
         });
     }
 
@@ -533,9 +553,8 @@ async fn requirement_traces<'db>(
         }
 
         traces.push(TraceReference {
-            filepath: trace.filepath.into(),
-            file_hash: FmtHash::with_inner(trace.file_hash),
-            line: trace.line,
+            path: trace.filepath.into(),
+            line: Some(trace.line),
             kind,
         })
     }
@@ -558,16 +577,19 @@ async fn requirement_replacements<'db>(
         select
             rr.replaced_req_id,
             rs.state,
-            case when exists (
-                select o.id
+            exists (
+                select o.req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = rr.replaced_req_id
-            ) then true
-            else false
-            end as "optional!:bool"
+                where o.product_id = $1 and o.req_id = rr.replaced_req_id
+            ) as "optional!:bool",
+            exists (
+                select m.req_id
+                from ManualRequirements m
+                where m.product_id = $1 and m.req_id = rr.replaced_req_id
+            ) as "manual!:bool"
         from RequirementReplacements rr, RequirementVerificationStates rs
         where rr.product_id = $1 and rr.req_id = $2
-        and rs.product_id = $1 and rs.id = rr.replaced_req_id
+        and rs.product_id = $1 and rs.req_id = rr.replaced_req_id
         "#,
         product_id,
         req_id
@@ -587,6 +609,7 @@ async fn requirement_replacements<'db>(
             id: ReqId::from_str(&record.replaced_req_id)?,
             state: RequirementState::try_from(record.state)?,
             optional: record.optional,
+            manual: record.manual,
         })
     }
 
@@ -603,16 +626,19 @@ async fn requirement_replaced<'db>(
         select
             rr.req_id,
             rs.state,
-            case when exists (
-                select o.id
+            exists (
+                select o.req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = rr.req_id
-            ) then true
-            else false
-            end as "optional!:bool"
+                where o.product_id = $1 and o.req_id = rr.req_id
+            ) as "optional!:bool",
+            exists (
+                select m.req_id
+                from ManualRequirements m
+                where m.product_id = $1 and m.req_id = rr.req_id
+            ) as "manual!:bool"
         from RequirementReplacements rr, RequirementVerificationStates rs
         where rr.product_id = $1 and rr.replaced_req_id = $2
-        and rs.product_id = $1 and rs.id = rr.req_id
+        and rs.product_id = $1 and rs.req_id = rr.req_id
         "#,
         product_id,
         req_id
@@ -632,8 +658,18 @@ async fn requirement_replaced<'db>(
             id: ReqId::from_str(&record.req_id)?,
             state: RequirementState::try_from(record.state)?,
             optional: record.optional,
+            manual: record.manual,
         })
     }
 
     Ok(Some(replaced_by_reqs))
+}
+
+fn requirement_attribute_state(own: Option<bool>, inherited: bool) -> RequirementAttributeState {
+    match (own, inherited) {
+        (Some(false), _) => RequirementAttributeState::False,
+        (Some(true), _) => RequirementAttributeState::True,
+        (None, false) => RequirementAttributeState::InheritedFalse,
+        (None, true) => RequirementAttributeState::InheritedTrue,
+    }
 }

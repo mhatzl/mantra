@@ -1,0 +1,57 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select mr.product_id, mr.review_name, rs.state, gt.content\n        from ManuallyVerifiedRequirements mr, ReviewStates rs, GeneralTexts gt\n        where mr.product_id = $1 and mr.req_id = $2\n        and rs.product_id = $1 and rs.review_name = mr.review_name\n        and mr.rational_hash = gt.hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ManuallyVerifiedRequirements",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "review_name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ManuallyVerifiedRequirements",
+            "name": "review_name"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "content",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4be30adf650d83aee69134f418a178ee2af5e38479e759e369f775e5e3e2fdc0"
+}

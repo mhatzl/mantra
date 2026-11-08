@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select cov_filepath, cov_line, cov_state\n        from ResolvedTestRunLineCoverage\n        where product_id = $1\n        and test_run_name = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_filepath",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ResolvedTestRunLineCoverage",
+            "name": "cov_filepath"
+          }
+        }
+      },
+      {
+        "name": "cov_line",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ResolvedTestRunLineCoverage",
+            "name": "cov_line"
+          }
+        }
+      },
+      {
+        "name": "cov_state",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ResolvedTestRunLineCoverage",
+            "name": "cov_state"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a95302ecb5ebf77c9d0158248560e1645a12fb9a3170604ab3398eec349efe78"
+}

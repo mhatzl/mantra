@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                select\n                    co.cov_line,\n                    co.covered,\n                    tr.hits as original_hits,\n                    gt.content\n                from\n                    TestRunLineCoverageOverrides co,\n                    TestRunLineCoverage tr,\n                    GeneralTexts gt\n                where co.product_id = $1 and tr.product_id = $1\n                and co.test_run_name = $2 and tr.test_run_name = $2\n                and co.cov_filepath = $3 and tr.cov_filepath = $3\n                and co.cov_line = tr.cov_line\n                and co.rational_hash = gt.hash\n                ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_line",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "cov_line"
+          }
+        }
+      },
+      {
+        "name": "covered",
+        "ordinal": 1,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "covered"
+          }
+        }
+      },
+      {
+        "name": "original_hits",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverage",
+            "name": "hits"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "565319090c7bac06963a1f01875cb664a3847110abb8eca2ddf07df6f6d22750"
+}

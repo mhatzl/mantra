@@ -29,6 +29,7 @@ pub const SOURCES_FOLDER_NAME: &str = "sources";
 /// Represents a line in a text file.
 /// Line numbers start at 1 in *mantra*.
 pub type Line = i64;
+pub type Column = i64;
 pub type Origin = serde_json::Value;
 pub type Properties = serde_json::value::Map<String, serde_json::Value>;
 
@@ -47,6 +48,25 @@ pub type Properties = serde_json::value::Map<String, serde_json::Value>;
 pub struct LineSpan {
     pub start: Line,
     pub end: Line,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+)]
+#[serde(deny_unknown_fields)]
+pub struct SourceSpan {
+    pub start_line: Line,
+    pub start_column: Option<Column>,
+    pub end_line: Option<Line>,
+    pub end_column: Option<Column>,
 }
 
 pub fn serialize_schema_version<S>(_value: &Option<String>, ser: S) -> Result<S::Ok, S::Error>

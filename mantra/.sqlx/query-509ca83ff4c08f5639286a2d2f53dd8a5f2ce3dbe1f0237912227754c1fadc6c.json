@@ -1,0 +1,52 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            tc.req_id,\n            rs.state,\n            exists (\n                select req_id\n                from OptionalRequirements o\n                where o.product_id = $1\n                and o.req_id = tc.req_id\n            ) as \"optional!:bool\",\n            exists (\n                select req_id\n                from ManualRequirements m\n                where m.product_id = $1\n                and m.req_id = tc.req_id\n            ) as \"manual!:bool\"\n        from TestCaseVerifiedRequirements tc, RequirementVerificationStates rs\n        where tc.product_id = $1 and rs.product_id = $1\n        and tc.test_run_name = $2\n        and tc.test_case_name = $3\n        and tc.req_id = rs.req_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseVerifiedRequirements",
+            "name": "req_id"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "RequirementVerificationStates",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "manual!:bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "509ca83ff4c08f5639286a2d2f53dd8a5f2ce3dbe1f0237912227754c1fadc6c"
+}

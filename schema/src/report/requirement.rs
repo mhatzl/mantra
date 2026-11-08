@@ -7,8 +7,8 @@ use crate::{
     report::{
         annotations::{TraceReference, TracesSummary},
         product::ProductMetadata,
-        review::ReviewState,
-        tests::TestState,
+        review::ReviewReference,
+        tests::TestReference,
     },
     requirements::ReqId,
 };
@@ -24,8 +24,8 @@ pub struct RequirementReportSchema {
     pub parents: Option<Vec<RequirementReference>>,
     pub children: Option<Vec<RequirementReference>>,
     pub traces: Option<RequirementTracesOverview>,
-    pub covered_by: Option<RequirementCoverageByTests>,
-    pub reviewed_in: Option<Vec<RequirementReviewReference>>,
+    pub covered_by: Option<Vec<RequirementCoverage>>,
+    pub reviewed_in: Option<Vec<RequirementReview>>,
     pub product: ProductMetadata,
     /// ID of the requirement.
     /// [req("req.id")]
@@ -36,31 +36,34 @@ pub struct RequirementReportSchema {
     /// Optional description of the requirement.
     /// [req("req.description")]
     pub description: Option<String>,
-    pub base_origin: Option<Origin>,
+    pub kind: Option<String>,
     /// Origin where the requirement is defined at.
     /// [req("req.origin")]
     pub origin: Option<Origin>,
+    pub schema_origin: Option<Origin>,
+    pub config_origin: Option<Origin>,
     /// true: Marks the requirement to require manual verification.
     ///
     /// **Note:** All potential children of such a requirement are also marked
     /// to require manual verification.
     /// [req("req.manual")]
-    pub manual_verification: bool,
+    pub manual_verification: RequirementAttributeState,
     /// true: Marks the requirement to be deprecated.
     ///
     /// **Note:** All potential children of such a requirement are also marked as deprecated.
     /// [req("req.deprecated")]
-    pub deprecated: bool,
+    pub deprecated: RequirementAttributeState,
     /// true: Instructs mantra to exclude the requirement for the product it is mapped to.
     ///
     /// **Note:** All potential children of such a requirement will also be excluded.
     /// [req("req.exclude")]
-    pub excluded: bool,
+    pub excluded: RequirementAttributeState,
+    pub draft: RequirementAttributeState,
     /// true: Instructs mantra to treat the requirement for the product as optional.
     ///
     /// **Note:** All potential children of such a requirement are also marked as optional.
     /// [req("req.optional")]
-    pub optional: bool,
+    pub optional: RequirementAttributeState,
     /// Optional list of requirements that this requirement replaces.
     pub replaces: Option<Vec<RequirementReference>>,
     /// Optional list of requirements that this requirement is replaced by.
@@ -70,6 +73,17 @@ pub struct RequirementReportSchema {
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,
+    pub schema_properties: Option<Properties>,
+    pub config_properties: Option<Properties>,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RequirementAttributeState {
+    True,
+    False,
+    InheritedTrue,
+    InheritedFalse,
 }
 
 #[derive(
@@ -81,6 +95,7 @@ pub struct RequirementReference {
     pub id: ReqId,
     pub state: RequirementState,
     pub optional: bool,
+    pub manual: bool,
 }
 
 impl RequirementReference {
@@ -187,47 +202,21 @@ pub struct RequirementTracesOverview {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct RequirementCoverageByTests {
-    pub test_runs: Vec<RequirementCoverageByTestRuns>,
-    pub test_cases: Vec<RequirementCoverageByTestCases>,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct RequirementCoverageByTestRuns {
-    pub product_id: ProductId,
-    pub name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
-    pub state: TestState,
-    pub covered_traces: Option<Vec<TraceReference>>,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct RequirementCoverageByTestCases {
-    pub product_id: ProductId,
-    pub test_run_name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub test_run_date: time::OffsetDateTime,
-    pub test_case_name: String,
-    pub state: TestState,
+pub struct RequirementCoverage {
+    pub test: TestReference,
     pub covered_traces: Option<Vec<TraceReference>>,
     pub directly_verified: bool,
+    /// `true` means that eventhough the test covers the requirement by a `verify` trace,
+    /// it is not covering any `satisfy` trace that exists for the requirement.
+    /// Therefore, this test does not verify the requirement via traces.
+    pub missing_satisfy_trace: bool,
 }
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
-pub struct RequirementReviewReference {
-    pub product_id: ProductId,
-    pub name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
-    pub state: ReviewState,
-    pub comment: String,
+pub struct RequirementReview {
+    pub review: ReviewReference,
+    pub rational: String,
 }

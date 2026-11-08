@@ -1,0 +1,181 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select\n            r.id,\n            r.title,\n            r.kind,\n            rs.state,\n            gt.content as \"description?\",\n            og.content as \"origin?\",\n            r.optional,\n            r.manual_verification,\n            r.deprecated,\n            r.exclude,\n            r.draft,\n            exists (\n                select o.req_id\n                from OptionalRequirements o\n                where o.product_id = $1 and o.req_id = r.id\n            ) as \"inherited_optional!:bool\",\n            exists (\n                select m.req_id\n                from ManualRequirements m\n                where m.product_id = $1 and m.req_id = r.id\n            ) as \"inherited_manual_verification!:bool\",\n            exists (\n                select dr.req_id\n                from DeprecatedRequirements dr\n                where dr.product_id = $1 and dr.req_id = r.id\n            ) as \"inherited_deprecated!:bool\",\n            exists (\n                select er.req_id\n                from ExcludedRequirements er\n                where er.product_id = $1 and er.req_id = r.id\n            ) as \"inherited_exclude!:bool\",\n            exists (\n                select dr.req_id\n                from DraftRequirements dr\n                where dr.product_id = $1 and dr.req_id = r.id\n            ) as \"inherited_draft!:bool\"\n        from RequirementVerificationStates rs, Requirements r\n            left join GeneralTexts gt on r.description_hash = gt.hash\n            left join GeneralJson og on r.origin_hash = og.hash\n        where r.product_id = $1 and rs.product_id = $1\n        and r.id = $2 and r.id = rs.req_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "RequirementVerificationStates",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "name": "description?",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "name": "origin?",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "name": "optional",
+        "ordinal": 6,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "optional"
+          }
+        }
+      },
+      {
+        "name": "manual_verification",
+        "ordinal": 7,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "manual_verification"
+          }
+        }
+      },
+      {
+        "name": "deprecated",
+        "ordinal": 8,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "deprecated"
+          }
+        }
+      },
+      {
+        "name": "exclude",
+        "ordinal": 9,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "exclude"
+          }
+        }
+      },
+      {
+        "name": "draft",
+        "ordinal": 10,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "Requirements",
+            "name": "draft"
+          }
+        }
+      },
+      {
+        "name": "inherited_optional!:bool",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "inherited_manual_verification!:bool",
+        "ordinal": 12,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "inherited_deprecated!:bool",
+        "ordinal": 13,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "inherited_exclude!:bool",
+        "ordinal": 14,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "inherited_draft!:bool",
+        "ordinal": 15,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9d3b21663d4351fd5be488fe94c62dc25ba64072e5aa57af07750324b40f7a87"
+}

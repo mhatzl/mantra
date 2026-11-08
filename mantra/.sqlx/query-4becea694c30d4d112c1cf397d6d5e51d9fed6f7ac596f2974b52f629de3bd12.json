@@ -1,0 +1,100 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select distinct\n            dt.req_id,\n            rs.state,\n            exists (\n                select req_id\n                from OptionalRequirements o\n                where o.product_id = $1\n                and o.req_id = dt.req_id\n            ) as \"optional!:bool\",\n            exists (\n                select req_id\n                from ManualRequirements m\n                where m.product_id = $1\n                and m.req_id = dt.req_id\n            ) as \"manual!:bool\",\n            dt.filepath,\n            dt.file_hash,\n            dt.line,\n            t.kind\n        from\n            TraceCoveragePerTestCases tc,\n            DirectProductReqTraces dt,\n            Traces t,\n            RequirementVerificationStates rs\n        where tc.product_id = $1 and dt.product_id = $1\n        and rs.product_id = $1\n        and tc.test_run_name = $2\n        and tc.test_case_name = $3\n        and tc.filepath = dt.filepath and tc.file_hash = dt.file_hash\n        and tc.traced_line = dt.line and dt.file_hash = t.file_hash\n        and dt.line = t.line\n        and rs.req_id = dt.req_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "DirectProductReqTraces",
+            "name": "req_id"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "RequirementVerificationStates",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "name": "optional!:bool",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "manual!:bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": "Expression"
+      },
+      {
+        "name": "filepath",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "DirectProductReqTraces",
+            "name": "filepath"
+          }
+        }
+      },
+      {
+        "name": "file_hash",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "DirectProductReqTraces",
+            "name": "file_hash"
+          }
+        }
+      },
+      {
+        "name": "line",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "DirectProductReqTraces",
+            "name": "line"
+          }
+        }
+      },
+      {
+        "name": "kind",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "Traces",
+            "name": "kind"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4becea694c30d4d112c1cf397d6d5e51d9fed6f7ac596f2974b52f629de3bd12"
+}

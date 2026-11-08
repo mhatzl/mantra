@@ -1,0 +1,45 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select product_id, review_name, state\n        from ReviewStates\n        where product_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ValidReviews",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "review_name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ValidReviews",
+            "name": "review_name"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "588d58f89ed410626995054d1fd7821430580e3412b466f413a22aaf78912588"
+}

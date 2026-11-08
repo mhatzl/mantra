@@ -1,5 +1,4 @@
 use relative_path::RelativePathBuf;
-use time::OffsetDateTime;
 
 use crate::{
     ConversionError, Line, Origin, Properties, REVIEWS_FOLDER_NAME, Revision,
@@ -39,9 +38,12 @@ pub struct ReviewReportSchema {
     /// Optional origin of the review.
     /// [req("review.origin")]
     pub origin: Option<Origin>,
-    pub base_origin: Option<Origin>,
+    pub schema_origin: Option<Origin>,
+    pub config_origin: Option<Origin>,
     /// Optional properties related to this review.
     pub properties: Option<Properties>,
+    pub schema_properties: Option<Properties>,
+    pub config_properties: Option<Properties>,
     /// Optional revisions for the review.
     pub revisions: Option<Vec<Revision>>,
     /// List of requirements that are verified in this review.
@@ -59,7 +61,7 @@ pub struct ReviewReportSchema {
 #[serde(rename_all = "snake_case")]
 pub struct VerifiedRequirement {
     pub req: RequirementReference,
-    pub comment: String,
+    pub rational: String,
 }
 
 #[derive(
@@ -80,7 +82,7 @@ pub struct IgnoredEntries {
 #[serde(rename_all = "snake_case")]
 pub struct IgnoredManualRequirementVerification {
     pub id: ReqId,
-    pub comment: String,
+    pub rational: String,
 }
 
 #[derive(
@@ -89,12 +91,9 @@ pub struct IgnoredManualRequirementVerification {
 #[serde(rename_all = "snake_case")]
 pub struct IgnoredTestCaseStateOverride {
     pub test_run_name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub test_run_date: OffsetDateTime,
     pub test_case_name: String,
     pub state: TestCaseState,
-    pub comment: String,
+    pub rational: String,
 }
 
 #[derive(
@@ -103,15 +102,12 @@ pub struct IgnoredTestCaseStateOverride {
 #[serde(rename_all = "snake_case")]
 pub struct IgnoredTestCaseLineCoverageOverride {
     pub test_run_name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub test_run_date: OffsetDateTime,
     pub test_case_name: String,
     #[schemars(with = "String")]
     pub cov_filepath: RelativePathBuf,
     pub cov_line: Line,
-    pub hits: Option<i64>,
-    pub comment: String,
+    pub covered: Option<bool>,
+    pub rational: String,
 }
 
 #[derive(
@@ -120,14 +116,11 @@ pub struct IgnoredTestCaseLineCoverageOverride {
 #[serde(rename_all = "snake_case")]
 pub struct IgnoredTestRunLineCoverageOverride {
     pub test_run_name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub test_run_date: OffsetDateTime,
     #[schemars(with = "String")]
     pub cov_filepath: RelativePathBuf,
     pub cov_line: Line,
-    pub hits: Option<i64>,
-    pub comment: String,
+    pub covered: Option<bool>,
+    pub rational: String,
 }
 
 #[derive(
@@ -137,9 +130,6 @@ pub struct IgnoredTestRunLineCoverageOverride {
 pub struct ReviewReference {
     pub product_id: ProductId,
     pub name: String,
-    #[serde(with = "time::serde::iso8601")]
-    #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
     pub state: ReviewState,
 }
 
@@ -159,11 +149,7 @@ impl ReviewReference {
         };
 
         let limit_name = crate::encoding::limit_str_len(&self.name);
-        let encoded_ref = format!(
-            "{}_{}",
-            super::encode_utc_date(&self.utc_date),
-            crate::encoding::encode(&limit_name, target)
-        );
+        let encoded_ref = crate::encoding::encode(&limit_name, target);
 
         product_path.join(REVIEWS_FOLDER_NAME).join(encoded_ref)
     }
@@ -187,7 +173,7 @@ pub enum ReviewState {
 }
 
 impl ReviewState {
-    pub fn as_nr(&self) -> i32 {
+    pub fn as_number(&self) -> i32 {
         *self as i32
     }
 }
@@ -251,7 +237,7 @@ pub struct ResolvedOverrideFileCoverage {
 )]
 pub struct ResolvedOverrideCoveredLineInfo {
     pub nr: Line,
-    pub old_hits: Option<i64>,
-    pub new_hits: Option<i64>,
-    pub comment: String,
+    pub original_hits: Option<i64>,
+    pub covered: Option<bool>,
+    pub rational: String,
 }

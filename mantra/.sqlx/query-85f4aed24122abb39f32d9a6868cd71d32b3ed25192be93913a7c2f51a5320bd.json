@@ -1,0 +1,33 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select distinct tro.review_name, rs.state as \"state!:i64\"\n        from TestRunLineCoverageOverrides tro, ReviewStates rs\n        where tro.product_id = $1\n        and tro.test_run_name = $2\n        and rs.product_id = $1\n        and rs.review_name = tro.review_name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "review_name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestRunLineCoverageOverrides",
+            "name": "review_name"
+          }
+        }
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "85f4aed24122abb39f32d9a6868cd71d32b3ed25192be93913a7c2f51a5320bd"
+}

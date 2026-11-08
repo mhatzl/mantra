@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    select\n                        co.cov_line,\n                        co.covered,\n                        tc.hits as original_hits,\n                        gt.content\n                    from\n                        TestCaseLineCoverageOverrides co,\n                        TestCaseLineCoverage tc,\n                        GeneralTexts gt\n                    where co.product_id = $1 and tc.product_id = $1\n                    and co.test_run_name = $2 and tc.test_run_name = $2\n                    and co.test_case_name = $3 and tc.test_case_name = $3\n                    and co.cov_filepath = $4 and tc.cov_filepath = $4\n                    and co.cov_line = tc.cov_line\n                    and co.rational_hash = gt.hash\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cov_line",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverageOverrides",
+            "name": "cov_line"
+          }
+        }
+      },
+      {
+        "name": "covered",
+        "ordinal": 1,
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverageOverrides",
+            "name": "covered"
+          }
+        }
+      },
+      {
+        "name": "original_hits",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
+            "name": "hits"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "3f83cd0582c4f406699e7acbbb1393860421a8b68e08a293eb46113d9d2cb039"
+}

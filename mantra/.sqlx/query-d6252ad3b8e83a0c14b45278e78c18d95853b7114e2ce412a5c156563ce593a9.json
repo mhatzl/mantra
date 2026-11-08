@@ -1,0 +1,45 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select ts.product_id, ts.test_run_name, ts.state as \"state!:i64\"\n        from TestRunStates ts\n        where ts.product_id = $1 and not exists (\n            select th.parent_name\n            from TestRunHierarchies th\n            where th.product_id = $1\n            and th.child_name = ts.test_run_name\n        )\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "product_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ObsoleteTestRuns",
+            "name": "product_id"
+          }
+        }
+      },
+      {
+        "name": "test_run_name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ObsoleteTestRuns",
+            "name": "test_run_name"
+          }
+        }
+      },
+      {
+        "name": "state!:i64",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d6252ad3b8e83a0c14b45278e78c18d95853b7114e2ce412a5c156563ce593a9"
+}

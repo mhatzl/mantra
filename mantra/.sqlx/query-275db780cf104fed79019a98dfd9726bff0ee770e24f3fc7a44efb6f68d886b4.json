@@ -1,0 +1,122 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                        select\n                            c.collected_at_utc as \"last_collected_date\",\n                            p.id,\n                            p.name,\n                            p.base,\n                            p.version,\n                            p.homepage,\n                            p.repository,\n                            p.license,\n                            gt.content as \"description?\"\n                        from Products p left join GeneralTexts gt on p.description_hash = gt.hash,\n                            Collections c\n                        where p.id = $1 and p.latest_collection = c.id\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "last_collected_date",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Collections",
+            "name": "collected_at_utc"
+          }
+        }
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "base",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "base"
+          }
+        }
+      },
+      {
+        "name": "version",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "name": "homepage",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "homepage"
+          }
+        }
+      },
+      {
+        "name": "repository",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "repository"
+          }
+        }
+      },
+      {
+        "name": "license",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "Products",
+            "name": "license"
+          }
+        }
+      },
+      {
+        "name": "description?",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "275db780cf104fed79019a98dfd9726bff0ee770e24f3fc7a44efb6f68d886b4"
+}

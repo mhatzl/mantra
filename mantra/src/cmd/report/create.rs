@@ -185,10 +185,11 @@ async fn create_requirements_structure<'db, 'templates>(
         .failed
         .iter()
         .chain(requirements_schema.requirements.skipped.iter())
-        .chain(requirements_schema.requirements.unverified.iter())
+        .chain(requirements_schema.requirements.unknown.iter())
         .chain(requirements_schema.requirements.verified.iter())
         .chain(requirements_schema.requirements.excluded.iter())
         .chain(requirements_schema.requirements.deprecated.iter())
+        .chain(requirements_schema.requirements.draft.iter())
     {
         let req_path = req.os_path().to_path(writer.base_path());
         if let Some(parent_path) = req_path.parent() {

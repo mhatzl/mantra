@@ -183,19 +183,32 @@ create table ObsoleteReviews (
     foreign key (product_id, review_name) references Reviews(product_id, name) on delete cascade
 );
 
+create table ValidReviews (
+    product_id text not null,
+    review_name text not null,
+    primary key (product_id, review_name),
+    foreign key (product_id, review_name) references Reviews(product_id, name) on delete cascade
+);
+
+create view ReviewStates as
+select
+    product_id,
+    review_name,
+    0 as state
+from ObsoleteReviews
+union all
+select
+    product_id,
+    review_name,
+    1 as state
+from ValidReviews;
+
 -- Contains test runs that are obsolete and must **not** be used for further analysis.
 create table ObsoleteTestRuns (
     product_id text not null,
     test_run_name text not null,
     primary key (product_id, test_run_name),
     foreign key (product_id, test_run_name) references TestRuns(product_id, name) on delete cascade
-);
-
-create table ValidReviews (
-    product_id text not null,
-    review_name text not null,
-    primary key (product_id, review_name),
-    foreign key (product_id, review_name) references Reviews(product_id, name) on delete cascade
 );
 
 create table ValidTestRuns (
@@ -607,6 +620,6 @@ select distinct
 from TracedLineCoveredByTests;
 
 create view CoverableLinesPerFilepath as
-select product_id, filepath, count(cov_line) as coverable_lines
+select product_id, cov_filepath, count(cov_line) as coverable_lines
 from ResolvedLineCoverageTestStates
-group by product_id, filepath;
+group by product_id, cov_filepath;

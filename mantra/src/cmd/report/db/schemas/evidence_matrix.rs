@@ -2,11 +2,8 @@ use mantra_schema::{
     SCHEMA_VERSION,
     product::ProductId,
     report::{
-        evidence_matrix::{
-            EvidenceMatrixSchema, RequirementCoverageByTestsOverview, RequirementEvidence,
-        },
+        evidence_matrix::{EvidenceMatrixSchema, RequirementEvidence},
         product::ProductReportSchema,
-        review::ReviewReference,
     },
     requirements::ReqId,
 };
@@ -14,7 +11,7 @@ use mantra_schema::{
 use crate::{
     cmd::report::db::schemas::requirement::{
         covering_test_cases, covering_test_runs, requirement_child_references,
-        requirement_parent_references,
+        requirement_coverage, requirement_parent_references, requirement_reviews,
     },
     db::MantraTransaction,
 };
@@ -31,22 +28,22 @@ pub async fn generate_evidence_matrix_schema<'db>(
             r.title,
             rs.state,
             case when exists (
-                select o.id
+                select o.req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = r.id
+                where o.product_id = $1 and o.req_id = r.id
             ) then true
             else false
             end as "optional!:bool",
             case when exists (
-                select m.id
+                select m.req_id
                 from ManualRequirements m
-                where m.product_id = $1 and m.id = r.id
+                where m.product_id = $1 and m.req_id = r.id
             ) then true
             else false
             end as "manual_verification!:bool"
         from Requirements r, RequirementVerificationStates rs
         where r.product_id = $1 and rs.product_id = $1
-        and r.id = rs.id
+        and r.id = rs.req_id
         "#,
         product.id
     )
@@ -84,53 +81,8 @@ async fn evidence_per_requirement<'db>(
     let children = requirement_child_references(transaction, product_id, &req_id).await?;
     let parents = requirement_parent_references(transaction, product_id, &req_id).await?;
 
-    let covering_test_runs = covering_test_runs(transaction, product_id, &req_id).await?;
-    let covering_test_cases = covering_test_cases(transaction, product_id, &req_id).await?;
-
-    let reviewed_in: Vec<ReviewReference> = sqlx::query!(
-        "
-        select product_id, review_name, review_date
-        from ManuallyVerifiedRequirements
-        where product_id = $1 and req_id = $2
-        ",
-        product_id,
-        req_id
-    )
-    .fetch_all(transaction.as_mut())
-    .await?
-    .into_iter()
-    .map(|r| ReviewReference {
-        product_id: product_id.clone(),
-        name: r.review_name,
-        utc_date: mantra_schema::reviews::date_from_str(&r.review_date)
-            .expect("Valid review date in database"),
-        state: mantra_schema::report::review::ReviewState::Valid, // TODO: replace with actual state
-    })
-    .collect();
-
-    let children = if children.is_empty() {
-        None
-    } else {
-        Some(children)
-    };
-    let parents = if parents.is_empty() {
-        None
-    } else {
-        Some(parents)
-    };
-    let covered_by = if covering_test_runs.is_empty() && covering_test_cases.is_empty() {
-        None
-    } else {
-        Some(RequirementCoverageByTestsOverview {
-            test_runs: covering_test_runs,
-            test_cases: covering_test_cases,
-        })
-    };
-    let reviewed_in = if reviewed_in.is_empty() {
-        None
-    } else {
-        Some(reviewed_in)
-    };
+    let covered_by = requirement_coverage(transaction, product_id, &req_id).await?;
+    let reviewed_in = requirement_reviews(transaction, product_id, &req_id).await?;
 
     Ok(RequirementEvidence {
         product_id: product_id.clone(),

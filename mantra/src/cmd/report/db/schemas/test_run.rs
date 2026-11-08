@@ -8,11 +8,11 @@ use mantra_schema::{
         annotations::TraceReference,
         product::ProductReportSchema,
         requirement::RequirementReference,
-        review::ReviewReference,
+        review::{ReviewReference, ReviewState},
         test_case::TestCaseReference,
         test_run::{TestCasesOverview, TestRunReference, TestRunReportSchema},
         tests::{
-            CoverageSummary, ResolvedLineCoverageState, TestCoverage, TestCoverageSummary,
+            CoverageSummary, ResolvedCoverageState, TestCoverage, TestCoverageSummary,
             TestCoveredFile, TestRelatedRequirement, TestRelatedRequirementKind, TestState,
             TestsSummary,
         },
@@ -30,30 +30,22 @@ pub async fn generate_test_run_schema<'db>(
     let metadata = sqlx::query!(
         r#"
         select
-            tr.nr_of_test_cases,
+            tr.utc_date,
             tr.duration_sec,
             gt.content as "description?",
-            og.content as "origin?",
-            bo.content as "base_origin?"
+            og.content as "origin?"
         from TestRuns tr
         left join GeneralTexts gt on tr.description_hash = gt.hash
         left join GeneralJson og on tr.origin_hash = og.hash
-        left join GeneralJson bo on tr.base_origin_hash = bo.hash
         where tr.product_id = $1 and tr.name = $2
-        and tr.utc_date = $3
         "#,
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_one(transaction.as_mut())
     .await?;
 
     let origin = match metadata.origin {
-        Some(o) => Some(serde_json::Value::from_str(&o)?),
-        None => None,
-    };
-    let base_origin = match metadata.base_origin {
         Some(o) => Some(serde_json::Value::from_str(&o)?),
         None => None,
     };
@@ -63,14 +55,12 @@ pub async fn generate_test_run_schema<'db>(
 
     let revision_records = sqlx::query!(
         "
-        select revision, comment
+        select revision, summary
         from TestRunRevisions
         where product_id = $1 and test_run_name = $2
-        and test_run_date = $3
         ",
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -86,11 +76,10 @@ pub async fn generate_test_run_schema<'db>(
                 select author
                 from TestRunRevisionAuthors
                 where product_id = $1 and test_run_name = $2
-                and test_run_date = $3 and revision = $4
+                and revision = $3
                 ",
                 product.id,
                 test_run.name,
-                test_run.utc_date,
                 rev.revision
             )
             .fetch_all(transaction.as_mut())
@@ -100,9 +89,9 @@ pub async fn generate_test_run_schema<'db>(
             .collect();
 
             revisions.push(Revision {
-                nr: rev.revision,
+                number: rev.revision,
                 authors,
-                comment: rev.comment,
+                summary: rev.summary,
             });
         }
 
@@ -114,12 +103,10 @@ pub async fn generate_test_run_schema<'db>(
         select tl.log_src, gt.content
         from TestRunLogs tl, GeneralTexts gt
         where tl.product_id = $1 and tl.test_run_name = $2
-        and tl.test_run_date = $3
         and tl.log_hash = gt.hash
         ",
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -144,12 +131,10 @@ pub async fn generate_test_run_schema<'db>(
         select rp.property_key, v.content
         from TestRunProperties rp, GeneralJson v
         where rp.product_id = $1 and rp.test_run_name = $2
-        and rp.test_run_date = $3
         and rp.value_hash = v.hash
         ",
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -171,16 +156,14 @@ pub async fn generate_test_run_schema<'db>(
 
     let parent_records = sqlx::query!(
         r#"
-            select th.parent_name, th.parent_date, ts.state as "state!:i64"
+            select th.parent_name, ts.state as "state!:i64"
             from TestRunHierarchies th, TestRunStates ts
             where th.product_id = $1 and ts.product_id = $1
-            and th.child_name = $2 and th.child_date = $3
+            and th.child_name = $2
             and ts.test_run_name = th.parent_name
-            and ts.test_run_date = th.parent_date
         "#,
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -194,7 +177,6 @@ pub async fn generate_test_run_schema<'db>(
             parents.push(TestRunReference {
                 product_id: product.id.clone(),
                 name: parent.parent_name,
-                utc_date: mantra_schema::test_runs::test_date_from_str(&parent.parent_date)?,
                 state: parent.state.try_into()?,
             })
         }
@@ -204,16 +186,14 @@ pub async fn generate_test_run_schema<'db>(
 
     let children_records = sqlx::query!(
         r#"
-            select th.child_name, th.child_date, ts.state as "state!:i64"
+            select th.child_name, ts.state as "state!:i64"
             from TestRunHierarchies th, TestRunStates ts
             where th.product_id = $1 and ts.product_id = $1
-            and th.parent_name = $2 and th.parent_date = $3
+            and th.parent_name = $2
             and ts.test_run_name = th.child_name
-            and ts.test_run_date = th.child_date
         "#,
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -227,7 +207,6 @@ pub async fn generate_test_run_schema<'db>(
             children.push(TestRunReference {
                 product_id: product.id.clone(),
                 name: child.child_name,
-                utc_date: mantra_schema::test_runs::test_date_from_str(&child.child_date)?,
                 state: child.state.try_into()?,
             })
         }
@@ -241,12 +220,10 @@ pub async fn generate_test_run_schema<'db>(
         from TestCases tc, ResolvedTestCaseStates rs
         where tc.product_id = $1 and rs.product_id = $1
         and tc.test_run_name = $2 and rs.test_run_name = $2
-        and tc.test_run_date = $3 and rs.test_run_date = $3
         and tc.name = rs.test_case_name
         ",
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -267,7 +244,6 @@ pub async fn generate_test_run_schema<'db>(
         let test_case = TestCaseReference {
             product_id: product.id.clone(),
             test_run_name: test_run.name.clone(),
-            test_run_date: test_run.utc_date,
             test_case_name: record.name,
             state,
         };
@@ -303,16 +279,16 @@ pub async fn generate_test_run_schema<'db>(
     };
 
     let override_records = sqlx::query!(
-        "
-        select distinct tro.review_name, tro.review_date
-        from TestRunLineCoverageOverrides tro
+        r#"
+        select distinct tro.review_name, rs.state as "state!:i64"
+        from TestRunLineCoverageOverrides tro, ReviewStates rs
         where tro.product_id = $1
         and tro.test_run_name = $2
-        and tro.test_run_date = $3
-        ",
+        and rs.product_id = $1
+        and rs.review_name = tro.review_name
+        "#,
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -326,8 +302,7 @@ pub async fn generate_test_run_schema<'db>(
             overrides.push(ReviewReference {
                 product_id: product.id.clone(),
                 name: record.review_name,
-                utc_date: mantra_schema::reviews::date_from_str(&record.review_date)?,
-                state: mantra_schema::report::review::ReviewState::Valid, //TODO set correct state
+                state: ReviewState::try_from(record.state)?,
             });
         }
 
@@ -341,14 +316,10 @@ pub async fn generate_test_run_schema<'db>(
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
         name: test_run.name.clone(),
-        utc_date: test_run.utc_date,
+        utc_date: mantra_schema::test_runs::test_date_from_str(&metadata.utc_date)?,
         state: test_run.state,
         description: metadata.description,
         revisions,
-        origin,
-        base_origin,
-        nr_of_test_cases: metadata.nr_of_test_cases,
-        properties,
         duration_sec,
         logs,
         test_cases,
@@ -357,6 +328,12 @@ pub async fn generate_test_run_schema<'db>(
         coverage,
         related_reqs,
         overridden_by,
+        origin,
+        schema_origin: todo!(),
+        config_origin: todo!(),
+        properties,
+        schema_properties: todo!(),
+        config_properties: todo!(),
     })
 }
 
@@ -370,15 +347,18 @@ async fn test_run_related_requirements<'db>(
         select distinct
             dt.req_id,
             rs.state,
-            case
-                when exists (
-                    select id
-                    from OptionalRequirements o
-                    where o.product_id = $1
-                    and o.id = dt.req_id
-                ) then true
-                else false
-            end as "optional!:bool",
+            exists (
+                select req_id
+                from OptionalRequirements o
+                where o.product_id = $1
+                and o.req_id = dt.req_id
+            ) as "optional!:bool",
+            exists (
+                select req_id
+                from ManualRequirements m
+                where m.product_id = $1
+                and m.req_id = dt.req_id
+            ) as "manual!:bool",
             dt.filepath,
             dt.file_hash,
             dt.line,
@@ -390,15 +370,14 @@ async fn test_run_related_requirements<'db>(
             RequirementVerificationStates rs
         where tc.product_id = $1 and dt.product_id = $1
         and rs.product_id = $1
-        and tc.test_run_name = $2 and tc.test_run_date = $3
+        and tc.test_run_name = $2
         and tc.filepath = dt.filepath and tc.file_hash = dt.file_hash
         and tc.traced_line = dt.line and dt.file_hash = t.file_hash
         and dt.line = t.line
-        and rs.id = dt.req_id
+        and rs.req_id = dt.req_id
         "#,
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -416,12 +395,12 @@ async fn test_run_related_requirements<'db>(
                 id: req_trace.req_id.try_into()?,
                 state: req_trace.state.try_into()?,
                 optional: req_trace.optional,
+                manual: req_trace.manual,
             })
             .or_default()
             .push(TraceReference {
-                filepath: RelativePathBuf::from(req_trace.filepath),
-                file_hash: FmtHash::with_inner(req_trace.file_hash),
-                line: req_trace.line,
+                path: RelativePathBuf::from(req_trace.filepath),
+                line: Some(req_trace.line),
                 kind: TraceKind::try_from(req_trace.kind)?,
             });
     }
@@ -442,35 +421,15 @@ async fn test_run_related_coverage<'db>(
     product: &ProductReportSchema,
     test_run: &TestRunReference,
 ) -> Result<Option<TestCoverage>, anyhow::Error> {
-    let coverable_lines_record = sqlx::query!(
-        r#"
-        select sum(coverable_lines) as "coverable_lines!:i64"
-        from CoverableLinesPerFilepath
-        where product_id = $1
-        "#,
-        product.id
-    )
-    .fetch_one(transaction.as_mut())
-    .await?;
-
-    let mut test_summary = TestCoverageSummary {
-        lines: CoverageSummary {
-            total: coverable_lines_record.coverable_lines,
-            ..Default::default()
-        },
-    };
-
     let resolved_lines: Vec<_> = sqlx::query!(
         "
-        select cov_filepath, cov_line, state
+        select cov_filepath, cov_line, cov_state
         from ResolvedTestRunLineCoverage
         where product_id = $1
         and test_run_name = $2
-        and test_run_date = $3
         ",
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?
@@ -478,7 +437,10 @@ async fn test_run_related_coverage<'db>(
     .map(|l| ResolvedLineCoverage {
         filepath: l.cov_filepath,
         line: l.cov_line,
-        state: l.state.try_into().expect("Valid line state in database"),
+        state: l
+            .cov_state
+            .try_into()
+            .expect("Valid line state in database"),
     })
     .collect();
 
@@ -487,20 +449,17 @@ async fn test_run_related_coverage<'db>(
         select distinct tc.filepath, tc.file_hash, traced_line, kind
         from TraceCoveragePerTestRuns tc, Traces t
         where tc.product_id = $1 and tc.test_run_name = $2
-        and tc.test_run_date = $3
         and tc.file_hash = t.file_hash and tc.traced_line = t.line
         ",
         product.id,
         test_run.name,
-        test_run.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?
     .into_iter()
     .map(|t| TraceReference {
-        filepath: RelativePathBuf::from(t.filepath),
-        file_hash: FmtHash::with_inner(t.file_hash),
-        line: t.traced_line,
+        path: RelativePathBuf::from(t.filepath),
+        line: Some(t.traced_line),
         kind: TraceKind::try_from(t.kind).expect("Valid trace kind in database"),
     })
     .collect();
@@ -529,13 +488,31 @@ async fn test_run_related_coverage<'db>(
             .or_insert(resolved_line);
     }
 
+    let coverable_lines_record = sqlx::query!(
+        r#"
+        select sum(coverable_lines) as "coverable_lines!:i64"
+        from CoverableLinesPerFilepath
+        where product_id = $1
+        "#,
+        product.id
+    )
+    .fetch_one(transaction.as_mut())
+    .await?;
+
+    let mut test_summary = TestCoverageSummary {
+        lines: CoverageSummary {
+            total: coverable_lines_record.coverable_lines,
+            ..Default::default()
+        },
+    };
+
     let mut covered_files = Vec::with_capacity(resolved_files.len());
 
     for (filepath, lines_map) in resolved_files {
         let file_record = sqlx::query!(
             "
             select file_hash
-            from ProductRelatedFiles
+            from ProductRelatedHashedFiles
             where product_id = $1 and filepath = $2
             ",
             product.id,
@@ -550,16 +527,18 @@ async fn test_run_related_coverage<'db>(
 
         for line in &lines {
             match line.state {
-                ResolvedLineCoverageState::Covered => lines_summary.covered.cnt += 1,
-                ResolvedLineCoverageState::Excluded => lines_summary.excluded.cnt += 1,
-                ResolvedLineCoverageState::OverriddenCovered => {
+                ResolvedCoverageState::Covered => lines_summary.covered.cnt += 1,
+                ResolvedCoverageState::Excluded => lines_summary.excluded.cnt += 1,
+                ResolvedCoverageState::Uncovered => lines_summary.uncovered.cnt += 1,
+                ResolvedCoverageState::Unknown => lines_summary.unknown.cnt += 1,
+                ResolvedCoverageState::OverriddenCovered => {
                     lines_summary.overridden_covered.cnt += 1
                 }
-                ResolvedLineCoverageState::OverriddenUncovered => {
+                ResolvedCoverageState::OverriddenUncovered => {
                     lines_summary.overridden_uncovered.cnt += 1
                 }
-                ResolvedLineCoverageState::Uncovered => {
-                    // Note: not relevant, because a test run may not have covered all possible files, so uncovered cnt is the diff from total to all other line states
+                ResolvedCoverageState::OverriddenExcluded => {
+                    lines_summary.overridden_excluded.cnt += 1
                 }
             }
         }
@@ -572,11 +551,16 @@ async fn test_run_related_coverage<'db>(
         })
     }
 
-    test_summary.lines.uncovered.cnt = test_summary.lines.total
+    // not every coverable line may have been reported by the test.
+    // we treat those lines as "unknown"
+    test_summary.lines.unknown.cnt += test_summary.lines.total
         - (test_summary.lines.covered.cnt
             + test_summary.lines.excluded.cnt
+            + test_summary.lines.uncovered.cnt
+            + test_summary.lines.unknown.cnt
             + test_summary.lines.overridden_covered.cnt
-            + test_summary.lines.overridden_uncovered.cnt);
+            + test_summary.lines.overridden_uncovered.cnt
+            + test_summary.lines.overridden_excluded.cnt);
 
     test_summary.lines.update_percentages();
 

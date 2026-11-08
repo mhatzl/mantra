@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::Context;
 use mantra_schema::{
     FmtHash, Revision, SCHEMA_VERSION,
     report::{
@@ -31,25 +32,19 @@ pub async fn generate_review_schema<'db>(
         select
             gt.content as "description?",
             og.content as "origin?",
-            bo.content as "base_origin?"
+            r.utc_date
         from Reviews r
             left join GeneralTexts gt on r.description_hash = gt.hash
             left join GeneralJson og on r.origin_hash = og.hash
-            left join GeneralJson bo on r.base_origin_hash = bo.hash
-        where r.product_id = $1 and r.name = $2 and r.utc_date = $3
+        where r.product_id = $1 and r.name = $2
         "#,
         product.id,
         review.name,
-        review.utc_date
     )
     .fetch_one(transaction.as_mut())
     .await?;
 
     let origin = match metadata.origin {
-        Some(o) => Some(serde_json::Value::from_str(&o)?),
-        None => None,
-    };
-    let base_origin = match metadata.base_origin {
         Some(o) => Some(serde_json::Value::from_str(&o)?),
         None => None,
     };
@@ -59,11 +54,9 @@ pub async fn generate_review_schema<'db>(
         select author
         from ReviewAuthors
         where product_id = $1 and review_name = $2
-        and review_date = $3
         ",
         product.id,
         review.name,
-        review.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?
@@ -73,14 +66,12 @@ pub async fn generate_review_schema<'db>(
 
     let revision_records = sqlx::query!(
         "
-        select revision, comment
+        select revision, summary
         from ReviewRevisions
         where product_id = $1 and review_name = $2
-        and review_date = $3
         ",
         product.id,
         review.name,
-        review.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -96,11 +87,10 @@ pub async fn generate_review_schema<'db>(
                 select author
                 from ReviewRevisionAuthors
                 where product_id = $1 and review_name = $2
-                and review_date = $3 and revision = $4
+                and revision = $3
                 ",
                 product.id,
                 review.name,
-                review.utc_date,
                 rev.revision
             )
             .fetch_all(transaction.as_mut())
@@ -110,9 +100,9 @@ pub async fn generate_review_schema<'db>(
             .collect();
 
             revisions.push(Revision {
-                nr: rev.revision,
+                number: rev.revision,
                 authors,
-                comment: rev.comment,
+                summary: rev.summary,
             });
         }
 
@@ -122,13 +112,12 @@ pub async fn generate_review_schema<'db>(
     let property_records = sqlx::query!(
         "
         select rp.property_key, v.content
-        from ReviewProperties rp left join GeneralJson v on rp.value_hash = v.hash
+        from ReviewProperties rp, GeneralJson v
         where rp.product_id = $1 and rp.review_name = $2
-        and rp.review_date = $3
+        and rp.value_hash = v.hash
         ",
         product.id,
         review.name,
-        review.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -153,27 +142,25 @@ pub async fn generate_review_schema<'db>(
         select
             vr.req_id,
             rs.state,
-            case
-                when exists (
-                    select id
-                    from OptionalRequirements o
-                    where o.product_id = $1
-                    and o.id = vr.req_id
-                ) then true
-                else false
-            end as "optional!:bool",
+            exists (
+                select req_id
+                from OptionalRequirements o
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "optional!:bool",
+            exists (
+                select req_id
+                from ManualRequirements o
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "manual!:bool",
             gt.content
-        from
-            ManuallyVerifiedRequirements vr left join GeneralTexts gt on vr.comment_hash = gt.hash,
-            RequirementVerificationStates rs
+        from RequirementVerificationStates rs, ManuallyVerifiedRequirements vr, GeneralTexts gt
         where vr.product_id = $1 and rs.product_id = $1
         and vr.review_name = $2
-        and vr.review_date = $3
-        and vr.req_id = rs.id
+        and vr.req_id = rs.req_id
+        and vr.rational_hash = gt.hash
         "#,
         product.id,
         review.name,
-        review.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?
@@ -190,8 +177,9 @@ pub async fn generate_review_schema<'db>(
                 .try_into()
                 .expect("Valid requirement state in database"),
             optional: r.optional,
+            manual: r.manual,
         },
-        comment: r.content,
+        rational: r.content,
     })
     .collect();
     let requirements = if requirements.is_empty() {
@@ -213,17 +201,21 @@ pub async fn generate_review_schema<'db>(
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
         name: review.name.clone(),
-        utc_date: review.utc_date,
+        utc_date: mantra_schema::reviews::date_from_str(&metadata.utc_date)
+            .context("Converting stored review date")?,
         state: review.state,
         authors,
         description: metadata.description,
-        origin,
-        base_origin,
-        properties,
         revisions,
         requirements,
         test_run_overrides,
         ignored_entries,
+        origin,
+        schema_origin: todo!(),
+        config_origin: todo!(),
+        properties,
+        schema_properties: todo!(),
+        config_properties: todo!(),
     })
 }
 
@@ -234,31 +226,27 @@ async fn review_test_run_overrides<'db>(
 ) -> Result<Vec<ResolvedOverrideTestRun>, anyhow::Error> {
     let overriden_test_runs = sqlx::query!(
         "
-        select test_run_name, test_run_date
+        select test_run_name
         from TestCaseOverrides
         where product_id = $1
         and review_name = $2
-        and review_date = $3
 
         union
 
-        select test_run_name, test_run_date
+        select test_run_name
         from TestRunLineCoverageOverrides
         where product_id = $1
         and review_name = $2
-        and review_date = $3
 
         union
 
-        select test_run_name, test_run_date
+        select test_run_name
         from TestCaseLineCoverageOverrides
         where product_id = $1
         and review_name = $2
-        and review_date = $3
         ",
         product.id,
         review.name,
-        review.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -272,7 +260,6 @@ async fn review_test_run_overrides<'db>(
             from TestCaseOverrides
             where product_id = $1
             and test_run_name = $2
-            and test_run_date = $3
 
             union
 
@@ -280,11 +267,9 @@ async fn review_test_run_overrides<'db>(
             from TestCaseLineCoverageOverrides
             where product_id = $1
             and test_run_name = $2
-            and test_run_date = $3
             ",
             product.id,
             test_run.test_run_name,
-            test_run.test_run_date
         )
         .fetch_all(transaction.as_mut())
         .await?;
@@ -298,12 +283,10 @@ async fn review_test_run_overrides<'db>(
                 from TestCases
                 where product_id = $1
                 and test_run_name = $2
-                and test_run_date = $3
-                and name = $4
+                and name = $3
                 ",
                 product.id,
                 test_run.test_run_name,
-                test_run.test_run_date,
                 test_case.test_case_name
             )
             .fetch_one(transaction.as_mut())
@@ -317,12 +300,10 @@ async fn review_test_run_overrides<'db>(
                 from ResolvedTestCaseStates
                 where product_id = $1
                 and test_run_name = $2
-                and test_run_date = $3
-                and test_case_name = $4
+                and test_case_name = $3
                 ",
                 product.id,
                 test_run.test_run_name,
-                test_run.test_run_date,
                 test_case.test_case_name
             )
             .fetch_one(transaction.as_mut())
@@ -336,13 +317,11 @@ async fn review_test_run_overrides<'db>(
                 from TestCaseOverrides, GeneralTexts
                 where product_id = $1
                 and test_run_name = $2
-                and test_run_date = $3
-                and test_case_name = $4
-                and comment_hash = hash
+                and test_case_name = $3
+                and rational_hash = hash
                 ",
                 product.id,
                 test_run.test_run_name,
-                test_run.test_run_date,
                 test_case.test_case_name
             )
             .fetch_optional(transaction.as_mut())
@@ -354,12 +333,10 @@ async fn review_test_run_overrides<'db>(
                 from TestCaseLineCoverageOverrides
                 where product_id = $1
                 and test_run_name = $2
-                and test_run_date = $3
-                and test_case_name = $4
+                and test_case_name = $3
                 ",
                 product.id,
                 test_run.test_run_name,
-                test_run.test_run_date,
                 test_case.test_case_name
             )
             .fetch_all(transaction.as_mut())
@@ -372,8 +349,8 @@ async fn review_test_run_overrides<'db>(
                     r#"
                     select
                         co.cov_line,
-                        co.hits as new_hits,
-                        tc.hits as old_hits,
+                        co.covered,
+                        tc.hits as original_hits,
                         gt.content
                     from
                         TestCaseLineCoverageOverrides co,
@@ -381,15 +358,13 @@ async fn review_test_run_overrides<'db>(
                         GeneralTexts gt
                     where co.product_id = $1 and tc.product_id = $1
                     and co.test_run_name = $2 and tc.test_run_name = $2
-                    and co.test_run_date = $3 and tc.test_run_date = $3
-                    and co.test_case_name = $4 and tc.test_case_name = $4
-                    and co.cov_filepath = $5 and tc.cov_filepath = $5
+                    and co.test_case_name = $3 and tc.test_case_name = $3
+                    and co.cov_filepath = $4 and tc.cov_filepath = $4
                     and co.cov_line = tc.cov_line
-                    and co.comment_hash = gt.hash
+                    and co.rational_hash = gt.hash
                     "#,
                     product.id,
                     test_run.test_run_name,
-                    test_run.test_run_date,
                     test_case.test_case_name,
                     filepath.cov_filepath
                 )
@@ -402,9 +377,9 @@ async fn review_test_run_overrides<'db>(
                         .into_iter()
                         .map(|l| ResolvedOverrideCoveredLineInfo {
                             nr: l.cov_line,
-                            new_hits: l.new_hits,
-                            old_hits: l.old_hits,
-                            comment: l.content,
+                            covered: l.covered,
+                            original_hits: l.original_hits,
+                            rational: l.content,
                         })
                         .collect(),
                 })
@@ -414,9 +389,6 @@ async fn review_test_run_overrides<'db>(
                 test_case: TestCaseReference {
                     product_id: product.id.clone(),
                     test_run_name: test_run.test_run_name.clone(),
-                    test_run_date: mantra_schema::test_runs::test_date_from_str(
-                        &test_run.test_run_date,
-                    )?,
                     test_case_name: test_case.test_case_name,
                     state: resolved_state,
                 },
@@ -439,11 +411,9 @@ async fn review_test_run_overrides<'db>(
                 select count(*) as "len" from TestRunLineCoverageOverrides
                 where product_id = $1
                 and test_run_name = $2
-                and test_run_date = $3
                 "#,
                 product.id,
                 test_run.test_run_name,
-                test_run.test_run_date,
             )
             .fetch_one(transaction.as_mut())
             .await?
@@ -457,11 +427,9 @@ async fn review_test_run_overrides<'db>(
             from TestRunLineCoverageOverrides
             where product_id = $1
             and test_run_name = $2
-            and test_run_date = $3
             ",
             product.id,
             test_run.test_run_name,
-            test_run.test_run_date
         )
         .fetch_all(transaction.as_mut())
         .await?;
@@ -471,8 +439,8 @@ async fn review_test_run_overrides<'db>(
                 r#"
                 select
                     co.cov_line,
-                    co.hits as new_hits,
-                    tr.hits as old_hits,
+                    co.covered,
+                    tr.hits as original_hits,
                     gt.content
                 from
                     TestRunLineCoverageOverrides co,
@@ -480,14 +448,12 @@ async fn review_test_run_overrides<'db>(
                     GeneralTexts gt
                 where co.product_id = $1 and tr.product_id = $1
                 and co.test_run_name = $2 and tr.test_run_name = $2
-                and co.test_run_date = $3 and tr.test_run_date = $3
-                and co.cov_filepath = $4 and tr.cov_filepath = $4
+                and co.cov_filepath = $3 and tr.cov_filepath = $3
                 and co.cov_line = tr.cov_line
-                and co.comment_hash = gt.hash
+                and co.rational_hash = gt.hash
                 "#,
                 product.id,
                 test_run.test_run_name,
-                test_run.test_run_date,
                 filepath.cov_filepath
             )
             .fetch_all(transaction.as_mut())
@@ -499,9 +465,9 @@ async fn review_test_run_overrides<'db>(
                     .into_iter()
                     .map(|l| ResolvedOverrideCoveredLineInfo {
                         nr: l.cov_line,
-                        new_hits: l.new_hits,
-                        old_hits: l.old_hits,
-                        comment: l.content,
+                        covered: l.covered,
+                        original_hits: l.original_hits,
+                        rational: l.content,
                     })
                     .collect(),
             })
@@ -513,11 +479,9 @@ async fn review_test_run_overrides<'db>(
             from TestRunStates
             where product_id = $1
             and test_run_name = $2
-            and test_run_date = $3
             "#,
             product.id,
             test_run.test_run_name,
-            test_run.test_run_date
         )
         .fetch_one(transaction.as_mut())
         .await?
@@ -528,8 +492,6 @@ async fn review_test_run_overrides<'db>(
             test_run: TestRunReference {
                 product_id: product.id.clone(),
                 name: test_run.test_run_name,
-                utc_date: mantra_schema::test_runs::test_date_from_str(&test_run.test_run_date)
-                    .expect("Valid test date in database"),
                 state: test_run_state,
             },
             test_cases: if test_cases.is_empty() {
@@ -558,12 +520,10 @@ async fn review_ignored_entries<'db>(
         from IgnoredReviewEntries ie, GeneralJson gj
         where ie.product_id = $1
         and ie.review_name = $2
-        and ie.review_date = $3
         and ie.entry_hash = gj.hash
         ",
         review.product_id,
         review.name,
-        review.utc_date
     )
     .fetch_all(transaction.as_mut())
     .await?;
@@ -580,7 +540,7 @@ async fn review_ignored_entries<'db>(
     for db_entry in db_entries {
         let entry: DbIgnoredEntry = serde_json::from_str(&db_entry.content)?;
 
-        async fn get_comment<'d>(
+        async fn get_rational<'d>(
             transaction: &mut MantraTransaction<'d>,
             comment_hash: FmtHash,
         ) -> Result<String, anyhow::Error> {
@@ -599,56 +559,50 @@ async fn review_ignored_entries<'db>(
         }
 
         match entry {
-            DbIgnoredEntry::Requirement { id, comment_hash } => {
+            DbIgnoredEntry::Requirement { id, rational_hash } => {
                 requirements.push(IgnoredManualRequirementVerification {
                     id,
-                    comment: get_comment(transaction, comment_hash).await?,
+                    rational: get_rational(transaction, rational_hash).await?,
                 })
             }
             DbIgnoredEntry::TestCaseStateOverride {
                 test_run_name,
-                test_run_date: test_run_utc_date,
                 test_case_name,
                 state,
-                comment_hash,
+                rational_hash,
             } => test_case_state_overrides.push(IgnoredTestCaseStateOverride {
                 test_run_name,
-                test_run_date: test_run_utc_date,
                 test_case_name,
                 state,
-                comment: get_comment(transaction, comment_hash).await?,
+                rational: get_rational(transaction, rational_hash).await?,
             }),
             DbIgnoredEntry::TestCaseLineCoverageOverride {
                 test_run_name,
-                test_run_date: test_run_utc_date,
                 test_case_name,
                 cov_filepath,
                 cov_line,
-                hits,
-                comment_hash,
+                covered,
+                rational_hash,
             } => test_case_line_coverage_overrides.push(IgnoredTestCaseLineCoverageOverride {
                 test_run_name,
-                test_run_date: test_run_utc_date,
                 test_case_name,
                 cov_filepath,
                 cov_line,
-                hits,
-                comment: get_comment(transaction, comment_hash).await?,
+                covered,
+                rational: get_rational(transaction, rational_hash).await?,
             }),
             DbIgnoredEntry::TestRunLineCoverageOverride {
                 test_run_name,
-                test_run_date: test_run_utc_date,
                 cov_filepath,
                 cov_line,
-                hits,
-                comment_hash,
+                covered,
+                rational_hash,
             } => test_run_line_coverage_overrides.push(IgnoredTestRunLineCoverageOverride {
                 test_run_name,
-                test_run_date: test_run_utc_date,
                 cov_filepath,
                 cov_line,
-                hits,
-                comment: get_comment(transaction, comment_hash).await?,
+                covered,
+                rational: get_rational(transaction, rational_hash).await?,
             }),
         };
     }

@@ -50,7 +50,7 @@ pub async fn generate_product_schemas<'db>(
                             gt.content as "description?"
                         from Products p left join GeneralTexts gt on p.description_hash = gt.hash,
                             Collections c
-                        where id = $1 and p.last_collect_nr = c.nr
+                        where p.id = $1 and p.latest_collection = c.id
                     "#,
                     id
                 )
@@ -81,7 +81,7 @@ pub async fn generate_product_schemas<'db>(
                         gt.content as "description?"
                     from Products p left join GeneralTexts gt on p.description_hash = gt.hash,
                         Collections c
-                    where p.last_collect_nr = c.nr
+                    where p.latest_collection = c.id
                 "#
             )
             .fetch_all(transaction.as_mut())
@@ -159,23 +159,22 @@ pub async fn product_root_requirements<'db>(
         r#"
         select
             rs.product_id,
-            rs.id,
+            rs.req_id,
             rs.state,
-            case when exists (
-                select id
+            exists (
+                select req_id
                 from OptionalRequirements o
-                where o.product_id = $1 and o.id = rs.id
-            ) then true
-            else false
-            end as "optional!:bool"
-        from RequirementVerificationStates rs
-        where rs.product_id = $1 and not exists (
-            select rh.parent_req_id
-            from RequirementHierarchies rh
-            where rh.child_product_id = rs.product_id
-            and rh.child_req_id = rs.id
-            and rh.parent_product_id = $1 -- child to other product is fine
-        )
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "optional!:bool",
+            exists (
+                select req_id
+                from ManualRequirements o
+                where o.product_id = $1 and o.req_id = rs.req_id
+            ) as "manual!:bool"
+        from RequirementVerificationStates rs, RootRequirements rr
+        where rs.product_id = $1
+        and rr.product_id = rs.product_id
+        and rr.req_id = rs.req_id
         "#,
         product_id
     )
@@ -184,9 +183,10 @@ pub async fn product_root_requirements<'db>(
     .into_iter()
     .map(|r| RequirementReference {
         product_id: product_id.clone(),
-        id: ReqId::new(r.id).expect("Valid requirement ID in database"),
+        id: ReqId::new(r.req_id).expect("Valid requirement ID in database"),
         state: RequirementState::try_from(r.state).expect("Valid requirement state in database"),
         optional: r.optional,
+        manual: r.manual,
     })
     .collect();
 
@@ -199,14 +199,13 @@ pub async fn product_root_test_runs<'db>(
 ) -> Result<Vec<TestRunReference>, anyhow::Error> {
     let root_test_runs = sqlx::query!(
         r#"
-        select ts.product_id, ts.test_run_name, ts.test_run_date, ts.state as "state!:i64"
+        select ts.product_id, ts.test_run_name, ts.state as "state!:i64"
         from TestRunStates ts
         where ts.product_id = $1 and not exists (
-            select th.parent_name, th.parent_date
+            select th.parent_name
             from TestRunHierarchies th
             where th.product_id = $1
             and th.child_name = ts.test_run_name
-            and th.child_date = ts.test_run_date
         )
         "#,
         product_id
@@ -217,8 +216,6 @@ pub async fn product_root_test_runs<'db>(
     .map(|tr| TestRunReference {
         product_id: product_id.clone(),
         name: tr.test_run_name,
-        utc_date: mantra_schema::test_runs::test_date_from_str(&tr.test_run_date)
-            .expect("Valid test run date in database"),
         state: TestState::try_from(tr.state).expect("Valid test run state in database"),
     })
     .collect();
@@ -231,11 +228,11 @@ pub async fn product_reviews<'db>(
     product_id: &ProductId,
 ) -> Result<Vec<ReviewReference>, anyhow::Error> {
     let reviews = sqlx::query!(
-        "
-        select product_id, name, utc_date
-        from Reviews
+        r#"
+        select product_id, review_name, state
+        from ReviewStates
         where product_id = $1
-        ",
+        "#,
         product_id
     )
     .fetch_all(transaction.as_mut())
@@ -243,10 +240,9 @@ pub async fn product_reviews<'db>(
     .into_iter()
     .map(|r| ReviewReference {
         product_id: product_id.clone(),
-        name: r.name,
-        utc_date: mantra_schema::reviews::date_from_str(&r.utc_date)
-            .expect("Valid review date in database"),
-        state: mantra_schema::report::review::ReviewState::Valid, // TODO: replace with accurate state
+        name: r.review_name,
+        state: mantra_schema::report::review::ReviewState::try_from(r.state)
+            .expect("Valid review state in database"),
     })
     .collect();
 

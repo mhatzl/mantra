@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select tc.name, rs.state\n        from TestCases tc, ResolvedTestCaseStates rs\n        where tc.product_id = $1 and rs.product_id = $1\n        and tc.test_run_name = $2 and rs.test_run_name = $2\n        and tc.name = rs.test_case_name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCases",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "state",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ResolvedTestCaseStates",
+            "name": "state"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "51c688d3c5624203320b42d0c88ae0e3c8cab59385c55efa6311b65259e948df"
+}
