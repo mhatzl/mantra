@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select sp.property_key, gj.content\n        from SchemaReviewProperties sp, Reviews r, GeneralJson gj\n        where r.product_id = $1 and r.name = $2\n        and r.schema_hash = sp.schema_hash\n        and gj.hash = sp.value_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "SchemaReviewProperties",
+            "name": "property_key"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "7878211f1c84711b911e696618efca7b971234a99b5dcde72ca9f44a90359216"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RequirementsWithSatisfyTraces\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "de7ce0129735f4413d62e06818e1993347353e9ee781aba9e3dc80038808c42d"
+}

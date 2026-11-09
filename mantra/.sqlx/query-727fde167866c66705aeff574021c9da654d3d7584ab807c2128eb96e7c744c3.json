@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into RequirementsWithTestCasesCoveringSatisfyAndVerifyTraces (\n                product_id,\n                req_id,\n                test_run_name,\n                test_case_name\n            )\n            select distinct rt.product_id, rt.req_id, ct.test_run_name, ct.test_case_name\n            from TracesCoveredByTestCases ct, Traces t, DirectProductReqTraces rt\n            where ct.product_id = rt.product_id\n            and ct.file_hash = rt.file_hash and ct.traced_line = rt.line\n            and ct.file_hash = t.file_hash and ct.traced_line = t.line\n            and ct.filepath = rt.filepath\n            -- verify trace\n            and t.kind = $2\n            -- satisfy trace covered by same test case\n            and exists (\n                select rti.req_id\n                from TracesCoveredByTestCases cti, Traces ti, DirectProductReqTraces rti\n                where cti.product_id = rti.product_id\n                and cti.file_hash = rti.file_hash and cti.traced_line = rti.line\n                and cti.file_hash = ti.file_hash and cti.traced_line = ti.line\n                and cti.filepath = rti.filepath\n                -- same req\n                and rt.product_id = rti.product_id\n                and rt.req_id = rti.req_id\n                -- same test case\n                and ct.product_id = cti.product_id\n                and ct.test_run_name = cti.test_run_name\n                and ct.test_case_name = cti.test_case_name\n                -- satisfy trace\n                and ti.kind = $1\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "727fde167866c66705aeff574021c9da654d3d7584ab807c2128eb96e7c744c3"
+}

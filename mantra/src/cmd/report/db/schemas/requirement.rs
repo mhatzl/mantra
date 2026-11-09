@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use mantra_schema::{
-    SCHEMA_VERSION,
+    Origin, Properties, SCHEMA_VERSION,
     annotations::TraceKind,
     media_type::MediaType,
     mime_guess::Mime,
@@ -127,6 +127,12 @@ pub async fn generate_requirement_schema<'db>(
         media_type,
     };
 
+    let schema_origin = requirement_schema_origin(transaction, &product.id, req_id).await?;
+    let schema_properties = requirement_schema_properties(transaction, &product.id, req_id).await?;
+
+    let config_origin = requirement_config_origin(transaction, &product.id, req_id).await?;
+    let config_properties = requirement_config_properties(transaction, &product.id, req_id).await?;
+
     Ok(RequirementReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         state: req.state.try_into()?,
@@ -151,12 +157,134 @@ pub async fn generate_requirement_schema<'db>(
         replaces,
         replaced_by,
         origin: req.origin.and_then(|o| serde_json::from_str(&o).ok()),
-        schema_origin: todo!(),
-        config_origin: todo!(),
+        schema_origin,
+        config_origin,
         properties,
-        schema_properties: todo!(),
-        config_properties: todo!(),
+        schema_properties,
+        config_properties,
     })
+}
+
+async fn requirement_schema_origin<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Origin>, anyhow::Error> {
+    let record = sqlx::query!(
+        "
+        select gj.content
+        from Schemas s, Requirements r, GeneralJson gj
+        where r.product_id = $1 and r.id = $2
+        and r.schema_hash = s.content_hash
+        and gj.hash = s.origin_hash
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_optional(transaction.as_mut())
+    .await?;
+
+    match record {
+        Some(r) => Ok(Some(serde_json::Value::from_str(&r.content)?)),
+        None => Ok(None),
+    }
+}
+
+async fn requirement_schema_properties<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Properties>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select sp.property_key, gj.content
+        from SchemaRequirementProperties sp, Requirements r, GeneralJson gj
+        where r.product_id = $1 and r.id = $2
+        and r.schema_hash = sp.schema_hash
+        and gj.hash = sp.value_hash
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut props = Properties::with_capacity(records.len());
+
+    for record in records {
+        props.insert(
+            record.property_key,
+            serde_json::Value::from_str(&record.content)?,
+        );
+    }
+
+    Ok(Some(props))
+}
+
+async fn requirement_config_origin<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Origin>, anyhow::Error> {
+    let record = sqlx::query!(
+        "
+        select gj.content
+        from Requirements r, RequirementCollectConfigs rc, ConfigCollectedSchemas cs, GeneralJson gj
+        where r.product_id = $1 and r.id = $2
+        and r.schema_hash = cs.schema_hash
+        and cs.cfg_entry = rc.cfg_entry
+        and gj.hash = rc.origin_hash
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_optional(transaction.as_mut())
+    .await?;
+
+    match record {
+        Some(r) => Ok(Some(serde_json::Value::from_str(&r.content)?)),
+        None => Ok(None),
+    }
+}
+
+async fn requirement_config_properties<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<Properties>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select cp.property_key, gj.content
+        from Requirements r, ConfigCollectedSchemas cs, ConfigRequirementProperties cp, GeneralJson gj
+        where r.product_id = $1 and r.id = $2
+        and r.schema_hash = cs.schema_hash
+        and cs.cfg_entry = cp.cfg_entry
+        and gj.hash = cp.value_hash
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut props = Properties::with_capacity(records.len());
+
+    for record in records {
+        props.insert(
+            record.property_key,
+            serde_json::Value::from_str(&record.content)?,
+        );
+    }
+
+    Ok(Some(props))
 }
 
 pub(super) async fn requirement_content_media_type<'db>(
@@ -197,8 +325,24 @@ pub(super) async fn requirement_coverage<'db>(
     product_id: &ProductId,
     req_id: &ReqId,
 ) -> Result<Option<Vec<RequirementCoverage>>, anyhow::Error> {
-    let mut tests = coverage_by_test_runs(transaction, product_id, req_id).await?;
-    tests.extend(coverage_by_test_cases(transaction, product_id, req_id).await?);
+    let req_has_satisfy_trace = sqlx::query!(
+        "
+        select req_id
+        from RequirementsWithSatisfyTraces
+        where product_id = $1 and req_id = $2
+        ",
+        product_id,
+        req_id,
+    )
+    .fetch_optional(transaction.as_mut())
+    .await?
+    .is_some();
+
+    let mut tests =
+        coverage_by_test_runs(transaction, product_id, req_id, req_has_satisfy_trace).await?;
+    tests.extend(
+        coverage_by_test_cases(transaction, product_id, req_id, req_has_satisfy_trace).await?,
+    );
 
     if tests.is_empty() {
         Ok(None)
@@ -441,6 +585,7 @@ async fn coverage_by_test_runs<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
+    req_has_satisfy_trace: bool,
 ) -> Result<Vec<RequirementCoverage>, anyhow::Error> {
     let test_run_references = covering_test_runs(transaction, product_id, req_id).await?;
 
@@ -457,7 +602,7 @@ async fn coverage_by_test_runs<'db>(
             and dt.file_hash = t.file_hash
             and dt.line = t.line
             ",
-            test_run.product_id,
+            product_id,
             req_id,
             test_run.name,
         )
@@ -471,6 +616,23 @@ async fn coverage_by_test_runs<'db>(
         })
         .collect();
 
+        let test_has_verify_but_no_satisfy_trace = sqlx::query!(
+            "
+            select req_id
+            from RequirementsWithTestRunsCoveringVerifyTracesButNoSatisfyTraces
+            where product_id = $1 and req_id = $2
+            and test_run_name = $3
+            ",
+            product_id,
+            req_id,
+            test_run.name
+        )
+        .fetch_optional(transaction.as_mut())
+        .await?
+        .is_some();
+
+        let missing_satisfy_trace = req_has_satisfy_trace && test_has_verify_but_no_satisfy_trace;
+
         test_runs.push(RequirementCoverage {
             test: TestReference::TestRun(TestRunReference {
                 product_id: test_run.product_id,
@@ -483,7 +645,7 @@ async fn coverage_by_test_runs<'db>(
                 Some(covered_traces)
             },
             directly_verified: false, // test run cannot directly verify a requirement
-            missing_satisfy_trace: todo!(),
+            missing_satisfy_trace,
         });
     }
 
@@ -494,6 +656,7 @@ async fn coverage_by_test_cases<'db>(
     transaction: &mut MantraTransaction<'db>,
     product_id: &ProductId,
     req_id: &ReqId,
+    req_has_satisfy_trace: bool,
 ) -> Result<Vec<RequirementCoverage>, anyhow::Error> {
     let test_case_references = covering_test_cases(transaction, product_id, req_id).await?;
 
@@ -543,6 +706,25 @@ async fn coverage_by_test_cases<'db>(
         .await?
         .is_some();
 
+        let test_has_verify_but_no_satisfy_trace = sqlx::query!(
+            "
+            select req_id
+            from RequirementsWithTestCasesCoveringVerifyTracesButNoSatisfyTraces
+            where product_id = $1 and req_id = $2
+            and test_run_name = $3
+            and test_case_name = $4
+            ",
+            product_id,
+            req_id,
+            test_case.test_run_name,
+            test_case.test_case_name
+        )
+        .fetch_optional(transaction.as_mut())
+        .await?
+        .is_some();
+
+        let missing_satisfy_trace = req_has_satisfy_trace && test_has_verify_but_no_satisfy_trace;
+
         test_cases.push(RequirementCoverage {
             test: TestReference::TestCase(TestCaseReference {
                 product_id: test_case.product_id,
@@ -556,7 +738,7 @@ async fn coverage_by_test_cases<'db>(
             } else {
                 Some(covered_traces)
             },
-            missing_satisfy_trace: todo!(),
+            missing_satisfy_trace,
         });
     }
 

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select req_id\n        from RequirementsWithSatisfyTraces\n        where product_id = $1 and req_id = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementsWithSatisfyTraces",
+            "name": "req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7344fb304b89aac4e62652009d468baac8d597b30383e086eddca6a11e1802e2"
+}

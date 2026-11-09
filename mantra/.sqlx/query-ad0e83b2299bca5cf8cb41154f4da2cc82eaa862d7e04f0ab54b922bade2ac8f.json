@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select gj.content\n        from Reviews r, ReviewCollectConfigs rc, ConfigCollectedSchemas cs, GeneralJson gj\n        where r.product_id = $1 and r.name = $2\n        and r.schema_hash = cs.schema_hash\n        and cs.cfg_entry = rc.cfg_entry\n        and gj.hash = rc.origin_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ad0e83b2299bca5cf8cb41154f4da2cc82eaa862d7e04f0ab54b922bade2ac8f"
+}

@@ -183,7 +183,7 @@ async fn collect_well_known<'db, 'c>(
 
         match sent_data.data {
             CollectedWellKnown::Test(shallow_test_run) => {
-                shallow_test_run_data.push(shallow_test_run);
+                shallow_test_run_data.push(*shallow_test_run);
             }
             CollectedWellKnown::Coverage(well_known_coverage_data) => {
                 coverage_data.push(well_known_coverage_data);
@@ -209,9 +209,7 @@ async fn collect_well_known<'db, 'c>(
             .into_iter()
             .next()
             .expect("Checked above that one test run was collected");
-        let test_run = shallow_data.into_test_run(covered_files, coverage_timestamp);
-
-        test_run
+        shallow_data.into_test_run(covered_files, coverage_timestamp)
     } else {
         // unclear which test run maps to which coverage data => create new test run whith the collected ones as children
         let (name, utc_date, test_runs) =
@@ -256,7 +254,7 @@ async fn collect_well_known<'db, 'c>(
 }
 
 fn to_sub_test_runs(
-    shallow_test_run_data: Vec<Box<ShallowTestRun>>,
+    shallow_test_run_data: Vec<ShallowTestRun>,
     coverage_timestamp: Option<OffsetDateTime>,
 ) -> (String, OffsetDateTime, Vec<TestRun>) {
     let mut test_run_names = Vec::new();

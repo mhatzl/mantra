@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use mantra_schema::{
-    FmtHash, SCHEMA_VERSION,
+    FmtHash, Origin, Properties, SCHEMA_VERSION,
     media_type::MediaType,
     mime_guess::Mime,
     product::ProductId,
@@ -204,6 +204,14 @@ pub async fn generate_review_schema<'db>(
         Some(test_run_overrides)
     };
 
+    let schema_origin = review_schema_origin(transaction, &product.id, &review.name).await?;
+    let schema_properties =
+        review_schema_properties(transaction, &product.id, &review.name).await?;
+
+    let config_origin = review_config_origin(transaction, &product.id, &review.name).await?;
+    let config_properties =
+        review_config_properties(transaction, &product.id, &review.name).await?;
+
     let ignored_entries = review_ignored_entries(transaction, review, &media_type).await?;
 
     Ok(ReviewReportSchema {
@@ -222,11 +230,11 @@ pub async fn generate_review_schema<'db>(
         test_run_overrides,
         ignored_entries,
         origin,
-        schema_origin: todo!(),
-        config_origin: todo!(),
+        schema_origin,
+        config_origin,
         properties,
-        schema_properties: todo!(),
-        config_properties: todo!(),
+        schema_properties,
+        config_properties,
     })
 }
 
@@ -553,6 +561,128 @@ async fn review_test_run_overrides<'db>(
     }
 
     Ok(test_run_overrides)
+}
+
+async fn review_schema_origin<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    review_name: &str,
+) -> Result<Option<Origin>, anyhow::Error> {
+    let record = sqlx::query!(
+        "
+        select gj.content
+        from Schemas s, Reviews r, GeneralJson gj
+        where r.product_id = $1 and r.name = $2
+        and r.schema_hash = s.content_hash
+        and gj.hash = s.origin_hash
+        ",
+        product_id,
+        review_name
+    )
+    .fetch_optional(transaction.as_mut())
+    .await?;
+
+    match record {
+        Some(r) => Ok(Some(serde_json::Value::from_str(&r.content)?)),
+        None => Ok(None),
+    }
+}
+
+async fn review_schema_properties<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    review_name: &str,
+) -> Result<Option<Properties>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select sp.property_key, gj.content
+        from SchemaReviewProperties sp, Reviews r, GeneralJson gj
+        where r.product_id = $1 and r.name = $2
+        and r.schema_hash = sp.schema_hash
+        and gj.hash = sp.value_hash
+        ",
+        product_id,
+        review_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut props = Properties::with_capacity(records.len());
+
+    for record in records {
+        props.insert(
+            record.property_key,
+            serde_json::Value::from_str(&record.content)?,
+        );
+    }
+
+    Ok(Some(props))
+}
+
+async fn review_config_origin<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    review_name: &str,
+) -> Result<Option<Origin>, anyhow::Error> {
+    let record = sqlx::query!(
+        "
+        select gj.content
+        from Reviews r, ReviewCollectConfigs rc, ConfigCollectedSchemas cs, GeneralJson gj
+        where r.product_id = $1 and r.name = $2
+        and r.schema_hash = cs.schema_hash
+        and cs.cfg_entry = rc.cfg_entry
+        and gj.hash = rc.origin_hash
+        ",
+        product_id,
+        review_name
+    )
+    .fetch_optional(transaction.as_mut())
+    .await?;
+
+    match record {
+        Some(r) => Ok(Some(serde_json::Value::from_str(&r.content)?)),
+        None => Ok(None),
+    }
+}
+
+async fn review_config_properties<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    review_name: &str,
+) -> Result<Option<Properties>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select cp.property_key, gj.content
+        from Reviews r, ConfigCollectedSchemas cs, ConfigReviewProperties cp, GeneralJson gj
+        where r.product_id = $1 and r.name = $2
+        and r.schema_hash = cs.schema_hash
+        and cs.cfg_entry = cp.cfg_entry
+        and gj.hash = cp.value_hash
+        ",
+        product_id,
+        review_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut props = Properties::with_capacity(records.len());
+
+    for record in records {
+        props.insert(
+            record.property_key,
+            serde_json::Value::from_str(&record.content)?,
+        );
+    }
+
+    Ok(Some(props))
 }
 
 async fn review_ignored_entries<'db>(

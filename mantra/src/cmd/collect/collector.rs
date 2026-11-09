@@ -11,10 +11,9 @@ use tokio::task::JoinSet;
 
 use crate::cmd::collect::{products::collection::ProductCollection, walker};
 
-pub(super) struct SingleFileCollector<'db, 'c, T, C: SingleFileCollectable<'db, 'c, T>> {
-    collection: ProductCollection<'db, 'c>,
-    cfgs: PhantomData<C>,
-    schema: PhantomData<T>,
+pub(super) struct SingleFileCollector<T, C> {
+    t: PhantomData<T>,
+    c: PhantomData<C>,
 }
 
 pub struct CollectableFile<'a> {
@@ -62,7 +61,7 @@ struct SentData<T: Schema> {
 }
 
 impl<'db, 'c, T: Schema + Send + 'static, C: SingleFileCollectable<'db, 'c, T> + Send + 'static>
-    SingleFileCollector<'db, 'c, T, C>
+    SingleFileCollector<T, C>
 {
     pub(super) async fn collect(
         collection: &mut ProductCollection<'db, 'c>,

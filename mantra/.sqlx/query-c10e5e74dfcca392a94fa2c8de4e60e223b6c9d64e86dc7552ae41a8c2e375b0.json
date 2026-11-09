@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select cp.property_key, gj.content\n        from Reviews r, ConfigCollectedSchemas cs, ConfigReviewProperties cp, GeneralJson gj\n        where r.product_id = $1 and r.name = $2\n        and r.schema_hash = cs.schema_hash\n        and cs.cfg_entry = cp.cfg_entry\n        and gj.hash = cp.value_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ConfigReviewProperties",
+            "name": "property_key"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c10e5e74dfcca392a94fa2c8de4e60e223b6c9d64e86dc7552ae41a8c2e375b0"
+}

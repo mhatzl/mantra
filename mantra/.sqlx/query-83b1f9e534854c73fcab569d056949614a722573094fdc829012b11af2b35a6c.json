@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select sp.property_key, gj.content\n        from SchemaTestRunProperties sp, TestRuns tr, GeneralJson gj\n        where tr.product_id = $1 and tr.name = $2\n        and tr.schema_hash = sp.schema_hash\n        and gj.hash = sp.value_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "SchemaTestRunProperties",
+            "name": "property_key"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "83b1f9e534854c73fcab569d056949614a722573094fdc829012b11af2b35a6c"
+}

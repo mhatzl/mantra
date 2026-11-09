@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select cp.property_key, gj.content\n        from TestRuns tr, ConfigCollectedSchemas cs, ConfigTestRunProperties cp, GeneralJson gj\n        where tr.product_id = $1 and tr.name = $2\n        and tr.schema_hash = cs.schema_hash\n        and cs.cfg_entry = cp.cfg_entry\n        and gj.hash = cp.value_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ConfigTestRunProperties",
+            "name": "property_key"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d7941d7343bb88cc3e068115803abe68dab42710d41a0e58e8821f73505b3b44"
+}

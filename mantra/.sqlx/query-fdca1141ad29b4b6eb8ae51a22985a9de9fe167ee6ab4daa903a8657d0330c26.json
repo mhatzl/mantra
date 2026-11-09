@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select gj.content\n        from Schemas s, Reviews r, GeneralJson gj\n        where r.product_id = $1 and r.name = $2\n        and r.schema_hash = s.content_hash\n        and gj.hash = s.origin_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fdca1141ad29b4b6eb8ae51a22985a9de9fe167ee6ab4daa903a8657d0330c26"
+}

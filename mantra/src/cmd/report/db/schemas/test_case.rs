@@ -1,9 +1,10 @@
 use std::{collections::HashMap, str::FromStr};
 
 use mantra_schema::{
-    FmtHash, Line, SCHEMA_VERSION,
+    FmtHash, Line, Properties, SCHEMA_VERSION,
     annotations::TraceKind,
     path::RelativePathBuf,
+    product::ProductId,
     report::{
         annotations::TraceReference,
         formattable_content::FormattableContent,
@@ -217,6 +218,21 @@ pub async fn generate_test_case_schema<'db>(
     let coverage = test_case_related_coverage(transaction, product, test_case).await?;
     let related_reqs = test_case_related_requirements(transaction, product, test_case).await?;
 
+    let schema_properties = test_case_schema_properties(
+        transaction,
+        &product.id,
+        &test_case.test_run_name,
+        &test_case.test_case_name,
+    )
+    .await?;
+    let config_properties = test_case_config_properties(
+        transaction,
+        &product.id,
+        &test_case.test_run_name,
+        &test_case.test_case_name,
+    )
+    .await?;
+
     Ok(TestCaseReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
@@ -235,8 +251,8 @@ pub async fn generate_test_case_schema<'db>(
         related_reqs,
         overridden_by,
         properties,
-        schema_properties: todo!(),
-        config_properties: todo!(),
+        schema_properties,
+        config_properties,
     })
 }
 
@@ -527,4 +543,85 @@ async fn test_case_related_coverage<'db>(
             covered_traces,
         })
     })
+}
+
+async fn test_case_schema_properties<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    test_run_name: &str,
+    test_case_name: &str,
+) -> Result<Option<Properties>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select sp.property_key, gj.content
+        from SchemaTestRunProperties sp, TestRuns tr, TestCases tc, GeneralJson gj
+        where tr.product_id = $1 and tr.name = $2
+        and tr.schema_hash = sp.schema_hash
+        and tc.product_id = tr.product_id
+        and tc.test_run_name = tr.name
+        and tc.name = $3
+        and gj.hash = sp.value_hash
+        ",
+        product_id,
+        test_run_name,
+        test_case_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut props = Properties::with_capacity(records.len());
+
+    for record in records {
+        props.insert(
+            record.property_key,
+            serde_json::Value::from_str(&record.content)?,
+        );
+    }
+
+    Ok(Some(props))
+}
+
+async fn test_case_config_properties<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    test_run_name: &str,
+    test_case_name: &str,
+) -> Result<Option<Properties>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select cp.property_key, gj.content
+        from TestRuns tr, TestCases tc, ConfigCollectedSchemas cs, ConfigTestCaseProperties cp, GeneralJson gj
+        where tr.product_id = $1 and tr.name = $2
+        and tr.schema_hash = cs.schema_hash
+        and cs.cfg_entry = cp.cfg_entry
+        and tc.product_id = tr.product_id
+        and tr.name = tc.test_run_name
+        and tc.name = $3
+        and gj.hash = cp.value_hash
+        ",
+        product_id,
+        test_run_name,
+        test_case_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut props = Properties::with_capacity(records.len());
+
+    for record in records {
+        props.insert(
+            record.property_key,
+            serde_json::Value::from_str(&record.content)?,
+        );
+    }
+
+    Ok(Some(props))
 }

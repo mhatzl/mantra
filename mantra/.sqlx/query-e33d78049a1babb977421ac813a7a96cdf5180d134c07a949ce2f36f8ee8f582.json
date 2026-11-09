@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select cp.property_key, gj.content\n        from Requirements r, ConfigCollectedSchemas cs, ConfigRequirementProperties cp, GeneralJson gj\n        where r.product_id = $1 and r.id = $2\n        and r.schema_hash = cs.schema_hash\n        and cs.cfg_entry = cp.cfg_entry\n        and gj.hash = cp.value_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "property_key",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ConfigRequirementProperties",
+            "name": "property_key"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e33d78049a1babb977421ac813a7a96cdf5180d134c07a949ce2f36f8ee8f582"
+}

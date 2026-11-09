@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into RequirementsWithSatisfyTraces (\n                product_id,\n                req_id,\n                file_hash,\n                trace_line\n            )\n            select distinct rt.product_id, rt.req_id, t.file_hash, t.line\n            from Traces t, DirectProductReqTraces rt\n            where rt.file_hash = t.file_hash\n            and rt.line = t.line\n            and t.kind = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c520132c7a2a8553e78963a583b65d0a7c0dc33d7d6bbee8ba9bedf22b07bf4d"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select gj.content\n        from Requirements r, RequirementCollectConfigs rc, ConfigCollectedSchemas cs, GeneralJson gj\n        where r.product_id = $1 and r.id = $2\n        and r.schema_hash = cs.schema_hash\n        and cs.cfg_entry = rc.cfg_entry\n        and gj.hash = rc.origin_hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralJson",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "39ad743d2925d43339878b459b3cefc697e844fde54b0235c88031dc136bfe83"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select req_id\n            from RequirementsWithTestRunsCoveringVerifyTracesButNoSatisfyTraces\n            where product_id = $1 and req_id = $2\n            and test_run_name = $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "req_id",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "RequirementsWithTestRunsCoveringVerifyTracesButNoSatisfyTraces",
+            "name": "req_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8c167070a4b76c847e295f02b5dff8602d9e4b0bb4b5215f71275b232991dd01"
+}

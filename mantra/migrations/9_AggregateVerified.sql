@@ -42,6 +42,114 @@ create table TracesCoveredByPassedTests (
     foreign key (file_hash, traced_line) references Traces(file_hash, line) on delete cascade
 );
 
+create table RequirementsWithSatisfyTraces (
+    product_id text not null,
+    req_id text not null,
+    file_hash text not null,
+    trace_line text not null,
+    primary key (product_id, req_id, file_hash, trace_line),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade,
+    foreign key (file_hash, trace_line) references Traces(file_hash, line) on delete cascade
+);
+
+create table RequirementsWithVerifyTraces (
+    product_id text not null,
+    req_id text not null,
+    file_hash text not null,
+    trace_line text not null,
+    primary key (product_id, req_id, file_hash, trace_line),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade,
+    foreign key (file_hash, trace_line) references Traces(file_hash, line) on delete cascade
+);
+
+create view RequirementsWithSatisfyAndVerifyTraces as
+select product_id, req_id
+from RequirementsWithSatisfyTraces
+union
+select product_id, req_id
+from RequirementsWithVerifyTraces;
+
+create view RequirementsWithSatisfyButNoVerifyTraces as
+select product_id, req_id
+from RequirementsWithSatisfyTraces
+except
+select product_id, req_id
+from RequirementsWithVerifyTraces;
+
+create view RequirementsWithVerifyButNoSatisfyTraces as
+select product_id, req_id
+from RequirementsWithVerifyTraces
+except
+select product_id, req_id
+from RequirementsWithSatisfyTraces;
+
+create view TracesCoveredByPassedAndNoFailedOrUnknownTests as
+select product_id, filepath, file_hash, traced_line
+from TracesCoveredByPassedTests
+except
+select product_id, filepath, file_hash, traced_line
+from (
+    select product_id, filepath, file_hash, traced_line
+    from TracesCoveredByFailedTests
+
+    union all
+
+    select product_id, filepath, file_hash, traced_line
+    from TracesCoveredByUnknownTests
+);
+
+create table RequirementsWithTestRunsCoveringSatisfyAndVerifyTraces (
+    product_id text not null,
+    req_id text not null,
+    test_run_name text not null,
+    primary key (product_id, req_id, test_run_name),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade,
+    foreign key (product_id, test_run_name) references TestRuns(product_id, name) on delete cascade
+);
+
+create table RequirementsWithTestCasesCoveringSatisfyAndVerifyTraces (
+    product_id text not null,
+    req_id text not null,
+    test_run_name text not null,
+    test_case_name text not null,
+    primary key (product_id, req_id, test_run_name, test_case_name),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade,
+    foreign key (product_id, test_run_name, test_case_name) references TestCases(product_id, test_run_name, name) on delete cascade
+);
+
+create view RequirementsWithTestsCoveringSatisfyAndVerifyTraces as
+select product_id, req_id
+from RequirementsWithTestRunsCoveringSatisfyAndVerifyTraces
+union
+select product_id, req_id
+from RequirementsWithTestCasesCoveringSatisfyAndVerifyTraces;
+
+create table RequirementsWithTestRunsCoveringVerifyTracesButNoSatisfyTraces (
+    product_id text not null,
+    req_id text not null,
+    test_run_name text not null,
+    primary key (product_id, req_id, test_run_name),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade,
+    foreign key (product_id, test_run_name) references TestRuns(product_id, name) on delete cascade
+);
+
+create table RequirementsWithTestCasesCoveringVerifyTracesButNoSatisfyTraces (
+    product_id text not null,
+    req_id text not null,
+    test_run_name text not null,
+    test_case_name text not null,
+    primary key (product_id, req_id, test_run_name, test_case_name),
+    foreign key (product_id, req_id) references Requirements(product_id, id) on delete cascade,
+    foreign key (product_id, test_run_name, test_case_name) references TestCases(product_id, test_run_name, name) on delete cascade
+);
+
+create view RequirementsWithTestsCoveringVerifyTracesButNoSatisfyTraces as
+select product_id, req_id
+from RequirementsWithTestRunsCoveringVerifyTracesButNoSatisfyTraces
+union
+select product_id, req_id
+from RequirementsWithTestCasesCoveringVerifyTracesButNoSatisfyTraces;
+
 -- Contains direct verification states of requirements
 --
 -- **Note:** Direct means that the state is indipendent of the state of related requirements.
