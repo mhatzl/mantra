@@ -50,6 +50,9 @@ pub struct ReviewSchema {
     /// Optional base origin of the reviews in this entry.
     /// e.g. specific branch or commit from a git repository
     pub origin: Option<Origin>,
+    /// Optional MIME/Media type of the general text added with this schema.
+    /// e.g rationals and revision summary
+    pub media_type: Option<MediaType>,
 }
 
 impl crate::Schema for ReviewSchema {
@@ -67,6 +70,10 @@ impl crate::Schema for ReviewSchema {
 
     fn origin(&self) -> &Option<Origin> {
         &self.origin
+    }
+
+    fn media_type(&self) -> &Option<MediaType> {
+        &self.media_type
     }
 }
 
@@ -111,7 +118,6 @@ pub struct Review {
     /// [req("review.test_case_state", "review.coverage")]
     #[serde(alias = "override", default)]
     pub test_run_overrides: Vec<OverrideTestRun>,
-    pub media_type: Option<MediaType>,
 }
 
 /// Represents a verification entry affecting one or more requirements.
@@ -206,7 +212,7 @@ pub struct OverrideTestCaseState {
     /// The new state that is set with this override.
     pub new: TestCaseState,
     /// Mandatory comment explaining why the state is overriden via review.
-    pub comment: String,
+    pub rational: String,
 }
 
 /// Code coverage overrides per file.
@@ -235,7 +241,7 @@ pub struct OverrideCoveredLineInfo {
     #[serde(alias = "number")]
     pub numbers: Vec<Line>,
     /// Override if the lines were covered during a test run or test case execution.
-    /// If None, the line is marked to be ignored from line coverage analysis.
+    /// If None, the line is marked to be excluded from line coverage analysis.
     pub covered: Option<bool>,
     /// Mandatory comment explaining the change to the code coverage information.
     pub rational: String,

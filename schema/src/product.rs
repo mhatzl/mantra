@@ -114,7 +114,7 @@ pub struct Product {
     ///
     /// TODO: map to requirement
     pub description: Option<String>,
-    /// Optional MIME/media type of product related general texts (e.g. description).
+    /// Optional MIME/Media type of product related metadata texts (e.g. description).
     pub media_type: Option<MediaType>,
     /// Optional properties of the product.
     ///

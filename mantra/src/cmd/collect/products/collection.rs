@@ -153,7 +153,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
     pub(crate) async fn insert_general_text(
         &mut self,
-        content: &str,
+        content: &String,
     ) -> Result<FmtHash, anyhow::Error> {
         self.collection.insert_general_text(content).await
     }

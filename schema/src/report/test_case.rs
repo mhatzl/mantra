@@ -5,6 +5,7 @@ use crate::{
     encoding::TargetEncoding,
     product::ProductId,
     report::{
+        formattable_content::FormattableContent,
         product::ProductMetadata,
         review::ReviewReference,
         test_run::TestRunReference,
@@ -79,7 +80,7 @@ pub struct TestCaseReportSchema {
     /// [req("testcov.test_case.id")]
     pub name: String,
     /// Optional description of the test case.
-    pub description: Option<String>,
+    pub description: Option<FormattableContent>,
     /// State of the test case.
     /// [req("testcov.test_case.state")]
     pub state: TestState,

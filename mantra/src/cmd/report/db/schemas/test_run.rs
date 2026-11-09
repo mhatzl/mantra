@@ -1,11 +1,16 @@
 use std::{collections::HashMap, str::FromStr};
 
 use mantra_schema::{
-    FmtHash, Line, Revision, SCHEMA_VERSION,
+    FmtHash, Line, SCHEMA_VERSION,
     annotations::TraceKind,
+    media_type::MediaType,
+    mime_guess::Mime,
     path::RelativePathBuf,
+    product::ProductId,
     report::{
+        ResolvedRevision,
         annotations::TraceReference,
+        formattable_content::FormattableContent,
         product::ProductReportSchema,
         requirement::RequirementReference,
         review::{ReviewReference, ReviewState},
@@ -53,11 +58,14 @@ pub async fn generate_test_run_schema<'db>(
         .duration_sec
         .map(mantra_schema::time::Duration::saturating_seconds_f64);
 
+    let media_type = test_run_content_media_type(transaction, &product.id, &test_run.name).await?;
+
     let revision_records = sqlx::query!(
         "
-        select revision, summary
-        from TestRunRevisions
-        where product_id = $1 and test_run_name = $2
+        select tr.revision, gt.content
+        from TestRunRevisions tr, GeneralTexts gt
+        where tr.product_id = $1 and tr.test_run_name = $2
+        and tr.summary_hash = gt.hash
         ",
         product.id,
         test_run.name,
@@ -88,10 +96,10 @@ pub async fn generate_test_run_schema<'db>(
             .map(|a| a.author)
             .collect();
 
-            revisions.push(Revision {
+            revisions.push(ResolvedRevision {
                 number: rev.revision,
                 authors,
-                summary: rev.summary,
+                summary: FormattableContent::new(rev.content, media_type.clone()),
             });
         }
 
@@ -318,7 +326,9 @@ pub async fn generate_test_run_schema<'db>(
         name: test_run.name.clone(),
         utc_date: mantra_schema::test_runs::test_date_from_str(&metadata.utc_date)?,
         state: test_run.state,
-        description: metadata.description,
+        description: metadata
+            .description
+            .map(|d| FormattableContent::new(d, media_type)),
         revisions,
         duration_sec,
         logs,
@@ -335,6 +345,39 @@ pub async fn generate_test_run_schema<'db>(
         schema_properties: todo!(),
         config_properties: todo!(),
     })
+}
+
+pub(super) async fn test_run_content_media_type<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    test_run_name: &str,
+) -> Result<Option<MediaType>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select media_type
+        from SchemaContentMediaTypes mt, TestRuns tr
+        where tr.product_id = $1 and tr.name = $2
+        and tr.schema_hash = mt.schema_hash
+        order by mt.entry_number
+        ",
+        product_id,
+        test_run_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut mimes = Vec::with_capacity(records.len());
+
+    for record in records {
+        let mime = Mime::from_str(&record.media_type)?;
+        mimes.push(mime);
+    }
+
+    Ok(Some(MediaType::new(mimes)))
 }
 
 async fn test_run_related_requirements<'db>(

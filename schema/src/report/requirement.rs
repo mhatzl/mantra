@@ -6,6 +6,7 @@ use crate::{
     product::ProductId,
     report::{
         annotations::{TraceReference, TracesSummary},
+        formattable_content::FormattableContent,
         product::ProductMetadata,
         review::ReviewReference,
         tests::TestReference,
@@ -32,10 +33,10 @@ pub struct RequirementReportSchema {
     pub id: ReqId,
     /// Title of the requirement.
     /// [req("req.title")]
-    pub title: String,
+    pub title: FormattableContent,
     /// Optional description of the requirement.
     /// [req("req.description")]
-    pub description: Option<String>,
+    pub description: Option<FormattableContent>,
     pub kind: Option<String>,
     /// Origin where the requirement is defined at.
     /// [req("req.origin")]
@@ -218,5 +219,5 @@ pub struct RequirementCoverage {
 #[serde(rename_all = "snake_case")]
 pub struct RequirementReview {
     pub review: ReviewReference,
-    pub rational: String,
+    pub rational: FormattableContent,
 }

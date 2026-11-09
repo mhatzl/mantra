@@ -1,12 +1,8 @@
 use anyhow::Context;
-use mantra_schema::{
-    FmtHash, Properties, path::RelativePath, product::ProductId, time::OffsetDateTime,
-};
-use std::{collections::HashSet, path::PathBuf};
 
 use crate::{
     cmd::collect::{cfg::CollectConfig, collection::Collection, collector::SingleFileCollector},
-    db::{MantraConnection, MantraDb, MantraTransaction},
+    db::MantraDb,
 };
 
 pub mod annotations;

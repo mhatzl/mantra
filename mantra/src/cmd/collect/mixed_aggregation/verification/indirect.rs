@@ -13,7 +13,6 @@ impl<'db> Collection<'db> {
         let req_satisfied_nr = RequirementState::Satisfied.as_number();
         let req_unknown_nr = RequirementState::Unknown.as_number();
         let req_partially_verified_nr = RequirementState::PartiallyVerified.as_number();
-        let req_draft_number = RequirementState::Draft.as_number();
 
         sqlx::query!(
             "

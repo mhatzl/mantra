@@ -1,6 +1,6 @@
 use anyhow::Context;
 use ignore::types::TypesBuilder;
-use mantra_schema::{FmtHash, path::RelativePath, product::ProductId, reviews::ReviewSchema};
+use mantra_schema::{FmtHash, product::ProductId, reviews::ReviewSchema};
 
 use crate::cmd::collect::{
     cfg::{CollectReviewsConfig, ReviewSourceVariant},

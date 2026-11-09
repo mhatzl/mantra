@@ -1,8 +1,11 @@
 use std::str::FromStr;
 
 use mantra_schema::{
+    media_type::MediaType,
+    mime_guess::Mime,
     product::ProductId,
     report::{
+        formattable_content::FormattableContent,
         product::{ProductReportSchema, ProductSummary},
         requirement::{RequirementReference, RequirementState},
         review::ReviewReference,
@@ -128,6 +131,8 @@ pub async fn generate_product_schemas<'db>(
             Some(product_properties)
         };
 
+        let media_type = product_metadata_media_type(transaction, &product_id).await?;
+
         products.push(ProductReportSchema {
             schema_version: Some(mantra_schema::SCHEMA_VERSION.to_owned()),
             last_collected_date,
@@ -143,7 +148,9 @@ pub async fn generate_product_schemas<'db>(
             homepage: product_record.homepage,
             repository: product_record.repository,
             license: product_record.license,
-            description: product_record.description,
+            description: product_record
+                .description
+                .map(|d| FormattableContent::new(d, media_type)),
             properties: product_properties,
         });
     }
@@ -247,4 +254,34 @@ pub async fn product_reviews<'db>(
     .collect();
 
     Ok(reviews)
+}
+
+async fn product_metadata_media_type<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+) -> Result<Option<MediaType>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select media_type
+        from ProductMetadataMediaTypes
+        where product_id = $1
+        order by entry_number
+        ",
+        product_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut mimes = Vec::with_capacity(records.len());
+
+    for record in records {
+        let mime = Mime::from_str(&record.media_type)?;
+        mimes.push(mime);
+    }
+
+    Ok(Some(MediaType::new(mimes)))
 }

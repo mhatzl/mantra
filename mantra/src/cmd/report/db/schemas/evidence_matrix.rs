@@ -3,15 +3,17 @@ use mantra_schema::{
     product::ProductId,
     report::{
         evidence_matrix::{EvidenceMatrixSchema, RequirementEvidence},
+        formattable_content::FormattableContent,
         product::ProductReportSchema,
+        requirement::RequirementReference,
     },
     requirements::ReqId,
 };
 
 use crate::{
     cmd::report::db::schemas::requirement::{
-        covering_test_cases, covering_test_runs, requirement_child_references,
-        requirement_coverage, requirement_parent_references, requirement_reviews,
+        requirement_child_references, requirement_content_media_type, requirement_coverage,
+        requirement_parent_references, requirement_reviews,
     },
     db::MantraTransaction,
 };
@@ -27,20 +29,16 @@ pub async fn generate_evidence_matrix_schema<'db>(
             r.id,
             r.title,
             rs.state,
-            case when exists (
+            exists (
                 select o.req_id
                 from OptionalRequirements o
                 where o.product_id = $1 and o.req_id = r.id
-            ) then true
-            else false
-            end as "optional!:bool",
-            case when exists (
+            ) as "optional!:bool",
+            exists (
                 select m.req_id
                 from ManualRequirements m
                 where m.product_id = $1 and m.req_id = r.id
-            ) then true
-            else false
-            end as "manual_verification!:bool"
+            ) as "manual!:bool"
         from Requirements r, RequirementVerificationStates rs
         where r.product_id = $1 and rs.product_id = $1
         and r.id = rs.req_id
@@ -68,7 +66,7 @@ struct RequirementDbMetadata {
     title: String,
     state: i64,
     optional: bool,
-    manual_verification: bool,
+    manual: bool,
 }
 
 async fn evidence_per_requirement<'db>(
@@ -84,13 +82,17 @@ async fn evidence_per_requirement<'db>(
     let covered_by = requirement_coverage(transaction, product_id, &req_id).await?;
     let reviewed_in = requirement_reviews(transaction, product_id, &req_id).await?;
 
+    let req_media_type = requirement_content_media_type(transaction, product_id, &req_id).await?;
+
     Ok(RequirementEvidence {
-        product_id: product_id.clone(),
-        id: req_id,
-        title: req.title,
-        state: req.state.try_into()?,
-        optional: req.optional,
-        manual_verification: req.manual_verification,
+        req_ref: RequirementReference {
+            product_id: product_id.clone(),
+            id: req_id,
+            state: req.state.try_into()?,
+            optional: req.optional,
+            manual: req.manual,
+        },
+        title: FormattableContent::new(req.title, req_media_type),
         parents,
         children,
         covered_by,

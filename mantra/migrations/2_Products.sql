@@ -20,11 +20,20 @@ create table Products (
     license text,
     -- Optional description of the product.
     description_hash text references GeneralTexts (hash) on delete restrict,
-    -- Optional MIME/media type of product related general texts (e.g. description).
-    media_type text,
     -- hash of the product metadata
     data_hash text not null,
     primary key (id)
+);
+
+create table ProductMetadataMediaTypes (
+    latest_collection integer not null references Collections (id) on delete cascade,
+    -- Collected filepath
+    product_id text not null references Products (id) on delete cascade,
+    -- MIME/Media type of the content
+    media_type text not null,
+    -- To keep the MIME/Media types order
+    entry_number integer not null,
+    primary key (product_id, media_type)
 );
 
 create table ProductRelatedFiles (

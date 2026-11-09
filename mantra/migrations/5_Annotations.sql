@@ -180,6 +180,9 @@ create table Elements (
     -- [req("trace.element.kind")]
     kind integer not null,
     -- Optional hash of the content of the element.
+    --
+    -- **Note:** Not stored in GeneralTexts, because the file content itself is,
+    -- and this is primarily to identify moved elements.
     content_hash text,
     primary key (file_hash, definition_line),
     constraint start_le_end check (start_line <= end_line),
@@ -222,6 +225,9 @@ create table TracedCodeBlocks (
     -- The code block kind. other=0, if=1, else-if=2, else=3, loop=4, while=5, for=6, match/case=7,
     kind integer not null,
     -- Optional hash of the code block.
+    --
+    -- **Note:** Not stored in GeneralTexts, because the file content itself is,
+    -- and this is primarily to identify moved code blocks.
     content_hash text,
     primary key (file_hash, traced_line),
     foreign key (file_hash, traced_line) references Traces (file_hash, line) on delete cascade,
@@ -271,8 +277,6 @@ create table CoverageBlockExcludes (
     end_line integer not null,
     -- Hash of the rational explaining why the spanned lines must be excluded from code coverage calculations.
     rational_hash text not null references GeneralTexts (hash) on delete restrict,
-    -- Optional MIME/media type of coverage exclusion related general texts (e.g. comment).
-    media_type text,
     primary key (file_hash, start_line),
     constraint start_le_end check (start_line <= end_line)
 );
@@ -289,8 +293,6 @@ create table CoverageLineExcludes (
     line integer not null,
     -- Hash of the rational explaining why the line must be excluded from code coverage analysis.
     rational_hash text not null references GeneralTexts (hash) on delete restrict,
-    -- Optional MIME/media type of coverage exclusion related general texts (e.g. comment).
-    media_type text,
     primary key (file_hash, line)
 );
 

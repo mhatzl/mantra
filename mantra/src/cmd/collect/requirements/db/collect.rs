@@ -258,8 +258,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 origin_hash,
                 description_hash,
                 data_hash,
-                schema_hash,
-                media_type
+                schema_hash
             )
             values (
                 $1,
@@ -275,8 +274,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $11,
                 $12,
                 $13,
-                $14,
-                $15
+                $14
             )
             on conflict (
                 id,
@@ -294,8 +292,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 origin_hash = excluded.origin_hash,
                 description_hash = excluded.description_hash,
                 data_hash = excluded.data_hash,
-                schema_hash = excluded.schema_hash,
-                media_type = excluded.media_type
+                schema_hash = excluded.schema_hash
             ",
             collect_nr,
             req.id,
@@ -310,8 +307,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             origin_hash,
             description_hash,
             data_hash,
-            schema_hash,
-            req.media_type
+            schema_hash
         )
         .execute(self.connection_mut())
         .await

@@ -2,8 +2,13 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use mantra_schema::{
-    FmtHash, Revision, SCHEMA_VERSION,
+    FmtHash, SCHEMA_VERSION,
+    media_type::MediaType,
+    mime_guess::Mime,
+    product::ProductId,
     report::{
+        ResolvedRevision,
+        formattable_content::FormattableContent,
         product::ProductReportSchema,
         requirement::RequirementReference,
         review::{
@@ -49,6 +54,8 @@ pub async fn generate_review_schema<'db>(
         None => None,
     };
 
+    let media_type = review_content_media_type(transaction, &product.id, &review.name).await?;
+
     let authors: Vec<_> = sqlx::query!(
         "
         select author
@@ -66,9 +73,10 @@ pub async fn generate_review_schema<'db>(
 
     let revision_records = sqlx::query!(
         "
-        select revision, summary
-        from ReviewRevisions
-        where product_id = $1 and review_name = $2
+        select r.revision, gt.content
+        from ReviewRevisions r, GeneralTexts gt
+        where r.product_id = $1 and r.review_name = $2
+        and r.summary_hash = gt.hash
         ",
         product.id,
         review.name,
@@ -99,10 +107,10 @@ pub async fn generate_review_schema<'db>(
             .map(|a| a.author)
             .collect();
 
-            revisions.push(Revision {
+            revisions.push(ResolvedRevision {
                 number: rev.revision,
                 authors,
-                summary: rev.summary,
+                summary: FormattableContent::new(rev.content, media_type.clone()),
             });
         }
 
@@ -179,7 +187,7 @@ pub async fn generate_review_schema<'db>(
             optional: r.optional,
             manual: r.manual,
         },
-        rational: r.content,
+        rational: FormattableContent::new(r.content, media_type.clone()),
     })
     .collect();
     let requirements = if requirements.is_empty() {
@@ -188,14 +196,15 @@ pub async fn generate_review_schema<'db>(
         Some(requirements)
     };
 
-    let test_run_overrides = review_test_run_overrides(transaction, product, review).await?;
+    let test_run_overrides =
+        review_test_run_overrides(transaction, product, review, &media_type).await?;
     let test_run_overrides = if test_run_overrides.is_empty() {
         None
     } else {
         Some(test_run_overrides)
     };
 
-    let ignored_entries = review_ignored_entries(transaction, review).await?;
+    let ignored_entries = review_ignored_entries(transaction, review, &media_type).await?;
 
     Ok(ReviewReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
@@ -205,7 +214,9 @@ pub async fn generate_review_schema<'db>(
             .context("Converting stored review date")?,
         state: review.state,
         authors,
-        description: metadata.description,
+        description: metadata
+            .description
+            .map(|d| FormattableContent::new(d, media_type)),
         revisions,
         requirements,
         test_run_overrides,
@@ -219,10 +230,44 @@ pub async fn generate_review_schema<'db>(
     })
 }
 
+pub(super) async fn review_content_media_type<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    review_name: &str,
+) -> Result<Option<MediaType>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select media_type
+        from SchemaContentMediaTypes mt, Reviews r
+        where r.product_id = $1 and r.name = $2
+        and r.schema_hash = mt.schema_hash
+        order by mt.entry_number
+        ",
+        product_id,
+        review_name
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut mimes = Vec::with_capacity(records.len());
+
+    for record in records {
+        let mime = Mime::from_str(&record.media_type)?;
+        mimes.push(mime);
+    }
+
+    Ok(Some(MediaType::new(mimes)))
+}
+
 async fn review_test_run_overrides<'db>(
     transaction: &mut MantraTransaction<'db>,
     product: &ProductReportSchema,
     review: &ReviewReference,
+    media_type: &Option<MediaType>,
 ) -> Result<Vec<ResolvedOverrideTestRun>, anyhow::Error> {
     let overriden_test_runs = sqlx::query!(
         "
@@ -379,7 +424,7 @@ async fn review_test_run_overrides<'db>(
                             nr: l.cov_line,
                             covered: l.covered,
                             original_hits: l.original_hits,
-                            rational: l.content,
+                            rational: FormattableContent::new(l.content, media_type.clone()),
                         })
                         .collect(),
                 })
@@ -395,7 +440,7 @@ async fn review_test_run_overrides<'db>(
                 state: overriden_state.map(|s| ResolvedOverrideTestCaseState {
                     new: s.state.try_into().expect("Valid state in database"),
                     old: old_state,
-                    comment: s.content,
+                    rational: FormattableContent::new(s.content, media_type.clone()),
                 }),
                 coverage: if coverage.is_empty() {
                     None
@@ -467,7 +512,7 @@ async fn review_test_run_overrides<'db>(
                         nr: l.cov_line,
                         covered: l.covered,
                         original_hits: l.original_hits,
-                        rational: l.content,
+                        rational: FormattableContent::new(l.content, media_type.clone()),
                     })
                     .collect(),
             })
@@ -513,6 +558,7 @@ async fn review_test_run_overrides<'db>(
 async fn review_ignored_entries<'db>(
     transaction: &mut MantraTransaction<'db>,
     review: &ReviewReference,
+    media_type: &Option<MediaType>,
 ) -> Result<Option<IgnoredEntries>, anyhow::Error> {
     let db_entries = sqlx::query!(
         "
@@ -574,7 +620,10 @@ async fn review_ignored_entries<'db>(
                 test_run_name,
                 test_case_name,
                 state,
-                rational: get_rational(transaction, rational_hash).await?,
+                rational: FormattableContent::new(
+                    get_rational(transaction, rational_hash).await?,
+                    media_type.clone(),
+                ),
             }),
             DbIgnoredEntry::TestCaseLineCoverageOverride {
                 test_run_name,
@@ -589,7 +638,10 @@ async fn review_ignored_entries<'db>(
                 cov_filepath,
                 cov_line,
                 covered,
-                rational: get_rational(transaction, rational_hash).await?,
+                rational: FormattableContent::new(
+                    get_rational(transaction, rational_hash).await?,
+                    media_type.clone(),
+                ),
             }),
             DbIgnoredEntry::TestRunLineCoverageOverride {
                 test_run_name,
@@ -602,7 +654,10 @@ async fn review_ignored_entries<'db>(
                 cov_filepath,
                 cov_line,
                 covered,
-                rational: get_rational(transaction, rational_hash).await?,
+                rational: FormattableContent::new(
+                    get_rational(transaction, rational_hash).await?,
+                    media_type.clone(),
+                ),
             }),
         };
     }

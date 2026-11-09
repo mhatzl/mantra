@@ -47,6 +47,9 @@ pub struct TestRunSchema {
     /// Optional base origin of the test runs in this entry.
     /// e.g. specific branch or commit from a git repository
     pub origin: Option<Origin>,
+    /// Optional MIME/Media type of the general text added with this schema.
+    /// e.g description and revision summary
+    pub media_type: Option<MediaType>,
 }
 
 impl crate::Schema for TestRunSchema {
@@ -64,6 +67,10 @@ impl crate::Schema for TestRunSchema {
 
     fn origin(&self) -> &Option<Origin> {
         &self.origin
+    }
+
+    fn media_type(&self) -> &Option<MediaType> {
+        &self.media_type
     }
 }
 
@@ -114,7 +121,6 @@ pub struct TestRun {
     /// [req("testcov.test_run.nested")]
     #[serde(default)]
     pub test_runs: Vec<TestRun>,
-    pub media_type: Option<MediaType>,
 }
 
 /// Represents a test case in *mantra*.
@@ -325,7 +331,7 @@ pub enum LogSource {
 }
 
 impl LogSource {
-    pub fn as_nr(&self) -> i32 {
+    pub fn as_number(&self) -> i32 {
         *self as i32
     }
 }
@@ -343,9 +349,9 @@ impl TryFrom<i64> for LogSource {
     type Error = ConversionError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
-        if value == LogSource::Stdout.as_nr() as i64 {
+        if value == LogSource::Stdout.as_number() as i64 {
             Ok(LogSource::Stdout)
-        } else if value == LogSource::Stderr.as_nr() as i64 {
+        } else if value == LogSource::Stderr.as_number() as i64 {
             Ok(LogSource::Stderr)
         } else {
             Err(ConversionError::UnknownState)

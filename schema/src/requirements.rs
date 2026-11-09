@@ -24,6 +24,9 @@ pub struct RequirementSchema {
     /// Optional base origin of the requirements in this entry.
     /// e.g. specific branch or commit from a git repository
     pub origin: Option<Origin>,
+    /// Optional MIME/Media type of the general text added with this schema.
+    /// e.g description and title
+    pub media_type: Option<MediaType>,
 }
 
 impl crate::Schema for RequirementSchema {
@@ -41,6 +44,10 @@ impl crate::Schema for RequirementSchema {
 
     fn origin(&self) -> &Option<Origin> {
         &self.origin
+    }
+
+    fn media_type(&self) -> &Option<MediaType> {
+        &self.media_type
     }
 }
 
@@ -151,7 +158,6 @@ pub struct Requirement {
     /// List of custom properties of a requirement.
     /// [req("req.properties")]
     pub properties: Option<Properties>,
-    pub media_type: Option<MediaType>,
 }
 
 impl Requirement {
@@ -171,7 +177,6 @@ impl Requirement {
             draft: None,
             replaces: None,
             properties: None,
-            media_type: None,
         }
     }
 }
@@ -385,7 +390,10 @@ impl<'de> serde::Deserialize<'de> for RequirementPk {
 mod tests {
     use std::ops::Deref;
 
-    use crate::requirements::RequirementPk;
+    use crate::{
+        product::ProductId,
+        requirements::{RequirementPk, RequirementRelation},
+    };
 
     #[test]
     fn de_pk_str() {
@@ -447,5 +455,101 @@ mod tests {
             "Requirement ID taken from 'id' field"
         );
         assert!(pk.product_id.is_none(), "Product ID is optional");
+    }
+
+    #[test]
+    fn de_relation_str() {
+        let rr: RequirementRelation = serde_json::from_str(r#""req-id""#).unwrap();
+
+        assert_eq!(rr.id.deref(), "req-id", "Requirement ID taken from string");
+        assert!(
+            rr.product_id.is_none(),
+            "Product ID ignored when deserializing from string"
+        );
+    }
+
+    #[test]
+    fn de_relation_obj() {
+        let rr: RequirementRelation = serde_json::from_value(serde_json::json!({
+            "id": "req-id",
+            "product_id": "product-id"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            rr.id.deref(),
+            "req-id",
+            "Requirement ID taken from 'id' field"
+        );
+        assert_eq!(
+            rr.product_id.as_deref(),
+            Some(&"product-id".to_string()),
+            "Product ID taken from 'product-id' field"
+        );
+    }
+
+    #[test]
+    fn de_relation_obj_unknown_field() {
+        let rr: Result<RequirementRelation, serde_json::Error> =
+            serde_json::from_value(serde_json::json!({
+                "id": "req-id",
+                "product_id": "product-id",
+                "other-field": "bad"
+            }));
+
+        assert!(rr.is_err());
+        assert_eq!(
+            rr.unwrap_err().to_string(),
+            "unknown field `other-field`, expected `id`, `product_id`, `optional` or `aspect`"
+        );
+    }
+
+    #[test]
+    fn de_relation_obj_only_id() {
+        let rr: RequirementRelation = serde_json::from_value(serde_json::json!({
+            "id": "req-id"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            rr.id.deref(),
+            "req-id",
+            "Requirement ID taken from 'id' field"
+        );
+        assert!(rr.product_id.is_none(), "Product ID is optional");
+        assert!(rr.optional.is_none(), "Optional marker is optional");
+        assert!(rr.aspect.is_none(), "Aspect is optional");
+    }
+
+    #[test]
+    fn de_relation_obj_all_values() {
+        let rr: RequirementRelation = serde_json::from_value(serde_json::json!({
+            "id": "req-id",
+            "product_id": "product-id",
+            "optional": true,
+            "aspect": "relation aspect"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            rr.id.deref(),
+            "req-id",
+            "Requirement ID taken from 'id' field"
+        );
+        assert_eq!(
+            rr.product_id,
+            Some(ProductId::new("product-id".to_string()).unwrap()),
+            "Product ID taken from 'product_id' field"
+        );
+        assert_eq!(
+            rr.optional,
+            Some(true),
+            "Optional taken from 'optional' field"
+        );
+        assert_eq!(
+            rr.aspect,
+            Some("relation aspect".to_string()),
+            "Aspect taken from 'aspect' field"
+        );
     }
 }

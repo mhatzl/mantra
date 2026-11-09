@@ -1,11 +1,14 @@
 use std::str::FromStr;
 
 use mantra_schema::{
-    FmtHash, SCHEMA_VERSION,
+    SCHEMA_VERSION,
     annotations::TraceKind,
+    media_type::MediaType,
+    mime_guess::Mime,
     product::ProductId,
     report::{
         annotations::{TraceReference, TracesSummary},
+        formattable_content::FormattableContent,
         product::ProductReportSchema,
         requirement::{
             RequirementAttributeState, RequirementCoverage, RequirementReference,
@@ -20,7 +23,7 @@ use mantra_schema::{
     requirements::ReqId,
 };
 
-use crate::db::MantraTransaction;
+use crate::{cmd::report::db::schemas::review::review_content_media_type, db::MantraTransaction};
 
 pub async fn generate_requirement_schema<'db>(
     transaction: &mut MantraTransaction<'db>,
@@ -113,6 +116,17 @@ pub async fn generate_requirement_schema<'db>(
     let replaces = requirement_replacements(transaction, &product.id, req_id).await?;
     let replaced_by = requirement_replaced(transaction, &product.id, req_id).await?;
 
+    let media_type = requirement_content_media_type(transaction, &product.id, req_id).await?;
+
+    let description = req.description.map(|d| FormattableContent {
+        content: d,
+        media_type: media_type.clone(),
+    });
+    let title = FormattableContent {
+        content: req.title,
+        media_type,
+    };
+
     Ok(RequirementReportSchema {
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         state: req.state.try_into()?,
@@ -124,8 +138,8 @@ pub async fn generate_requirement_schema<'db>(
         product: product.metadata(),
         id: req_id.clone(),
         kind: req.kind,
-        title: req.title,
-        description: req.description,
+        title,
+        description,
         manual_verification: requirement_attribute_state(
             req.manual_verification,
             req.inherited_manual_verification,
@@ -143,6 +157,39 @@ pub async fn generate_requirement_schema<'db>(
         schema_properties: todo!(),
         config_properties: todo!(),
     })
+}
+
+pub(super) async fn requirement_content_media_type<'db>(
+    transaction: &mut MantraTransaction<'db>,
+    product_id: &ProductId,
+    req_id: &ReqId,
+) -> Result<Option<MediaType>, anyhow::Error> {
+    let records = sqlx::query!(
+        "
+        select media_type
+        from SchemaContentMediaTypes mt, Requirements r
+        where r.product_id = $1 and r.id = $2
+        and r.schema_hash = mt.schema_hash
+        order by mt.entry_number
+        ",
+        product_id,
+        req_id
+    )
+    .fetch_all(transaction.as_mut())
+    .await?;
+
+    if records.is_empty() {
+        return Ok(None);
+    }
+
+    let mut mimes = Vec::with_capacity(records.len());
+
+    for record in records {
+        let mime = Mime::from_str(&record.media_type)?;
+        mimes.push(mime);
+    }
+
+    Ok(Some(MediaType::new(mimes)))
 }
 
 pub(super) async fn requirement_coverage<'db>(
@@ -182,13 +229,16 @@ pub(super) async fn requirement_reviews<'db>(
     let mut reviews = Vec::with_capacity(records.len());
 
     for record in records {
+        let review_media_type =
+            review_content_media_type(transaction, product_id, &record.review_name).await?;
+
         reviews.push(RequirementReview {
             review: ReviewReference {
                 product_id: product_id.clone(),
                 name: record.review_name,
                 state: ReviewState::try_from(record.state)?,
             },
-            rational: record.content,
+            rational: FormattableContent::new(record.content, review_media_type),
         })
     }
 

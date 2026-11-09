@@ -2,9 +2,9 @@ use crate::{
     Properties,
     product::ProductId,
     report::{
-        requirement::RequirementReference, requirements::RequirementsSummary,
-        review::ReviewReference, reviews::ReviewsSummary, test_run::TestRunReference,
-        tests::TestsSummary,
+        formattable_content::FormattableContent, requirement::RequirementReference,
+        requirements::RequirementsSummary, review::ReviewReference, reviews::ReviewsSummary,
+        test_run::TestRunReference, tests::TestsSummary,
     },
 };
 
@@ -54,7 +54,7 @@ pub struct ProductReportSchema {
     /// Optional description of the product.
     ///
     /// TODO: map to requirement
-    pub description: Option<String>,
+    pub description: Option<FormattableContent>,
     /// Optional properties of the product.
     ///
     /// TODO: map to requirement

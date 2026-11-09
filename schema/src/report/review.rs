@@ -1,11 +1,12 @@
 use relative_path::RelativePathBuf;
 
 use crate::{
-    ConversionError, Line, Origin, Properties, REVIEWS_FOLDER_NAME, Revision,
+    ConversionError, Line, Origin, Properties, REVIEWS_FOLDER_NAME,
     encoding::TargetEncoding,
     product::ProductId,
     report::{
-        product::ProductMetadata, requirement::RequirementReference, test_case::TestCaseReference,
+        ResolvedRevision, formattable_content::FormattableContent, product::ProductMetadata,
+        requirement::RequirementReference, test_case::TestCaseReference,
         test_run::TestRunReference,
     },
     requirements::ReqId,
@@ -34,7 +35,7 @@ pub struct ReviewReportSchema {
     pub authors: Vec<String>,
     /// Optional description of the review.
     /// [req("review.description")]
-    pub description: Option<String>,
+    pub description: Option<FormattableContent>,
     /// Optional origin of the review.
     /// [req("review.origin")]
     pub origin: Option<Origin>,
@@ -45,7 +46,7 @@ pub struct ReviewReportSchema {
     pub schema_properties: Option<Properties>,
     pub config_properties: Option<Properties>,
     /// Optional revisions for the review.
-    pub revisions: Option<Vec<Revision>>,
+    pub revisions: Option<Vec<ResolvedRevision>>,
     /// List of requirements that are verified in this review.
     /// [req("review.verify_req")]
     pub requirements: Option<Vec<VerifiedRequirement>>,
@@ -61,7 +62,7 @@ pub struct ReviewReportSchema {
 #[serde(rename_all = "snake_case")]
 pub struct VerifiedRequirement {
     pub req: RequirementReference,
-    pub rational: String,
+    pub rational: FormattableContent,
 }
 
 #[derive(
@@ -93,7 +94,7 @@ pub struct IgnoredTestCaseStateOverride {
     pub test_run_name: String,
     pub test_case_name: String,
     pub state: TestCaseState,
-    pub rational: String,
+    pub rational: FormattableContent,
 }
 
 #[derive(
@@ -107,7 +108,7 @@ pub struct IgnoredTestCaseLineCoverageOverride {
     pub cov_filepath: RelativePathBuf,
     pub cov_line: Line,
     pub covered: Option<bool>,
-    pub rational: String,
+    pub rational: FormattableContent,
 }
 
 #[derive(
@@ -120,7 +121,7 @@ pub struct IgnoredTestRunLineCoverageOverride {
     pub cov_filepath: RelativePathBuf,
     pub cov_line: Line,
     pub covered: Option<bool>,
-    pub rational: String,
+    pub rational: FormattableContent,
 }
 
 #[derive(
@@ -220,7 +221,7 @@ pub struct ResolvedOverrideTestCase {
 pub struct ResolvedOverrideTestCaseState {
     pub old: TestCaseState,
     pub new: TestCaseState,
-    pub comment: String,
+    pub rational: FormattableContent,
 }
 
 #[derive(
@@ -239,5 +240,5 @@ pub struct ResolvedOverrideCoveredLineInfo {
     pub nr: Line,
     pub original_hits: Option<i64>,
     pub covered: Option<bool>,
-    pub rational: String,
+    pub rational: FormattableContent,
 }

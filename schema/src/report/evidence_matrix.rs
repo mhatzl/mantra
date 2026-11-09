@@ -1,12 +1,7 @@
-use crate::{
-    product::ProductId,
-    report::{
-        product::ProductMetadata,
-        requirement::{
-            RequirementCoverage, RequirementReference, RequirementReview, RequirementState,
-        },
-    },
-    requirements::ReqId,
+use crate::report::{
+    formattable_content::FormattableContent,
+    product::ProductMetadata,
+    requirement::{RequirementCoverage, RequirementReference, RequirementReview},
 };
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -22,12 +17,8 @@ pub struct EvidenceMatrixSchema {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct RequirementEvidence {
-    pub product_id: ProductId,
-    pub id: ReqId,
-    pub title: String,
-    pub state: RequirementState,
-    pub optional: bool,
-    pub manual_verification: bool,
+    pub req_ref: RequirementReference,
+    pub title: FormattableContent,
     pub parents: Option<Vec<RequirementReference>>,
     pub children: Option<Vec<RequirementReference>>,
     pub covered_by: Option<Vec<RequirementCoverage>>,

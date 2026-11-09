@@ -52,12 +52,20 @@ create table CollectionMetadata (
 
 create table CollectedFiles (
     latest_collection integer not null references Collections (id) on delete cascade,
-    filepath text not null,
+    filepath text not null primary key,
     -- Optional reference to the hash of the file content
-    file_hash text references FileHashes (hash) on delete restrict,
-    -- Optional MIME/media type of the stored content.
-    media_type text,
-    primary key (filepath)
+    file_hash text references FileHashes (hash) on delete restrict
+);
+
+create table CollectedFileMediaTypes (
+    latest_collection integer not null references Collections (id) on delete cascade,
+    -- Collected filepath
+    filepath text not null references CollectedFiles (filepath) on delete cascade,
+    -- MIME/Media type of the content
+    media_type text not null,
+    -- To keep the MIME/Media types order
+    entry_number integer not null,
+    primary key (filepath, media_type)
 );
 
 -- In case a file was collected with different hash values in one collection.

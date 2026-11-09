@@ -117,6 +117,17 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            delete from SchemaContentMediaTypes
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated SchemaContentMediaTypes")?;
+
+        sqlx::query!(
+            "
             delete from Schemas
             where latest_collection < $1
             ",
@@ -147,6 +158,17 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Deleting outdated ConflictingCollectedFiles")?;
+
+        sqlx::query!(
+            "
+            delete from CollectedFileMediaTypes
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated CollectedFileMediaTypes")?;
 
         sqlx::query!(
             "
@@ -315,9 +337,10 @@ impl<'db> Collection<'db> {
 
     pub(super) async fn insert_general_text(
         &mut self,
-        content: &str,
+        content: &String,
     ) -> Result<FmtHash, anyhow::Error> {
         let collection_id = self.collect_nr();
+
         let hash = FmtHash::new(content);
 
         sqlx::query!(
@@ -359,7 +382,7 @@ impl<'db> Collection<'db> {
         file_hash: Option<&FmtHash>,
         content: Option<&str>,
     ) -> Result<MediaType, anyhow::Error> {
-        let media_type = MediaType::new(filepath);
+        let media_type = MediaType::from_rel_path(filepath);
         let filepath = filepath.as_str();
         let collect_nr = self.collect_nr();
 
@@ -463,14 +486,12 @@ impl<'db> Collection<'db> {
             insert into CollectedFiles (
                 latest_collection,
                 filepath,
-                file_hash,
-                media_type
+                file_hash
             )
             values (
                 $1,
                 $2,
-                $3,
-                $4
+                $3
             )
             on conflict (filepath) do update
             set
@@ -480,19 +501,55 @@ impl<'db> Collection<'db> {
                     when CollectedFiles.latest_collection = excluded.latest_collection
                         then coalesce(CollectedFiles.file_hash, excluded.file_hash)
                     else excluded.file_hash
-                end,
-                -- always use the latest media-type representation we created above
-                -- in case media types based on file extensions changed
-                media_type = excluded.file_hash
+                end
             ",
             collect_nr,
             filepath,
-            file_hash,
-            media_type
+            file_hash
         )
         .execute(self.connection_mut())
         .await
         .context("Failed to insert collected file")?;
+
+        if let Some(mimes) = media_type.mimes() {
+            let mut index = 0; // manual index instead of `enumerate()`, because `usize` is not supported in queries
+
+            for mime in mimes {
+                let raw_mime = mime.to_string();
+                index += 1; // increase before for 1-indexed entries
+
+                sqlx::query!(
+                    "
+                    insert into CollectedFileMediaTypes (
+                        latest_collection,
+                        filepath,
+                        media_type,
+                        entry_number
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (
+                        filepath,
+                        media_type
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        entry_number = excluded.entry_number
+                    ",
+                    collect_nr,
+                    filepath,
+                    raw_mime,
+                    index
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to insert collected file media types")?;
+            }
+        }
 
         Ok(media_type)
     }
@@ -649,6 +706,48 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Failed to update collected schemas")?;
+
+        if let Some(media_type) = schema.media_type()
+            && let Some(mimes) = media_type.mimes()
+        {
+            let mut index = 0;
+
+            for mime in mimes {
+                let raw_mime = mime.to_string();
+                index += 1; // increase before for 1-indexed entries
+
+                sqlx::query!(
+                    "
+                    insert into SchemaContentMediaTypes (
+                        latest_collection,
+                        schema_hash,
+                        media_type,
+                        entry_number
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (
+                        schema_hash,
+                        media_type
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        entry_number = excluded.entry_number
+                    ",
+                    collection_id,
+                    schema_hash,
+                    raw_mime,
+                    index
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to insert schema content media types")?;
+            }
+        }
 
         Ok(schema_hash)
     }

@@ -6,6 +6,7 @@ use mantra_schema::{
     path::RelativePathBuf,
     report::{
         annotations::TraceReference,
+        formattable_content::FormattableContent,
         product::ProductReportSchema,
         requirement::RequirementReference,
         review::{ReviewReference, ReviewState},
@@ -19,7 +20,12 @@ use mantra_schema::{
     test_runs::{LogOutput, TestCaseLocation},
 };
 
-use crate::{cmd::report::db::schemas::test_runs::ResolvedLineCoverage, db::MantraTransaction};
+use crate::{
+    cmd::report::db::schemas::{
+        test_run::test_run_content_media_type, test_runs::ResolvedLineCoverage,
+    },
+    db::MantraTransaction,
+};
 
 pub async fn generate_test_case_schema<'db>(
     transaction: &mut MantraTransaction<'db>,
@@ -70,6 +76,9 @@ pub async fn generate_test_case_schema<'db>(
     } else {
         None
     };
+
+    let media_type =
+        test_run_content_media_type(transaction, &product.id, &test_case.test_run_name).await?;
 
     let log_records = sqlx::query!(
         "
@@ -213,7 +222,9 @@ pub async fn generate_test_case_schema<'db>(
         product: product.metadata(),
         test_run: test_run.clone(),
         name: test_case.test_case_name.clone(),
-        description: metadata.description,
+        description: metadata
+            .description
+            .map(|d| FormattableContent::new(d, media_type)),
         state: test_case.state,
         state_properties,
         location,

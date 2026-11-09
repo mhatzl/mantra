@@ -14,7 +14,7 @@ pub use mime_guess;
 pub use relative_path as path;
 pub use time;
 
-use crate::product::ProductId;
+use crate::{media_type::MediaType, product::ProductId};
 
 /// The version of the schema that is defined in this crate.
 /// [req("exchange.versioned")]
@@ -80,6 +80,7 @@ pub trait Schema: serde::Serialize {
     fn version(&self) -> &str;
     fn product_id(&self) -> &Option<ProductId>;
     fn origin(&self) -> &Option<Origin>;
+    fn media_type(&self) -> &Option<MediaType>;
 }
 
 #[derive(

@@ -3,6 +3,7 @@ use mantra_lang_tracing::collect::collector::AnnotationCollector;
 use mantra_schema::{
     FmtHash,
     annotations::{AnnotationSchema, FileAnnotations},
+    media_type::MediaType,
     product::ProductId,
 };
 
@@ -88,6 +89,7 @@ fn collect_from_content(
             }],
             trace_properties: None,
             origin: None,
+            media_type: Some(MediaType::from_ext("md")), // Rust comments allow Markdown, so we take it as media type
         }))
     } else {
         log::error!(

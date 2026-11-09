@@ -121,8 +121,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 origin_hash,
                 description_hash,
                 data_hash,
-                schema_hash,
-                media_type
+                schema_hash
             )
             values (
                 $1,
@@ -132,8 +131,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $5,
                 $6,
                 $7,
-                $8,
-                $9
+                $8
             )
             on conflict (
                 product_id,
@@ -145,8 +143,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 origin_hash = excluded.origin_hash,
                 description_hash = excluded.description_hash,
                 data_hash = excluded.data_hash,
-                schema_hash = excluded.schema_hash,
-                media_type = excluded.media_type
+                schema_hash = excluded.schema_hash
             ",
             collect_nr,
             product_id,
@@ -155,8 +152,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             origin_hash,
             description_hash,
             data_hash,
-            schema_hash,
-            review.media_type
+            schema_hash
         )
         .execute(self.connection_mut())
         .await
@@ -242,6 +238,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(revisions) = &review.revisions {
             for revision in revisions {
+                let summary_hash = self
+                    .insert_general_text(&revision.summary)
+                    .await
+                    .context("Inserting revision summary")?;
+
                 sqlx::query!(
                     "
                     insert into ReviewRevisions (
@@ -249,7 +250,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         product_id,
                         review_name,
                         revision,
-                        summary
+                        summary_hash
                     )
                     values (
                         $1,
@@ -265,13 +266,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     ) do update
                     set
                         latest_collection = excluded.latest_collection,
-                        summary = excluded.summary
+                        summary_hash = excluded.summary_hash
                     ",
                     collect_nr,
                     product_id,
                     review.name,
                     revision.number,
-                    revision.summary
+                    summary_hash
                 )
                 .execute(self.connection_mut())
                 .await
@@ -361,7 +362,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         for test_run_override in &review.test_run_overrides {
             for test_case_override in &test_run_override.test_cases {
                 if let Some(override_state) = &test_case_override.state {
-                    let rational_hash = self.insert_general_text(&override_state.comment)
+                    let rational_hash = self.insert_general_text(&override_state.rational)
                     .await
                     .with_context(||
                         format!(

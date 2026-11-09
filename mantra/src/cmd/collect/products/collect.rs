@@ -35,7 +35,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 homepage,
                 repository,
                 license,
-                media_type,
                 description_hash,
                 data_hash
             )
@@ -49,8 +48,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $7,
                 $8,
                 $9,
-                $10,
-                $11
+                $10
             )
             on conflict (
                 id
@@ -63,7 +61,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 homepage = excluded.homepage,
                 repository = excluded.repository,
                 license = excluded.license,
-                media_type = excluded.media_type,
                 description_hash = excluded.description_hash,
                 data_hash = excluded.data_hash
             ",
@@ -75,7 +72,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             product.homepage,
             product.repository,
             product.license,
-            product.media_type,
             description_hash,
             data_hash
         )
@@ -121,6 +117,48 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 .execute(self.connection_mut())
                 .await
                 .with_context(|| format!("Failed to insert property '{}'", key))?;
+            }
+        }
+
+        if let Some(media_type) = &product.media_type
+            && let Some(mimes) = media_type.mimes()
+        {
+            let mut index = 0;
+
+            for mime in mimes {
+                let raw_mime = mime.to_string();
+                index += 1; // increase before for 1-indexed entries
+
+                sqlx::query!(
+                    "
+                    insert into ProductMetadataMediaTypes (
+                        latest_collection,
+                        product_id,
+                        media_type,
+                        entry_number
+                    )
+                    values (
+                        $1,
+                        $2,
+                        $3,
+                        $4
+                    )
+                    on conflict (
+                        product_id,
+                        media_type
+                    ) do update
+                    set
+                        latest_collection = excluded.latest_collection,
+                        entry_number = excluded.entry_number
+                    ",
+                    collect_nr,
+                    product.id,
+                    raw_mime,
+                    index
+                )
+                .execute(self.connection_mut())
+                .await
+                .context("Failed to insert product metadata media types")?;
             }
         }
 

@@ -3,8 +3,8 @@ use relative_path::RelativePathBuf;
 use crate::{
     Line,
     report::{
-        product::ProductMetadata, review::ReviewReference, sources::SourceProductCoverageSummary,
-        tests::TestReference,
+        formattable_content::FormattableContent, product::ProductMetadata, review::ReviewReference,
+        sources::SourceProductCoverageSummary, tests::TestReference,
     },
 };
 
@@ -49,7 +49,7 @@ pub enum ResolvedLineState {
     Covered(Vec<TestReference>),
     /// Line was excluded from coverage analysis by a mantra annotation.
     Excluded(ExclusionAnnotationReference),
-    Overriden(Vec<ReviewOverride>),
+    Overriden(Vec<ReviewCoverageOverride>),
     Uncovered,
     Unknown,
 }
@@ -57,13 +57,13 @@ pub enum ResolvedLineState {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
-pub struct ReviewOverride {
+pub struct ReviewCoverageOverride {
     pub review: ReviewReference,
     /// The original hits that were collected from the tests.
     pub original_hits: Option<i64>,
     /// The coverage set by the review.
     pub set_coverage: Option<bool>,
-    pub rational: String,
+    pub rational: FormattableContent,
 }
 
 #[derive(
@@ -72,5 +72,5 @@ pub struct ReviewOverride {
 pub struct ExclusionAnnotationReference {
     /// The line the exclude annotation was defined at.
     pub def_line: Line,
-    pub rational: String,
+    pub rational: FormattableContent,
 }

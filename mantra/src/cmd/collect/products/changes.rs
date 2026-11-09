@@ -41,6 +41,17 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            delete from ProductMetadataMediaTypes
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting outdated ProductMetadataMediaTypes")?;
+
+        sqlx::query!(
+            "
             delete from Products
             where latest_collection < $1
             ",

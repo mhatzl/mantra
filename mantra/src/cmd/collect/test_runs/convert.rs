@@ -4,7 +4,6 @@ use anyhow::Context;
 use chrono::FixedOffset;
 use mantra_schema::{
     Origin, Properties, Revision,
-    media_type::MediaType,
     path::{PathExt, RelativePathBuf},
     test_runs::{CoveredFile, CoveredLine, LogOutput, TestCase, TestCaseState, TestRun},
     time::{self, Duration, OffsetDateTime},
@@ -46,7 +45,6 @@ pub struct ShallowTestRun {
     /// Optionally nested test runs.
     /// [req("testcov.test_run.nested")]
     pub test_runs: Vec<ShallowTestRun>,
-    pub media_type: Option<MediaType>,
 }
 
 impl ShallowTestRun {
@@ -82,7 +80,6 @@ impl ShallowTestRun {
                 .into_iter()
                 .map(|t| t.into_test_run(vec![], Some(utc_date)))
                 .collect(),
-            media_type: self.media_type,
         }
     }
 }
@@ -152,7 +149,6 @@ fn junit_to_shallow_test_run(
         test_cases: vec![],
         test_runs: inner_test_runs,
         description: None,
-        media_type: None,
     })
 }
 
@@ -312,7 +308,6 @@ fn get_inner_test_run(
         test_cases,
         test_runs: vec![],
         description: None,
-        media_type: None,
     })
 }
 

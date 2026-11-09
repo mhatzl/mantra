@@ -4,6 +4,18 @@ create table Schemas (
     origin_hash text references GeneralJson (hash) on delete restrict
 );
 
+-- MIME/Media types associated with the general text fields of a schema.
+-- May be more than one for a content.
+create table SchemaContentMediaTypes (
+    latest_collection integer not null references Collections (id) on delete cascade,
+    schema_hash text not null references Schemas (content_hash) on delete cascade,
+    -- MIME/Media type
+    media_type text not null,
+    -- To keep the MIME/Media types order
+    entry_number integer not null,
+    primary key (schema_hash, media_type)
+);
+
 create table SchemaSources (
     latest_collection integer not null references Collections (id) on delete cascade,
     schema_hash text not null references Schemas (content_hash) on delete cascade,

@@ -1,3 +1,4 @@
+use crate::media_type::MediaType;
 use crate::path::RelativePathBuf;
 
 use crate::product::ProductId;
@@ -28,6 +29,12 @@ pub struct AnnotationSchema {
     /// Optional base origin of the files in this entry.
     /// e.g. specific branch or commit from a git repository
     pub origin: Option<Origin>,
+    /// Optional MIME/Media type of the general text added with this schema.
+    /// e.g exclusion rational
+    ///
+    /// **Note:** This has no affect on the MIME/Media types of the file content.
+    /// This is extracted based on the file extension.
+    pub media_type: Option<MediaType>,
 }
 
 impl crate::Schema for AnnotationSchema {
@@ -45,6 +52,10 @@ impl crate::Schema for AnnotationSchema {
 
     fn origin(&self) -> &Option<Origin> {
         &self.origin
+    }
+
+    fn media_type(&self) -> &Option<MediaType> {
+        &self.media_type
     }
 }
 

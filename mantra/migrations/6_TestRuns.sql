@@ -67,8 +67,6 @@ create table TestRuns (
     data_hash text not null,
     -- Schema the data was collected from
     schema_hash text not null references Schemas (content_hash) on delete restrict,
-    -- Optional MIME/media type of test run related general texts (e.g. description).
-    media_type text,
     primary key (product_id, name),
     foreign key (product_id) references Products (id) on delete cascade
 );
@@ -92,7 +90,7 @@ create table TestRunRevisions (
     -- Indicates the revision
     revision integer not null,
     -- Summary for the revision.
-    summary text not null,
+    summary_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (product_id, test_run_name, revision),
     foreign key (product_id, test_run_name) references TestRuns (product_id, name) on delete cascade
 );
@@ -221,8 +219,6 @@ create table TestCases (
     utc_date text,
     -- Optional duration of the test case in seconds.
     duration_sec real,
-    -- Optional MIME/media type of test case related general texts (e.g. description).
-    media_type text,
     primary key (
         product_id,
         test_run_name,

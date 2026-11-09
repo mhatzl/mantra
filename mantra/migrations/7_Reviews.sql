@@ -48,8 +48,6 @@ create table Reviews (
     data_hash text not null,
     -- Schema the data was collected from
     schema_hash text not null references Schemas (content_hash) on delete restrict,
-    -- Optional MIME/media type of review related general texts (e.g. description).
-    media_type text,
     primary key (product_id, name),
     foreign key (product_id) references Products (id) on delete cascade
 );
@@ -83,7 +81,7 @@ create table ReviewRevisions (
     -- Indicates the revision
     revision integer not null,
     -- Summary for the revision.
-    summary text not null,
+    summary_hash text not null references GeneralTexts (hash) on delete restrict,
     primary key (product_id, review_name, revision),
     foreign key (product_id, review_name) references Reviews (product_id, name) on delete cascade
 );

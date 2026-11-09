@@ -229,7 +229,6 @@ async fn collect_well_known<'db, 'c>(
             test_cases: vec![],
             covered_files,
             test_runs,
-            media_type: None,
         }
     };
 
@@ -241,6 +240,7 @@ async fn collect_well_known<'db, 'c>(
         test_case_properties: None,
         origin: None,
         parent: None,
+        media_type: None,
     };
 
     let schema_hash = collection

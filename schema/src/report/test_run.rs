@@ -1,10 +1,12 @@
 use relative_path::RelativePathBuf;
 
 use crate::{
-    Origin, Properties, Revision, TEST_RUNS_FOLDER_NAME,
+    Origin, Properties, TEST_RUNS_FOLDER_NAME,
     encoding::TargetEncoding,
     product::ProductId,
     report::{
+        ResolvedRevision,
+        formattable_content::FormattableContent,
         product::ProductMetadata,
         review::ReviewReference,
         test_case::TestCaseReference,
@@ -67,9 +69,9 @@ pub struct TestRunReportSchema {
     pub utc_date: time::OffsetDateTime,
     pub state: TestState,
     /// Optional description of the test run.
-    pub description: Option<String>,
+    pub description: Option<FormattableContent>,
     /// Optional revisions for the test run.
-    pub revisions: Option<Vec<Revision>>,
+    pub revisions: Option<Vec<ResolvedRevision>>,
     /// Optional origin of the test run.
     /// [req("testcov.test_run.origin")]
     pub origin: Option<Origin>,

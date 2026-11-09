@@ -7,6 +7,7 @@ use comrak::{
 };
 use mantra_schema::{
     Properties, SCHEMA_VERSION,
+    media_type::MediaType,
     product::ProductId,
     requirements::{ReqId, Requirement, RequirementRelation, RequirementSchema},
 };
@@ -118,6 +119,7 @@ pub fn collect_requirements(
             requirements,
             properties,
             origin,
+            media_type: Some(MediaType::from_ext("md")),
         }))
     }
 }

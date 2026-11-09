@@ -112,7 +112,7 @@ fn write_report_schemas(base_path: &std::path::Path) {
     );
 }
 
-fn write_schema(schema: &schemars::schema::RootSchema, path: &std::path::Path) {
+fn write_schema(schema: &schemars::Schema, path: &std::path::Path) {
     let content = serde_json::to_string_pretty(schema).expect("Schema is serializable.");
     if let Err(err) = std::fs::write(path, content) {
         eprintln!("Failed writing schema. Cause: {}", err);

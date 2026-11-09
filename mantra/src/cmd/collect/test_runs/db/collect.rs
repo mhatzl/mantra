@@ -1,7 +1,6 @@
 use anyhow::Context;
 use mantra_schema::{
     FmtHash,
-    media_type::MediaType,
     test_runs::{TestRun, TestRunSchema},
 };
 
@@ -85,13 +84,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
             // Note: Passing the media type of the top-level test run,
             // so nested ones can use it as fallback
-            self.update_per_test_run(
-                test_run,
-                schema_hash,
-                test_run.media_type.as_ref(), // top-level test run gets it's own media type
-            )
-            .await
-            .with_context(|| format!("Failed to update test run '{}'", name))?;
+            self.update_per_test_run(test_run, schema_hash)
+                .await
+                .with_context(|| format!("Failed to update test run '{}'", name))?;
 
             if let Some(parent) = &test_run_schema.parent {
                 sqlx::query!(
@@ -134,7 +129,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         &mut self,
         test_run: &TestRun,
         schema_hash: &FmtHash,
-        parent_media_type: Option<&MediaType>,
     ) -> Result<(), anyhow::Error> {
         let collect_nr = self.collect_nr();
         let product_id = self.product_id().clone();
@@ -187,7 +181,6 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         };
 
         let duration = test_run.duration_sec.map(|d| d.as_seconds_f64());
-        let media_type = test_run.media_type.as_ref().or(parent_media_type);
 
         sqlx::query!(
             "
@@ -200,8 +193,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 duration_sec,
                 origin_hash,
                 data_hash,
-                schema_hash,
-                media_type
+                schema_hash
             )
             values (
                 $1,
@@ -212,8 +204,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 $6,
                 $7,
                 $8,
-                $9,
-                $10
+                $9
             )
             on conflict (
                 product_id,
@@ -226,8 +217,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 duration_sec = excluded.duration_sec,
                 origin_hash = excluded.origin_hash,
                 data_hash = excluded.data_hash,
-                schema_hash = excluded.schema_hash,
-                media_type = excluded.media_type
+                schema_hash = excluded.schema_hash
             ",
             collect_nr,
             product_id,
@@ -237,8 +227,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             duration,
             origin_hash,
             data_hash,
-            schema_hash,
-            media_type
+            schema_hash
         )
         .execute(self.connection_mut())
         .await
@@ -287,6 +276,11 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
 
         if let Some(revisions) = &test_run.revisions {
             for revision in revisions {
+                let summary_hash = self
+                    .insert_general_text(&revision.summary)
+                    .await
+                    .context("Inserting revision summary")?;
+
                 sqlx::query!(
                     "
                     insert into TestRunRevisions (
@@ -294,7 +288,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         product_id,
                         test_run_name,
                         revision,
-                        summary
+                        summary_hash
                     )
                     values (
                         $1,
@@ -310,13 +304,13 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                     ) do update
                     set
                         latest_collection = excluded.latest_collection,
-                        summary = excluded.summary
+                        summary_hash = excluded.summary_hash
                     ",
                     collect_nr,
                     product_id,
                     test_run.name,
                     revision.number,
-                    revision.summary
+                    summary_hash
                 )
                 .execute(self.connection_mut())
                 .await
@@ -397,7 +391,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             // => safe to add child test run after hierarchy inside the same transaction
             let name = &child_test_run.name;
 
-            Box::pin(self.update_per_test_run(child_test_run, schema_hash, media_type))
+            Box::pin(self.update_per_test_run(child_test_run, schema_hash))
                 .await
                 .with_context(|| format!("Failed to update child test run '{}'", name))?;
         }
@@ -405,7 +399,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
         if let Some(logs) = &test_run.logs {
             // TODO: ensure that log srcs only appear once
             for log in logs {
-                let log_src = log.source.as_nr();
+                let log_src = log.source.as_number();
                 let log_hash = self
                     .insert_general_text(&log.content)
                     .await
@@ -679,7 +673,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if let Some(logs) = &test_case.logs {
                 // TODO: ensure that log srcs only appear once
                 for log in logs {
-                    let log_src = log.source.as_nr();
+                    let log_src = log.source.as_number();
                     let log_hash =
                         self.insert_general_text(&log.content)
                             .await

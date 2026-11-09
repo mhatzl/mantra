@@ -69,8 +69,6 @@ create table Requirements (
     data_hash text not null,
     -- Schema the data was collected from
     schema_hash text not null references Schemas (content_hash) on delete restrict,
-    -- Optional MIME/media type of requirement related general texts (e.g. title and description).
-    media_type text,
     primary key (product_id, id),
     foreign key (product_id) references Products (id) on delete cascade
 );
