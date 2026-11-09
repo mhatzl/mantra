@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into SchemaContentMediaTypes (\n                        latest_collection,\n                        schema_hash,\n                        media_type,\n                        entry_number\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    on conflict (\n                        schema_hash,\n                        media_type\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection,\n                        entry_number = excluded.entry_number\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "88183a6dfcc90a4565dd594dca4ece33729b26cc8f883eee3c2f422a9935bb36"
+}

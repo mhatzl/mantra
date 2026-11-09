@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select media_type\n        from SchemaContentMediaTypes mt, TestRuns tr\n        where tr.product_id = $1 and tr.name = $2\n        and tr.schema_hash = mt.schema_hash\n        order by mt.entry_number\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "media_type",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "SchemaContentMediaTypes",
+            "name": "media_type"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "71383aa849d7e52f58dd5df6aa4fd361849a1abd361edb42384443b753c0b4a8"
+}

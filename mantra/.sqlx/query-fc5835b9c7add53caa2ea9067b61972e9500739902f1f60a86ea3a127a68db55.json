@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select media_type\n        from SchemaContentMediaTypes mt, Reviews r\n        where r.product_id = $1 and r.name = $2\n        and r.schema_hash = mt.schema_hash\n        order by mt.entry_number\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "media_type",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "SchemaContentMediaTypes",
+            "name": "media_type"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fc5835b9c7add53caa2ea9067b61972e9500739902f1f60a86ea3a127a68db55"
+}

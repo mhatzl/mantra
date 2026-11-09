@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select media_type\n        from ProductMetadataMediaTypes\n        where product_id = $1\n        order by entry_number\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "media_type",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ProductMetadataMediaTypes",
+            "name": "media_type"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "556badb8429dc0633b1453bdbcd62775c789e2f8fd349c0dbaabe57225f23145"
+}

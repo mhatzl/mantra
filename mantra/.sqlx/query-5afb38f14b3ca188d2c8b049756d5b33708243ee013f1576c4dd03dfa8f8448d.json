@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from CollectedFileMediaTypes\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5afb38f14b3ca188d2c8b049756d5b33708243ee013f1576c4dd03dfa8f8448d"
+}

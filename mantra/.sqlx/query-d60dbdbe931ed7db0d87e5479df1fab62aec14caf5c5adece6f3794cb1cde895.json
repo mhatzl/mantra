@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ProductMetadataMediaTypes\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "d60dbdbe931ed7db0d87e5479df1fab62aec14caf5c5adece6f3794cb1cde895"
+}

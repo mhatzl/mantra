@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        select r.revision, gt.content\n        from ReviewRevisions r, GeneralTexts gt\n        where r.product_id = $1 and r.review_name = $2\n        and r.summary_hash = gt.hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "revision",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ReviewRevisions",
+            "name": "revision"
+          }
+        }
+      },
+      {
+        "name": "content",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "GeneralTexts",
+            "name": "content"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "532061eaeccadf77a877370ef55fbbdf4ad33e357ae774af033a2a410f920f68"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into ProductMetadataMediaTypes (\n                        latest_collection,\n                        product_id,\n                        media_type,\n                        entry_number\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    on conflict (\n                        product_id,\n                        media_type\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection,\n                        entry_number = excluded.entry_number\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "a072684952151fc9f1b2407ba189ba7313094fabba0f9f64bd90c2d7588a8fa9"
+}

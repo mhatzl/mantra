@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                    insert into CollectedFileMediaTypes (\n                        latest_collection,\n                        filepath,\n                        media_type,\n                        entry_number\n                    )\n                    values (\n                        $1,\n                        $2,\n                        $3,\n                        $4\n                    )\n                    on conflict (\n                        filepath,\n                        media_type\n                    ) do update\n                    set\n                        latest_collection = excluded.latest_collection,\n                        entry_number = excluded.entry_number\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "31524b2be392a8c16fe2357138bacae566875a46878e435ce303ff47489383b8"
+}
