@@ -2,35 +2,34 @@
     test_runs: [{
         name: "overrideable-test-run",
         utc_date: "2026-05-17T11:16:58Z",
-        nr_of_test_cases: 6,
         test_cases: [{
             name: "passed-covering-lines",
             state: "passed",
             covered_files: [{
                 filepath: "passed_overrideable_coverage.rs",
                 lines: [{
-                    nr: 1,
+                    number: 1,
                     hits: 1,
                 },{
-                    nr: 2,
+                    number: 2,
                     hits: 2,
                 },{
-                    nr: 3,
+                    number: 3,
                     hits: 3,
                 },{
-                    nr: 4,
+                    number: 4,
                     hits: 4,
                 },{
-                    nr: 5,
+                    number: 5,
                     hits: 5,
                 },{
-                    nr: 10,
+                    number: 10,
                     hits: 0,
                 },{
-                    nr: 11,
+                    number: 11,
                     hits: 0,
                 },{
-                    nr: 20,
+                    number: 20,
                 }]
             }]
         },{
@@ -39,28 +38,28 @@
             covered_files: [{
                 filepath: "failed_overrideable_coverage.rs",
                 lines: [{
-                    nr: 1,
+                    number: 1,
                     hits: 1,
                 },{
-                    nr: 2,
+                    number: 2,
                     hits: 2,
                 },{
-                    nr: 3,
+                    number: 3,
                     hits: 3,
                 },{
-                    nr: 4,
+                    number: 4,
                     hits: 4,
                 },{
-                    nr: 5,
+                    number: 5,
                     hits: 5,
                 },{
-                    nr: 10,
+                    number: 10,
                     hits: 0,
                 },{
-                    nr: 11,
+                    number: 11,
                     hits: 0,
                 },{
-                    nr: 20,
+                    number: 20,
                 }]
             }]
         },{
@@ -106,28 +105,28 @@
         covered_files: [{
             filepath: "test_run_overrideable_coverage.rs",
             lines: [{
-                nr: 1,
+                number: 1,
                 hits: 1,
             },{
-                nr: 2,
+                number: 2,
                 hits: 2,
             },{
-                nr: 3,
+                number: 3,
                 hits: 3,
             },{
-                nr: 4,
+                number: 4,
                 hits: 4,
             },{
-                nr: 5,
+                number: 5,
                 hits: 5,
             },{
-                nr: 10,
+                number: 10,
                 hits: 0,
             },{
-                nr: 11,
+                number: 11,
                 hits: 0,
             },{
-                nr: 20,
+                number: 20,
             }]
         }]
     }]

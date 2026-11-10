@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ResolvedLineCoverageStates (\n                product_id,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                cov_state\n            )\n            with CombinedResolvedLineCoverageStates (\n                product_id,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                cov_state\n            ) as (\n                select product_id, cov_filepath, cov_file_hash, cov_line, cov_state\n                from ResolvedTestRunLineCoverage\n\n                union all\n\n                select product_id, cov_filepath, cov_file_hash, cov_line, cov_state\n                from ResolvedTestCaseLineCoverage\n            )\n            select\n                product_id,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                case\n                    -- covered line in at least one test wins\n                    when count(*) filter (where cov_state = $2) > 0 then $2\n                    -- excluded is next, because it must have been set explicitly.\n                    -- either via annotation or review\n                    when count(*) filter (where cov_state = $3) > 0 then $3\n                    -- uncovered is next, because it leaves actual code that was not covered or excluded\n                    when count(*) filter (where cov_state = $1) > 0 then $1\n                    -- anything else is unknown\n                    else $4\n                end as cov_state\n            from CombinedResolvedLineCoverageStates\n            group by product_id, cov_filepath, cov_file_hash, cov_line\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "ad61f64c6344d24ab66a757ef28617677d5ae84fef6ba2218fcba47b8d44fccc"
+}

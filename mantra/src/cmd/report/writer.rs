@@ -54,7 +54,8 @@ impl<'templates> ReportWriter<'templates> {
 
         for format in self.cfg.formats() {
             let content = if format == &ReportFormat::Json {
-                json5::to_string(&schema)?
+                // using plain JSON instead of JSON5 so other JSON based tooling can handle the output
+                serde_json::to_string_pretty(&schema)?
             } else {
                 self.templates.render(&template_name, format, &context)?
             };

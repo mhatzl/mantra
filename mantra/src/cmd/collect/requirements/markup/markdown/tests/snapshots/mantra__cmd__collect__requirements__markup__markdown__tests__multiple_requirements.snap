@@ -22,7 +22,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-2",
@@ -41,7 +40,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3",
@@ -60,11 +58,14 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
   ],
   properties: None,
   origin: Some({
     "file": "multiple_requirements.md",
   }),
+  media_type: Some([
+    "text/markdown",
+    "text/x-markdown",
+  ]),
 )

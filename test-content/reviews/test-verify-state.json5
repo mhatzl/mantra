@@ -12,7 +12,7 @@
                 "manual_req.test_verified.failed",
                 "manual_req.test_verified.skipped"
             ],
-            comment: "Verifying requirements"
+            rational: "Verifying requirements"
         }]
     }]
 }

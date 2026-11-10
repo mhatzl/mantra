@@ -500,7 +500,7 @@ mod tests {
         assert!(rr.is_err());
         assert_eq!(
             rr.unwrap_err().to_string(),
-            "unknown field `other-field`, expected `id`, `product_id`, `optional` or `aspect`"
+            "unknown field `other-field`, expected one of `id`, `product_id`, `optional`, `aspect`"
         );
     }
 

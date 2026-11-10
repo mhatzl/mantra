@@ -24,7 +24,6 @@ RequirementSchema(
       properties: Some({
         "mantra_unknown": "Some custom property value",
       }),
-      media_type: None,
     ),
     Requirement(
       id: "req-2",
@@ -58,7 +57,6 @@ RequirementSchema(
           "key": "value",
         },
       }),
-      media_type: None,
     ),
     Requirement(
       id: "req-3",
@@ -86,7 +84,6 @@ RequirementSchema(
       properties: Some({
         "some_flag": false,
       }),
-      media_type: None,
     ),
     Requirement(
       id: "req-4",
@@ -119,7 +116,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-5",
@@ -151,11 +147,14 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
   ],
   properties: None,
   origin: Some({
     "file": "known_and_custom_fields.md",
   }),
+  media_type: Some([
+    "text/markdown",
+    "text/x-markdown",
+  ]),
 )

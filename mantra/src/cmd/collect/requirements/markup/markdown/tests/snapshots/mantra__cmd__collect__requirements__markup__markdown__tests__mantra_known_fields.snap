@@ -22,7 +22,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-2",
@@ -48,7 +47,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3",
@@ -76,7 +74,6 @@ RequirementSchema(
         "req-2",
       ]),
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-4",
@@ -102,11 +99,14 @@ RequirementSchema(
       draft: Some(true),
       replaces: None,
       properties: None,
-      media_type: None,
     ),
   ],
   properties: None,
   origin: Some({
     "file": "mantra_known_fields.md",
   }),
+  media_type: Some([
+    "text/markdown",
+    "text/x-markdown",
+  ]),
 )

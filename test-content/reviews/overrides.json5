@@ -5,37 +5,36 @@
         authors: ["Manuel"],
         test_run_overrides: [{
             name: "overrideable-test-run",
-            utc_date: "2026-05-17T11:16:58Z",
             test_cases: [{
                 name: "would-be-failed",
                 state: {
                     new: "passed",
-                    comment: "Test state override"
+                    rational: "Test state override"
                 }
             },{
                 name: "would-be-skipped",
                 state: {
                     new: "passed",
-                    comment: "Test state override"
+                    rational: "Test state override"
                 }
             },{
                 name: "would-be-unknown",
                 state: {
                     new: "passed",
-                    comment: "Test state override"
+                    rational: "Test state override"
                 }
             },{
                 name: "passed-covering-lines",
                 coverage: [{
                     filepath: "passed_overrideable_coverage.rs",
                     lines: [{
-                        nrs: [1,2,3,4,5],
-                        hits: 1,
-                        comment: "Unify hits",
+                        numbers: [1,2,3,4,5],
+                        covered: true,
+                        rational: "Unify hits",
                     },{
-                        nrs: [20],
-                        hits: 2,
-                        comment: "Make line covered",
+                        numbers: [20],
+                        covered: true,
+                        rational: "Make line covered",
                     }]
                 }]
             },{
@@ -43,18 +42,18 @@
                 coverage: [{
                     filepath: "failed_overrideable_coverage.rs",
                     lines: [{
-                        nrs: [10, 11, 20],
-                        hits: 1,
-                        comment: "Make all lines covered",
+                        numbers: [10, 11, 20],
+                        covered: true,
+                        rational: "Make all lines covered",
                     }]
                 }]
             }],
             coverage: [{
                 filepath: "test_run_overrideable_coverage.rs",
                 lines: [{
-                    nrs: [1,2,3,4,5,10, 11, 20],
-                    hits: 100,
-                    comment: "Set all coverable lines to 100.",
+                  numbers: [1,2,3,4,5,10, 11, 20],
+                  covered: true,
+                  rational: "Set all coverable lines to 100.",
                 }]
             }]
         }]

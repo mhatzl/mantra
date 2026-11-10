@@ -32,7 +32,7 @@ collect:
 
 report:
     rm -rf target/mantra-report
-    cargo run -p mantra -- --db-url={{ test_db_url }} report --formats=json --formats=html  --output-dir=target/mantra-report/
+    cargo run -p mantra -- --db-url={{ test_db_url }} report --formats=json   --output-dir=target/mantra-report/
 
 rm-test-db:
     rm -f {{ test_db_path }}

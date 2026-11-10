@@ -22,7 +22,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-1.sub-1",
@@ -48,7 +47,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-1.sub-2",
@@ -67,7 +65,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-2",
@@ -86,7 +83,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-2.sub-1",
@@ -118,7 +114,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3",
@@ -144,7 +139,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3.sub-1",
@@ -163,7 +157,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3.sub-1.sub-sub-1",
@@ -182,7 +175,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3.sub-1.sub-sub-2",
@@ -201,7 +193,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
     Requirement(
       id: "req-3.sub-1.sub-sub-3",
@@ -233,11 +224,14 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
   ],
   properties: None,
   origin: Some({
     "file": "parents_and_dot_combination.md",
   }),
+  media_type: Some([
+    "text/markdown",
+    "text/x-markdown",
+  ]),
 )

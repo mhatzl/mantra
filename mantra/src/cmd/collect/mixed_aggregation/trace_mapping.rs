@@ -44,7 +44,7 @@ impl<'db> Collection<'db> {
                 file_hash,
                 traced_line
             )
-            select
+            select distinct
                 tlt.product_id,
                 tlt.filepath,
                 tlt.file_hash,
@@ -91,7 +91,7 @@ impl<'db> Collection<'db> {
                 file_hash,
                 traced_line
             )
-            select
+            select distinct
                 tlt.product_id,
                 tlt.filepath,
                 tlt.file_hash,
@@ -138,7 +138,7 @@ impl<'db> Collection<'db> {
                 file_hash,
                 traced_line
             )
-            select
+            select distinct
                 tlt.product_id,
                 tlt.filepath,
                 tlt.file_hash,
@@ -185,7 +185,7 @@ impl<'db> Collection<'db> {
                 file_hash,
                 traced_line
             )
-            select
+            select distinct
                 tlt.product_id,
                 tlt.filepath,
                 tlt.file_hash,

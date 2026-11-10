@@ -22,7 +22,6 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
   ],
   properties: Some({
@@ -32,4 +31,8 @@ RequirementSchema(
   origin: Some({
     "file": "matching_frontmatter.md",
   }),
+  media_type: Some([
+    "text/markdown",
+    "text/x-markdown",
+  ]),
 )

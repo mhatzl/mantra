@@ -22,11 +22,14 @@ RequirementSchema(
       draft: None,
       replaces: None,
       properties: None,
-      media_type: None,
     ),
   ],
   properties: None,
   origin: Some({
     "file": "single_requirement.md",
   }),
+  media_type: Some([
+    "text/markdown",
+    "text/x-markdown",
+  ]),
 )

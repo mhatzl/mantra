@@ -166,8 +166,6 @@ impl<'db> Collection<'db> {
     }
 
     async fn resolve_line_coverage(&mut self) -> Result<(), anyhow::Error> {
-        let collection_id = self.collect_nr();
-
         sqlx::query!(
             "
             delete from ResolvedTestRunLineCoverage
@@ -350,8 +348,16 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
+            delete from ResolvedLineCoverageStates
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing ResolvedLineCoverageStates")?;
+
+        sqlx::query!(
+            "
             insert into ResolvedLineCoverageStates (
-                latest_collection,
                 product_id,
                 cov_filepath,
                 cov_file_hash,
@@ -372,66 +378,26 @@ impl<'db> Collection<'db> {
 
                 select product_id, cov_filepath, cov_file_hash, cov_line, cov_state
                 from ResolvedTestCaseLineCoverage
-            ),
-            ResolvedCoveredLines (product_id, cov_filepath, cov_file_hash, cov_line) as (
-                select distinct product_id, cov_filepath, cov_file_hash, cov_line
-                from CombinedResolvedLineCoverageStates
             )
             select
-                $1 as latest_collection,
-                rl.product_id,
-                rl.cov_filepath,
-                rl.cov_file_hash,
-                rl.cov_line,
-                case
-                -- covered line in at least one test wins
-                when exists (
-                    select cls.cov_line
-                    from CombinedResolvedLineCoverageStates cls
-                    where cls.product_id = rl.product_id
-                    and cls.cov_filepath = rl.cov_filepath
-                    and cls.cov_file_hash = rl.cov_file_hash
-                    and cls.cov_line = rl.cov_line
-                    and cls.cov_state = $3
-                ) then $3
-                -- excluded is next, because it must have been set explicitly.
-                -- either via annotation or review
-                when exists (
-                    select cls.cov_line
-                    from CombinedResolvedLineCoverageStates cls
-                    where cls.product_id = rl.product_id
-                    and cls.cov_filepath = rl.cov_filepath
-                    and cls.cov_file_hash = rl.cov_file_hash
-                    and cls.cov_line = rl.cov_line
-                    and cls.cov_state = $4
-                ) then $4
-                -- uncovered is next, because it leaves actual code that was not covered or excluded
-                when exists (
-                    select cls.cov_line
-                    from CombinedResolvedLineCoverageStates cls
-                    where cls.product_id = rl.product_id
-                    and cls.cov_filepath = rl.cov_filepath
-                    and cls.cov_file_hash = rl.cov_file_hash
-                    and cls.cov_line = rl.cov_line
-                    and cls.cov_state = $2
-                ) then $2
-                -- anything else is unknown
-                else $5
-                end as cov_state
-            from ResolvedCoveredLines rl
-            where true
-
-            on conflict (
                 product_id,
                 cov_filepath,
-                cov_line
-            ) do update
-            set
-                latest_collection = excluded.latest_collection,
-                cov_file_hash = excluded.cov_file_hash,
-                cov_state = excluded.cov_state
+                cov_file_hash,
+                cov_line,
+                case
+                    -- covered line in at least one test wins
+                    when count(*) filter (where cov_state = $2) > 0 then $2
+                    -- excluded is next, because it must have been set explicitly.
+                    -- either via annotation or review
+                    when count(*) filter (where cov_state = $3) > 0 then $3
+                    -- uncovered is next, because it leaves actual code that was not covered or excluded
+                    when count(*) filter (where cov_state = $1) > 0 then $1
+                    -- anything else is unknown
+                    else $4
+                end as cov_state
+            from CombinedResolvedLineCoverageStates
+            group by product_id, cov_filepath, cov_file_hash, cov_line
             ",
-            collection_id,
             uncovered_state,
             covered_state,
             excluded_state,
@@ -440,17 +406,6 @@ impl<'db> Collection<'db> {
         .execute(self.connection_mut())
         .await
         .context("Failed to update ResolvedLineCoverageStates")?;
-
-        sqlx::query!(
-            "
-            delete from ResolvedLineCoverageStates
-            where latest_collection < $1
-            ",
-            collection_id
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Clearing ResolvedLineCoverageStates")?;
 
         Ok(())
     }
