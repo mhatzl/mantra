@@ -377,7 +377,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                         select * from TestCases tc
                         where product_id = $1
                             and test_run_name = $2
-                            and name = $4
+                            and name = $3
                         ",
                         product_id,
                         test_run_override.name,
@@ -513,8 +513,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                                 select * from TestCaseLineCoverage tc
                                 where product_id = $1
                                     and test_run_name = $2
-                                    and test_case_name = $4
-                                    and cov_filepath = $5 and cov_line = $6
+                                    and test_case_name = $3
+                                    and cov_filepath = $4
+                                    and cov_line = $5
                                 ",
                                 product_id,
                                 test_run_override.name,
@@ -674,8 +675,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                             select * from TestRunLineCoverage tc
                             where product_id = $1
                             and test_run_name = $2
-                            and cov_filepath = $4
-                            and cov_line = $5
+                            and cov_filepath = $3
+                            and cov_line = $4
                             ",
                             product_id,
                             test_run_override.name,

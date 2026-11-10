@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                            select * from TestRunLineCoverage tc\n                            where product_id = $1\n                            and test_run_name = $2\n                            and cov_filepath = $4\n                            and cov_line = $5\n                            ",
+  "query": "\n                                select * from TestCaseLineCoverage tc\n                                where product_id = $1\n                                    and test_run_name = $2\n                                    and test_case_name = $3\n                                    and cov_filepath = $4\n                                    and cov_line = $5\n                                ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Integer",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
             "name": "latest_collection"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
             "name": "product_id"
           }
         }
@@ -31,60 +31,72 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
             "name": "test_run_name"
           }
         }
       },
       {
-        "name": "cov_filepath",
+        "name": "test_case_name",
         "ordinal": 3,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
+            "name": "test_case_name"
+          }
+        }
+      },
+      {
+        "name": "cov_filepath",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "TestCaseLineCoverage",
             "name": "cov_filepath"
           }
         }
       },
       {
         "name": "cov_file_hash",
-        "ordinal": 4,
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
             "name": "cov_file_hash"
           }
         }
       },
       {
         "name": "cov_line",
-        "ordinal": 5,
+        "ordinal": 6,
         "type_info": "Integer",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
             "name": "cov_line"
           }
         }
       },
       {
         "name": "hits",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Integer",
         "origin": {
           "Table": {
-            "table": "TestRunLineCoverage",
+            "table": "TestCaseLineCoverage",
             "name": "hits"
           }
         }
       }
     ],
     "parameters": {
-      "Right": 4
+      "Right": 5
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -94,5 +106,5 @@
       true
     ]
   },
-  "hash": "d90902ce348fae1bd135ff619b462d94f137a17a3bc414162b253d94f274a29b"
+  "hash": "5f7f671e5134a12c6e84aac7de8d9ea2b59d11ac51d91dd732339b83e5f3642d"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n                        select * from TestCases tc\n                        where product_id = $1\n                            and test_run_name = $2\n                            and name = $4\n                        ",
+  "query": "\n                        select * from TestCases tc\n                        where product_id = $1\n                            and test_run_name = $2\n                            and name = $3\n                        ",
   "describe": {
     "columns": [
       {
@@ -106,5 +106,5 @@
       true
     ]
   },
-  "hash": "eb50e2285bf6bb30f4e3011ac019421bc05c74fc84ccf7207308f9c49dbc2056"
+  "hash": "48c9c0ff50be138da88fb0fb3e3bd0f08c4876f21f549eae59b89465c6bace01"
 }
