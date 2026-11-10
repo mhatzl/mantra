@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ChangedRequirementVerificationStates\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "5ca9191500de7088ba5888c260d5bc3269c0a22d8af345aaa7c949f3cab60412"
+}

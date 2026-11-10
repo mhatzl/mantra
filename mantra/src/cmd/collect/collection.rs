@@ -775,6 +775,10 @@ impl<'db> Collection<'db> {
             .await
             .context("Resetting review history")?;
 
+        self.reset_aggregated_changes()
+            .await
+            .context("Resetting aggregated history")?;
+
         Ok(())
     }
 

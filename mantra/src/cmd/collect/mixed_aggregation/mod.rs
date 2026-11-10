@@ -75,4 +75,44 @@ impl<'db> Collection<'db> {
 
         Ok(())
     }
+
+    pub(crate) async fn reset_aggregated_changes(&mut self) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "
+            delete from AddedLineCoverage
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting added line coverage history")?;
+
+        sqlx::query!(
+            "
+            delete from RemovedLineCoverage
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting removed line coverage history")?;
+
+        sqlx::query!(
+            "
+            delete from ChangedLineCoverage
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting changed line coverage history")?;
+
+        sqlx::query!(
+            "
+            delete from ChangedRequirementVerificationStates
+            "
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Deleting requirement verification state history")?;
+
+        Ok(())
+    }
 }

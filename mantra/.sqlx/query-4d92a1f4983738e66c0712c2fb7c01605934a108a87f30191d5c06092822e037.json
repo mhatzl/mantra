@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from AddedLineCoverage\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "4d92a1f4983738e66c0712c2fb7c01605934a108a87f30191d5c06092822e037"
+}
