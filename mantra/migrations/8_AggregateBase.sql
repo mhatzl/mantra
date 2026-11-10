@@ -229,7 +229,7 @@ create table ResolvedTestCaseStates (
     state integer not null,
     primary key (product_id, test_run_name, test_case_name),
     foreign key (product_id, test_run_name, test_case_name)
-        references TestCases (product_id, test_run_name, name)
+        references TestCases (product_id, test_run_name, name) on delete cascade
 );
 
 create view PassedTestCases as
@@ -264,7 +264,7 @@ create table UsableTestCases (
     test_case_name text not null,
     primary key (product_id, test_run_name, test_case_name),
     foreign key (product_id, test_run_name, test_case_name)
-        references TestCases (product_id, test_run_name, name)
+        references TestCases (product_id, test_run_name, name) on delete cascade
 );
 
 create table TestRunDescendants (
