@@ -28,11 +28,11 @@ testcov:
     grcov . -s . --binary-path ./target/debug/ -t html -t cobertura-pretty --ignore-not-existing -o ./target/nextest/default/coverage/ --ignore='/**/*' --ignore='target/*'
 
 collect:
-    cargo run -p mantra -- --db-url={{ test_db_url }} collect --product-id="mantra" --product-version="latest"
+    cargo run -p mantra -r -- --db-url={{ test_db_url }} collect --product-id="mantra" --product-version="latest"
 
 report:
     rm -rf target/mantra-report
-    cargo run -p mantra -- --db-url={{ test_db_url }} report --formats=json   --output-dir=target/mantra-report/
+    cargo run -p mantra -r -- --db-url={{ test_db_url }} report --formats=json   --output-dir=target/mantra-report/
 
 rm-test-db:
     rm -f {{ test_db_path }}

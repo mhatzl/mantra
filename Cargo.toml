@@ -30,3 +30,11 @@ license = "MIT"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
+
+# Workaround for a bug in Apple's Command Line Tools 27 linker (`ld-27037.1`):
+# stripping debug info (the release default, `strip = "debuginfo"`) while linking
+# proc-macro dylibs mis-aligns the LINKEDIT string pool, producing dylibs that
+# `dlopen` refuses to load (e.g. `libsqlx_macros-*.dylib`). Disabling stripping for
+# `sqlx-macros` works around this without affecting the final binary.
+[profile.release.package.sqlx-macros]
+strip = false
