@@ -514,8 +514,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
     }
 
     async fn get_dot_parent(&mut self, product_id: &ProductId, req_id: &ReqId) -> Option<ReqId> {
-        let mut req_id = req_id.as_str();
-        while let Some((parent, _)) = req_id.rsplit_once('.') {
+        let mut req_id_part = req_id.as_str();
+        while let Some((parent, _)) = req_id_part.rsplit_once('.') {
             let parent_exists = self
                 .req_exists(product_id, &ReqId::from_str(parent).ok()?)
                 .await;
@@ -523,7 +523,14 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             if parent_exists {
                 return ReqId::from_str(parent).ok();
             } else {
-                req_id = parent;
+                log::warn!(
+                    "Missing dot-parent '{}' for requirement '{}' in product '{}'",
+                    parent,
+                    req_id,
+                    product_id
+                );
+
+                req_id_part = parent;
             }
         }
 
