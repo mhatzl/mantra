@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from RequirementsWithTestCasesCoveringSatisfyAndVerifyTraces\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "42842f898bf027f5cf4286c10f52fcbe31153624d27d8ee7234801bc36fdd83b"
+}

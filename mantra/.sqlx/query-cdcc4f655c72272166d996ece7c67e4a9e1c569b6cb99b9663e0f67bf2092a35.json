@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            insert into ResolvedLineCoverageStates (\n                latest_collection,\n                product_id,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                cov_state\n            )\n            with CombinedResolvedLineCoverageStates (\n                product_id,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                cov_state\n            ) as (\n                select product_id, cov_filepath, cov_file_hash, cov_line, cov_state\n                from ResolvedTestRunLineCoverage\n\n                union all\n\n                select product_id, cov_filepath, cov_file_hash, cov_line, cov_state\n                from ResolvedTestCaseLineCoverage\n            )\n            select\n                $1 as latest_collection,\n                product_id,\n                cov_filepath,\n                cov_file_hash,\n                cov_line,\n                case\n                    -- covered line in at least one test wins\n                    when count(*) filter (where cov_state = $2) > 0 then $2\n                    -- excluded is next, because it must have been set explicitly.\n                    -- either via annotation or review\n                    when count(*) filter (where cov_state = $3) > 0 then $3\n                    -- uncovered is next, because it leaves actual code that was not covered or excluded\n                    when count(*) filter (where cov_state = $4) > 0 then $4\n                    -- anything else is unknown\n                    else $5\n                end as cov_state\n            from CombinedResolvedLineCoverageStates\n            group by product_id, cov_filepath, cov_file_hash, cov_line\n\n            on conflict (\n                product_id,\n                cov_filepath,\n                cov_line\n            ) do update\n            set\n                latest_collection = excluded.latest_collection,\n                cov_file_hash = excluded.cov_file_hash,\n                cov_state = excluded.cov_state\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "cdcc4f655c72272166d996ece7c67e4a9e1c569b6cb99b9663e0f67bf2092a35"
+}

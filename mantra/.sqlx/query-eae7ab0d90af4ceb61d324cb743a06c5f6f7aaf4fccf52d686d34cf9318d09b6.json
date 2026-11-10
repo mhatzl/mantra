@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            delete from ResolvedLineCoverageStates\n            where latest_collection < $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "eae7ab0d90af4ceb61d324cb743a06c5f6f7aaf4fccf52d686d34cf9318d09b6"
+}

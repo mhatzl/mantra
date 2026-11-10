@@ -129,12 +129,12 @@ impl<'db> Collection<'db> {
 
         sqlx::query!(
             "
-            delete from RequirementsWithTestRunsCoveringSatisfyAndVerifyTraces
+            delete from RequirementsWithTestCasesCoveringSatisfyAndVerifyTraces
             ",
         )
         .execute(self.connection_mut())
         .await
-        .context("Clearing RequirementsWithTestRunsCoveringSatisfyAndVerifyTraces")?;
+        .context("Clearing RequirementsWithTestCasesCoveringSatisfyAndVerifyTraces")?;
 
         sqlx::query!(
             "

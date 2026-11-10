@@ -346,18 +346,12 @@ impl<'db> Collection<'db> {
         .await
         .context("Failed to update ResolvedTestCaseLineCoverage")?;
 
-        sqlx::query!(
-            "
-            delete from ResolvedLineCoverageStates
-            "
-        )
-        .execute(self.connection_mut())
-        .await
-        .context("Clearing ResolvedLineCoverageStates")?;
+        let collection_id = self.collect_nr();
 
         sqlx::query!(
             "
             insert into ResolvedLineCoverageStates (
+                latest_collection,
                 product_id,
                 cov_filepath,
                 cov_file_hash,
@@ -380,6 +374,7 @@ impl<'db> Collection<'db> {
                 from ResolvedTestCaseLineCoverage
             )
             select
+                $1 as latest_collection,
                 product_id,
                 cov_filepath,
                 cov_file_hash,
@@ -391,21 +386,43 @@ impl<'db> Collection<'db> {
                     -- either via annotation or review
                     when count(*) filter (where cov_state = $3) > 0 then $3
                     -- uncovered is next, because it leaves actual code that was not covered or excluded
-                    when count(*) filter (where cov_state = $1) > 0 then $1
+                    when count(*) filter (where cov_state = $4) > 0 then $4
                     -- anything else is unknown
-                    else $4
+                    else $5
                 end as cov_state
             from CombinedResolvedLineCoverageStates
             group by product_id, cov_filepath, cov_file_hash, cov_line
+
+            on conflict (
+                product_id,
+                cov_filepath,
+                cov_line
+            ) do update
+            set
+                latest_collection = excluded.latest_collection,
+                cov_file_hash = excluded.cov_file_hash,
+                cov_state = excluded.cov_state
             ",
-            uncovered_state,
+            collection_id,
             covered_state,
             excluded_state,
+            uncovered_state,
             unknown_state,
         )
         .execute(self.connection_mut())
         .await
         .context("Failed to update ResolvedLineCoverageStates")?;
+
+        sqlx::query!(
+            "
+            delete from ResolvedLineCoverageStates
+            where latest_collection < $1
+            ",
+            collection_id
+        )
+        .execute(self.connection_mut())
+        .await
+        .context("Clearing outdated entries in ResolvedLineCoverageStates")?;
 
         Ok(())
     }
