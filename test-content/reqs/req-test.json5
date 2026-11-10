@@ -17,8 +17,7 @@
     {
         id: "req-2.jumped.req-3",
         title: "Third requirement",
-        origin: "JSON schema",
-        parents: [{ id: "req-2" }]
+        origin: "JSON schema"
     },
     {
         id: "excluded-req",

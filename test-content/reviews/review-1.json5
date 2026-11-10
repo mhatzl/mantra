@@ -17,9 +17,9 @@
             rational: "Verifying the requirement"
         }],
         test_run_overrides: [{
-            name: "0b149ef4-7230-43e2-8167-81fb5d1ff645/mantra::well_known_tests",
+            name: "overrideable-test-run",
             test_cases: [{
-                name: "mantra::well_known_tests/second_test",
+                name: "passed-covering-lines",
                 state: {
                     new: "passed",
                     rational: "Test state override"
