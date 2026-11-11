@@ -111,6 +111,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             None
         };
 
+        let utc_date = review.utc_date.to_string();
+
         sqlx::query!(
             "
             insert into Reviews (
@@ -148,7 +150,7 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             collect_nr,
             product_id,
             review.name,
-            review.utc_date,
+            utc_date,
             origin_hash,
             description_hash,
             data_hash,

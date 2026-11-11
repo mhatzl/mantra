@@ -100,7 +100,7 @@ pub async fn generate_product_schemas<'db>(
     for product_record in product_records {
         let product_id: ProductId = product_record.id.clone().try_into()?;
         let last_collected_date =
-            mantra_schema::reviews::date_from_str(&product_record.last_collected_date)?;
+            mantra_schema::datetime_from_str(&product_record.last_collected_date)?;
 
         let root_requirements = product_root_requirements(transaction, &product_id).await?;
         let root_test_runs = product_root_test_runs(transaction, &product_id).await?;

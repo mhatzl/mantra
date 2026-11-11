@@ -3,9 +3,9 @@ use std::{collections::HashSet, path::PathBuf};
 use anyhow::{Context, bail};
 use mantra_schema::{
     FmtHash, Schema,
+    jiff::Zoned,
     media_type::MediaType,
     path::{RelativePath, RelativePathBuf},
-    time::OffsetDateTime,
 };
 
 use crate::{
@@ -22,12 +22,13 @@ pub(crate) struct Collection<'db> {
     cfg_filepath: PathBuf,
     abs_cfg_file_parent_path: PathBuf,
     id: i64,
-    collected_at_utc: OffsetDateTime,
+    collected_at_utc: Zoned,
 }
 
 impl<'db> Collection<'db> {
     pub(super) async fn new(db: &'db MantraDb, cfg: &CollectConfig) -> Result<Self, anyhow::Error> {
-        let collected_at_utc = OffsetDateTime::now_utc();
+        let collected_at_utc = Zoned::now();
+        let collected_at_utc_str = collected_at_utc.to_string();
         let mut transaction = db.start_transaction().await?;
 
         sqlx::query!(
@@ -39,7 +40,7 @@ impl<'db> Collection<'db> {
                 $1
             )
             ",
-            collected_at_utc
+            collected_at_utc_str
         )
         .execute(&mut *transaction.as_mut())
         .await

@@ -218,7 +218,7 @@ pub async fn generate_review_schema<'db>(
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
         name: review.name.clone(),
-        utc_date: mantra_schema::reviews::date_from_str(&metadata.utc_date)
+        utc_date: mantra_schema::datetime_from_str(&metadata.utc_date)
             .context("Converting stored review date")?,
         state: review.state,
         authors,

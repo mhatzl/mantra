@@ -1,7 +1,7 @@
 {
     reviews: [{
         name: "Verifying test-verify-state conditions",
-        utc_date: "2026-02-19T11:49utc+01",
+        utc_date: "2026-02-19 11:49",
         authors: ["Manuel"],
         requirements: [{
             id: [

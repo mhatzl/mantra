@@ -37,6 +37,10 @@ impl MediaType {
     pub fn mimes(&self) -> Option<&[Mime]> {
         self.0.as_deref()
     }
+
+    pub fn into_mimes(self) -> Option<Vec<Mime>> {
+        self.0
+    }
 }
 
 impl From<&RelativePath> for MediaType {

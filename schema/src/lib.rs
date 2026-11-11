@@ -1,3 +1,4 @@
+use jiff::Zoned;
 use serde::Serializer;
 use sha2::Digest;
 
@@ -10,9 +11,9 @@ pub mod requirements;
 pub mod reviews;
 pub mod test_runs;
 
+pub use jiff;
 pub use mime_guess;
 pub use relative_path as path;
-pub use time;
 
 use crate::{media_type::MediaType, product::ProductId};
 
@@ -32,6 +33,47 @@ pub type Line = i64;
 pub type Column = i64;
 pub type Origin = serde_json::Value;
 pub type Properties = serde_json::value::Map<String, serde_json::Value>;
+
+/// Tries to convert the given string to the time zone aware time [`jiff::Zoned`].
+/// The date must be given adhering to the Temporal ISO 8601 grammar.
+/// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
+///
+/// If no time zone is set in the string, the time zone of the system is used as fallback.
+pub fn datetime_from_str(datetime: &str) -> Result<Zoned, jiff::Error> {
+    match datetime.parse::<Zoned>() {
+        Ok(zoned) => Ok(zoned),
+        Err(err) => {
+            if let Ok(dt) = datetime.parse::<jiff::civil::DateTime>()
+                && let Ok(zoned) = dt.to_zoned(jiff::tz::TimeZone::system())
+            {
+                Ok(zoned)
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
+pub fn deserialize_zoned<'de, D>(deserializer: D) -> Result<Zoned, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: &str = serde::Deserialize::deserialize(deserializer)?;
+    datetime_from_str(s).map_err(serde::de::Error::custom)
+}
+
+pub fn deserialize_opt_zoned<'de, D>(deserializer: D) -> Result<Option<Zoned>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt_s: Option<&str> = serde::Deserialize::deserialize(deserializer)?;
+    match opt_s {
+        None => Ok(None),
+        Some(s) => datetime_from_str(s)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+    }
+}
 
 #[derive(
     Debug,

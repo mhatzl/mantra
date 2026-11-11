@@ -180,7 +180,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             None
         };
 
-        let duration = test_run.duration_sec.map(|d| d.as_seconds_f64());
+        let utc_date = test_run.utc_date.to_string();
+        let duration_sec = test_run.duration_sec.map(|d| d.as_secs_f64());
 
         sqlx::query!(
             "
@@ -222,9 +223,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             collect_nr,
             product_id,
             test_run.name,
-            test_run.utc_date,
+            utc_date,
             description_hash,
-            duration,
+            duration_sec,
             origin_hash,
             data_hash,
             schema_hash
@@ -515,7 +516,9 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
             } else {
                 None
             };
-            let duration = test_case.duration_sec.map(|d| d.as_seconds_f64());
+
+            let utc_date = test_case.utc_date.as_ref().map(|d| d.to_string());
+            let duration_sec = test_case.duration_sec.map(|d| d.as_secs_f64());
 
             sqlx::query!(
                 "
@@ -557,8 +560,8 @@ impl<'db, 'c> ProductCollection<'db, 'c> {
                 test_case.name,
                 state,
                 description_hash,
-                test_case.utc_date,
-                duration
+                utc_date,
+                duration_sec
             )
             .execute(self.connection_mut())
             .await

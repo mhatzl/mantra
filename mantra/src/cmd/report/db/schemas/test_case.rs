@@ -62,10 +62,10 @@ pub async fn generate_test_case_schema<'db>(
     let utc_date = metadata
         .utc_date
         .as_deref()
-        .and_then(|d| mantra_schema::test_runs::test_date_from_str(d).ok());
+        .and_then(|d| mantra_schema::datetime_from_str(d).ok());
     let duration_sec = metadata
         .duration_sec
-        .map(mantra_schema::time::Duration::saturating_seconds_f64);
+        .map(mantra_schema::jiff::SignedDuration::from_secs_f64);
     let location = if let Some(filepath) = metadata.location_filepath
         && let Some(line) = metadata.location_line
     {

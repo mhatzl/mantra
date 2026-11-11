@@ -1,7 +1,7 @@
 {
     reviews: [{
         name: "First review",
-        utc_date: "2026-05-17T17:00utc-01",
+        utc_date: "2026-05-17 17:00",
         authors: ["Manuel"],
         revisions: [{
             number: 1,

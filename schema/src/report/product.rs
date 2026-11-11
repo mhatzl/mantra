@@ -1,3 +1,5 @@
+use jiff::Zoned;
+
 use crate::{
     Properties,
     product::ProductId,
@@ -15,9 +17,12 @@ pub struct ProductReportSchema {
     /// [req("exchange.versioned")]
     #[serde(serialize_with = "crate::serialize_schema_version")]
     pub schema_version: Option<String>,
-    #[serde(with = "time::serde::iso8601")]
+    /// The datetime the product was last collected.
+    ///
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
     #[schemars(with = "String")]
-    pub last_collected_date: time::OffsetDateTime,
+    pub last_collected_date: Zoned,
     pub summary: ProductSummary,
     pub root_requirements: Vec<RequirementReference>,
     pub root_test_runs: Vec<TestRunReference>,

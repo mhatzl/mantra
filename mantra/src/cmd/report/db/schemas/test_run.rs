@@ -56,7 +56,7 @@ pub async fn generate_test_run_schema<'db>(
     };
     let duration_sec = metadata
         .duration_sec
-        .map(mantra_schema::time::Duration::saturating_seconds_f64);
+        .map(mantra_schema::jiff::SignedDuration::from_secs_f64);
 
     let media_type = test_run_content_media_type(transaction, &product.id, &test_run.name).await?;
 
@@ -332,7 +332,7 @@ pub async fn generate_test_run_schema<'db>(
         schema_version: Some(SCHEMA_VERSION.to_owned()),
         product: product.metadata(),
         name: test_run.name.clone(),
-        utc_date: mantra_schema::test_runs::test_date_from_str(&metadata.utc_date)?,
+        utc_date: mantra_schema::datetime_from_str(&metadata.utc_date)?,
         state: test_run.state,
         description: metadata
             .description

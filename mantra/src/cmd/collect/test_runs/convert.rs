@@ -4,9 +4,9 @@ use anyhow::Context;
 use chrono::FixedOffset;
 use mantra_schema::{
     Origin, Properties, Revision,
+    jiff::{SignedDuration, Timestamp, Zoned, tz::TimeZone},
     path::{PathExt, RelativePathBuf},
     test_runs::{CoveredFile, CoveredLine, LogOutput, TestCase, TestCaseState, TestRun},
-    time::{self, Duration, OffsetDateTime},
 };
 use quick_junit::{Report, TestCaseStatus, TestSuite};
 
@@ -21,7 +21,7 @@ pub struct ShallowTestRun {
     pub name: String,
     /// The UTC date the test run execution started.
     /// [req("testcov.test_run.date")]
-    pub utc_date: Option<time::OffsetDateTime>,
+    pub utc_date: Option<Zoned>,
     /// Optional description of the test run.
     pub description: Option<String>,
     /// Optional revisions for the test run.
@@ -34,7 +34,7 @@ pub struct ShallowTestRun {
     pub properties: Option<Properties>,
     /// Optional duration about how long the test run took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.
-    pub duration_sec: Option<Duration>,
+    pub duration_sec: Option<SignedDuration>,
     /// Optional logs that were output during the execution of the test run.
     ///
     // TODO: add req
@@ -51,18 +51,24 @@ impl ShallowTestRun {
     pub fn into_test_run(
         self,
         covered_files: Vec<CoveredFile>,
-        coverage_timestamp: Option<OffsetDateTime>,
+        coverage_timestamp: Option<&Zoned>,
     ) -> TestRun {
-        let utc_date = match self.utc_date.or(coverage_timestamp) {
+        let utc_date = match self.utc_date.or(coverage_timestamp.cloned()) {
             Some(timestamp) => timestamp,
             None => {
                 log::warn!(
                     "No timestamp collected for test run '{}'. Using local timestamp.",
                     self.name
                 );
-                OffsetDateTime::now_utc()
+                Zoned::now()
             }
         };
+
+        let test_runs = self
+            .test_runs
+            .into_iter()
+            .map(|t| t.into_test_run(vec![], Some(&utc_date)))
+            .collect();
 
         TestRun {
             name: self.name,
@@ -75,11 +81,7 @@ impl ShallowTestRun {
             logs: self.logs,
             test_cases: self.test_cases,
             covered_files,
-            test_runs: self
-                .test_runs
-                .into_iter()
-                .map(|t| t.into_test_run(vec![], Some(utc_date)))
-                .collect(),
+            test_runs,
         }
     }
 }
@@ -133,7 +135,7 @@ fn junit_to_shallow_test_run(
     let mut inner_test_runs = Vec::with_capacity(junit.test_suites.len());
     for test_suite in junit.test_suites {
         inner_test_runs.push(
-            get_inner_test_run(test_suite, &name, utc_date)
+            get_inner_test_run(test_suite, &name, utc_date.as_ref())
                 .context("Failed to convert inner test runs")?,
         );
     }
@@ -144,7 +146,7 @@ fn junit_to_shallow_test_run(
         revisions: None,
         origin: None,
         properties: None,
-        duration_sec: junit.time.and_then(|d| Duration::try_from(d).ok()),
+        duration_sec: junit.time.and_then(|d| SignedDuration::try_from(d).ok()),
         logs: None,
         test_cases: vec![],
         test_runs: inner_test_runs,
@@ -153,7 +155,7 @@ fn junit_to_shallow_test_run(
 }
 
 pub struct WellKnownCoverageData {
-    pub timestamp: Option<OffsetDateTime>,
+    pub timestamp: Option<Zoned>,
     pub covered_files: Vec<CoveredFile>,
 }
 
@@ -208,11 +210,19 @@ fn cobertura_to_well_known_coverage(
     cobertura: covcon::cobertura::no_xml_loose::Coverage,
     root_path: &Path,
 ) -> Result<WellKnownCoverageData, anyhow::Error> {
-    let timestamp = cobertura
-        .timestamp
-        .parse::<i64>()
-        .ok()
-        .and_then(|t| OffsetDateTime::from_unix_timestamp(t).ok());
+    let raw_timestamp = cobertura.timestamp.parse::<i64>().ok();
+
+    let timestamp = raw_timestamp.and_then(|rt| {
+        // Cobertura has no fixed unit and different tools set milliseconds or seconds, so we do some heurstics check.
+        // 10 digits ≈ seconds, 13 ≈ milliseconds
+        let timestamp = if rt > 99_999_999_999 {
+            Timestamp::from_millisecond(rt)
+        } else {
+            Timestamp::from_second(rt)
+        };
+
+        timestamp.map(|t| Zoned::new(t, TimeZone::system())).ok()
+    });
 
     let mut covered_files = Vec::new();
     for package in cobertura.packages.package {
@@ -259,7 +269,7 @@ fn get_filepath(filename: &Path, root: &Path) -> Result<RelativePathBuf, anyhow:
 fn get_inner_test_run(
     testsuite: TestSuite,
     name_prefix: &str,
-    timestamp: Option<OffsetDateTime>,
+    timestamp: Option<&Zoned>,
 ) -> Result<ShallowTestRun, anyhow::Error> {
     let name = format!("{name_prefix}/{}", testsuite.name.as_str());
 
@@ -290,7 +300,9 @@ fn get_inner_test_run(
             covered_files: vec![],
             description: None,
             utc_date: test_case.timestamp.and_then(|t| to_offset_datetime(t).ok()),
-            duration_sec: test_case.time.and_then(|d| Duration::try_from(d).ok()),
+            duration_sec: test_case
+                .time
+                .and_then(|d| SignedDuration::try_from(d).ok()),
         });
     }
 
@@ -299,11 +311,13 @@ fn get_inner_test_run(
         utc_date: testsuite
             .timestamp
             .and_then(|t| to_offset_datetime(t).ok())
-            .or(timestamp),
+            .or(timestamp.cloned()),
         revisions: None,
         origin: None,
         properties: None,
-        duration_sec: testsuite.time.and_then(|d| Duration::try_from(d).ok()),
+        duration_sec: testsuite
+            .time
+            .and_then(|d| SignedDuration::try_from(d).ok()),
         logs: None,
         test_cases,
         test_runs: vec![],
@@ -311,13 +325,13 @@ fn get_inner_test_run(
     })
 }
 
-fn to_offset_datetime(
-    timestamp: chrono::DateTime<FixedOffset>,
-) -> Result<OffsetDateTime, anyhow::Error> {
-    Ok(
-        time::OffsetDateTime::from_unix_timestamp(timestamp.timestamp())?
-            + Duration::nanoseconds(timestamp.timestamp_subsec_nanos().into()),
+fn to_offset_datetime(datetime: chrono::DateTime<FixedOffset>) -> Result<Zoned, anyhow::Error> {
+    let timestamp = Timestamp::from_nanosecond(
+        i128::from(datetime.timestamp()) * 1_000_000_000
+            + i128::from(datetime.timestamp_subsec_nanos()),
     )
+    .context("Timestamp outside valid range for the `jiff` crate")?;
+    Ok(timestamp.to_zoned(TimeZone::system()))
 }
 
 fn junit_status_to_mantra_state(status: TestCaseStatus) -> TestCaseState {

@@ -1,19 +1,10 @@
-use time::{Duration, OffsetDateTime};
+use jiff::{SignedDuration, Zoned};
 
 use crate::media_type::MediaType;
 use crate::path::RelativePathBuf;
 use crate::product::ProductId;
 use crate::{ConversionError, FmtHash};
 use crate::{Line, Origin, Properties, Revision, requirements::ReqId};
-
-/// Tries to convert the given string to an [`OffsetDateTime`]
-/// using the [`Iso8601`](time::format_description::well_known::Iso8601) format.
-pub fn test_date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {
-    OffsetDateTime::parse(
-        date,
-        &time::format_description::well_known::Iso8601::PARSING,
-    )
-}
 
 /// Defines the schema to exchange test and coverage related information.
 /// [req("exchange.testcov.schema")]
@@ -86,11 +77,15 @@ pub struct TestRun {
     pub name: String,
     /// The UTC date the test run execution started.
     ///
-    /// **Note:** The date must be given in ISO8601 format.
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
+    ///
+    /// If no time zone is set, the system one is used as fallback.
+    ///
     /// [req("testcov.test_run.date")]
-    #[serde(with = "time::serde::iso8601")]
+    #[serde(deserialize_with = "crate::deserialize_zoned")]
     #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
+    pub utc_date: Zoned,
     /// Optional description of the test run.
     pub description: Option<String>,
     /// Optional revisions for the test run.
@@ -104,7 +99,7 @@ pub struct TestRun {
     /// Optional duration about how long the test run took.
     #[schemars(with = "Option<f64>")]
     #[serde(with = "duration_as_saturating_seconds_f64", default)]
-    pub duration_sec: Option<Duration>,
+    pub duration_sec: Option<SignedDuration>,
     /// Optional logs that were output during the execution of the test run.
     ///
     // TODO: add req
@@ -146,15 +141,18 @@ pub struct TestCase {
     pub location: Option<TestCaseLocation>,
     /// Optional UTC date the test case execution started.
     ///
-    /// **Note:** The date must be given in ISO8601 format.
-    #[serde(with = "time::serde::iso8601::option")]
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
+    ///
+    /// If no time zone is set, the system one is used as fallback.
+    #[serde(deserialize_with = "crate::deserialize_opt_zoned")]
     #[schemars(with = "String")]
     #[serde(default)] // Needed due to: https://github.com/serde-rs/serde/issues/2878
-    pub utc_date: Option<time::OffsetDateTime>,
+    pub utc_date: Option<Zoned>,
     /// Optional duration about how long the test case took.
     #[schemars(with = "Option<f64>")]
     #[serde(with = "duration_as_saturating_seconds_f64", default)]
-    pub duration_sec: Option<Duration>,
+    pub duration_sec: Option<SignedDuration>,
     /// Optional field to store custom properties per test case.
     /// [req("testcov.test_case.metadata")]
     pub properties: Option<Properties>,
@@ -360,20 +358,20 @@ impl TryFrom<i64> for LogSource {
 }
 
 pub mod duration_as_saturating_seconds_f64 {
+    use jiff::SignedDuration;
     use serde::de::Visitor;
-    use time::Duration;
 
-    pub fn serialize<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(duration: &Option<SignedDuration>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         match duration {
-            Some(value) => serializer.serialize_f64(value.as_seconds_f64()),
+            Some(value) => serializer.serialize_f64(value.as_secs_f64()),
             None => serializer.serialize_none(),
         }
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<SignedDuration>, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
@@ -383,7 +381,7 @@ pub mod duration_as_saturating_seconds_f64 {
     struct OptionDurationVisitor;
 
     impl<'de> Visitor<'de> for OptionDurationVisitor {
-        type Value = Option<Duration>;
+        type Value = Option<SignedDuration>;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
             write!(formatter, "optional duration as f64 seconds.")
@@ -414,7 +412,7 @@ pub mod duration_as_saturating_seconds_f64 {
     struct DurationVisitor;
 
     impl<'de> Visitor<'de> for DurationVisitor {
-        type Value = Duration;
+        type Value = SignedDuration;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
             write!(formatter, "duration as f64 seconds.")
@@ -424,7 +422,7 @@ pub mod duration_as_saturating_seconds_f64 {
         where
             E: serde::de::Error,
         {
-            Ok(time::Duration::saturating_seconds_f64(v))
+            Ok(SignedDuration::from_secs_f64(v))
         }
     }
 }

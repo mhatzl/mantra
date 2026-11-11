@@ -1,15 +1,10 @@
 use anyhow::{Context, bail};
-use mantra_schema::{
-    product::ProductId,
-    report::{
-        requirement::RequirementReference, review::ReviewReference, test_case::TestCaseReference,
-        test_run::TestRunReference,
-    },
-};
-use minijinja::{Environment, value::ViaDeserialize};
+use minijinja::Environment;
 use tokio_stream::{StreamExt, wrappers::ReadDirStream};
 
 use crate::cmd::report::cfg::ReportFormat;
+
+mod functions;
 
 pub struct MantraTemplates<'templates> {
     environment: minijinja::Environment<'templates>,
@@ -76,11 +71,17 @@ impl<'templates> MantraTemplates<'templates> {
             include_str!("defaults/test-runs.html"),
         )?;
 
-        environment.add_function("product_url_path", product_url_path);
-        environment.add_function("requirement_url_path", requirement_url_path);
-        environment.add_function("review_url_path", review_url_path);
-        environment.add_function("test_run_url_path", test_run_url_path);
-        environment.add_function("test_case_url_path", test_case_url_path);
+        environment.add_function("product_url_path", functions::product_url_path);
+        environment.add_function("requirement_url_path", functions::requirement_url_path);
+        environment.add_function("review_url_path", functions::review_url_path);
+        environment.add_function("test_run_url_path", functions::test_run_url_path);
+        environment.add_function("test_case_url_path", functions::test_case_url_path);
+        environment.add_function("format_html", functions::format_html);
+        environment.add_function("formatted_datetime", functions::formatted_datetime);
+        environment.add_function(
+            "formatted_datetime_in_system_timezone",
+            functions::formatted_datetime_in_system_timezone,
+        );
 
         Ok(Self { environment })
     }
@@ -184,30 +185,4 @@ impl TemplateName {
             TemplateName::TestRuns => template_format_concat!("test-runs", format),
         }
     }
-}
-
-fn product_url_path(product_id: ViaDeserialize<ProductId>) -> Result<String, minijinja::Error> {
-    Ok(product_id.url_path().into_string())
-}
-
-fn requirement_url_path(
-    req: ViaDeserialize<RequirementReference>,
-) -> Result<String, minijinja::Error> {
-    Ok(req.url_path().into_string())
-}
-
-fn review_url_path(review: ViaDeserialize<ReviewReference>) -> Result<String, minijinja::Error> {
-    Ok(review.url_path().into_string())
-}
-
-fn test_run_url_path(
-    test_run: ViaDeserialize<TestRunReference>,
-) -> Result<String, minijinja::Error> {
-    Ok(test_run.url_path().into_string())
-}
-
-fn test_case_url_path(
-    test_case: ViaDeserialize<TestCaseReference>,
-) -> Result<String, minijinja::Error> {
-    Ok(test_case.url_path().into_string())
 }

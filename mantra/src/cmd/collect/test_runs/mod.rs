@@ -8,9 +8,9 @@ use ignore::{
 };
 use mantra_schema::{
     FmtHash,
+    jiff::Zoned,
     path::{PathExt, RelativePath, RelativePathBuf},
     test_runs::{CoveredFile, TestRun, TestRunSchema},
-    time::OffsetDateTime,
 };
 use tokio::task::JoinHandle;
 
@@ -209,11 +209,11 @@ async fn collect_well_known<'db, 'c>(
             .into_iter()
             .next()
             .expect("Checked above that one test run was collected");
-        shallow_data.into_test_run(covered_files, coverage_timestamp)
+        shallow_data.into_test_run(covered_files, coverage_timestamp.as_ref())
     } else {
         // unclear which test run maps to which coverage data => create new test run whith the collected ones as children
         let (name, utc_date, test_runs) =
-            to_sub_test_runs(shallow_test_run_data, coverage_timestamp);
+            to_sub_test_runs(shallow_test_run_data, coverage_timestamp.as_ref());
 
         TestRun {
             name,
@@ -255,8 +255,8 @@ async fn collect_well_known<'db, 'c>(
 
 fn to_sub_test_runs(
     shallow_test_run_data: Vec<ShallowTestRun>,
-    coverage_timestamp: Option<OffsetDateTime>,
-) -> (String, OffsetDateTime, Vec<TestRun>) {
+    coverage_timestamp: Option<&Zoned>,
+) -> (String, Zoned, Vec<TestRun>) {
     let mut test_run_names = Vec::new();
     let mut earliest_utc_date = None;
 
@@ -268,7 +268,7 @@ fn to_sub_test_runs(
             if s.utc_date.is_some()
                 && (earliest_utc_date.is_none() || earliest_utc_date > s.utc_date)
             {
-                earliest_utc_date = s.utc_date;
+                earliest_utc_date = s.utc_date.clone();
             }
 
             s.into_test_run(vec![], coverage_timestamp)
@@ -276,13 +276,13 @@ fn to_sub_test_runs(
         .collect();
 
     let name = FmtHash::new_serialized(&test_run_names).to_string();
-    let utc_date = match earliest_utc_date.or(coverage_timestamp) {
+    let utc_date = match earliest_utc_date.or(coverage_timestamp.cloned()) {
         Some(timestamp) => timestamp,
         None => {
             log::warn!(
                 "No timestamp collected in any collected well-known test output. Using local timestamp."
             );
-            OffsetDateTime::now_utc()
+            Zoned::now()
         }
     };
 
@@ -291,7 +291,7 @@ fn to_sub_test_runs(
 
 fn merge_well_known_coverage_data(
     coverage_data: Vec<WellKnownCoverageData>,
-) -> (Vec<CoveredFile>, Option<OffsetDateTime>) {
+) -> (Vec<CoveredFile>, Option<Zoned>) {
     if coverage_data.is_empty() {
         (vec![], None)
     } else if coverage_data.len() == 1 {

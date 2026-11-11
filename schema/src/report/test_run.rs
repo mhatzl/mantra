@@ -1,3 +1,4 @@
+use jiff::{SignedDuration, Zoned};
 use relative_path::RelativePathBuf;
 
 use crate::{
@@ -62,11 +63,12 @@ pub struct TestRunReportSchema {
     pub name: String,
     /// The UTC date the test run execution started.
     ///
-    /// **Note:** The date must be given in ISO8601 format.
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
+    ///
     /// [req("testcov.test_run.date")]
-    #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
+    pub utc_date: Zoned,
     pub state: TestState,
     /// Optional description of the test run.
     pub description: Option<FormattableContent>,
@@ -84,9 +86,9 @@ pub struct TestRunReportSchema {
     pub config_properties: Option<Properties>,
     /// Optional duration about how long the test run took.
     /// Will be displayed in seconds with nanosecond precision in decimal form.
-    #[schemars(with = "String")]
+    #[schemars(with = "Option<f64>")]
     #[serde(with = "crate::test_runs::duration_as_saturating_seconds_f64", default)]
-    pub duration_sec: Option<time::Duration>,
+    pub duration_sec: Option<SignedDuration>,
     /// Optional logs that were output during the execution of the test run.
     ///
     // TODO: add req

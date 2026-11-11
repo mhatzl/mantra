@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
+use jiff::Zoned;
 use relative_path::RelativePathBuf;
-use time::OffsetDateTime;
 
 use crate::{
     Line, Origin, Properties, Revision, media_type::MediaType, product::ProductId,
@@ -9,23 +9,6 @@ use crate::{
 };
 
 use super::requirements::ReqId;
-
-/// A simplified format to specify the UTC date and time of a review.
-///
-/// **Examples:**
-/// - `2025-04-26 10:30utc+01`
-/// - `2025-10-20T12:30:10.147utc-04`
-pub const REVIEW_DATE_FORMAT: &[time::format_description::BorrowedFormatItem<'static>] = time::macros::format_description!(
-    "[year]-[month]-[day][first [T] [ ]][hour]:[minute][optional [:[second][optional [.[subsecond]]]]]utc[offset_hour sign:mandatory]"
-);
-
-time::serde::format_description!(pub review_date_format, OffsetDateTime, REVIEW_DATE_FORMAT);
-
-/// Tries to convert the given string to an [`OffsetDateTime`] using the [`REVIEW_DATE_FORMAT`].
-pub fn date_from_str(date: &str) -> Result<OffsetDateTime, time::error::Parse> {
-    OffsetDateTime::parse(date, REVIEW_DATE_FORMAT)
-        .or_else(|_| super::test_runs::test_date_from_str(date))
-}
 
 /// Defines the schema to exchange review related information.
 /// [req("exchange.review.schema")]
@@ -88,15 +71,16 @@ pub struct Review {
     /// [req("review.id")]
     pub name: String,
     /// The UTC date and time the review was started.
+    ///
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
+    ///
+    /// If no time zone is set, the system one is used as fallback.
+    ///
     /// [req("review.id")]
-    #[serde(with = "review_date_format")]
-    #[schemars(
-        with = "String",
-        regex(
-            pattern = r"(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})(T| )(?<hour>\d{2}):(?<minute>\d{2})(?<second>:\d{2}(?<subsecond>\.\d{3})?)?utc(?<utc>(-|+)\d{2})"
-        )
-    )]
-    pub utc_date: OffsetDateTime,
+    #[serde(deserialize_with = "crate::deserialize_zoned")]
+    #[schemars(with = "String")]
+    pub utc_date: Zoned,
     /// The authors that were part of the review.
     /// [req("review.authors")]
     pub authors: Vec<String>,

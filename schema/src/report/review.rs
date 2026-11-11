@@ -1,3 +1,4 @@
+use jiff::Zoned;
 use relative_path::RelativePathBuf;
 
 use crate::{
@@ -25,10 +26,13 @@ pub struct ReviewReportSchema {
     /// [req("review.id")]
     pub name: String,
     /// The UTC date and time the review was started.
+    ///
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
+    ///
     /// [req("review.id")]
-    #[serde(with = "time::serde::iso8601")]
     #[schemars(with = "String")]
-    pub utc_date: time::OffsetDateTime,
+    pub utc_date: Zoned,
     pub state: ReviewState,
     /// The authors that were part of the review.
     /// [req("review.authors")]

@@ -1,7 +1,7 @@
 {
     test_runs: [{
         name: "overrideable-test-run",
-        utc_date: "2026-05-17T11:16:58Z",
+        utc_date: "2026-05-17 11:16:58",
         test_cases: [{
             name: "passed-covering-lines",
             state: "passed",

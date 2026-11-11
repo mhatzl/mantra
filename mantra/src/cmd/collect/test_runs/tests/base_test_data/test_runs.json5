@@ -1,20 +1,20 @@
 {
     test_runs: [{
         name: "tr-1",
-        utc_date: "2026-03-28T13:00:00Z",
+        utc_date: "2026-03-28 13:00:00",
         tests: [],
         test_runs: [{
             name: "tr-1.sub",
-            utc_date: "2026-03-28T13:00:00Z",
+            utc_date: "2026-03-28 13:00:00",
             tests: [],
         }]
     },{
         name: "tr-2",
-        utc_date: "2026-03-28T13:00:00Z",
+        utc_date: "2026-03-28 13:00:00",
         tests: [],
     },{
         name: "tr-3",
-        utc_date: "2026-03-28T13:00:00Z",
+        utc_date: "2026-03-28 13:00:00",
         tests: [],
     }]
 }

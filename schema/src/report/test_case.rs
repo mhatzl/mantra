@@ -1,3 +1,4 @@
+use jiff::{SignedDuration, Zoned};
 use relative_path::RelativePathBuf;
 
 use crate::{
@@ -92,15 +93,15 @@ pub struct TestCaseReportSchema {
     pub location: Option<TestCaseLocation>,
     /// Optional UTC date the test case execution started.
     ///
-    /// **Note:** The date must be given in ISO8601 format.
-    #[serde(with = "time::serde::iso8601::option")]
+    /// **Note:** The date must be given adhering to the Temporal ISO 8601 grammar.
+    /// See: https://tc39.es/proposal-temporal/#sec-temporal-iso8601grammar
     #[schemars(with = "String")]
     #[serde(default)] // Needed due to: https://github.com/serde-rs/serde/issues/2878
-    pub utc_date: Option<time::OffsetDateTime>,
+    pub utc_date: Option<Zoned>,
     /// Optional duration about how long the test case took.
-    #[schemars(with = "String")]
+    #[schemars(with = "Option<f64>")]
     #[serde(with = "crate::test_runs::duration_as_saturating_seconds_f64", default)]
-    pub duration_sec: Option<time::Duration>,
+    pub duration_sec: Option<SignedDuration>,
     /// Optional field to store custom properties per test case.
     /// [req("testcov.test_case.metadata")]
     pub properties: Option<Properties>,
